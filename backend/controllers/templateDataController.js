@@ -156,11 +156,13 @@ exports.insertTemplateData = async (req, res, next) => {
           },
           { name: "created_by", data_type: "TEXT", not_null: false },
           { name: "created_by_id", data_type: "INTEGER", not_null: false },
+          { name: "publickey", data_type: "TEXT", not_null: false },
           ...schema,
         ]
       : [
           { name: "created_by", data_type: "TEXT", not_null: false },
           { name: "created_by_id", data_type: "INTEGER", not_null: false },
+          { name: "publickey", data_type: "TEXT", not_null: false },
           ...schema,
         ];
 
@@ -264,7 +266,7 @@ exports.insertTemplateData = async (req, res, next) => {
     return userSendResponse(res, 200, true, `Record Created Successfully`, null);
   } catch (error) {
     console.error("Error inserting data:", error.stack);
-    return userSendResponse(res, 500, false, error?.message || "Server error.", error);
+    return userSendResponse(res, 500, false, "Failed to insert data.", error);
   } finally {
     if (fs.existsSync(dirPath))
       fs.rmSync(dirPath, { recursive: true, force: true });
@@ -656,7 +658,7 @@ exports.insertTwoTemplateData = async (req, res, next) => {
     return userSendResponse(res, 200, true, `Record Created Successfully`, null);
     } catch (error) {
     console.error("Error inserting data:", error.stack);
-    return userSendResponse(res, 500, false, error?.message || "Server error.", error);
+    return userSendResponse(res, 500, false, "Failed to insert data", error);
   } finally {
     if (fs.existsSync(dirPath))
       fs.rmSync(dirPath, { recursive: true, force: true });
@@ -892,11 +894,13 @@ exports.updateTemplateData = async (req, res, next) => {
                 },
                 { name: "updated_by", data_type: "TEXT", not_null: false },
                 { name: "updated_by_id", data_type: "INTEGER", not_null: false },
+                { name: "publickey", data_type: "TEXT", not_null: false },
                 ...schema,
             ]
             : [
                 { name: "updated_by", data_type: "TEXT", not_null: false },
                 { name: "updated_by_id", data_type: "INTEGER", not_null: false },
+                { name: "publickey", data_type: "TEXT", not_null: false },
                 ...schema,
             ];
 
@@ -1167,12 +1171,12 @@ exports.updateTemplateData = async (req, res, next) => {
             );
         }
         console.error("Error updating data:", error);
-        let errorMessage = "Server error.";
-        if (error && error.message) {
-            errorMessage = error.message;
-        } else if (typeof error === "string") {
-            errorMessage = error;
-        }
+        let errorMessage = "An error occurred while updating the data.";
+        // if (error && error.message) {
+        //     errorMessage = error.message;
+        // } else if (typeof error === "string") {
+        //     errorMessage = error;
+        // }
         return userSendResponse(res, 500, false, errorMessage, error);
     } finally {
         if (fs.existsSync(dirPath))
@@ -1373,12 +1377,12 @@ exports.updateEditTemplateData = async (req, res, next) => {
     }
 
     console.error("Error updating data:", error);
-    let errorMessage = "Server error.";
-    if (error && error.message) {
-      errorMessage = error.message;
-    } else if (typeof error === "string") {
-      errorMessage = error;
-    }
+    let errorMessage = "An error occurred while updating the record.";
+    // if (error && error.message) {
+    //   errorMessage = error.message;
+    // } else if (typeof error === "string") {
+    //   errorMessage = error;
+    // }
     return userSendResponse(res, 500, false, errorMessage, error);
   } finally {
     if (fs.existsSync(dirPath)) fs.rmSync(dirPath, { recursive: true, force: true });
@@ -1482,7 +1486,8 @@ exports.deleteFileFromTemplate = async (req, res, next) => {
     return userSendResponse(res, 200, true, `Record deleted successfully.`, null);
   } catch (error) {
     console.error("Error deleting file from template:", error);
-    const errorMessage = error && error.message ? error.message : error;
+    const errorMessage = "An error occurred while deleting the file." +
+      (error.message ? ` ${error.message}` : "");
     return userSendResponse(res, 500, false, errorMessage, error);
   } finally {
     if (fs.existsSync(dirPath))
@@ -1532,6 +1537,7 @@ exports.getActionTemplateData = async (req, res, next) => {
       created_at: { type: Sequelize.DataTypes.DATE, allowNull: false },
       updated_at: { type: Sequelize.DataTypes.DATE, allowNull: false },
       created_by: { type: Sequelize.DataTypes.STRING, allowNull: true },
+      publickey: { type: Sequelize.DataTypes.STRING, allowNull: true },
     };
 
     const associations = [];
@@ -1736,12 +1742,12 @@ exports.getActionTemplateData = async (req, res, next) => {
     return userSendResponse(res, 200, true, responseMessage, transformedRecords);
   } catch (error) {
     console.error("Error fetching data:", error);
-    let errorMessage = "Server error.";
-    if (error && error.message) {
-      errorMessage = error.message;
-    } else if (typeof error === "string") {
-      errorMessage = error;
-    }
+    let errorMessage = "An error occurred while fetching data.";
+    // if (error && error.message) {
+    //   errorMessage = error.message;
+    // } else if (typeof error === "string") {
+    //   errorMessage = error;
+    // }
     return userSendResponse(res, 500, false, errorMessage, error);
   }
 };
@@ -1782,7 +1788,9 @@ exports.getTemplateData = async (req, res, next) => {
 
     // Filter fields that have is_primary_field as true
     const relevantSchema = 
-    table_name === "cid_ui_case_progress_report" || table_name === "cid_eq_case_progress_report" || table_name === 'cid_eq_case_plan_of_action' || table_name === "cid_pt_case_trail_monitoring" || table_name === 'cid_ui_case_action_plan' || table_name === 'cid_ui_case_property_form' || table_name === 'cid_ui_case_cdr_ipdr'
+    table_name === "cid_ui_case_progress_report" || table_name === "cid_eq_case_progress_report" || table_name === 'cid_eq_case_plan_of_action' || table_name === "cid_pt_case_trail_monitoring" ||
+     table_name === 'cid_ui_case_action_plan' || table_name === 'cid_ui_case_property_form' || table_name === 'cid_ui_case_cdr_ipdr'
+     || table_name === "cid_ui_case_forensic_science_laboratory"
       ? schema
       : schema.filter((field) => field.is_primary_field === true || field.table_display_content === true);
     
@@ -2301,7 +2309,8 @@ exports.getTemplateData = async (req, res, next) => {
         table_name === 'cid_ui_case_action_plan' ||
         table_name === 'cid_ui_case_property_form' ||
         table_name === 'cid_eq_case_plan_of_action' ||
-        table_name === 'cid_ui_case_cdr_ipdr'
+        table_name === 'cid_ui_case_cdr_ipdr' ||
+        table_name === 'cid_ui_case_forensic_science_laboratory'
       ) {
         filteredData = { ...data };
         if (
@@ -2451,12 +2460,12 @@ exports.getTemplateData = async (req, res, next) => {
     );
     } catch (error) {
     console.error("Error fetching data:", error);
-    let errorMessage = "Server error.";
-    if (error && error.message) {
-      errorMessage = error.message;
-    } else if (typeof error === "string") {
-      errorMessage = error;
-    }
+    let errorMessage = "An error occurred while fetching data.";
+    // if (error && error.message) {
+    //   errorMessage = error.message;
+    // } else if (typeof error === "string") {
+    //   errorMessage = error;
+    // }
     return userSendResponse(res, 500, false, errorMessage, error);
   }
 };
@@ -2677,12 +2686,12 @@ exports.updateFieldsWithApproval = async (req, res) => {
         console.error("Error in updateFieldsWithApproval:", error);
 
         // Send a user-friendly error message with actual error details if available
-        let errorMessage = "Internal server error.";
-        if (error && error.message) {
-            errorMessage = error.message;
-        } else if (typeof error === "string") {
-            errorMessage = error;
-        }
+        let errorMessage = "An error occurred while updating fields.";
+        // if (error && error.message) {
+        //     errorMessage = error.message;
+        // } else if (typeof error === "string") {
+        //     errorMessage = error;
+        // }
 
         return userSendResponse(res, 500, false, errorMessage, error);
     }
@@ -2806,12 +2815,12 @@ exports.viewTemplateData = async (req, res, next) => {
         return userSendResponse(res, 200, true, responseMessage, data);
           } catch (error) {
         console.error("Error fetching data by ID:", error);
-        let errorMessage = "Server error.";
-        if (error && error.message) {
-            errorMessage = error.message;
-        } else if (typeof error === "string") {
-            errorMessage = error;
-        }
+        let errorMessage = "An error occurred while fetching data.";
+        // if (error && error.message) {
+        //     errorMessage = error.message;
+        // } else if (typeof error === "string") {
+        //     errorMessage = error;
+        // }
         return userSendResponse(res, 500, false, errorMessage, error);
     }
 };
@@ -3278,12 +3287,12 @@ exports.deleteTemplateData = async (req, res, next) => {
     }
   } catch (error) {
         console.error("Error deleting data:", error);
-        let errorMessage = "Server error.";
-        if (error && error.message) {
-          errorMessage = error.message;
-        } else if (typeof error === "string") {
-          errorMessage = error;
-        }
+        let errorMessage = "An error occurred while deleting data.";
+        // if (error && error.message) {
+        //   errorMessage = error.message;
+        // } else if (typeof error === "string") {
+        //   errorMessage = error;
+        // }
         return userSendResponse(res, 500, false, errorMessage, error);
   }finally {
     if (fs.existsSync(dirPath))
@@ -3846,12 +3855,12 @@ exports.paginateTemplateData = async (req, res) => {
     );
     } catch (error) {
     console.error("Error fetching paginated data:", error);
-    let errorMessage = "Server error";
-    if (error && error.message) {
-      errorMessage = error.message;
-    } else if (typeof error === "string") {
-      errorMessage = error;
-    }
+    let errorMessage = "An error occurred while fetching data.";
+    // if (error && error.message) {
+    //   errorMessage = error.message;
+    // } else if (typeof error === "string") {
+    //   errorMessage = error;
+    // }
     return userSendResponse(res, 500, false, errorMessage, error);
   }
 };
@@ -4775,12 +4784,12 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
     );
     } catch (error) {
     console.error("Error fetching paginated data:", error);
-    let errorMessage = "Server error";
-    if (error && error.message) {
-      errorMessage = error.message;
-    } else if (typeof error === "string") {
-      errorMessage = error;
-    }
+    let errorMessage = "An error occurred while fetching data.";
+    // if (error && error.message) {
+    //   errorMessage = error.message;
+    // } else if (typeof error === "string") {
+    //   errorMessage = error;
+    // }
     return userSendResponse(res, 500, false, errorMessage, error);
   }
 };
@@ -5037,12 +5046,12 @@ exports.bulkInsertData = async (req, res) => {
 
     } catch (error) {
           console.log(error, "bulkInsertData catch error");
-          let errorMessage = "Internal server error.";
-          if (error && error.message) {
-            errorMessage = error.message;
-          } else if (typeof error === "string") {
-            errorMessage = error;
-          }
+          let errorMessage = "Error occurred while inserting data.";
+          // if (error && error.message) {
+          //   errorMessage = error.message;
+          // } else if (typeof error === "string") {
+          //   errorMessage = error;
+          // }
           return userSendResponse(res, 500, false, errorMessage, error);
     }
 };
@@ -5474,7 +5483,7 @@ exports.templateDataFieldDuplicateCheck = async (req, res) => {
     return userSendResponse(res, 200, true, "No duplicates found.", null);
     } catch (error) {
     console.error("Error checking duplicate values in fields:", error);
-    let errorMessage = "Internal Server Error.";
+    let errorMessage = "Failed to check duplicate values in fields.";
     if (error && error.message) {
       errorMessage = error.message;
     } else if (typeof error === "string") {
@@ -5660,7 +5669,7 @@ exports.checkPdfEntry = async (req, res) => {
 
           } catch (error) {
             console.error("Error fetching data:", error);
-            let errorMessage = "Server error.";
+            let errorMessage = "Failed to get primary template Data.";
             if (error && error.message) {
               errorMessage = error.message;
             } else if (typeof error === "string") {
@@ -5752,7 +5761,7 @@ exports.checkPdfEntry = async (req, res) => {
 
         } catch (error) {
         console.error("Error fetching data:", error);
-        let errorMessage = "Server error.";
+        let errorMessage = "Failed to get template data.";
         if (error && error.message) {
           errorMessage = error.message;
         } else if (typeof error === "string") {
@@ -5858,7 +5867,7 @@ exports.checkPdfEntry = async (req, res) => {
             });
         } catch (error) {
             console.error("Error in addSingleFieldValue:", error);
-            const errorMessage = error && error.message ? error.message : error;
+            const errorMessage = "Failed to add value to dropdown field.";
             return userSendResponse(res, 500, false, errorMessage, error);
         }
     };
@@ -5866,326 +5875,539 @@ exports.checkPdfEntry = async (req, res) => {
 // Cache for dynamically generated models
 const modelCache = {};
 
+// exports.caseSysStatusUpdation = async (req, res) => {
+//   let dirPath = "";
+//   try {
+//     const { table_name, data, transaction_id } = req.body;
+//     const userId = req.user?.user_id || null;
+//     if (!table_name || !data || typeof data !== "object") {
+//       return userSendResponse(res, 400, false, "Invalid request format.");
+//     }
+//     dirPath = path.join(__dirname, `../data/user_unique/${transaction_id}`);
+//     if (fs.existsSync(dirPath))
+//       return res
+//         .status(400)
+//         .json({ success: false, message: "Duplicate transaction detected." });
+//     fs.mkdirSync(dirPath, { recursive: true });
+
+//     const { id, sys_status, default_status, ui_case_id, pt_case_id } = data;
+//     if (!id || !sys_status) {
+//       return userSendResponse(
+//         res,
+//         400,
+//         false,
+//         "ID and sys_status are required."
+//       );
+//     }
+
+//     const recordId = Array.isArray(id) ? id : [id];
+//     const invalidIds = recordId.filter(val => isNaN(parseInt(val)));
+//     if (invalidIds.length > 0) {
+//       return userSendResponse(res, 400, false, "Invalid ID format(s).");
+//     }
+
+
+//     const tableData = await Template.findOne({ where: { table_name } });
+//     if (!tableData) {
+//       return userSendResponse(
+//         res,
+//         400,
+//         false,
+//         `Table ${table_name} does not exist.`
+//       );
+//     }
+
+//     const schema =
+//       typeof tableData.fields === "string"
+//         ? JSON.parse(tableData.fields)
+//         : tableData.fields;
+
+//     const completeSchema = [
+//       {
+//         name: "id",
+//         data_type: "INTEGER",
+//         not_null: true,
+//         primaryKey: true,
+//         autoIncrement: true,
+//       },
+//       {
+//         name: "sys_status",
+//         data_type: "TEXT",
+//         not_null: false,
+//         default_value: default_status,
+//       },
+//       { name: "created_by", data_type: "TEXT", not_null: false },
+//       { name: "updated_by", data_type: "TEXT", not_null: false },
+//       { name: "created_by_id", data_type: "INTEGER", not_null: false },
+//       { name: "updated_by_id", data_type: "INTEGER", not_null: false },
+//       { name: "ui_case_id", data_type: "INTEGER", not_null: false },
+//       { name: "pt_case_id", data_type: "INTEGER", not_null: false },
+//       ...schema,
+//     ];
+
+//     let Model = modelCache[table_name];
+
+//     if (!Model) {
+//       const modelAttributes = {};
+//       for (const field of completeSchema) {
+//         const {
+//           name,
+//           data_type,
+//           not_null,
+//           default_value,
+//           primaryKey,
+//           autoIncrement,
+//         } = field;
+//         const sequelizeType =
+//           typeMapping?.[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
+
+//         modelAttributes[name] = {
+//           type: sequelizeType,
+//           allowNull: !not_null,
+//         };
+
+//         if (default_value) modelAttributes[name].defaultValue = default_value;
+//         if (primaryKey) modelAttributes[name].primaryKey = true;
+//         if (autoIncrement) modelAttributes[name].autoIncrement = true;
+//       }
+
+//       Model = sequelize.define(
+//         table_name,
+//         modelAttributes,
+//         {
+//           freezeTableName: true,
+//           timestamps: true,
+//           createdAt: "created_at",
+//           updatedAt: "updated_at",
+//           underscored: true,
+//         }
+//       );
+
+//       await Model.sync({ alter: true });
+//       modelCache[table_name] = Model;
+//     }
+
+//     if (Array.isArray(recordId)) {
+//       const records = await Model.findAll({
+//         where: {
+//           id: recordId
+//         }
+//       });
+
+//     if (records.length !== recordId.length) {
+//       return userSendResponse(
+//         res,
+//         404,
+//         false,
+//         `Some records with the provided IDs were not found in table ${table_name}.`
+//       );
+//     }
+
+//   } else {
+//     const record = await Model.findByPk(recordId);
+  
+//     if (!record) {
+//       return userSendResponse(
+//         res,
+//         404,
+//         false,
+//         `Record with ID ${recordId} not found in table ${table_name}.`
+//       );
+//     }
+//   }
+
+
+//     const [updatedCount] = await Model.update(
+//       { sys_status },
+//       { where: { id: recordId } }
+//     );
+
+//     // Fetch user data
+//     const userData = await Users.findOne({
+//         include: [
+//         {
+//             model: KGID,
+//             as: "kgidDetails",
+//             attributes: ["kgid", "name", "mobile"],
+//         },
+//         ],
+//         where: { user_id: userId },
+//     });
+
+//     let userName = userData?.kgidDetails?.name || null;
+    
+//     if (Array.isArray(recordId)) {
+//         const historyRecords = recordId.map(id => ({
+//             template_id: tableData.template_id,
+//             table_row_id: id,
+//             user_id: userId,
+//             actor_name: userName,
+//             action: `Status Updated`,
+//         }));
+    
+//         await CaseHistory.bulkCreate(historyRecords);
+//     } else {
+//         await CaseHistory.create({
+//             template_id: tableData.template_id,
+//             table_row_id: recordId,
+//             user_id: userId,
+//             actor_name: userName,
+//             action: `Status Updated`,
+//         });
+//     }
+    
+
+//     // if (updatedCount === 0) {
+//     //   return userSendResponse(
+//     //     res,
+//     //     400,
+//     //     false,
+//     //     "No changes detected or update failed."
+//     //   );
+//     // }
+
+//   if (updatedCount === 0) {
+//     const existingRecords = await Model.findAll({
+//       where: { id: recordId }
+//     });
+//     const alreadySet = existingRecords.every(rec => rec.sys_status === sys_status);
+//     if (alreadySet) {
+//       return userSendResponse(
+//         res,
+//         200,
+//         true,
+//         "Case record already has the requested status."
+//       );
+//     }
+//     const currentStatuses = existingRecords.map(rec => ({
+//       id: rec.id,
+//       current_sys_status: rec.sys_status
+//     }));
+//     return userSendResponse(
+//       res,
+//       400,
+//       false,
+//       `No records were updated. The current status${existingRecords.length > 1 ? 'es are' : ' is'}: ${currentStatuses.map(s => `[id: ${s.id}, sys_status: ${s.current_sys_status}]`).join(', ')}. The requested status may already be set or the update failed.`,
+//       { error: "No records were updated.", currentStatuses }
+//     );
+//   }
+
+
+//     const handleInvestigationUpdate = async (invTableName, caseId , default_status) => {
+//       const investigationTable = await Template.findOne({
+//         where: { table_name: invTableName },
+//       });
+//       if (!investigationTable) {
+//         return userSendResponse(
+//           res,
+//           400,
+//           false,
+//           `${invTableName} not found.`
+//         );
+//       }
+
+//       const invSchema =
+//         typeof investigationTable.fields === "string"
+//           ? JSON.parse(investigationTable.fields)
+//           : investigationTable.fields;
+
+//       const completeInvSchema = [
+//         {
+//           name: "id",
+//           data_type: "INTEGER",
+//           not_null: true,
+//           primaryKey: true,
+//           autoIncrement: true,
+//         },
+//         { name: "sys_status", data_type: "TEXT", not_null: false , default_value: default_status},
+//         { name: "ui_case_id", data_type: "INTEGER", not_null: false },
+//         { name: "pt_case_id", data_type: "INTEGER", not_null: false },
+//         { name: "created_by", data_type: "TEXT", not_null: false },
+//         { name: "updated_by", data_type: "TEXT", not_null: false },
+//         { name: "created_by_id", data_type: "INTEGER", not_null: false },
+//         { name: "updated_by_id", data_type: "INTEGER", not_null: false },
+//         ...invSchema,
+//       ];
+
+//       let InvModel = modelCache[invTableName];
+//       if (!InvModel) {
+//         const invModelAttributes = {};
+//         for (const field of completeInvSchema) {
+//           const { name, data_type, not_null, primaryKey, autoIncrement } = field;
+//           const sequelizeType =
+//             typeMapping?.[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
+
+//           invModelAttributes[name] = {
+//             type: sequelizeType,
+//             allowNull: !not_null,
+//           };
+
+//           if (primaryKey) invModelAttributes[name].primaryKey = true;
+//           if (autoIncrement) invModelAttributes[name].autoIncrement = true;
+//         }
+
+//         InvModel = sequelize.define(
+//           invTableName,
+//           invModelAttributes,
+//           {
+//             freezeTableName: true,
+//             timestamps: true,
+//             createdAt: "created_at",
+//             updatedAt: "updated_at",
+//             underscored: true,
+//           }
+//         );
+
+//         await InvModel.sync({ alter: true });
+//         modelCache[invTableName] = InvModel;
+//       }
+
+//       const invRecord = await InvModel.findOne({ where: { id: caseId } });
+//       if (invRecord) {
+//         await InvModel.update(
+//           { sys_status: "178_cases" },
+//           { where: { id: caseId } }
+//         );
+//       } else {
+//         console.log(`No matching record found in \`${invTableName}\` for id:`, caseId);
+//       }
+//     };
+
+//     if (ui_case_id && sys_status === "178_cases") {
+//       await handleInvestigationUpdate("cid_under_investigation", ui_case_id ,"ui_case");
+//     }
+
+//     if (pt_case_id && sys_status === "178_cases") {
+//       await handleInvestigationUpdate("cid_pending_trial", pt_case_id,"pt_case");
+//     }
+
+//     return userSendResponse(
+//       res,
+//       200,
+//       true,
+//       "Case record updated successfully!"
+//     );
+//   } catch (error) {
+//     console.error("Error updating case status:", error);
+//     return userSendResponse(res, 500, false, "Internal Server Error.", error);
+//   } finally {
+//     if (fs.existsSync(dirPath))
+//       fs.rmSync(dirPath, { recursive: true, force: true });
+//   }
+// };
+
 exports.caseSysStatusUpdation = async (req, res) => {
-  let dirPath = "";
-  try {
-    const { table_name, data, transaction_id } = req.body;
-    const userId = req.user?.user_id || null;
-    if (!table_name || !data || typeof data !== "object") {
-      return userSendResponse(res, 400, false, "Invalid request format.");
-    }
-    dirPath = path.join(__dirname, `../data/user_unique/${transaction_id}`);
-    if (fs.existsSync(dirPath))
-      return res
-        .status(400)
-        .json({ success: false, message: "Duplicate transaction detected." });
-    fs.mkdirSync(dirPath, { recursive: true });
-
-    const { id, sys_status, default_status, ui_case_id, pt_case_id } = data;
-    if (!id || !sys_status) {
-      return userSendResponse(
-        res,
-        400,
-        false,
-        "ID and sys_status are required."
-      );
-    }
-
-    const recordId = Array.isArray(id) ? id : [id];
-    const invalidIds = recordId.filter(val => isNaN(parseInt(val)));
-    if (invalidIds.length > 0) {
-      return userSendResponse(res, 400, false, "Invalid ID format(s).");
-    }
-
-
-    const tableData = await Template.findOne({ where: { table_name } });
-    if (!tableData) {
-      return userSendResponse(
-        res,
-        400,
-        false,
-        `Table ${table_name} does not exist.`
-      );
-    }
-
-    const schema =
-      typeof tableData.fields === "string"
-        ? JSON.parse(tableData.fields)
-        : tableData.fields;
-
-    const completeSchema = [
-      {
-        name: "id",
-        data_type: "INTEGER",
-        not_null: true,
-        primaryKey: true,
-        autoIncrement: true,
-      },
-      {
-        name: "sys_status",
-        data_type: "TEXT",
-        not_null: false,
-        default_value: default_status,
-      },
-      { name: "created_by", data_type: "TEXT", not_null: false },
-      { name: "updated_by", data_type: "TEXT", not_null: false },
-      { name: "created_by_id", data_type: "INTEGER", not_null: false },
-      { name: "updated_by_id", data_type: "INTEGER", not_null: false },
-      { name: "ui_case_id", data_type: "INTEGER", not_null: false },
-      { name: "pt_case_id", data_type: "INTEGER", not_null: false },
-      ...schema,
-    ];
-
-    let Model = modelCache[table_name];
-
-    if (!Model) {
-      const modelAttributes = {};
-      for (const field of completeSchema) {
-        const {
-          name,
-          data_type,
-          not_null,
-          default_value,
-          primaryKey,
-          autoIncrement,
-        } = field;
-        const sequelizeType =
-          typeMapping?.[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
-
-        modelAttributes[name] = {
-          type: sequelizeType,
-          allowNull: !not_null,
-        };
-
-        if (default_value) modelAttributes[name].defaultValue = default_value;
-        if (primaryKey) modelAttributes[name].primaryKey = true;
-        if (autoIncrement) modelAttributes[name].autoIncrement = true;
+    let dirPath = "";
+    try {
+      const { table_name, data, transaction_id } = req.body;
+      const userId = req.user?.user_id || null;
+  
+      if (!table_name || !data || typeof data !== "object") {
+        return userSendResponse(res, 400, false, "Invalid request format.");
       }
-
-      Model = sequelize.define(
-        table_name,
-        modelAttributes,
-        {
+  
+      const { id, sys_status, default_status, ui_case_id, pt_case_id } = data;
+      if (!id || !sys_status) {
+        return userSendResponse(res, 400, false, "ID and sys_status are required.");
+      }
+  
+      const recordId = Array.isArray(id) ? id : [id];
+      const invalidIds = recordId.filter(val => isNaN(parseInt(val)));
+      if (invalidIds.length > 0) {
+        return userSendResponse(res, 400, false, "Invalid ID format(s).");
+      }
+  
+      // Check for duplicate transaction
+      dirPath = path.join(__dirname, `../data/user_unique/${transaction_id}`);
+      if (fs.existsSync(dirPath)) {
+        return res.status(400).json({
+          success: false,
+          message: "Duplicate transaction detected.",
+        });
+      }
+      fs.mkdirSync(dirPath, { recursive: true });
+  
+      // Fetch schema
+      const tableData = await Template.findOne({ where: { table_name } });
+      if (!tableData) {
+        return userSendResponse(res, 400, false, `Table ${table_name} does not exist.`);
+      }
+  
+      const schema = typeof tableData.fields === "string" ? JSON.parse(tableData.fields) : tableData.fields;
+  
+      const completeSchema = [
+        { name: "id", data_type: "INTEGER", not_null: true, primaryKey: true, autoIncrement: true },
+        { name: "sys_status", data_type: "TEXT", not_null: false, default_value: default_status },
+        { name: "created_by", data_type: "TEXT", not_null: false },
+        { name: "updated_by", data_type: "TEXT", not_null: false },
+        { name: "created_by_id", data_type: "INTEGER", not_null: false },
+        { name: "updated_by_id", data_type: "INTEGER", not_null: false },
+        { name: "ui_case_id", data_type: "INTEGER", not_null: false },
+        { name: "pt_case_id", data_type: "INTEGER", not_null: false },
+        { name: "publickey", data_type: "TEXT", not_null: false },
+        ...schema,
+      ];
+  
+      // Define model
+      let Model = modelCache[table_name];
+      if (!Model) {
+        const modelAttributes = {};
+        for (const field of completeSchema) {
+          const { name, data_type, not_null, default_value, primaryKey, autoIncrement } = field;
+          const sequelizeType = typeMapping?.[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
+  
+          modelAttributes[name] = {
+            type: sequelizeType,
+            allowNull: !not_null,
+          };
+          if (default_value) modelAttributes[name].defaultValue = default_value;
+          if (primaryKey) modelAttributes[name].primaryKey = true;
+          if (autoIncrement) modelAttributes[name].autoIncrement = true;
+        }
+  
+        Model = sequelize.define(table_name, modelAttributes, {
           freezeTableName: true,
           timestamps: true,
           createdAt: "created_at",
           updatedAt: "updated_at",
           underscored: true,
-        }
-      );
-
-      await Model.sync({ alter: true });
-      modelCache[table_name] = Model;
-    }
-
-    if (Array.isArray(recordId)) {
-      const records = await Model.findAll({
-        where: {
-          id: recordId
-        }
-      });
-
-    if (records.length !== recordId.length) {
-      return userSendResponse(
-        res,
-        404,
-        false,
-        `Some records with the provided IDs were not found in table ${table_name}.`
-      );
-    }
-
-  } else {
-    const record = await Model.findByPk(recordId);
-  
-    if (!record) {
-      return userSendResponse(
-        res,
-        404,
-        false,
-        `Record with ID ${recordId} not found in table ${table_name}.`
-      );
-    }
-  }
-
-
-    const [updatedCount] = await Model.update(
-      { sys_status },
-      { where: { id: recordId } }
-    );
-
-    // Fetch user data
-    const userData = await Users.findOne({
-        include: [
-        {
-            model: KGID,
-            as: "kgidDetails",
-            attributes: ["kgid", "name", "mobile"],
-        },
-        ],
-        where: { user_id: userId },
-    });
-
-    let userName = userData?.kgidDetails?.name || null;
-    
-    if (Array.isArray(recordId)) {
-        const historyRecords = recordId.map(id => ({
-            template_id: tableData.template_id,
-            table_row_id: id,
-            user_id: userId,
-            actor_name: userName,
-            action: `Status Updated`,
-        }));
-    
-        await CaseHistory.bulkCreate(historyRecords);
-    } else {
-        await CaseHistory.create({
-            template_id: tableData.template_id,
-            table_row_id: recordId,
-            user_id: userId,
-            actor_name: userName,
-            action: `Status Updated`,
         });
-    }
-    
-
-    // if (updatedCount === 0) {
-    //   return userSendResponse(
-    //     res,
-    //     400,
-    //     false,
-    //     "No changes detected or update failed."
-    //   );
-    // }
-
-  if (updatedCount === 0) {
-    const existingRecords = await Model.findAll({
-      where: { id: recordId }
-    });
-    const alreadySet = existingRecords.every(rec => rec.sys_status === sys_status);
-    if (alreadySet) {
-      return userSendResponse(
-        res,
-        200,
-        true,
-        "Case record already has the requested status."
+  
+        await Model.sync(); // Avoid alter in production
+        modelCache[table_name] = Model;
+      }
+  
+      // Validate records exist
+      const records = await Model.findAll({ where: { id: recordId } });
+      if (records.length !== recordId.length) {
+        return userSendResponse(res, 404, false, `Some records with the provided IDs were not found in table ${table_name}.`);
+      }
+  
+      // Check if already has same status
+      const alreadySet = records.every(rec => rec.sys_status === sys_status);
+      if (alreadySet) {
+        return userSendResponse(res, 200, true, "Case record already has the requested status.");
+      }
+  
+      // Update status
+      const [updatedCount] = await Model.update(
+        { sys_status, updated_by_id: userId },
+        { where: { id: recordId } }
       );
-    }
-    const currentStatuses = existingRecords.map(rec => ({
-      id: rec.id,
-      current_sys_status: rec.sys_status
-    }));
-    return userSendResponse(
-      res,
-      400,
-      false,
-      `No records were updated. The current status${existingRecords.length > 1 ? 'es are' : ' is'}: ${currentStatuses.map(s => `[id: ${s.id}, sys_status: ${s.current_sys_status}]`).join(', ')}. The requested status may already be set or the update failed.`,
-      { error: "No records were updated.", currentStatuses }
-    );
-  }
-
-
-    const handleInvestigationUpdate = async (invTableName, caseId , default_status) => {
-      const investigationTable = await Template.findOne({
-        where: { table_name: invTableName },
-      });
-      if (!investigationTable) {
+  
+      if (updatedCount === 0) {
+        const currentStatuses = records.map(rec => ({
+          id: rec.id,
+          current_sys_status: rec.sys_status
+        }));
         return userSendResponse(
           res,
           400,
           false,
-          `${invTableName} not found.`
+          `No records were updated. Current status${currentStatuses.length > 1 ? 'es are' : ' is'}: ${currentStatuses.map(s => `[id: ${s.id}, sys_status: ${s.current_sys_status}]`).join(', ')}.`,
+          { error: "No records updated.", currentStatuses }
         );
       }
-
-      const invSchema =
-        typeof investigationTable.fields === "string"
-          ? JSON.parse(investigationTable.fields)
-          : investigationTable.fields;
-
-      const completeInvSchema = [
-        {
-          name: "id",
-          data_type: "INTEGER",
-          not_null: true,
-          primaryKey: true,
-          autoIncrement: true,
-        },
-        { name: "sys_status", data_type: "TEXT", not_null: false , default_value: default_status},
-        { name: "ui_case_id", data_type: "INTEGER", not_null: false },
-        { name: "pt_case_id", data_type: "INTEGER", not_null: false },
-        { name: "created_by", data_type: "TEXT", not_null: false },
-        { name: "updated_by", data_type: "TEXT", not_null: false },
-        { name: "created_by_id", data_type: "INTEGER", not_null: false },
-        { name: "updated_by_id", data_type: "INTEGER", not_null: false },
-        ...invSchema,
-      ];
-
-      let InvModel = modelCache[invTableName];
-      if (!InvModel) {
-        const invModelAttributes = {};
-        for (const field of completeInvSchema) {
-          const { name, data_type, not_null, primaryKey, autoIncrement } = field;
-          const sequelizeType =
-            typeMapping?.[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
-
-          invModelAttributes[name] = {
-            type: sequelizeType,
-            allowNull: !not_null,
-          };
-
-          if (primaryKey) invModelAttributes[name].primaryKey = true;
-          if (autoIncrement) invModelAttributes[name].autoIncrement = true;
-        }
-
-        InvModel = sequelize.define(
-          invTableName,
-          invModelAttributes,
-          {
-            freezeTableName: true,
-            timestamps: true,
-            createdAt: "created_at",
-            updatedAt: "updated_at",
-            underscored: true,
+  
+      // Fetch user details
+      const userData = await Users.findOne({
+        include: [{
+          model: KGID,
+          as: "kgidDetails",
+          attributes: ["kgid", "name", "mobile"]
+        }],
+        where: { user_id: userId },
+      });
+  
+      const userName = userData?.kgidDetails?.name || null;
+  
+      // Create history
+      const historyData = recordId.map(id => ({
+        template_id: tableData.template_id,
+        table_row_id: id,
+        user_id: userId,
+        actor_name: userName,
+        action: "Status Updated",
+      }));
+      await CaseHistory.bulkCreate(historyData);
+  
+      // Update related tables if sys_status is "178_cases"
+      const handleInvestigationUpdate = async (invTableName, caseId, default_status) => {
+        try {
+          const investigationTable = await Template.findOne({ where: { table_name: invTableName } });
+          if (!investigationTable) return;
+  
+          const invSchema = typeof investigationTable.fields === "string"
+            ? JSON.parse(investigationTable.fields)
+            : investigationTable.fields;
+  
+          const completeInvSchema = [
+            { name: "id", data_type: "INTEGER", not_null: true, primaryKey: true, autoIncrement: true },
+            { name: "sys_status", data_type: "TEXT", not_null: false, default_value: default_status },
+            { name: "ui_case_id", data_type: "INTEGER", not_null: false },
+            { name: "pt_case_id", data_type: "INTEGER", not_null: false },
+            { name: "created_by", data_type: "TEXT", not_null: false },
+            { name: "updated_by", data_type: "TEXT", not_null: false },
+            { name: "created_by_id", data_type: "INTEGER", not_null: false },
+            { name: "updated_by_id", data_type: "INTEGER", not_null: false },
+            { name: "publickey", data_type: "TEXT", not_null: false },
+            ...invSchema,
+          ];
+  
+          let InvModel = modelCache[invTableName];
+          if (!InvModel) {
+            const invModelAttributes = {};
+            for (const field of completeInvSchema) {
+              const { name, data_type, not_null, primaryKey, autoIncrement } = field;
+              const sequelizeType = typeMapping?.[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
+  
+              invModelAttributes[name] = {
+                type: sequelizeType,
+                allowNull: !not_null,
+              };
+              if (primaryKey) invModelAttributes[name].primaryKey = true;
+              if (autoIncrement) invModelAttributes[name].autoIncrement = true;
+            }
+  
+            InvModel = sequelize.define(invTableName, invModelAttributes, {
+              freezeTableName: true,
+              timestamps: true,
+              createdAt: "created_at",
+              updatedAt: "updated_at",
+              underscored: true,
+            });
+  
+            await InvModel.sync();
+            modelCache[invTableName] = InvModel;
           }
-        );
-
-        await InvModel.sync({ alter: true });
-        modelCache[invTableName] = InvModel;
+  
+          const invRecord = await InvModel.findOne({ where: { id: caseId } });
+          if (invRecord) {
+            await InvModel.update({ sys_status: "178_cases" }, { where: { id: caseId } });
+          } else {
+            console.warn(`No record found in ${invTableName} for id: ${caseId}`);
+          }
+        } catch (e) {
+          console.error(`Error updating ${invTableName}:`, e);
+        }
+      };
+  
+      if (ui_case_id && sys_status === "178_cases") {
+        await handleInvestigationUpdate("cid_under_investigation", ui_case_id, "ui_case");
       }
-
-      const invRecord = await InvModel.findOne({ where: { id: caseId } });
-      if (invRecord) {
-        await InvModel.update(
-          { sys_status: "178_cases" },
-          { where: { id: caseId } }
-        );
-      } else {
-        console.log(`No matching record found in \`${invTableName}\` for id:`, caseId);
+  
+      if (pt_case_id && sys_status === "178_cases") {
+        await handleInvestigationUpdate("cid_pending_trial", pt_case_id, "pt_case");
       }
-    };
-
-    if (ui_case_id && sys_status === "178_cases") {
-      await handleInvestigationUpdate("cid_under_investigation", ui_case_id ,"ui_case");
+  
+      return userSendResponse(res, 200, true, "Case record updated successfully!");
+    } catch (error) {
+      console.error("Error updating case status:", error);
+      return userSendResponse(res, 500, false, "Internal Server Error.", error);
+    } finally {
+      if (fs.existsSync(dirPath)) fs.rmSync(dirPath, { recursive: true, force: true });
     }
-
-    if (pt_case_id && sys_status === "178_cases") {
-      await handleInvestigationUpdate("cid_pending_trial", pt_case_id,"pt_case");
-    }
-
-    return userSendResponse(
-      res,
-      200,
-      true,
-      "Case record updated successfully!"
-    );
-  } catch (error) {
-    console.error("Error updating case status:", error);
-    return userSendResponse(res, 500, false, "Internal Server Error.", error);
-  } finally {
-    if (fs.existsSync(dirPath))
-      fs.rmSync(dirPath, { recursive: true, force: true });
-  }
-};
+  };
 
 
 const dirPath = path.join(__dirname, "../public/files/");
@@ -6287,7 +6509,7 @@ exports.uploadFile = async (req, res) => {
       console.error("Error uploading file:", error);
       return res.status(500).json({
         success: false,
-        message: error?.message || "Internal server error.",
+        message: "Failed to upload file.",
         error: error,
       });
     }
@@ -6325,7 +6547,7 @@ exports.getUploadedFiles = async (req, res) => {
     console.error("Error fetching files:", error);
     return res
       .status(500)
-      .json({ success: false, message: error?.message || "Internal server error.", error });
+      .json({ success: false, message: "Failed to get Upload files", error });
   }
 };
 
@@ -6838,7 +7060,7 @@ exports.appendToLastLineOfPDF = async (req, res) => {
     return res.status(200).json({ success: true, message: 'PDF updated successfully.' });
   } catch (error) {
     console.error('Error in appendToLastLineOfPDF:', error);
-    return res.status(500).json({ success: false, message: error?.message || error, error });
+    return res.status(500).json({ success: false, message: "Failed to append the PDF" + error.message, error });
   }
 };
 
@@ -6879,7 +7101,7 @@ exports.getMonthWiseByCaseId = async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching monthwise progress reports:', error);
-    return res.status(500).json({ success: false, message: error?.message || 'Internal server error.', error });
+    return res.status(500).json({ success: false, message: "Failed to get monthwise case id" , error });
   }
 };
 
@@ -7406,6 +7628,7 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
 						{ name: "updated_by_id", data_type: "INTEGER", not_null: false },
 						{ name: "ui_case_id", data_type: "INTEGER", not_null: false },
 						{ name: "pt_case_id", data_type: "INTEGER", not_null: false },
+                        { name: "publickey", data_type: "TEXT", not_null: false },
 						...otherSchema
 					];
 
@@ -7493,6 +7716,10 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
                                     type: Sequelize.DataTypes.STRING,
                                     allowNull: true,
                                     },
+                                    publickey: {
+                                        type: Sequelize.DataTypes.STRING,
+                                        allowNull: true,
+                                    },
                                 };
                            
                                 for (const field of PFschema) {
@@ -7547,6 +7774,10 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
                                      type: Sequelize.DataTypes.STRING,
                                      allowNull: true,
                                      },
+                                    publickey: {
+                                        type: Sequelize.DataTypes.STRING,
+                                        allowNull: true,
+                                    },
                                  };
                             
                                  for (const field of PRschema) {
@@ -7751,7 +7982,7 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
     console.error("Error saving data to templates:", error);
     if (t) await t.rollback();
     const isDuplicate = error.name === "SequelizeUniqueConstraintError";
-    const message = isDuplicate ? "Duplicate entry detected." : (error.message || "An unexpected error occurred.");
+    const message = isDuplicate ? "Duplicate entry detected." : "Failed to save data." + (error.message || "");
     return userSendResponse(res, isDuplicate ? 400 : 500, false, message, error);
   } finally {
 		if (fs.existsSync(dirPath)) {
@@ -7897,11 +8128,13 @@ exports.updateDataWithApprovalToTemplates = async (req, res, next) => {
                 },
                 { name: "updated_by", data_type: "TEXT", not_null: false },
                 { name: "updated_by_id", data_type: "INTEGER", not_null: false },
+                { name: "publickey", data_type: "TEXT", not_null: false },
                 ...schema,
                 ]
             : [
                 { name: "updated_by", data_type: "TEXT", not_null: false },
                 { name: "updated_by_id", data_type: "INTEGER", not_null: false },
+                { name: "publickey", data_type: "TEXT", not_null: false },
                 ...schema,
                 ];
 
@@ -8127,6 +8360,7 @@ exports.updateDataWithApprovalToTemplates = async (req, res, next) => {
 						{ name: "updated_by_id", data_type: "INTEGER", not_null: false },
 						{ name: "ui_case_id", data_type: "INTEGER", not_null: false },
 						{ name: "pt_case_id", data_type: "INTEGER", not_null: false },
+                        { name: "publickey", data_type: "TEXT", not_null: false },
 						...otherSchema
 					];
 
@@ -8259,7 +8493,7 @@ exports.updateDataWithApprovalToTemplates = async (req, res, next) => {
       if (t) await t.rollback();
 
       let statusCode = 500;
-      let userMessage = "Internal Server Error.";
+      let userMessage = "Failed to Update Data.";
 
       if (error.name === "SequelizeUniqueConstraintError") {
         statusCode = 400;
@@ -8268,7 +8502,7 @@ exports.updateDataWithApprovalToTemplates = async (req, res, next) => {
         statusCode = 400;
         userMessage = error.errors?.map(e => e.message).join(", ") || "Validation error.";
       } else if (error.message) {
-        userMessage = error.message;
+        userMessage =  "Failed to Update Data" + error.message;
       }
 
       return userSendResponse(res, statusCode, false, userMessage, error);
@@ -8521,7 +8755,7 @@ exports.getAccusedWitness = async (req, res) => {
 
       return res.status(500).json({
         success: false,
-        message: error.message || "Internal server error.",
+        message: "Failed to fetch accused/witness data.",
         error: error,
       });
       }
@@ -8679,7 +8913,8 @@ exports.checkAccusedDataStatus = async (req, res) => {
 
     return res.status(500).json({
       success: false,
-      message: error.message || "Something went wrong.",
+      message: "Failed to check accused data status.",
+      error: error.message || "Internal server error.",
     });
   }
 };
@@ -10235,7 +10470,7 @@ exports.getMergeChildData = async (req, res) =>
       res,
       500,
       false,
-      error.message || "An unexpected error occurred.",
+      "Failed to fetch data" + error.message,
       error
     );
   }
@@ -10384,6 +10619,7 @@ exports.deMergeCaseData = async (req, res) => {
             { name: "updated_by_id", data_type: "INTEGER", not_null: false },
             { name: "ui_case_id", data_type: "INTEGER", not_null: false },
             { name: "pt_case_id", data_type: "INTEGER", not_null: false },
+            { name: "publickey", data_type: "TEXT", not_null: false },
             ...schema,
         ];
 
@@ -10440,7 +10676,7 @@ exports.deMergeCaseData = async (req, res) => {
             res,
             500,
             false,
-            err.message || "Failed to de-merge data.",
+            "Failed to de-merge data." + (err.message || ""),
             err
         );
     }finally {
@@ -10512,7 +10748,7 @@ exports.getTemplateAlongWithData = async (req, res) => {
           res,
           500,
           false,
-          error.message || "An unexpected server error occurred.",
+          "Failed to fetch template and data." + (error.message || ""),
           error
       );
   }
@@ -10673,7 +10909,7 @@ exports.getTemplateDataWithAccused = async (req, res, next) => {
           res,
           500,
           false,
-          error.message || "An unexpected error occurred.",
+          "Failed to fetch template data with accused." || error.message,
           error
         );
     }
@@ -10778,10 +11014,7 @@ exports.getDateWiseTableCounts = async (req, res) => {
     } catch (error) {
         await transaction.rollback();
         console.error("Error in getDateWiseTableCounts:", error);
-        return userSendResponse(res, 500, false, "Internal server error", {
-            message: error.message,
-            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-        });
+        return userSendResponse(res, 500, false, "Failed to get date wise counts", error.message);
     }
 };
 
@@ -10935,7 +11168,7 @@ exports.getTemplateDataWithDate = async (req, res) => {
         });
     } catch (error) {
         console.error("Error in getTemplateDataWithDate:", error);
-        return userSendResponse(res, 500, false, "Internal server error.", error.message);
+        return userSendResponse(res, 500, false," Failed to fetch template data with date", error.message);
     }
 };
 
@@ -11146,7 +11379,7 @@ exports.saveActionPlan = async (req, res) => {
     const isDuplicate = error.name === "SequelizeUniqueConstraintError";
     const message = isDuplicate
       ? "Duplicate entry detected."
-      : error.message || "Internal Server Error.";
+      : "Failed to save data to templates." + (error.message ? `: ${error.message}` : "");
 
     return userSendResponse(res, isDuplicate ? 400 : 500, false, message, error);
   }finally {
@@ -11386,7 +11619,7 @@ exports.submitActionPlanPR = async (req, res) => {
     const isDuplicate = error.name === "SequelizeUniqueConstraintError";
     const message = isDuplicate
       ? "Duplicate entry detected."
-      : error.message || "Internal Server Error.";
+      : "Failed to submit Action Plan. Please try again later." || error.message;
 
     return userSendResponse(
       res,
@@ -11540,7 +11773,7 @@ exports.submitPropertyFormFSL = async (req, res) => {
     const isDuplicate = error.name === "SequelizeUniqueConstraintError";
     const message = isDuplicate
       ? "Duplicate entry detected."
-      : error.message || "Internal Server Error.";
+      : "Failed to submit Action Plan." || error.message || "Internal Server Error.";
 
     return userSendResponse(
       res,
@@ -11618,27 +11851,43 @@ exports.checkFinalSheet = async (req, res) => {
     }
 
     let fslStatusOk = false;
-    const fslRecords = await sequelize.query(
-      `SELECT field_used_as_evidence, field_reason FROM cid_ui_case_forensic_science_laboratory WHERE ui_case_id = :ui_case_id`,
-      {
-        replacements: { ui_case_id },
-        type: Sequelize.QueryTypes.SELECT,
-      }
-    );
-    if (fslRecords.length > 0) {
-      for (const rec of fslRecords) {
-        if ((rec.field_used_as_evidence || '').toLowerCase() === 'yes') {
-          fslStatusOk = true;
-          break;
+        const fslRecords = await sequelize.query(
+            `SELECT field_property_details FROM cid_ui_case_forensic_science_laboratory WHERE ui_case_id = :ui_case_id`,
+            {
+                replacements: { ui_case_id },
+                type: Sequelize.QueryTypes.SELECT,
+            }
+        );
+
+        
+        if (fslRecords.length > 0) {
+            for (const rec of fslRecords) {
+                try {
+                    const propertyItems = JSON.parse(rec.field_property_details || '[]');
+
+                    const hasEvidence = propertyItems.some(
+                        item => (item["Used as Evidence"] || '').trim().toLowerCase() === 'yes'
+                    );
+
+                    if (hasEvidence) {
+                        fslStatusOk = true;
+                        break;
+                    }
+
+                    const hasNoEvidence = propertyItems.some(
+                        item => (item["Used as Evidence"] || '').trim().toLowerCase() === 'no' &&
+                        (item["Reason"] || '').trim() !== ''
+                    );
+                    if (hasNoEvidence) {
+                        fslStatusOk = true;
+                        break;
+                    }
+
+                } catch (err) {
+                    console.error('Invalid JSON in field_property_details:', err);
+                }
+            }
         }
-        if ((rec.field_used_as_evidence || '').toLowerCase() === 'no') {
-          if (rec.field_reason && String(rec.field_reason).trim() !== '') {
-            fslStatusOk = true;
-            break;
-          }
-        }
-      }
-    }
 
     return res.status(200).json({
       success: true,
@@ -11650,7 +11899,8 @@ exports.checkFinalSheet = async (req, res) => {
     console.error("Error in checkCaseStatusByUiCaseId:", error);
     return res.status(500).json({
       success: false,
-      message: error.message || "Internal server error."
+      message: "Failed to check case status.",
+      error: error.message || "An unexpected error occurred."
     });
   }
 };
@@ -11795,18 +12045,33 @@ exports.checkCaseStatusCombined = async (req, res) => {
             progressReportEmpty = true;
         }
 
-        let fslEmpty = false;
-        const fslRecordsEmpty = await sequelize.query(
-            `SELECT field_used_as_evidence, field_reason FROM cid_ui_case_forensic_science_laboratory WHERE ui_case_id = :ui_case_id`,
-            {
-                replacements: { ui_case_id },
-                type: Sequelize.QueryTypes.SELECT,
-            }
-        );
-        if (!fslRecordsEmpty || fslRecordsEmpty.length === 0) {
-            fslEmpty = true;
-        }
+    let fslEmpty = true;
 
+    const fslRecordsEmpty = await sequelize.query(
+      `SELECT field_property_details
+      FROM cid_ui_case_forensic_science_laboratory 
+      WHERE ui_case_id = :ui_case_id`,
+      {
+        replacements: { ui_case_id },
+        type: Sequelize.QueryTypes.SELECT,
+      }
+    );
+
+    if (fslRecordsEmpty && fslRecordsEmpty.length > 0) {
+      for (const rec of fslRecordsEmpty) {
+        try {
+          const items = JSON.parse(rec.field_property_details || '[]');
+
+          if (Array.isArray(items) && items.length > 0 && !items["Used as Evidence"]) {
+            fslEmpty = false;
+            break;
+          }
+
+        } catch (err) {
+          console.error('Invalid JSON in field_property_details:', err);
+        }
+      }
+    }
         data.progressReportEmpty = progressReportEmpty;
         data.fslEmpty = fslEmpty;
 
@@ -11855,23 +12120,39 @@ exports.checkCaseStatusCombined = async (req, res) => {
 
         let fslStatusOk = false;
         const fslRecords = await sequelize.query(
-            `SELECT field_used_as_evidence, field_reason FROM cid_ui_case_forensic_science_laboratory WHERE ui_case_id = :ui_case_id`,
+            `SELECT field_property_details FROM cid_ui_case_forensic_science_laboratory WHERE ui_case_id = :ui_case_id`,
             {
                 replacements: { ui_case_id },
                 type: Sequelize.QueryTypes.SELECT,
             }
         );
+
+        
         if (fslRecords.length > 0) {
             for (const rec of fslRecords) {
-                if ((rec.field_used_as_evidence || '').toLowerCase() === 'yes') {
-                    fslStatusOk = true;
-                    break;
-                }
-                if ((rec.field_used_as_evidence || '').toLowerCase() === 'no') {
-                    if (rec.field_reason && String(rec.field_reason).trim() !== '') {
+                try {
+                    const propertyItems = JSON.parse(rec.field_property_details || '[]');
+
+                    const hasEvidence = propertyItems.some(
+                        item => (item["Used as Evidence"] || '').trim().toLowerCase() === 'yes'
+                    );
+
+                    if (hasEvidence) {
                         fslStatusOk = true;
                         break;
                     }
+
+                    const hasNoEvidence = propertyItems.some(
+                        item => (item["Used as Evidence"] || '').trim().toLowerCase() === 'no' &&
+                        (item["Reason"] || '').trim() !== ''
+                    );
+                    if (hasNoEvidence) {
+                        fslStatusOk = true;
+                        break;
+                    }
+
+                } catch (err) {
+                    console.error('Invalid JSON in field_property_details:', err);
                 }
             }
         }
@@ -11887,7 +12168,8 @@ exports.checkCaseStatusCombined = async (req, res) => {
             console.error("Error in checkCaseStatusCombined:", error);
             return res.status(500).json({
                 success: false,
-                message: error.message || "Internal server error."
+                message: "Failed to check case status.",
+                error: error.message || "Internal server error."
             });
         }
 };

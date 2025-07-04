@@ -51,7 +51,7 @@ exports.create_role = async (req, res) => {
       },
     });
   } catch (error) {
-    return res.status(500).json({ success: false, message: error.message });
+    return res.status(500).json({ success: false, message: error.message  || "Failed to create Role" });
   } finally {
     if (fs.existsSync(dirPath)) {
       fs.rmdirSync(dirPath, { recursive: true });
@@ -126,7 +126,7 @@ exports.get_all_roles = async (req, res) => {
   } catch (error) {
     return res.status(500).json({
       success: false,
-      message: error.message,
+      message: error.message || "Failed to fetch roles.",
     });
   }
 };
@@ -152,7 +152,7 @@ exports.get_all_permissions = async (req, res) => {
   } catch (error) {
     return res.status(500).json({
       success: false,
-      message: error.message,
+      message: error.message || "Failed to fetch permissions.",
     });
   }
 };
@@ -188,7 +188,7 @@ exports.get_all_module = async (req, res) => {
   } catch (error) {
     return res.status(500).json({
       success: false,
-      message: error.message,
+      message: error.message || "Failed to fetch modules.",
     });
   }
 };
@@ -257,7 +257,7 @@ exports.update_role = async (req, res) => {
       },
     });
   } catch (error) {
-    return res.status(500).json({ success: false, message: error.message });
+    return res.status(500).json({ success: false, message: error.message || "Failed to Update Role" });
   } finally {
     if (fs.existsSync(dirPath)) {
       fs.rmdirSync(dirPath, { recursive: true });
@@ -286,6 +286,6 @@ exports.delete_role = async (req, res) => {
       message: `Role ${existingRole.role_title} deleted successfully.`,
     });
   } catch (error) {
-    return res.status(500).json({ success: false, message: error.message });
+    return res.status(500).json({ success: false, message: error.message || "Failed to Delete Role" });
   }
 };
