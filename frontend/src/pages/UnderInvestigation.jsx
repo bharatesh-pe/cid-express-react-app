@@ -1306,130 +1306,198 @@ const fslTableRef = useRef();
         setLoading(true);
     
         try {
-            const viewTemplateResponse = await api.post("/templates/viewTemplate", viewTableData);
-        
+    const viewTemplateResponse = await api.post("/templates/viewTemplate", viewTableData);
+
+    setLoading(false);
+    if (viewTemplateResponse && viewTemplateResponse.success && viewTemplateResponse.data) {
+
+        const getTemplatePayload = {
+            table_name: tableName,
+            ui_case_id: selectedRowData?.id,
+            pt_case_id: selectedRowData?.pt_case_id || null,
+            limit: 10,
+            page: !searchFlag ? page : 1,
+            search: !searchFlag ? accusedTableSearchData : "",
+            from_date: !searchFlag ? accusedFromDate : null,
+            to_date: !searchFlag ? accusedToDate : null,
+            filter: !searchFlag ? accusedFilterData : {},
+        };
+
+        setLoading(true);
+        try {
+            const getTemplateResponse = await api.post("/templateData/getTemplateData", getTemplatePayload);
             setLoading(false);
-            if (viewTemplateResponse && viewTemplateResponse.success && viewTemplateResponse.data) {
-            
-                    const getTemplatePayload = {
-                        table_name: tableName,
-                        ui_case_id: selectedRowData?.id,
-                        pt_case_id: selectedRowData?.pt_case_id || null,
-                        limit : 10,
-                        page : !searchFlag ? page : 1,
-                        search: !searchFlag ? accusedTableSearchData : "",        
-                        from_date: !searchFlag ? accusedFromDate : null,
-                        to_date: !searchFlag ? accusedToDate : null,
-                        filter: !searchFlag ? accusedFilterData : {},
-                    };
 
-                    setLoading(true);
-                    try {
+            const { meta } = getTemplateResponse;
 
-                        const getTemplateResponse = await api.post("/templateData/getTemplateData",getTemplatePayload);
-                        setLoading(false);
+            const totalPages = meta?.meta?.totalPages;
+            const totalItems = meta?.meta?.totalItems;
 
-                        const { meta } = getTemplateResponse;
+            if (totalPages !== null && totalPages !== undefined) setAccusedTableTotalPage(totalPages);
+            if (totalItems !== null && totalItems !== undefined) setAccusedTableTotalRecord(totalItems);
 
-                        const totalPages = meta?.meta?.totalPages;
-                        const totalItems = meta?.meta?.totalItems;
-                        
-                        if (totalPages !== null && totalPages !== undefined) {
-                            setAccusedTableTotalPage(totalPages);
-                        }
-                        
-                        if (totalItems !== null && totalItems !== undefined) {
-                            setAccusedTableTotalRecord(totalItems);
-                        }
+            const renderCellFunc = (key, count) => (params) =>
+                accusedTableCellRender(key, params, params.value, count, tableName);
 
-                        const renderCellFunc = (key, count) => (params) => accusedTableCellRender(key, params, params.value, count, tableName);
-
-                        var tableHeader = viewTemplateResponse?.['data']?.['fields'].map((element, index) => ({
-                            field: element?.name,
-                            headerName: element?.label,
-                            width: element?.label.length < 15 ? 100 : 200,
-                            resizable: true,
-                            cellClassName: 'justify-content-start',
-                            renderHeader: (params) => (
-                                tableHeaderRender(params, element?.name)
-                            ),
-                                ...(tableName === "cid_ui_case_accused" && element?.name === "field_pso_&_19_pc_act_order"
-                                    ? {
-                                        renderCell: (params) => fileUploadTableView(element?.name, params, params.value),
-                                        editable: true
-                                    }
-                                    : {
-                                        renderCell: renderCellFunc(element?.name, index)
-                                    }),
-                            // Add type: "singleSelect" here if the field is a dropdown/autocomplete
-                            ...(Array.isArray(element?.options) && element.options.length > 0
+            let tableHeader = viewTemplateResponse?.['data']?.['fields'].map((element, index) => ({
+                field: element?.name,
+                headerName: element?.label,
+                width: element?.label.length < 15 ? 100 : 200,
+                resizable: true,
+                cellClassName: 'justify-content-start',
+                renderHeader: (params) => tableHeaderRender(params, element?.name),
+                ...(tableName === "cid_ui_case_accused" && element?.name === "field_pso_&_19_pc_act_order"
+                    ? {
+                        renderCell: (params) =>
+                            fileUploadTableView(element?.name, params, params.value),
+                        editable: true,
+                    }
+                    : {
+                        renderCell: renderCellFunc(element?.name, index),
+                    }),
+                ...(Array.isArray(element?.options) && element.options.length > 0
+                    ? {
+                        type: "singleSelect",
+                        valueOptions: element.options.map((opt) =>
+                            typeof opt === "object"
                                 ? {
-                                    type: "singleSelect",
-                                    valueOptions: element.options.map(opt =>
-                                        typeof opt === "object"
-                                            ? {
-                                                label: opt.name ?? opt.label ?? opt.code ?? opt.value ?? String(opt),
-                                                value: opt.code ?? opt.value ?? opt.name ?? opt.label ?? String(opt)
-                                            }
-                                            : { label: String(opt), value: String(opt) }
-                                    ),
-                                    editable: true
+                                    label: opt.name ?? opt.label ?? opt.code ?? opt.value ?? String(opt),
+                                    value: opt.code ?? opt.value ?? opt.name ?? opt.label ?? String(opt),
                                 }
-                                : {})
-                        }));
+                                : { label: String(opt), value: String(opt) }
+                        ),
+                        editable: true,
+                    }
+                    : {}),
+            }));
 
-                        const formatDate = (value) => {
-                            const parsed = Date.parse(value);
-                            if (isNaN(parsed)) return value;
-                            return new Date(parsed).toLocaleDateString("en-GB");
+            const formatDate = (value) => {
+                const parsed = Date.parse(value);
+                if (isNaN(parsed)) return value;
+                return new Date(parsed).toLocaleDateString("en-GB");
+            };
+
+            const parsePropertyDetails = (details) => {
+                try {
+                    const parsed = JSON.parse(details);
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                        return {
+                            field_used_as_evidence: parsed[0]["Used as Evidence"] || "N/A",
+                            field_reason: parsed[0]["Reason"] || "N/A"
                         };
+                    }
+                } catch (err) {
+                    console.error("Failed to parse field_property_details", err);
+                }
+                return {
+                    field_used_as_evidence: "N/A",
+                    field_reason: "N/A"
+                };
+            };
 
-                        const updatedRowData = getTemplateResponse.data.map((field, index) => {
-                            const updatedField = {};
-                            Object.keys(field).forEach((key) => {
-                                if (field[key] && key !== 'id' && isValidISODate(field[key])) {
-                                    updatedField[key] = formatDate(field[key]);
-                                } else {
-                                    updatedField[key] = field[key];
-                                }
-                            });
-                            return {
-                                ...updatedField,
-                                sl_no: (page - 1) * 10 + (index + 1),
-                                ...(field.id ? {} : { id: "unique_id_" + index }),
-                            };
-                        });
+            const updatedRowData = getTemplateResponse.data.map((field, index) => {
+                const updatedField = {};
+                Object.keys(field).forEach((key) => {
+                    if (field[key] && key !== 'id' && isValidISODate(field[key])) {
+                        updatedField[key] = formatDate(field[key]);
+                    } else {
+                        updatedField[key] = field[key];
+                    }
+                });
 
-                        if (tableHeader.length === 0 || tableHeader[0].field !== 'sl_no') {
-                            tableHeader = [
-                                {
-                                    field: 'sl_no',
-                                    headerName: 'S.No',
-                                    width: 70,
-                                    resizable: false,
-                                    cellClassName: 'justify-content-start',
-                                    renderCell: renderCellFunc("sl_no", 0)
+                if (field?.field_property_details) {
+                    const parsed = parsePropertyDetails(field.field_property_details);
+                    updatedField.field_used_as_evidence = parsed.field_used_as_evidence;
+                    updatedField.field_reason = parsed.field_reason;
+                }
 
-                                },
-                                ...tableHeader
-                            ];
-                        }
+                return {
+                    ...updatedField,
+                    sl_no: (page - 1) * 10 + (index + 1),
+                    ...(field.id ? {} : { id: "unique_id_" + index }),
+                };
+            });
+
+            if (tableHeader.length === 0 || tableHeader[0].field !== 'sl_no') {
+                tableHeader = [
+                    {
+                        field: 'sl_no',
+                        headerName: 'S.No',
+                        width: 70,
+                        resizable: false,
+                        cellClassName: 'justify-content-start',
+                        renderCell: renderCellFunc("sl_no", 0),
+                    },
+                    ...tableHeader,
+                ];
+            }
+
+if (tableName === "cid_ui_case_forensic_science_laboratory") {
+    tableHeader = tableHeader.filter(
+        (col) =>
+            col.field === "sl_no" ||
+            col.field === "field_pf_number" ||
+            col.field === "field_used_as_evidence" ||
+            col.field === "field_reason"
+    );
+
+    // Extract options for "Used as Evidence" from the viewTemplateResponse
+    const tableField = viewTemplateResponse?.data?.fields?.find(
+        (field) => field.name === "field_property_details"
+    );
+
+    const usedAsEvidenceColumn = tableField?.tableHeaders?.find(
+        (col) => col.header === "Used as Evidence"
+    );
+
+    const usedAsEvidenceOptions = usedAsEvidenceColumn?.fieldType?.options || [];
+
+    const valueOptions = usedAsEvidenceOptions.map(opt => ({
+        label: opt.name || opt.code,
+        value: opt.code || opt.name
+    }));
+
+    // Ensure both fields are present
+    const hasUsedAsEvidence = tableHeader.some(col => col.field === "field_used_as_evidence");
+    const hasReason = tableHeader.some(col => col.field === "field_reason");
+
+    if (!hasUsedAsEvidence) {
+        tableHeader.push({
+            field: "field_used_as_evidence",
+            headerName: "Used as Evidence",
+            width: 150,
+            resizable: true,
+            cellClassName: 'justify-content-start',
+            type: "singleSelect",
+            valueOptions: valueOptions,
+            editable: true,
+            renderCell: (params) => renderCellFunc("field_used_as_evidence", 0)(params),
+        });
+    }
+
+    if (!hasReason) {
+        tableHeader.push({
+            field: "field_reason",
+            headerName: "Reason",
+            width: 150,
+            resizable: true,
+            cellClassName: 'justify-content-start',
+            editable: true,
+            renderCell: (params) => renderCellFunc("field_reason", 1)(params),
+        });
+    }
+
+    tableHeader = enhanceTableHeader(tableHeader, viewTemplateResponse?.['data']?.['fields'] || []);
+}
+
+
                         if (tableName === "cid_ui_case_progress_report") {
                             tableHeader = tableHeader.filter(
                                 (col) => col.field !== "field_due_date" && col.field !== "field_pr_status" && col.field !== "field_approval_done_by"
                             );
                             tableHeader = enhanceTableHeader(tableHeader, viewTemplateResponse?.['data']?.['fields'] || []);
                         }
-                        if (tableName === "cid_ui_case_forensic_science_laboratory") {
-                            tableHeader = tableHeader.filter(
-                                (col) =>
-                                    col.field === "sl_no" ||
-                                    col.field === "field_pf_number" ||
-                                    col.field === "field_used_as_evidence" ||
-                                    col.field === "field_reason"
-                            );
-                            tableHeader = enhanceTableHeader(tableHeader, viewTemplateResponse?.['data']?.['fields'] || []);
-                        }
+
                         if (tableName === "cid_ui_case_accused") {
                             tableHeader = tableHeader.filter(
                                 (col) =>
@@ -2397,6 +2465,32 @@ function toISODateString(val) {
         fileFields.forEach(field => {
           delete normalData[field];
         });
+
+        if (resolvedTableName === "cid_ui_case_forensic_science_laboratory") {
+          const usedAsEvidence = rowData["field_used_as_evidence"];
+          const reason = rowData["field_reason"];
+          const propertyDetailsRaw = rowData["field_property_details"];
+
+          if (propertyDetailsRaw) {
+            try {
+              const propertyDetails = JSON.parse(propertyDetailsRaw);
+              if (Array.isArray(propertyDetails) && propertyDetails.length > 0) {
+                if (usedAsEvidence !== undefined) {
+                  propertyDetails[0]["Used as Evidence"] = usedAsEvidence;
+                }
+                if (reason !== undefined) {
+                  propertyDetails[0]["Reason"] = reason;
+                }
+                normalData["field_property_details"] = JSON.stringify(propertyDetails);
+              }
+            } catch (err) {
+              console.error("Invalid JSON in field_property_details", err);
+            }
+          }
+
+          delete normalData["field_used_as_evidence"];
+          delete normalData["field_reason"];
+        }
 
         normalData["id"] = rowId;
         dataArr.push(normalData);
