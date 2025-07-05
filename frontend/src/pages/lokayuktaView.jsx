@@ -672,7 +672,7 @@ const [currentTableName, setCurrentTableName] = useState(null);
 
                 const generateReadableHeader = (key) =>key.replace(/^field_/, "").replace(/_/g, " ").toLowerCase().replace(/^\w|\s\w/g, (c) => c.toUpperCase());
                 
-                const renderCellFunc = (key, count) => (params) => tableCellRender(key, params, params.value, count, options.table);
+                const renderCellFunc = (key, count) => (params) => tableCellRender(key, params, params.value, count, options.table || options);
 
                 if (tabFields.length > 0) {
                     tabFields = tabFields.map((key, index) => {
@@ -1886,6 +1886,8 @@ if ((!currentTableName || currentTableName === "") && (!activeSidebar?.table || 
                     onOpen: () => {
                         if (activeSidebar?.table === "cid_eq_case_enquiry_order_copy") {
                             navigate("/case/enquiry");
+                        }else if (currentTableName === 'cid_ui_case_old_cms_data') {
+                            getTableData({table:"cid_ui_case_old_cms_data"});
                         } else {
                             getTableData(activeSidebar);
                         }
