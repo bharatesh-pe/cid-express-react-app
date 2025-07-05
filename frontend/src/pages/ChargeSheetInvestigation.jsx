@@ -648,7 +648,7 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
                     >
                         <West />
                         <Typography sx={{ fontSize: '19px', fontWeight: '500', color: '#171A1C' }} className='Roboto'>
-                            Charge Sheet
+                            Final Report
                         </Typography>
                         {headerDetails && (
                             <Chip
