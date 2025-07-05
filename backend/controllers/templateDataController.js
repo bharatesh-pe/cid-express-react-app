@@ -8124,13 +8124,11 @@ exports.updateDataWithApprovalToTemplates = async (req, res, next) => {
                 },
                 { name: "updated_by", data_type: "TEXT", not_null: false },
                 { name: "updated_by_id", data_type: "INTEGER", not_null: false },
-                { name: "publickey", data_type: "TEXT", not_null: false },
                 ...schema,
                 ]
             : [
                 { name: "updated_by", data_type: "TEXT", not_null: false },
                 { name: "updated_by_id", data_type: "INTEGER", not_null: false },
-                { name: "publickey", data_type: "TEXT", not_null: false },
                 ...schema,
                 ];
 
