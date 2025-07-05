@@ -806,7 +806,7 @@ const [currentTableName, setCurrentTableName] = useState(null);
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             handleOpenSplitScreen(params.row, 
-                                            {label: 'Notices', table_name: 'cid_ui_case_41a_notices'}, 
+                                            {label: 'Notices', table_name: 'cid_ui_case_notices'}, 
                                             options?.table
                                             );
                                         }}
@@ -3197,7 +3197,7 @@ if ((!currentTableName || currentTableName === "") && (!activeSidebar?.table || 
                                             className="blueButton"
                                             size="large"
                                             sx={{ height: "38px" }}
-                                            onClick={()=>handleOverAllAccused( {label: 'Notices', table_name: 'cid_ui_case_41a_notices'} )}
+                                            onClick={()=>handleOverAllAccused( {label: 'Notices', table_name: 'cid_ui_case_notices'} )}
                                         >
                                             Create Notices
                                         </Button>
