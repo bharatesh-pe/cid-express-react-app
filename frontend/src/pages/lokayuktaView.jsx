@@ -68,6 +68,8 @@ const LokayuktaView = () => {
         'cid_pt_case_witness',
     ]);
 
+    const [currentTableName, setCurrentTableName] = useState(null);
+
     const [splitScreenNavTabs, setsplitScreenNavTabs] = useState([]);
 
     const [splitScreenActiveTab, setSplitScreenActiveTab] = useState(null);
@@ -559,17 +561,16 @@ const LokayuktaView = () => {
         }
     },[selectedTableTabs]);
 
-const [currentTableName, setCurrentTableName] = useState(null);
     const handleViewOldCase = () => {
-    const oldCaseTable = {
-        table: "cid_ui_case_old_cms_data",
-        is_approval: false,
-    };
-    setCurrentTableName("cid_ui_case_old_cms_data"); 
-    setTableViewFlag(true);
+        const oldCaseTable = {
+            table: "cid_ui_case_old_cms_data",
+            is_approval: false,
+        };
+        setCurrentTableName("cid_ui_case_old_cms_data"); 
+        setTableViewFlag(true);
 
-    getTableData(oldCaseTable);
-};
+        getTableData(oldCaseTable);
+    };
 
     const getTableData = async (options, reOpen, noFilters) => {
 
@@ -3043,7 +3044,9 @@ if ((!currentTableName || currentTableName === "") && (!activeSidebar?.table || 
                             >
                                 <West />
                                 <Typography sx={{ fontSize: '19px', fontWeight: '500', color: '#171A1C' }} className='Roboto'>
-                                    {activeSidebar.name ? activeSidebar.name : 'Form'}
+                                    {currentTableName === "cid_ui_case_old_cms_data"
+                                        ? "Old CMS Data"
+                                        : (activeSidebar?.name || "Form")}
                                 </Typography>
                                 {headerDetails && (
                                     <Chip
