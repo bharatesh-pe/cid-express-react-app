@@ -12,6 +12,7 @@ const {
   fetch_dash_count,
   mapUIandPT,
   updatePoliceStationFromExcel,
+  dumpOldCmsDataFromExcel
 } = require("../controllers/authController");
 const { validate_token } = require("../helper/validations");
 
@@ -30,5 +31,6 @@ router.post("/set_user_hierarchy", set_user_hierarchy);
 router.post("/fetch_dash_count" , [validate_token], fetch_dash_count);
 router.post("/mapUIandPT" , mapUIandPT);
 router.post("/updatePoliceStationFromExcel" , updatePoliceStationFromExcel);
+router.post("/dumpOldCmsDataFromExcel", dumpOldCmsDataFromExcel);
 
 module.exports = router;

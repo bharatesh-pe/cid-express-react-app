@@ -2416,6 +2416,109 @@ const updatePoliceStationFromExcel = async (req, res) => {
 };
 
 
+const dumpOldCmsDataFromExcel = async (req, res) => {
+    const transaction = await sequelize.transaction();
+    try {
+        const workbook = xlsx.readFile(path.join(__dirname, '../data/Old_CID_data.xlsx'));
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const data = xlsx.utils.sheet_to_json(sheet, { header: 1 });
+
+        if (!data || data.length === 0) {
+            return res.status(400).json({ success: false, message: "No data found in the Excel sheet" });
+        }
+
+        const headers = data[0];
+        const fieldIsUIIndex = headers.indexOf("IsUI");
+        const publickeyIndex = headers.indexOf("PublicKey");
+
+        for (const row of data.slice(1)) {
+            const isUI = row[fieldIsUIIndex];
+            const publickeyValue = row[publickeyIndex];
+            let caseId = null;
+
+            if (publickeyValue) {
+                let table = '';
+                if (isUI === 2 || isUI === '2') table = 'cid_under_investigation';
+                else if (isUI === 4 || isUI === 5 || isUI === '4' || isUI === '5') table = 'cid_pending_trial';
+                else if (isUI === 1 || isUI === '1') table = 'cid_enquiry';
+
+                if (table) {
+                    const result = await sequelize.query(
+                        `SELECT id FROM ${table} WHERE "publickey" = :publickeyValue`,
+                        {
+                            replacements: { publickeyValue },
+                            type: sequelize.QueryTypes.SELECT,
+                            transaction
+                        }
+                    );
+                    if (result?.length > 0) {
+                        caseId = result[0].id;
+                    }
+                }
+            }
+
+            // Map headers to DB column names
+            const columns = headers.map(header =>
+                `field_${header.toLowerCase().replace(/ /g, '_')}`
+            );
+
+            // Build rowData by ensuring all columns are covered
+            const rowData = headers.map((_, index) => {
+                const value = row[index];
+                if (value instanceof Date) {
+                    return excelDateToString(value);
+                }
+                if (value == undefined || value == '') {
+                    console.log("Value at index", index, ":", value);
+                    return null; // Treat empty or undefined as NULL
+                }
+                return String(value); // Convert all values to string
+            });
+
+            // const values = normalizeValues(rowData, 'string');
+            const values = rowData;
+
+            // Add dynamic case ID field
+            if (isUI === 2 || isUI === '2') {
+                columns.push('ui_case_id');
+                values.push(caseId);
+            } else if (isUI === 4 || isUI === 5 || isUI === '4' || isUI === '5') {
+                columns.push('pt_case_id');
+                values.push(caseId);
+            } else if (isUI === 1 || isUI === '1') {
+                columns.push('eq_case_id');
+                values.push(caseId);
+            }
+
+            columns.push('created_at','created_by','updated_at','updated_by');
+            values.push(new Date(), 'system',new Date(), 'system'); // Assuming 'system' as created_by for this
+
+            const insertQuery = `INSERT INTO cid_ui_case_old_cms_data (${columns.join(', ')}) VALUES (${values.map(() => '?').join(', ')})`;
+
+            const [insertResult, metadata] = await sequelize.query(insertQuery, {
+                replacements: values,
+                type: sequelize.QueryTypes.INSERT,
+                transaction
+            });
+
+            // if (!insertResult || (Array.isArray(insertResult) && insertResult.length === 0)) {
+                
+            //     throw new Error(`Insert failed for publickey: ${insertResult}`);
+            // }
+
+            console.log("✅ Inserted case for publickey:", publickeyValue);
+        }
+
+        await transaction.commit();
+        return res.status(200).json({ success: true, message: "Old CMS data processed successfully" });
+    } catch (error) {
+        await transaction.rollback();
+        console.error("❌ Error during Excel processing:", error);
+        return res.status(500).json({ success: false, message: "Transaction failed", error: error.message });
+    }
+};
+
 
   
 
@@ -2432,6 +2535,7 @@ module.exports = {
   fetch_dash_count,
   mapUIandPT,
   updatePoliceStationFromExcel,
+  dumpOldCmsDataFromExcel
 };
 
 
