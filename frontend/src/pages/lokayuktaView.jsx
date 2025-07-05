@@ -1896,11 +1896,29 @@ if ((!currentTableName || currentTableName === "") && (!activeSidebar?.table || 
                 });
                 setRowValueId({});
             } else {
-                toast.error(updateResponse.message || "Failed to update case.");
+                toast.error(updateResponse.message || "Failed to update case.", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
             }
         } catch (error) {
             setLoading(false);
-            toast.error(error?.response?.data?.message || "Please Try Again !");
+            toast.error(error?.response?.data?.message || "Please Try Again !", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
         }
     };
 
