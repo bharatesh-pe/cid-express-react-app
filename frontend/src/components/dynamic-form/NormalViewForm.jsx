@@ -2392,6 +2392,34 @@ const NormalViewForm = ({
                 </Button>
             }
 
+            
+            {oldCase && (
+            <Typography
+                onClick={() => {
+                if (onViewOldCase) {
+                    onViewOldCase();
+                }
+                }}
+                sx={{
+                fontSize: "14px",
+                fontWeight: "500",
+                color: "#1976d2",
+                cursor: "pointer",
+                marginLeft: "10px",
+                marginRight: "10px",
+                textDecoration: "underline",
+                "&:hover": {
+                    color: "#0d47a1",
+                    textDecoration: "underline",
+                },
+                }}
+                className="Roboto"
+                component="span"
+            >
+                VIEW OLD CASE
+            </Typography>
+            )}
+
             {
                 table_row_id && showAssignIo &&
                 <Button
@@ -2488,39 +2516,6 @@ const NormalViewForm = ({
                 </Button>
             }
 
-            
-
-            {oldCase && (
-                <Button
-                   onClick={() => {
-                        if (onViewOldCase) {
-                            onViewOldCase();
-                        }
-                    }}
-                  sx={{
-                    border: "1.5px solid #E53935",
-                    background: "transparent",
-                    fontSize: "14px",
-                    fontWeight: "500",
-                    color: "#E53935",
-                    padding: "6px 16px",
-                    marginLeft: "10px",
-                    marginRight: "10px",
-                    boxShadow: "none",
-                    borderRadius: "8px",
-                    transition: "background 0.2s, color 0.2s, border-color 0.2s",
-                    "&:hover": {
-                    background: "#FFEBEE",
-                    borderColor: "#B71C1C",
-                    color: "#B71C1C",
-                    },
-                  }}
-                  className="Roboto"
-                  variant="outlined"
-                  >
-                  View Old Case
-                  </Button>
-                )}
           </Box>
         </Box>
         <Box sx={{ height: `calc(99% - ${stepperData && stepperData.length > 0 ? '150px' : '100px'})`, overflow: 'auto', background: '#FFFFFF', border: '1px solid #636B744D', borderRadius: '8px' }} mx={1} mt={1}>
