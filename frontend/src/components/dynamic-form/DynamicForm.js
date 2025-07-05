@@ -463,6 +463,9 @@ const DynamicForm = ({
 
   const validate = () => {
     let tempErrors = {};
+      
+    const tabFields = newFormConfig.filter((field) => field.type === "tabs");
+
     newFormConfig.forEach((field) => {
 
         if(field?.hide_from_ux){
@@ -488,6 +491,20 @@ const DynamicForm = ({
         //         }
         //     }
         // }
+
+        if (field?.tabOption) {
+            const matchedTab = tabFields.find((tabField) =>
+                tabField?.options?.some((opt) => opt.code === field.tabOption)
+            );
+
+            if (!matchedTab) return null;
+
+            const selectedTabValue = formData?.[matchedTab?.name];
+
+            if (selectedTabValue !== field.tabOption) {
+                return null;
+            }
+        }
 
         if (Boolean(field.required) && !formData[field.name]) {
             tempErrors[field.name] = `${field.label} is required`;
