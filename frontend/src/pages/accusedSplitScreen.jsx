@@ -560,11 +560,17 @@ const AccusedSplitScreen = ({tableObj, selectedAccused, closeForm, ui_case_id, p
             if (viewTemplateResponse && viewTemplateResponse.success) {
 
                 var multiSelect = false;
+
+                var tabFields = []
                 
                 var updatedFields = viewTemplateResponse?.["data"]?.["fields"].map((field)=>{
 
                     if(field.type === "multidropdown"){
                         multiSelect = true
+                    }
+
+                    if(field.type === "tabs"){
+                        tabFields.push(field)
                     }
 
                     return {
@@ -580,6 +586,24 @@ const AccusedSplitScreen = ({tableObj, selectedAccused, closeForm, ui_case_id, p
 
                 if(multiSelect){
                     initialFormConfig[gettingFieldName] = accusedId
+                }
+
+                var accusedWitnessTabs = false;
+
+                if(tabFields?.length > 0){
+                    tabFields.map((element)=>{
+                        if(element?.options){
+                            if(element?.options.some(options => options.code === "Accused" || options.code === "Witness")){
+                                accusedWitnessTabs = element?.name;
+                            }
+                        }
+                    });
+                }
+
+                console.log(accusedWitnessTabs,"accusedWitnessTabs");
+
+                if(accusedWitnessTabs !== false && accusedWitnessTabs !== ""){
+                    initialFormConfig[accusedWitnessTabs] = mainTableName === "cid_ui_case_accused" ? "Accused" : "Witness"
                 }
                 
                 setSelectedTemplateId(viewTemplateResponse?.["data"]?.template_id);
