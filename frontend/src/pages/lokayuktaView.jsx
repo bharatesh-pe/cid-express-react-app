@@ -331,6 +331,7 @@ const LokayuktaView = () => {
 
             navigate(backNavigation, {state : stateObj});
         }
+        setCurrentTableName(null); 
     }
 
     const sidebarActive = async (item)=>{
@@ -402,9 +403,11 @@ const LokayuktaView = () => {
             setTemplateFields(tableFields);
             setFormEditFlag(false);
             setFormReadFlag(true);
+            setCurrentTableName(null);
             return;
         }else{
             setTableViewFlag(true);
+            setCurrentTableName(null);
             getTableData(item);
         }
     }
@@ -556,9 +559,21 @@ const LokayuktaView = () => {
         }
     },[selectedTableTabs]);
 
+const [currentTableName, setCurrentTableName] = useState(null);
+    const handleViewOldCase = () => {
+    const oldCaseTable = {
+        table: "cid_ui_case_old_cms_data",
+        is_approval: false,
+    };
+    setCurrentTableName("cid_ui_case_old_cms_data"); 
+    setTableViewFlag(true);
+
+    getTableData(oldCaseTable);
+};
 
     const getTableData = async (options, reOpen, noFilters) => {
 
+        console.log("getTableData", options);
         var ui_case_id = rowData?.id;
         var pt_case_id = rowData?.pt_case_id;
 
@@ -1042,7 +1057,7 @@ const LokayuktaView = () => {
 
     const showAddNewForm = async ()=>{
         
-        if(!activeSidebar?.table){
+        if (!currentTableName && (!activeSidebar?.table || activeSidebar?.table === "")) {
             toast.error("Please Check The Template !", {
                 position: "top-right",
                 autoClose: 3000,
@@ -1057,7 +1072,7 @@ const LokayuktaView = () => {
         }
 
         const viewTableData = {
-            table_name: activeSidebar.table,
+            table_name: currentTableName || activeSidebar?.table,
         };
 
         setLoading(true);
@@ -1122,7 +1137,7 @@ const LokayuktaView = () => {
     
     const formSubmit = async (data, formOpen)=>{
 
-        if (!activeSidebar.table || activeSidebar.table === "") {
+        if ((!currentTableName || currentTableName === "") && (!activeSidebar?.table || activeSidebar.table === "")) {
             toast.warning("Please Check The Template", {
                 position: "top-right",
                 autoClose: 3000,
@@ -1535,7 +1550,7 @@ const LokayuktaView = () => {
         normalData["pt_case_id"] = pt_case_id;
 
         var othersData = {};
-        formData.append("table_name", activeSidebar.table);
+        formData.append("table_name", activeSidebar.table || currentTableName);
         formData.append("data", JSON.stringify(normalData));
         formData.append("transaction_id", `pt_${Date.now()}_${Math.floor(Math.random() * 10000)}`);
         formData.append("user_designation_id", localStorage.getItem('designation_id') || null);
@@ -1560,7 +1575,9 @@ const LokayuktaView = () => {
                     onOpen: () => {
                         if (activeSidebar?.table === "cid_eq_case_enquiry_order_copy") {
                             navigate("/case/enquiry");
-                        } else {
+                        }else if (currentTableName === 'cid_ui_case_old_cms_data') {
+                            getTableData({table:"cid_ui_case_old_cms_data"}, formOpen);
+                        }else {
                             getTableData(activeSidebar, formOpen);
                         }
                     }
@@ -1594,7 +1611,8 @@ const LokayuktaView = () => {
     };
 
     const formUpdate = async (data, formOpen) => {
-    if (!activeSidebar.table || activeSidebar.table === "") {
+        console.log("formSubmit", data, formOpen);
+if ((!currentTableName || currentTableName === "") && (!activeSidebar?.table || activeSidebar.table === "")) {
         toast.warning("Please Check The Template", {
             position: "top-right",
             autoClose: 3000,
@@ -1843,7 +1861,7 @@ const LokayuktaView = () => {
         normalData["ui_case_id"] = ui_case_id;
         normalData["pt_case_id"] = pt_case_id;
 
-        formData.append("table_name", activeSidebar.table);
+        formData.append("table_name", activeSidebar.table || currentTableName);
         formData.append("data", JSON.stringify(normalData));
         formData.append("id",rowValueId.id);
         formData.append("transaction_id", `pt_${Date.now()}_${Math.floor(Math.random() * 10000)}`);
@@ -2843,6 +2861,8 @@ const LokayuktaView = () => {
                             readOnly={formReadFlag}
                             editData={formEditFlag}
                             editName={true}
+                            oldCase = {true}
+                            onViewOldCase={handleViewOldCase} 
                             initialData={initialRowData}
                             formConfig={templateFields}
                             stepperData={stepperConfig}
