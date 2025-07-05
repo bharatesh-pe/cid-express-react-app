@@ -2393,7 +2393,7 @@ const NormalViewForm = ({
             }
 
             
-            {oldCase && (
+            {oldCase &&  table_name === 'cid_under_investigation' && (
             <Typography
                 onClick={() => {
                 if (onViewOldCase) {
