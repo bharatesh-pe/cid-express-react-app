@@ -34,6 +34,10 @@ import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import CloseIcon from '@mui/icons-material/Close';
 
+import video1 from "../videos/UI_Introduction.mp4"
+import video2 from "../videos/UI_All_Cases.mp4"
+import video3 from "../videos/UI_FIR Form.mp4"
+
 
 const allTabs = [
     { label: "UI Module", route: "/case/ui_case", key: "ui_case", name: "UI Case" },
@@ -1244,34 +1248,38 @@ const Dashboard = () => {
                             gap: 2,
                         }}
                     >
-                        <iframe 
+                        <video
                             width="100%"
-                            height="350"
-                            src="https://www.youtube.com/embed/K4TOrB7at0Y?si=TwoP9V0PB-i1_fpV" 
-                            title="YouTube video player" 
-                            frameborder="0" 
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-                            referrerpolicy="strict-origin-when-cross-origin" 
-                            allowfullscreen>    
-                        </iframe>
-                        <iframe
+                            height="300"
+                            controls
+                            preload="metadata"
+                            style={{ marginBottom: "20px", borderRadius: "8px" }}
+                        >
+                            <source src={video1} type="video/mp4" />
+                            Your browser does not support the video tag.
+                        </video>
+
+                        <video
                             width="100%"
-                            height="350"
-                            src="https://www.youtube.com/embed/b9hBHt317mw?si=PE7AmSJ_7GHiSNIp"
-                            title="Video 2"
-                            frameBorder="0"
-                            allow="autoplay; encrypted-media"
-                            allowFullScreen
-                        ></iframe>
-                        <iframe
+                            height="300"
+                            controls
+                            preload="metadata"
+                            style={{ marginBottom: "20px", borderRadius: "8px" }}
+                        >
+                            <source src={video2} type="video/mp4" />
+                            Your browser does not support the video tag.
+                        </video>
+
+                        <video
                             width="100%"
-                            height="350"
-                            src="https://www.youtube.com/embed/wDchsz8nmbo?si=od6PA4Xdw33cZd7Y"
-                            title="Video 3"
-                            frameBorder="0"
-                            allow="autoplay; encrypted-media"
-                            allowFullScreen
-                        ></iframe>
+                            height="300"
+                            controls
+                            preload="metadata"
+                            style={{ borderRadius: "8px" }}
+                        >
+                            <source src={video3} type="video/mp4" />
+                            Your browser does not support the video tag.
+                        </video>
                     </Box>
                 </DialogContent>
             </Dialog>
