@@ -524,7 +524,8 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                         "sys_status",
                         "field_status",
                         "field_submit_status",
-                        "supervisior_designation_id"
+                        "supervisior_designation_id",
+                        "field_approval_done_by",
                         ];
 
                     
@@ -2702,11 +2703,11 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                                 {otherTemplatesTotalRecord} Records
                             </Box>
 
-                            {APIsSubmited && !isImmediateSupervisior && (
+                            {/* {APIsSubmited && !isImmediateSupervisior && (
                                 <Box className="notifyAtTopCaseStyle">
                                     Submission request in progress. Awaiting SP approval.
                                 </Box>
-                            )}
+                            )} */}
                         </Box>
 
                         {/* Actions Section */}
