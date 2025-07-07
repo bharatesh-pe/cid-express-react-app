@@ -463,6 +463,9 @@ const DynamicForm = ({
 
   const validate = () => {
     let tempErrors = {};
+      
+    const tabFields = newFormConfig.filter((field) => field.type === "tabs");
+
     newFormConfig.forEach((field) => {
 
         if(field?.hide_from_ux){
@@ -488,6 +491,56 @@ const DynamicForm = ({
         //         }
         //     }
         // }
+
+        if (field?.tabOption) {
+            const matchedTab = tabFields.find((tabField) =>
+                tabField?.options?.some((opt) => opt.code === field.tabOption)
+            );
+
+            if (!matchedTab) return null;
+
+            const selectedTabValue = formData?.[matchedTab?.name];
+
+            if (selectedTabValue !== field.tabOption) {
+                return null;
+            }
+        }
+
+        if(field.type === "table" && Boolean(field.required)){
+            let error = false;
+
+            let tableData = formData?.[field?.name];
+
+            if (typeof tableData === "string"){
+                try {
+                    tableData = JSON.parse(tableData);
+                } catch (e) {
+                    error = true;
+                }
+            }
+
+            if (Array.isArray(tableData)) {
+                for (const row of tableData) {
+                    for (const headerObj of field.tableHeaders) {
+                        const key = headerObj?.header;
+
+                        const value = row?.[key];
+
+                        if (value === undefined || value === null || (typeof value === "string" && value.trim() === "") || (Array.isArray(value) && value.length === 0)) {
+                            error = true;
+                            break;
+                        }
+                    }
+                    if (error) break;
+                }
+            }
+
+            if(error){
+                return tempErrors[field.name] = `${field.label} is required`;
+            }
+
+            return null;
+        }
 
         if (Boolean(field.required) && !formData[field.name]) {
             tempErrors[field.name] = `${field.label} is required`;
