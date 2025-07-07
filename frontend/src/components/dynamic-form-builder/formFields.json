@@ -151,6 +151,7 @@
         "name": "",
         "ao_field": false,
         "hide_from_edit": false,
+        "case_dairy": false,
         "disableFutureDate": true,
         "disablePreviousDate": true,
         "type": "date",
