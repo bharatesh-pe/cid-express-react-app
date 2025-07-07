@@ -428,7 +428,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
 
         const currentDate = meta?.currentDate;
         const dayOfMonth = new Date(currentDate).getDate();
-        const isSubmitAllowed = dayOfMonth >= 1 && dayOfMonth <= 5;
+        const isSubmitAllowed = dayOfMonth >= 1 && dayOfMonth <= 10;
         setIsSubmitAllowed(isSubmitAllowed);
 
         const totalPages = meta?.meta?.totalPages;
@@ -2451,6 +2451,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
         setOtherTemplateModalOpen(false);
         setSelectedIds([]);
         handleOtherTemplateActions("cid_ui_case_progress_report", selectedRow, true, true);
+        getUploadedFiles(selectedRow, options);
       } else {
         toast.error(saveTemplateData.message || "Failed to append data.", {
           position: "top-right",
@@ -2524,7 +2525,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
                     )} */}
                 </Box>
 
-                {hasPdfEntry && (
+                {/* {hasPdfEntry && ( */}
                     <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
                     <Box
                         sx={{
@@ -2629,7 +2630,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
                             Add
                         </Button>
 
-                        {showReplacePdfButton && (
+                        {/* {showReplacePdfButton && (
                             <Button
                             variant="outlined"
                             component="label"
@@ -2648,7 +2649,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
                                 onChange={(event) => handleFileUpload(event)}
                             />
                             </Button>
-                        )}
+                        )} */}
 
                         <Button
                             onClick={handleSubmitClick}
@@ -2668,11 +2669,11 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
                         </Box>
                     </Box>
                     </Box>
-                )}
+                {/* // )} */}
 
                 </Box>
 
-                {!hasPdfEntry ? (
+                {/* {!hasPdfEntry ? (
                 <Box
                     display="flex"
                     flexDirection="column"
@@ -2691,7 +2692,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
                     />
                     </Button>
                 </Box>
-                ) : (
+                ) : ( */}
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 2 }}>
                 <Box pt={1} sx={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
                   <Box className="parentFilterTabs">
@@ -2800,7 +2801,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
                     </Box>
                     )}
                 </Box>
-                )}
+                {/* )} */}
 
                 {selectedTab === 1 && (
                 <Box>
@@ -2834,31 +2835,36 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
                 )}
 
                 {selectedTab === 3 && (
-                <Box
+                  <Box
                     display="flex"
                     flexDirection="column"
                     alignItems="center"
                     justifyContent="center"
                     marginTop="50px"
-                >
+                  >
                     <Typography variant="h6">Preview Uploaded PDF</Typography>
 
                     {uploadedFiles.length > 0 && uploadedFiles[0].file_path ? (
-                    <>
-                        <iframe
-                        src={`${process.env.REACT_APP_SERVER_URL_FILE_VIEW}/${uploadedFiles[0].file_path}`}
-                        width="100%"
-                        height="500px"
-                        style={{ border: 'none' }}
-                        />
-                    </>
+                      (() => {
+                        const filePath = uploadedFiles[0].file_path.replace(/\\/g, '/');
+                        const fullUrl = `${process.env.REACT_APP_SERVER_URL_FILE_VIEW}/${filePath}`;
+                        return (
+                          <iframe
+                            src={fullUrl}
+                            width="100%"
+                            height="500px"
+                            style={{ border: 'none' }}
+                            allow="fullscreen"
+                            title="Uploaded PDF Preview"
+                          />
+                        );
+                      })()
                     ) : (
-                    <>
-                        <Typography>No PDF found.</Typography>
-                    </>
+                      <Typography>No PDF found.</Typography>
                     )}
-                </Box>
+                  </Box>
                 )}
+
             </Box>
         </Box>
     </Box>
