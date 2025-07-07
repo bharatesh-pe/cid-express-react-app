@@ -68,6 +68,8 @@ const LokayuktaView = () => {
         'cid_pt_case_witness',
     ]);
 
+    const [currentTableName, setCurrentTableName] = useState(null);
+
     const [splitScreenNavTabs, setsplitScreenNavTabs] = useState([]);
 
     const [splitScreenActiveTab, setSplitScreenActiveTab] = useState(null);
@@ -331,6 +333,7 @@ const LokayuktaView = () => {
 
             navigate(backNavigation, {state : stateObj});
         }
+        setCurrentTableName(null); 
     }
 
     const sidebarActive = async (item)=>{
@@ -402,9 +405,11 @@ const LokayuktaView = () => {
             setTemplateFields(tableFields);
             setFormEditFlag(false);
             setFormReadFlag(true);
+            setCurrentTableName(null);
             return;
         }else{
             setTableViewFlag(true);
+            setCurrentTableName(null);
             getTableData(item);
         }
     }
@@ -556,9 +561,20 @@ const LokayuktaView = () => {
         }
     },[selectedTableTabs]);
 
+    const handleViewOldCase = () => {
+        const oldCaseTable = {
+            table: "cid_ui_case_old_cms_data",
+            is_approval: false,
+        };
+        setCurrentTableName("cid_ui_case_old_cms_data"); 
+        setTableViewFlag(true);
+
+        getTableData(oldCaseTable);
+    };
 
     const getTableData = async (options, reOpen, noFilters) => {
 
+        console.log("getTableData", options);
         var ui_case_id = rowData?.id;
         var pt_case_id = rowData?.pt_case_id;
 
@@ -657,7 +673,7 @@ const LokayuktaView = () => {
 
                 const generateReadableHeader = (key) =>key.replace(/^field_/, "").replace(/_/g, " ").toLowerCase().replace(/^\w|\s\w/g, (c) => c.toUpperCase());
                 
-                const renderCellFunc = (key, count) => (params) => tableCellRender(key, params, params.value, count, options.table);
+                const renderCellFunc = (key, count) => (params) => tableCellRender(key, params, params.value, count, options.table || options);
 
                 if (tabFields.length > 0) {
                     tabFields = tabFields.map((key, index) => {
@@ -1042,7 +1058,7 @@ const LokayuktaView = () => {
 
     const showAddNewForm = async ()=>{
         
-        if(!activeSidebar?.table){
+        if (!currentTableName && (!activeSidebar?.table || activeSidebar?.table === "")) {
             toast.error("Please Check The Template !", {
                 position: "top-right",
                 autoClose: 3000,
@@ -1057,7 +1073,7 @@ const LokayuktaView = () => {
         }
 
         const viewTableData = {
-            table_name: activeSidebar.table,
+            table_name: currentTableName || activeSidebar?.table,
         };
 
         setLoading(true);
@@ -1122,7 +1138,7 @@ const LokayuktaView = () => {
     
     const formSubmit = async (data, formOpen)=>{
 
-        if (!activeSidebar.table || activeSidebar.table === "") {
+        if ((!currentTableName || currentTableName === "") && (!activeSidebar?.table || activeSidebar.table === "")) {
             toast.warning("Please Check The Template", {
                 position: "top-right",
                 autoClose: 3000,
@@ -1535,7 +1551,7 @@ const LokayuktaView = () => {
         normalData["pt_case_id"] = pt_case_id;
 
         var othersData = {};
-        formData.append("table_name", activeSidebar.table);
+        formData.append("table_name", activeSidebar.table || currentTableName);
         formData.append("data", JSON.stringify(normalData));
         formData.append("transaction_id", `pt_${Date.now()}_${Math.floor(Math.random() * 10000)}`);
         formData.append("user_designation_id", localStorage.getItem('designation_id') || null);
@@ -1560,7 +1576,9 @@ const LokayuktaView = () => {
                     onOpen: () => {
                         if (activeSidebar?.table === "cid_eq_case_enquiry_order_copy") {
                             navigate("/case/enquiry");
-                        } else {
+                        }else if (currentTableName === 'cid_ui_case_old_cms_data') {
+                            getTableData({table:"cid_ui_case_old_cms_data"}, formOpen);
+                        }else {
                             getTableData(activeSidebar, formOpen);
                         }
                     }
@@ -1594,7 +1612,8 @@ const LokayuktaView = () => {
     };
 
     const formUpdate = async (data, formOpen) => {
-    if (!activeSidebar.table || activeSidebar.table === "") {
+        console.log("formSubmit", data, formOpen);
+if ((!currentTableName || currentTableName === "") && (!activeSidebar?.table || activeSidebar.table === "")) {
         toast.warning("Please Check The Template", {
             position: "top-right",
             autoClose: 3000,
@@ -1843,7 +1862,7 @@ const LokayuktaView = () => {
         normalData["ui_case_id"] = ui_case_id;
         normalData["pt_case_id"] = pt_case_id;
 
-        formData.append("table_name", activeSidebar.table);
+        formData.append("table_name", activeSidebar.table || currentTableName);
         formData.append("data", JSON.stringify(normalData));
         formData.append("id",rowValueId.id);
         formData.append("transaction_id", `pt_${Date.now()}_${Math.floor(Math.random() * 10000)}`);
@@ -1868,6 +1887,8 @@ const LokayuktaView = () => {
                     onOpen: () => {
                         if (activeSidebar?.table === "cid_eq_case_enquiry_order_copy") {
                             navigate("/case/enquiry");
+                        }else if (currentTableName === 'cid_ui_case_old_cms_data') {
+                            getTableData({table:"cid_ui_case_old_cms_data"});
                         } else {
                             getTableData(activeSidebar);
                         }
@@ -1875,11 +1896,29 @@ const LokayuktaView = () => {
                 });
                 setRowValueId({});
             } else {
-                toast.error(updateResponse.message || "Failed to update case.");
+                toast.error(updateResponse.message || "Failed to update case.", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
             }
         } catch (error) {
             setLoading(false);
-            toast.error(error?.response?.data?.message || "Please Try Again !");
+            toast.error(error?.response?.data?.message || "Please Try Again !", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
         }
     };
 
@@ -2843,6 +2882,8 @@ const LokayuktaView = () => {
                             readOnly={formReadFlag}
                             editData={formEditFlag}
                             editName={true}
+                            oldCase = {true}
+                            onViewOldCase={handleViewOldCase} 
                             initialData={initialRowData}
                             formConfig={templateFields}
                             stepperData={stepperConfig}
@@ -3021,7 +3062,9 @@ const LokayuktaView = () => {
                             >
                                 <West />
                                 <Typography sx={{ fontSize: '19px', fontWeight: '500', color: '#171A1C' }} className='Roboto'>
-                                    {activeSidebar.name ? activeSidebar.name : 'Form'}
+                                    {currentTableName === "cid_ui_case_old_cms_data"
+                                        ? "Old CMS Data"
+                                        : (activeSidebar?.name || "Form")}
                                 </Typography>
                                 {headerDetails && (
                                     <Chip
