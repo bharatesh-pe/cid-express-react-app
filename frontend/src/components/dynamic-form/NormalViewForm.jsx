@@ -51,7 +51,7 @@ import TableField from '../form/Table';
 
 const NormalViewForm = ({ 
     formConfig, initialData, onSubmit, onError, stepperData, closeForm, table_name, template_name, readOnly, editData, onUpdate, template_id, table_row_id, headerDetails, selectedRow, noPadding, disableEditButton, disableSaveNew, overAllReadonly, investigationViewTable, editedForm
-    , showAssignIo, investigationAction, reloadApproval, showCaseActionBtn, reloadForm , showCaseLog, reloadFormConfig , onSkip , skip , editName
+    , showAssignIo, investigationAction, reloadApproval, showCaseActionBtn, reloadForm , showCaseLog, reloadFormConfig , onSkip , skip , editName ,  oldCase , onViewOldCase
  }) => {
 
 //   let storageFormData = localStorage.getItem(template_name + '-formData') ? JSON.parse(localStorage.getItem(template_name + '-formData')) : {};
@@ -2408,6 +2408,34 @@ const NormalViewForm = ({
                     {investigationAction?.name}
                 </Button>
             }
+
+            
+            {oldCase &&  table_name === 'cid_under_investigation' && (
+            <Typography
+                onClick={() => {
+                if (onViewOldCase) {
+                    onViewOldCase();
+                }
+                }}
+                sx={{
+                fontSize: "14px",
+                fontWeight: "500",
+                color: "#1976d2",
+                cursor: "pointer",
+                marginLeft: "10px",
+                marginRight: "10px",
+                textDecoration: "underline",
+                "&:hover": {
+                    color: "#0d47a1",
+                    textDecoration: "underline",
+                },
+                }}
+                className="Roboto"
+                component="span"
+            >
+                VIEW OLD CASE
+            </Typography>
+            )}
 
             {
                 table_row_id && showAssignIo &&
