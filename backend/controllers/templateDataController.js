@@ -10952,8 +10952,8 @@ exports.getDateWiseTableCounts = async (req, res) => {
 
             const schema = typeof tableData.fields === "string"  ? JSON.parse(tableData.fields)  : tableData.fields;
 
-            const hasCaseDiary = schema.some(f => f.name === "field_case_diary");
-            const dateField = hasCaseDiary ? "field_case_diary" : "created_at";
+            const hasCaseDiary = schema.find(f => f?.case_dairy === true);
+            const dateField = hasCaseDiary ? hasCaseDiary.name : "created_at";
 
             const whereConditions = [`${dateField} IS NOT NULL`];
             const replacements = {};
@@ -10968,7 +10968,7 @@ exports.getDateWiseTableCounts = async (req, res) => {
                 replacements.pt_case_id = pt_case_id;
             }
 
-            const query = `SELECT  DATE(${dateField}) as date, COUNT(*) as count FROM ${table} WHERE ${whereConditions.join(" AND ")} GROUP BY DATE(${dateField}) `;
+            const query = `SELECT ${dateField} as date, COUNT(*) as count FROM ${table} WHERE ${whereConditions.join(" AND ")} GROUP BY ${dateField} `;
 
             const records = await sequelize.query(query, {
                 type: sequelize.QueryTypes.SELECT,
@@ -10983,10 +10983,15 @@ exports.getDateWiseTableCounts = async (req, res) => {
                 let dateStr;
                 try {
                     const dateObj = rec.date instanceof Date ? rec.date : new Date(rec.date);
-                    
+
                     if (isNaN(dateObj.getTime())) continue;
                     
-                    dateStr = dateObj.toISOString().split('T')[0];
+                    const year = dateObj.getFullYear();
+                    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+                    const day = String(dateObj.getDate()).padStart(2, '0');
+                    
+                    dateStr = `${year}-${month}-${day}`;
+                    
                 } catch (e) {
                     continue;
                 }
@@ -11044,7 +11049,7 @@ exports.getTemplateDataWithDate = async (req, res) => {
         let dateField = "created_at";
 
         for (const field of displayFields) {
-            const { name, data_type, not_null, default_value } = field;
+            const { name, data_type, not_null, default_value, case_dairy } = field;
 
             fields[name] = {
                 type: typeMapping[data_type?.toUpperCase()] || Sequelize.DataTypes.STRING,
@@ -11052,8 +11057,8 @@ exports.getTemplateDataWithDate = async (req, res) => {
                 defaultValue: default_value || null,
             };
 
-            if (name === "field_case_diary") {
-                dateField = "field_case_diary";
+            if (case_dairy === true) {
+                dateField = name;
             }
         }
 
@@ -11076,19 +11081,22 @@ exports.getTemplateDataWithDate = async (req, res) => {
         const offset = (parseInt(page) - 1) * parseInt(limit);
         const parsedDate = date.split("T")[0];
 
-        const whereConditions = [
-            Sequelize.where(
-                Sequelize.fn("DATE", Sequelize.col(dateField)),
-                parsedDate
-            )
-        ];
+        const startDate = new Date(parsedDate + "T00:00:00");
+        const endDate = new Date(parsedDate + "T23:59:59.999");
+
+        const whereConditions = {
+            [dateField]: {
+                [Op.gte]: startDate,
+                [Op.lte]: endDate
+            }
+        };
 
         if (fields["ui_case_id"] && ui_case_id) {
-        whereConditions.push({ ui_case_id });
+            whereConditions.push({ ui_case_id });
         }
 
         if (fields["pt_case_id"] && pt_case_id) {
-        whereConditions.push({ pt_case_id });
+            whereConditions.push({ pt_case_id });
         }
 
         if (search) {
