@@ -246,6 +246,7 @@ const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData
             from_date: !searchFlag ? othersFromDate : null,
             to_date: !searchFlag ? othersToDate : null,
             filter: !searchFlag ? othersFilterData : {},
+            checkTabs : true,
         };
 
         if (options.permissions) {
@@ -303,6 +304,8 @@ const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData
                 const { meta } = getTemplateResponse;
                 const totalPages = meta?.meta?.totalPages;
                 const totalItems = meta?.meta?.totalItems;
+
+                const templateJson = meta?.meta?.template_json;
 
                 if (totalPages !== null && totalPages !== undefined) {
                     setOtherTemplatesTotalPage(totalPages);
@@ -573,11 +576,51 @@ const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData
                         return new Date(parsed).toLocaleDateString("en-GB");
                     };
 
+                    const formatTime = (value) => {
+                        const parsed = Date.parse(value);
+                        if (isNaN(parsed)) return value;
+                        return new Date(parsed).toLocaleTimeString("en-GB", {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            second: '2-digit',
+                            hour12: true, 
+                        });
+                    };
+
+                    const formatDateTime = (value) => {
+                        const parsed = Date.parse(value);
+                        if (isNaN(parsed)) return value;
+                        return new Date(parsed).toLocaleString("en-GB", {
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            second: "2-digit",
+                            hour12: true,
+                        });
+                    };
+
                     const updatedTableData = getTemplateResponse.data.map((field, index) => {
                         const updatedField = {};
 
                         Object.keys(field).forEach((key) => {
-                            if (field[key] && key !== 'id' && isValidISODate(field[key])) {
+                              
+                            const templateField = templateJson && templateJson.find((element)=> element.name === key);
+
+                            if(templateField){
+
+                                if (templateField?.type === "date") {
+                                    updatedField[key] = formatDate(field[key]);
+                                } else if (templateField?.type === "time") {
+                                    updatedField[key] = formatTime(field[key]);
+                                } else if (templateField?.type === "datetime") {
+                                    updatedField[key] = formatDateTime(field[key]);
+                                } else {
+                                    updatedField[key] = field[key];
+                                }
+
+                            }else if (field[key] && key !== 'id' && isValidISODate(field[key])) {
                                 updatedField[key] = formatDate(field[key]);
                             } else {
                                 updatedField[key] = field[key];
