@@ -1089,11 +1089,12 @@ exports.create_master_data = async (req, res) => {
             break;
         case "Section":
             const existingSection = await Section.findOne({
-            where: {
-                section_name: {
-                [Op.iLike]: `%${data.section_name}%`,
+                where: {
+                    section_name: {
+                    [Op.iLike]: `%${data.section_name}%`, // Case-insensitive partial match
+                    },
+                    act_id: data.act_id,
                 },
-            },
             });
             if (existingSection) {
                  return res.status(409).json({success: false,message: "Similar section name already exists.",});
