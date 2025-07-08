@@ -856,6 +856,31 @@ const Formbuilder = () => {
         return result;
     };
 
+    const handleDragTableHeader = (result)=>{
+
+        const { destination, source } = result;
+
+        if (!destination) {
+            return;
+        }
+
+        if (destination.index === source.index) {
+            return;
+        }
+
+        const reorderedFields = reorder(selectedField?.tableHeaders, source.index, destination.index);
+        
+        setSelectedField({
+            ...selectedField,
+            tableHeaders: reorderedFields
+        });
+
+        setFields(fields.map((field) =>
+            (field.id === selectedField.id ? { ...field, tableHeaders: reorderedFields } : field)
+        ));
+
+    }
+
     const handleDragEnd = (result) => {
         const { destination, source } = result;
 
@@ -3095,65 +3120,94 @@ const Formbuilder = () => {
                                                                                                     </Button>
                                                                                                 </Box>
                                                                                                 <Box py={1} px={2} sx={{ maxHeight: '270px', overflow: 'auto' }}>
-                                                                                                    {selectedField.tableHeaders.length > 0 ? selectedField.tableHeaders.map((option, index) => (
-                                                                                                        <Box py={1} key={index} sx={{ display: "flex", alignItems: "center", gap: '18px' }}>
-                                                                                                            <TextField
-                                                                                                                label="Table Header"
-                                                                                                                disabled={selectedField['readonlyOption'] ? selectedField['readonlyOption'] : false}
-                                                                                                                value={option.header}
-                                                                                                                onChange={(e) => handleTableHeaderChange(index, selectedField, e.target.value, "header")}
-                                                                                                                fullWidth
-                                                                                                                required
-                                                                                                                size="small"
-                                                                                                                margin="dense"
-                                                                                                            />
-                                                                                                            <FormControl fullWidth size="small" margin="dense">
-                                                                                                                <InputLabel>Field Type</InputLabel>
-                                                                                                                <Select
-                                                                                                                    label="Field Type"
-                                                                                                                    value={option.fieldType?.type || 'short_text'}
-                                                                                                                    onChange={(e) => handleTableHeaderChange(index, selectedField, e.target.value, "type")}
-                                                                                                                >
-                                                                                                                    <MenuItem value="short_text">Short Text</MenuItem>
-                                                                                                                    <MenuItem value="number">Number</MenuItem>
-                                                                                                                    <MenuItem value="date">Date</MenuItem>
-                                                                                                                    <MenuItem value="single_select">Single Select</MenuItem>
-                                                                                                                    <MenuItem value="multi_select">Multi Select</MenuItem>
-                                                                                                                    <MenuItem value="text_area">Text Area</MenuItem>
-                                                                                                                </Select>
-                                                                                                            </FormControl>
-                                                                                                            <TextField
-                                                                                                                label="Width (px)"
-                                                                                                                type="number"
-                                                                                                                value={option.fieldType?.width || ''}
-                                                                                                                onChange={(e) => {
-                                                                                                                    const newValue = e.target.value;
-                                                                                                                    if (newValue === '' || /^[0-9\b]+$/.test(newValue)) {
-                                                                                                                        handleTableHeaderChange(index, selectedField, newValue, "width")
-                                                                                                                    }
-                                                                                                                }}
-                                                                                                                fullWidth
-                                                                                                                size="small"
-                                                                                                                margin="dense"
-                                                                                                            />
-                                                                                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                                                                                {
-                                                                                                                    (option.fieldType?.type === "single_select" || option.fieldType?.type === "multi_select") &&
-                                                                                                                    <Tooltip title="Add Options">
-                                                                                                                        <IconButton onClick={() => handleOpenPropsModal(index)}>
-                                                                                                                            <VisibilityIcon sx={{ color: '#1D2939' }} />
-                                                                                                                        </IconButton>
-                                                                                                                    </Tooltip>
-                                                                                                                }
-                                                                                                                <button style={{ outline: 'none', border: 'none', color: '#1D2939', padding: '0', display: 'flow', cursor: 'pointer' }} onClick={() => handleRemoveTableHeaders(index)}>
-                                                                                                                    <RemoveCircleOutlineIcon sx={{ color: '#1D2939' }} />
-                                                                                                                </button>
-                                                                                                                <button style={{ outline: 'none', border: 'none', color: '#1D2939', padding: '0', display: 'flow', cursor: 'pointer' }} onClick={handleAddTableHeaders}>
-                                                                                                                    <AddCircleOutlineIcon />
-                                                                                                                </button>
-                                                                                                            </Box>
-                                                                                                        </Box>
-                                                                                                    )) :
+                                                                                                    {selectedField.tableHeaders.length > 0 ? (
+                                                                                                        <DragDropContext onDragEnd={handleDragTableHeader}>
+                                                                                                            <Droppable droppableId="droppableFields" direction="vertical">
+                                                                                                            {(provided) => (
+                                                                                                                <div {...provided.droppableProps} ref={provided.innerRef}>
+                                                                                                                {selectedField.tableHeaders.map((option, index) => (
+                                                                                                                    <Draggable key={index} draggableId={`draggable-${index}`} index={index}>
+                                                                                                                    {(provided, snapshot) => (
+                                                                                                                        <Box
+                                                                                                                            py={1}
+                                                                                                                            ref={provided.innerRef}
+                                                                                                                            {...provided.draggableProps}
+                                                                                                                            {...provided.dragHandleProps}
+                                                                                                                            sx={{
+                                                                                                                                display: "flex",
+                                                                                                                                alignItems: "center",
+                                                                                                                                gap: '18px',
+                                                                                                                                backgroundColor: snapshot.isDragging ? '#f9f9f9' : 'transparent',
+                                                                                                                                borderRadius: 1,
+                                                                                                                                border: '1px dashed #ccc',
+                                                                                                                                padding: '8px',
+                                                                                                                            }}
+                                                                                                                        >
+                                                                                                                            <TextField
+                                                                                                                                label="Table Header"
+                                                                                                                                disabled={selectedField.readonlyOption || false}
+                                                                                                                                value={option.header}
+                                                                                                                                onChange={(e) => handleTableHeaderChange(index, selectedField, e.target.value, "header")}
+                                                                                                                                fullWidth
+                                                                                                                                required
+                                                                                                                                size="small"
+                                                                                                                                margin="dense"
+                                                                                                                            />
+                                                                                                                            <FormControl fullWidth size="small" margin="dense">
+                                                                                                                                <InputLabel>Field Type</InputLabel>
+                                                                                                                                <Select
+                                                                                                                                    label="Field Type"
+                                                                                                                                    value={option.fieldType?.type || 'short_text'}
+                                                                                                                                    onChange={(e) => handleTableHeaderChange(index, selectedField, e.target.value, "type")}
+                                                                                                                                >
+                                                                                                                                    <MenuItem value="short_text">Short Text</MenuItem>
+                                                                                                                                    <MenuItem value="number">Number</MenuItem>
+                                                                                                                                    <MenuItem value="date">Date</MenuItem>
+                                                                                                                                    <MenuItem value="single_select">Single Select</MenuItem>
+                                                                                                                                    <MenuItem value="multi_select">Multi Select</MenuItem>
+                                                                                                                                    <MenuItem value="text_area">Text Area</MenuItem>
+                                                                                                                                </Select>
+                                                                                                                            </FormControl>
+                                                                                                                            <TextField
+                                                                                                                                label="Width (px)"
+                                                                                                                                type="number"
+                                                                                                                                value={option.fieldType?.width || ''}
+                                                                                                                                onChange={(e) => {
+                                                                                                                                const newValue = e.target.value;
+                                                                                                                                if (newValue === '' || /^[0-9\b]+$/.test(newValue)) {
+                                                                                                                                    handleTableHeaderChange(index, selectedField, newValue, "width")
+                                                                                                                                }
+                                                                                                                                }}
+                                                                                                                                fullWidth
+                                                                                                                                size="small"
+                                                                                                                                margin="dense"
+                                                                                                                            />
+                                                                                                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                                                                                                {(option.fieldType?.type === "single_select" || option.fieldType?.type === "multi_select") && (
+                                                                                                                                    <Tooltip title="Add Options">
+                                                                                                                                        <IconButton onClick={() => handleOpenPropsModal(index)}>
+                                                                                                                                            <VisibilityIcon sx={{ color: '#1D2939' }} />
+                                                                                                                                        </IconButton>
+                                                                                                                                    </Tooltip>
+                                                                                                                                )}
+                                                                                                                                <button onClick={() => handleRemoveTableHeaders(index)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
+                                                                                                                                    <RemoveCircleOutlineIcon sx={{ color: '#1D2939' }} />
+                                                                                                                                </button>
+                                                                                                                                <button onClick={handleAddTableHeaders} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
+                                                                                                                                    <AddCircleOutlineIcon />
+                                                                                                                                </button>
+                                                                                                                            </Box>
+                                                                                                                        </Box>
+                                                                                                                    )}
+                                                                                                                    </Draggable>
+                                                                                                                ))}
+
+                                                                                                                {provided.placeholder}
+                                                                                                                </div>
+                                                                                                            )}
+                                                                                                            </Droppable>
+                                                                                                        </DragDropContext>
+                                                                                                        ) : 
                                                                                                         <Box py={1} key={0} sx={{ display: "flex", alignItems: "center", gap: '18px' }}>
                                                                                                             <TextField
                                                                                                                 label="Table Header"
