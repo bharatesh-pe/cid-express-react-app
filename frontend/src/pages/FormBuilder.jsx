@@ -2001,7 +2001,378 @@ const Formbuilder = () => {
         }
     }
 
+    const tableSaveOptions = async ()=>{
+        
+        if (selectedMasterOptions && selectedMasterOptions.table) {
+
+            if (selectedMasterOptions.api) {
+
+                if(selectedMasterOptions.is_dependent === "true"){
+                    
+                    if(selectedMasterOptions.dependent_table && selectedMasterOptions.dependent_table.length > 0){
+                        
+                        var getTableField = selectedField?.tableHeaders?.filter((field) => selectedMasterOptions.dependent_table.includes(field?.fieldType?.table));
+
+                        if(getTableField.length === 0 || selectedMasterOptions.dependent_table.length !== getTableField.length){
+                            toast.warning('Please Check the ' + selectedMasterOptions.dependent_table.join(',') + ' Data Before Getting ' + selectedMasterOptions.table, {
+                                position: "top-right",
+                                autoClose: 3000,
+                                hideProgressBar: false,
+                                closeOnClick: true,
+                                pauseOnHover: true,
+                                draggable: true,
+                                progress: undefined,
+                                className: "toast-warning",
+                            });
+                            return;
+                        }
+
+                        var emptyValue = false;
+
+                        const fieldData = formData?.[selectedField?.name];
+
+                        const isEmpty = !Array.isArray(fieldData) || fieldData.length === 0 || fieldData.every(item => Object.keys(item).length === 0);
+
+                        if(isEmpty) {
+                            toast.warning('Please check the ' + selectedMasterOptions.dependent_table.join(', ') + ' values before getting ' + selectedMasterOptions.table, {
+                                position: "top-right",
+                                autoClose: 3000,
+                                hideProgressBar: false,
+                                closeOnClick: true,
+                                pauseOnHover: true,
+                                draggable: true,
+                                progress: undefined,
+                                className: "toast-warning",
+                            });
+                            return;
+                        }
+
+                        const apiPayload = getTableField.reduce((payload, field) => {
+                            if (fieldData && fieldData[0][field?.header]) {
+                                const key = field.fieldType?.table === 'users' ? 'user_id' : `${field.fieldType?.table}_id`;
+                                payload[key] = fieldData[0][field?.header];
+                            } else {
+                                emptyValue = true;
+                            }
+                            return payload;
+                        }, {});
+
+                        if(emptyValue){
+                            toast.warning('Please Check the ' + selectedMasterOptions.dependent_table.join(',') + ' values Before Getting ' + selectedMasterOptions.table, {
+                                position: "top-right",
+                                autoClose: 3000,
+                                hideProgressBar: false,
+                                closeOnClick: true,
+                                pauseOnHover: true,
+                                draggable: true,
+                                progress: undefined,
+                                className: "toast-warning",
+                            });
+                            return;
+                        }
+                        setLoading(true);
+
+                        try {
+                            var getOptionsValue = await api.post(selectedMasterOptions.api,apiPayload);
+                            setLoading(false);
+
+                            var updatedOptions = [];
+
+                            var forignKey = selectedMasterOptions?.table === 'users' ? 'user_id' : selectedMasterOptions?.table + '_id';
+                            var attributeKey = selectedMasterOptions?.table === 'users' ? ['name'] : [selectedMasterOptions?.table + '_name'];
+                            if (getOptionsValue && getOptionsValue.data) {
+    
+                                var firstValueId = false
+
+                                updatedOptions = getOptionsValue.data.map((field, i) => {
+
+                                    if (firstValueId === false) {
+                                        firstValueId = field[selectedMasterOptions?.table === 'users' ? 'user_id' : selectedMasterOptions?.table + '_id']
+                                    }
+
+                                    return {
+                                        name: field[selectedMasterOptions?.table === 'users' ? 'name' : selectedMasterOptions?.table + '_name'],
+                                        code: field[selectedMasterOptions?.table === 'users' ? 'user_id' : selectedMasterOptions?.table + '_id']
+                                    }
+                                });
+    
+                                var userUpdateFields = {
+                                    api: selectedMasterOptions.api,
+                                    readonlyOption: true,
+                                    is_dependent : "true",
+                                    dependent_table : selectedMasterOptions.dependent_table,
+                                    table: selectedMasterOptions?.table,
+                                    options: updatedOptions,
+                                    forign_key : forignKey,
+                                    attributes : attributeKey
+                                }
+
+                                if(showPropsModal){
+                                    setPropEditField({
+                                        ...propEditField,
+                                        fieldType: {
+                                            ...propEditField.fieldType,
+                                            ...userUpdateFields
+                                        }
+                                    });
+                                    setMasterModalOpen(false);
+                                    return;
+                                }
+    
+                            }else{
+                                var userUpdateFields = {
+                                    api: '',
+                                    readonlyOption: false,
+                                    is_dependent : "",
+                                    table: '',
+                                    options: [],
+                                    forign_key : "",
+                                    attributes : []
+                                }
+
+                                if(showPropsModal){
+                                    setPropEditField({
+                                        ...propEditField,
+                                        fieldType: {
+                                            ...propEditField.fieldType,
+                                            ...userUpdateFields
+                                        }
+                                    });
+                                    setMasterModalOpen(false);
+                                    return;
+                                }
+
+                            }
+                        }catch (error) {
+                            setLoading(false);
+
+                            if (error && error.response && error.response.data) {
+                                toast.error(error.response.data['message'] ? error.response.data['message'] : 'Need dependent Fields', {
+                                    position: "top-right",
+                                    autoClose: 3000,
+                                    hideProgressBar: false,
+                                    closeOnClick: true,
+                                    pauseOnHover: true,
+                                    draggable: true,
+                                    progress: undefined,
+                                    className: "toast-error",
+                                });
+                                return;
+                            }
+                        }
+                    }
+                }else{
+                    setLoading(true);
+
+                    try {
+                        var getOptionsValue = await api.post(selectedMasterOptions.api);
+                        setLoading(false);
+
+                        var updatedOptions = []
+
+                        if (getOptionsValue && getOptionsValue.data) {
+
+                            var forignKey = selectedMasterOptions.table === 'users' ? 'user_id' : selectedMasterOptions.table + '_id';
+                            var attributeKey = selectedMasterOptions.table === 'users' ? ['name'] : [selectedMasterOptions.table + '_name'];
+                            
+                            var firstValueId = false;
+
+                            updatedOptions = getOptionsValue.data.map((field, i) => {
+
+                                if (firstValueId === false) {
+                                    firstValueId = field[selectedMasterOptions.table === 'users' ? 'user_id' : selectedMasterOptions.table + '_id']
+                                }
+
+                                return {
+                                    name: field[selectedMasterOptions.table === 'users' ? 'name' : selectedMasterOptions.table + '_name'],
+                                    code: field[selectedMasterOptions.table === 'users' ? 'user_id' : selectedMasterOptions.table + '_id']
+                                }
+                            })
+
+                            var userUpdateFields = {
+                                api: selectedMasterOptions.api,
+                                readonlyOption: true,
+                                is_dependent : "false",
+                                table: selectedMasterOptions.table,
+                                options: updatedOptions,
+                                forign_key : forignKey,
+                                attributes : attributeKey
+                            }
+
+                            if(showPropsModal){
+                                setPropEditField({
+                                    ...propEditField,
+                                    fieldType: {
+                                        ...propEditField.fieldType,
+                                        ...userUpdateFields
+                                    }
+                                });
+                                setMasterModalOpen(false);
+                                return;
+                            }
+
+                        }else{
+                            var userUpdateFields = {
+                                api: '',
+                                readonlyOption: false,
+                                is_dependent : "",
+                                table: '',
+                                options: [],
+                                forign_key : "",
+                                attributes : []
+                            }
+                            
+                            if(showPropsModal){
+                                setPropEditField({
+                                    ...propEditField,
+                                    fieldType: {
+                                        ...propEditField.fieldType,
+                                        ...userUpdateFields
+                                    }
+                                });
+                                setMasterModalOpen(false);
+                                return;
+                            }
+                        }
+                    }catch (error) {
+                        setLoading(false);
+
+                        if (error && error.response && error.response.data) {
+                            toast.error(error.response.data['message'] ? error.response.data['message'] : 'Need dependent Fields', {
+                                position: "top-right",
+                                autoClose: 3000,
+                                hideProgressBar: false,
+                                closeOnClick: true,
+                                pauseOnHover: true,
+                                draggable: true,
+                                progress: undefined,
+                                className: "toast-error",
+                            });
+                            return;
+                        }
+                    }
+                }
+            } else {
+                setLoading(true);
+
+                try {
+
+                    var getOptionsValue = await api.post('/templateData/getPrimaryTemplateDataWithoutPagination', { table_name: selectedMasterOptions.table });
+                    setLoading(false);
+
+                    if (getOptionsValue && getOptionsValue.success && getOptionsValue.data) {
+
+                        const { data , primaryAttribute} = getOptionsValue.data
+
+                        var forignKey = 'id';
+                        var attributeKey = [primaryAttribute || 'id'];
+                        
+                        var updatedOptions = data.map((templateData) => {
+
+                            var nameKey = Object.keys(templateData).find(
+                                key => !['id', 'created_at', 'updated_at'].includes(key)
+                            );
+
+                            return {
+                                name: nameKey ? templateData[nameKey] : '',
+                                code: templateData.id
+                            }
+                        })
+
+                        var userUpdateFields = {
+                            api: '/templateData/getTemplateData',
+                            readonlyOption: true,
+                            table: selectedMasterOptions.table,
+                            options: updatedOptions,
+                            forign_key : forignKey,
+                            attributes : attributeKey,
+                            defaultValue : false
+                        }
+
+                        if(showPropsModal){
+                            setPropEditField({
+                                ...propEditField,
+                                fieldType: {
+                                    ...propEditField.fieldType,
+                                    ...userUpdateFields
+                                }
+                            });
+                            setMasterModalOpen(false);
+                            return;
+                        }
+
+                    } else {
+
+                        var userUpdateFields = {
+                            api: '',
+                            readonlyOption: false,
+                            table: '',
+                            options: [],
+                            forign_key : '',
+                            attributes : [],
+                            defaultValue : false
+                        }
+
+                        if(showPropsModal){
+                            setPropEditField({
+                                ...propEditField,
+                                fieldType: {
+                                    ...propEditField.fieldType,
+                                    ...userUpdateFields
+                                }
+                            });
+                            setMasterModalOpen(false);
+                            return;
+                        }
+
+                        toast.error('No Data Found', {
+                            position: "top-right",
+                            autoClose: 3000,
+                            hideProgressBar: false,
+                            closeOnClick: true,
+                            pauseOnHover: true,
+                            draggable: true,
+                            progress: undefined,
+                            className: "toast-error",
+                        });
+                    }
+                } catch (error) {
+                    setLoading(false);
+                    toast.error(error?.response?.data?.['message'] ? error.response.data['message'] : 'Need dependent Fields', {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-error",
+                    });
+                    return;
+                }
+            }
+
+            setMasterModalOpen(false);
+        } else {
+            toast.error('Check Master Table', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+        }
+    }
+
     const handleSaveMasterOptions = async () => {
+
+        if(showPropsModal){
+            tableSaveOptions();
+            return;
+        }
 
         if (selectedMasterOptions && selectedMasterOptions.table) {
 
