@@ -324,7 +324,7 @@ const verify_OTP = async (req, res) => {
                 };
             });
             var logedin_user =  log_user_id +" - "+ log_user_name +" - "+ log_user_designation_name.map((ud) => ud.designation_name).join(", ");
-            userSendResponse(res, 200, true, "OTP verified successfully. for user "+ logedin_user )
+            // userSendResponse(res, 200, true, "OTP verified successfully. for user "+ logedin_user )
           return res.status(200).json({
             success: true,
             message: "OTP verified successfully.",
