@@ -156,13 +156,13 @@ exports.insertTemplateData = async (req, res, next) => {
           },
           { name: "created_by", data_type: "TEXT", not_null: false },
           { name: "created_by_id", data_type: "INTEGER", not_null: false },
-          { name: "publickey", data_type: "TEXT", not_null: false },
+        //   { name: "publickey", data_type: "TEXT", not_null: false },
           ...schema,
         ]
       : [
           { name: "created_by", data_type: "TEXT", not_null: false },
           { name: "created_by_id", data_type: "INTEGER", not_null: false },
-          { name: "publickey", data_type: "TEXT", not_null: false },
+        //   { name: "publickey", data_type: "TEXT", not_null: false },
           ...schema,
         ];
 

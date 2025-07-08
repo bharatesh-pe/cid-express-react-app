@@ -316,6 +316,15 @@ const verify_OTP = async (req, res) => {
             const allowedUserIds = Array.from(new Set([String(userId), ...subordinateUserIds]));
 
 
+            var log_user_id = user.user_id;
+            var log_user_name = user_detail.name;
+            var log_user_designation_name = users_designation.map((ud) => {
+                return {
+                    designation_name: ud.designation.designation_name,
+                };
+            });
+            var logedin_user =  log_user_id +" - "+ log_user_name +" - "+ log_user_designation_name.map((ud) => ud.designation_name).join(", ");
+            userSendResponse(res, 200, true, "OTP verified successfully. for user "+ logedin_user )
           return res.status(200).json({
             success: true,
             message: "OTP verified successfully.",
