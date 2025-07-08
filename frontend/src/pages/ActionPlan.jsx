@@ -2792,7 +2792,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                                         onClick={() => handleSubmitAp({ id: selectedRowData?.id })}
                                         disabled={otherTemplatesTotalRecord === 0}
                                     >
-                                        Submit
+                                        {JSON.parse(localStorage.getItem("role_title")).toLowerCase() === "investigation officer" ? "Submit for Approval" : "Approve"}
                                     </Button>
                                 )}
                             </Box>
