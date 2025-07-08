@@ -12,7 +12,8 @@ const {
   fetch_dash_count,
   mapUIandPT,
   updatePoliceStationFromExcel,
-  dumpOldCmsDataFromExcel
+  dumpOldCmsDataFromExcel,
+  store_json_dump_by_cnr
 } = require("../controllers/authController");
 const { validate_token } = require("../helper/validations");
 
@@ -32,5 +33,6 @@ router.post("/fetch_dash_count" , [validate_token], fetch_dash_count);
 router.post("/mapUIandPT" , mapUIandPT);
 router.post("/updatePoliceStationFromExcel" , updatePoliceStationFromExcel);
 router.post("/dumpOldCmsDataFromExcel", dumpOldCmsDataFromExcel);
+router.post("/store_cid_cnr_details", store_json_dump_by_cnr);
 
 module.exports = router;

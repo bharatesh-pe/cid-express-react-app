@@ -2516,17 +2516,49 @@ const dumpOldCmsDataFromExcel = async (req, res) => {
             //     throw new Error(`Insert failed for publickey: ${insertResult}`);
             // }
 
-            console.log("✅ Inserted case for publickey:", publickeyValue);
         }
 
         await transaction.commit();
         return res.status(200).json({ success: true, message: "Old CMS data processed successfully" });
     } catch (error) {
         await transaction.rollback();
-        console.error("❌ Error during Excel processing:", error);
         return res.status(500).json({ success: false, message: "Transaction failed", error: error.message });
     }
 };
+
+const store_json_dump_by_cnr = async (req, res) => {
+    const { cnr_number, json_data } = req.body;
+  
+    if (!cnr_number || !json_data) {
+      return res.status(400).json({
+        success: false,
+        message: "CNR number and json_data are required.",
+      });
+    }
+  
+    try {
+      const folderPath = path.join(__dirname, `../data/CNR/${cnr_number}`);
+      const filePath = path.join(folderPath, 'dump.json');
+  
+      // Create the directory if it doesn't exist
+      fs.mkdirSync(folderPath, { recursive: true });
+  
+      // Write JSON data to file
+      fs.writeFileSync(filePath, JSON.stringify(json_data, null, 2), 'utf-8');
+  
+      return res.status(200).json({
+        success: true,
+        message: "JSON dump saved successfully.",
+        file_path: filePath,
+      });
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: "Failed to store JSON dump.",
+        error: error.message,
+      });
+    }
+  };
 
 
   
@@ -2544,7 +2576,8 @@ module.exports = {
   fetch_dash_count,
   mapUIandPT,
   updatePoliceStationFromExcel,
-  dumpOldCmsDataFromExcel
+  dumpOldCmsDataFromExcel,
+  store_json_dump_by_cnr
 };
 
 
