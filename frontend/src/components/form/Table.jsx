@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
     Table, TableBody, TableCell, TableContainer,
     TableHead, TableRow, Paper, IconButton, TextField,
@@ -8,7 +8,8 @@ import {
     MenuItem,
     Checkbox,
     ListItemText,
-    Autocomplete
+    Autocomplete,
+    FormHelperText
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -43,33 +44,39 @@ const TableField = ({ field, onChange, errors, readOnly, formData, onFocus, isFo
         return data;
     });
 
+    const initialized = useRef(false);
+
     useEffect(() => {
-        setRows(() => {
-            const data = formData?.[field?.name];
-            if (!data || (Array.isArray(data) && data.length === 0)) {
-                const defaultRow = {};
+        if (initialized.current) return;
 
-                field?.tableHeaders?.forEach(header => {
-                    const defaultOpt = header?.fieldType?.options?.find(opt => opt.defaultValue === true);
-                    if (defaultOpt) {
-                        defaultRow[header.header] =  header.fieldType?.type === 'multi_select' ? [defaultOpt.code] : defaultOpt.code;
-                    }
-                });
+        const data = formData?.[field?.name];
+        initialized.current = true;
 
-                return [defaultRow];
-            }
+        let newRows = [];
 
-            if (typeof data === "string") {
-                try {
-                    return JSON.parse(data);
-                } catch (err) {
-                    console.error("Invalid JSON in formData:", err);
-                    return [{}];
+        if (!data || Array.isArray(data) && data.length === 0) {
+            const defaultRow = {};
+
+            field?.tableHeaders?.forEach(header => {
+                const defaultOpt = header?.fieldType?.options?.find(opt => opt.defaultValue === true);
+                if (defaultOpt) {
+                    defaultRow[header.header] = header.fieldType?.type === 'multi_select' ? [defaultOpt.code] : defaultOpt.code;
                 }
-            }
+            });
 
-            return data;
-        });
+            newRows = [defaultRow];
+        } else if (typeof data === "string") {
+            try {
+                newRows = JSON.parse(data);
+            } catch (err) {
+                newRows = [{}];
+            }
+        } else {
+            newRows = data;
+        }
+
+        setRows(newRows);
+        onChange(field, newRows);
     }, [formData]);
 
     const handleCellChange = (rowIndex, key, value) => {
@@ -203,7 +210,7 @@ const TableField = ({ field, onChange, errors, readOnly, formData, onFocus, isFo
                     )}
                 </div>
             </h4>
-            <TableContainer component={Paper} sx={{ mt: 2, width: '100%', overflowX: 'auto', boxShadow: 'none', border: '1px solid #ddd', borderColor: Boolean(errors?.[field?.name]) ? '#F04438' : '#ddd' }}>
+            <TableContainer component={Paper} sx={{ mt: 2, width: '100%', overflowX: 'auto', boxShadow: 'none', border: '1px solid #ddd', borderColor: '#ddd' }}>
                 <Table size="small">
                     <TableHead>
                         <TableRow>
@@ -263,6 +270,7 @@ const TableField = ({ field, onChange, errors, readOnly, formData, onFocus, isFo
                                                     rows={header?.fieldType?.type === 'text_area' && focusedCell.row === rowIndex && focusedCell.col === colIndex ? 6 : 1}
                                                     onFocus={() => setFocusedCell({ row: rowIndex, col: colIndex })}
                                                     onBlur={() => setFocusedCell({ row: null, col: null })}
+                                                    error={Boolean(errors?.[field?.name]) && !row[header.header]}
                                                 />
                                             )
                                             ||
@@ -280,6 +288,7 @@ const TableField = ({ field, onChange, errors, readOnly, formData, onFocus, isFo
                                                         }
                                                     }}
                                                     inputProps={{ inputMode: 'numeric' }}
+                                                    error={Boolean(errors?.[field?.name]) && !row[header.header]}
                                                 />
                                             ) 
                                             ||
@@ -291,11 +300,12 @@ const TableField = ({ field, onChange, errors, readOnly, formData, onFocus, isFo
                                                     value={row[header.header] || ''}
                                                     disabled={readOnly}
                                                     onChange={(e) => handleCellChange(rowIndex, header.header, e.target.value)}
+                                                    error={Boolean(errors?.[field?.name]) && !row[header.header]}
                                                 />
                                             )
                                             ||
                                             header?.fieldType?.type === 'single_select' && (
-                                                <FormControl fullWidth size="small">
+                                                <FormControl fullWidth size="small" error={Boolean(errors?.[field?.name]) && !row[header.header]}>
                                                     <Select
                                                         value={row[header.header] || ''}
                                                         disabled={readOnly}
@@ -309,7 +319,7 @@ const TableField = ({ field, onChange, errors, readOnly, formData, onFocus, isFo
                                             )
                                             ||
                                             header?.fieldType?.type === 'multi_select' && (
-                                                <FormControl fullWidth size="small">
+                                                <FormControl fullWidth size="small" error={Boolean(errors?.[field?.name]) && (!row[header.header] || row[header.header].length === 0)}>
                                                     <Autocomplete
                                                         multiple
                                                         disableCloseOnSelect

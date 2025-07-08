@@ -506,6 +506,42 @@ const DynamicForm = ({
             }
         }
 
+        if(field.type === "table" && Boolean(field.required)){
+            let error = false;
+
+            let tableData = formData?.[field?.name];
+
+            if (typeof tableData === "string"){
+                try {
+                    tableData = JSON.parse(tableData);
+                } catch (e) {
+                    error = true;
+                }
+            }
+
+            if (Array.isArray(tableData)) {
+                for (const row of tableData) {
+                    for (const headerObj of field.tableHeaders) {
+                        const key = headerObj?.header;
+
+                        const value = row?.[key];
+
+                        if (value === undefined || value === null || (typeof value === "string" && value.trim() === "") || (Array.isArray(value) && value.length === 0)) {
+                            error = true;
+                            break;
+                        }
+                    }
+                    if (error) break;
+                }
+            }
+
+            if(error){
+                return tempErrors[field.name] = `${field.label} is required`;
+            }
+
+            return null;
+        }
+
         if (Boolean(field.required) && !formData[field.name]) {
             tempErrors[field.name] = `${field.label} is required`;
         } else if (field.minLength && formData[field.name] !== "" && formData[field.name]?.length < field.minLength) {

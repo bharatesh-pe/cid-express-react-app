@@ -6888,10 +6888,9 @@ async function appendTextToPdf(pdfDoc, appendText, pageWidth, pageHeight, regula
 
 exports.appendToLastLineOfPDF = async (req, res) => {
   try {
-    
     const { ui_case_id, eq_case_id, created_by, appendText, transaction_id, selected_row_id, aoFields, submission_date } = req.body;
 
-    if (!ui_case_id && !eq_case_id || !appendText || !selected_row_id || !aoFields) {
+    if ((!ui_case_id && !eq_case_id) || !appendText || !selected_row_id || !aoFields) {
       console.error("Missing required fields.");
       return res.status(400).json({ success: false, message: 'Missing required fields.' });
     }
@@ -6899,11 +6898,14 @@ exports.appendToLastLineOfPDF = async (req, res) => {
     const dirPath = path.join(__dirname, `../data/user_unique/${transaction_id}`);
     fs.mkdirSync(dirPath, { recursive: true });
 
-    
     const whereClause = {};
     if (ui_case_id) whereClause.ui_case_id = ui_case_id;
     if (eq_case_id) whereClause.eq_case_id = eq_case_id;
 
+    const pageWidth = 595.276;
+    const pageHeight = 841.89;
+
+    // Find latest PDF file record
     const latestFile = await UiProgressReportFileStatus.findOne({
       where: {
         ...whereClause,
@@ -6911,21 +6913,60 @@ exports.appendToLastLineOfPDF = async (req, res) => {
       },
       order: [['created_at', 'DESC']],
     });
+
+    let pdfDoc;
+    let regularFont, boldFont;
+    let latestFileId = null;
+    let newFileName = '';
+    let newFilePath = '';
+
     if (!latestFile) {
-      console.error("No PDF file found.");
-      return res.status(404).json({ success: false, message: 'No PDF file found.' });
+  // Create new PDF document
+  pdfDoc = await PDFDocument.create();
+
+  regularFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+
+  await insertGeneralInfo(pdfDoc, aoFields, pageWidth, pageHeight, regularFont, boldFont, 'pdfDoc');
+
+  await appendTextToPdf(pdfDoc, appendText, pageWidth, pageHeight, regularFont, boldFont);
+
+  // Save new PDF
+  newFileName = `new_report_${Date.now()}.pdf`;
+  newFilePath = path.join(__dirname, '../public/files', newFileName);
+  const pdfBytes = await pdfDoc.save();
+  fs.writeFileSync(newFilePath, pdfBytes);
+
+  const newFileRecord = await UiProgressReportFileStatus.create({
+    ui_case_id,
+    eq_case_id,
+    created_by,
+    is_pdf: true,
+    file_name: newFileName,
+    file_path: path.join('files', newFileName),
+  });
+  latestFileId = newFileRecord.id;
+}
+ else {
+      const pdfPath = path.join(__dirname, '../public', latestFile.file_path);
+      const existingPdfBytes = fs.readFileSync(pdfPath);
+      pdfDoc = await PDFDocument.load(existingPdfBytes);
+
+      regularFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+      boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+
+      await appendTextToPdf(pdfDoc, appendText, pageWidth, pageHeight, regularFont, boldFont);
+
+      // Save updated PDF
+      newFileName = `updated_${latestFile.file_name}`;
+      newFilePath = path.join(__dirname, '../public/files', newFileName);
+      const updatedPdfBytes = await pdfDoc.save();
+      fs.writeFileSync(newFilePath, updatedPdfBytes);
+
+      latestFileId = latestFile.id;
     }
 
-    const pdfPath = path.join(__dirname, '../public', latestFile.file_path);
-    const existingPdfBytes = fs.readFileSync(pdfPath);
-    const pdfDoc = await PDFDocument.load(existingPdfBytes);
-
-    const regularFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
-    const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-
-    const pageWidth = 595.276;
-    const pageHeight = 841.89;
-
+    // Monthwise report logic (unchanged)
     const monthLabelRaw = getCurrentMonthDateLabel();
     const monthLabelDisplay = monthLabelRaw.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
     const monthwiseFileName = `${monthLabelRaw}.pdf`;
@@ -6956,25 +6997,27 @@ exports.appendToLastLineOfPDF = async (req, res) => {
       const centerX = 50;
       const centerY = pageHeight / 2;
 
+      const monthBoldFont = await monthPdf.embedFont(StandardFonts.HelveticaBold);
+
       submissionPage.drawText(monthLabelDisplay, {
         x: centerX,
         y: centerY + fontSize + 10,
         size: fontSize,
-        font: boldFont,
+        font: monthBoldFont,
         color: rgb(0, 0, 0),
       });
       submissionPage.drawText("SUBMISSION", {
         x: centerX,
         y: centerY,
         size: fontSize,
-        font: boldFont,
+        font: monthBoldFont,
         color: rgb(0, 0, 0),
       });
       submissionPage.drawText("PROGRESS REPORT", {
         x: centerX,
         y: centerY - fontSize - 10,
         size: fontSize,
-        font: boldFont,
+        font: monthBoldFont,
         color: rgb(0, 0, 0),
       });
     } else {
@@ -6982,33 +7025,31 @@ exports.appendToLastLineOfPDF = async (req, res) => {
       monthPdf = await PDFDocument.load(existingMonthPdfBytes);
     }
 
-    let generalInfoAddedMain = false;
-    let generalInfoAddedMonth = false;
+    const monthRegularFont = await monthPdf.embedFont(StandardFonts.Helvetica);
+    const monthBoldFont = await monthPdf.embedFont(StandardFonts.HelveticaBold);
 
+    // Insert general info if needed
     if (shouldInsertGeneralInfoForPdfDoc(ui_case_id)) {
-  await insertGeneralInfo(pdfDoc, aoFields, pageWidth, pageHeight, regularFont, boldFont, 'pdfDoc');
-}
+      await insertGeneralInfo(pdfDoc, aoFields, pageWidth, pageHeight, regularFont, boldFont, 'pdfDoc');
+    }
+    if (shouldInsertGeneralInfoForMonthPdf(ui_case_id, monthLabelRaw)) {
+      await insertGeneralInfo(monthPdf, aoFields, pageWidth, pageHeight, monthRegularFont, monthBoldFont, 'monthPdf');
+    }
 
+    // Append the text also to monthwise PDF
+    await appendTextToPdf(monthPdf, appendText, pageWidth, pageHeight, monthRegularFont, monthBoldFont);
 
-   if (shouldInsertGeneralInfoForMonthPdf(ui_case_id, monthLabelRaw)) {
-  await insertGeneralInfo(monthPdf, aoFields, pageWidth, pageHeight, regularFont, boldFont, 'monthPdf');
-}
-
-
-    await appendTextToPdf(pdfDoc, appendText, pageWidth, pageHeight, regularFont, boldFont);
-    await appendTextToPdf(monthPdf, appendText, pageWidth, pageHeight, regularFont, boldFont);
-
-    const updatedPdfBytes = await pdfDoc.save();
-    const outputPath = path.join(__dirname, '../public/files', `updated_${latestFile.file_name}`);
-    fs.writeFileSync(outputPath, updatedPdfBytes);
-
+    // Save monthwise PDF
     const monthwisePdfBytes = await monthPdf.save();
     fs.writeFileSync(monthwisePath, monthwisePdfBytes);
 
-    await UiProgressReportFileStatus.update(
-      { file_path: path.join('files', `updated_${latestFile.file_name}`) },
-      { where: { id: latestFile.id } }
-    );
+    // Update the main UiProgressReportFileStatus file path if updated existing file
+    if (latestFile) {
+      await UiProgressReportFileStatus.update(
+        { file_path: path.join('files', newFileName) },
+        { where: { id: latestFileId } }
+      );
+    }
 
     if (isNewMonthFile) {
       await UiProgressReportMonthWise.create({
@@ -7022,6 +7063,7 @@ exports.appendToLastLineOfPDF = async (req, res) => {
       });
     }
 
+    // Update progress report statuses
     const tableName = "cid_ui_case_progress_report";
     const Model = sequelize.define(
       tableName,
@@ -7039,7 +7081,8 @@ exports.appendToLastLineOfPDF = async (req, res) => {
     );
 
     await Model.update({ field_pr_status: "Yes" }, { where: { id: selected_row_id } });
-    const tableName1 ="cid_eq_case_progress_report";
+
+    const tableName1 = "cid_eq_case_progress_report";
     const Model1 = sequelize.define(
       tableName1,
       {
@@ -7060,10 +7103,9 @@ exports.appendToLastLineOfPDF = async (req, res) => {
     return res.status(200).json({ success: true, message: 'PDF updated successfully.' });
   } catch (error) {
     console.error('Error in appendToLastLineOfPDF:', error);
-    return res.status(500).json({ success: false, message: "Failed to append the PDF" + error.message, error });
+    return res.status(500).json({ success: false, message: "Failed to append the PDF: " + error.message, error });
   }
 };
-
 
 
 
@@ -10952,8 +10994,8 @@ exports.getDateWiseTableCounts = async (req, res) => {
 
             const schema = typeof tableData.fields === "string"  ? JSON.parse(tableData.fields)  : tableData.fields;
 
-            const hasCaseDiary = schema.some(f => f.name === "field_case_diary");
-            const dateField = hasCaseDiary ? "field_case_diary" : "created_at";
+            const hasCaseDiary = schema.find(f => f?.case_dairy === true);
+            const dateField = hasCaseDiary ? hasCaseDiary.name : "created_at";
 
             const whereConditions = [`${dateField} IS NOT NULL`];
             const replacements = {};
@@ -10968,7 +11010,7 @@ exports.getDateWiseTableCounts = async (req, res) => {
                 replacements.pt_case_id = pt_case_id;
             }
 
-            const query = `SELECT  DATE(${dateField}) as date, COUNT(*) as count FROM ${table} WHERE ${whereConditions.join(" AND ")} GROUP BY DATE(${dateField}) `;
+            const query = `SELECT ${dateField} as date, COUNT(*) as count FROM ${table} WHERE ${whereConditions.join(" AND ")} GROUP BY ${dateField} `;
 
             const records = await sequelize.query(query, {
                 type: sequelize.QueryTypes.SELECT,
@@ -10983,10 +11025,15 @@ exports.getDateWiseTableCounts = async (req, res) => {
                 let dateStr;
                 try {
                     const dateObj = rec.date instanceof Date ? rec.date : new Date(rec.date);
-                    
+
                     if (isNaN(dateObj.getTime())) continue;
                     
-                    dateStr = dateObj.toISOString().split('T')[0];
+                    const year = dateObj.getFullYear();
+                    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+                    const day = String(dateObj.getDate()).padStart(2, '0');
+                    
+                    dateStr = `${year}-${month}-${day}`;
+                    
                 } catch (e) {
                     continue;
                 }
@@ -11044,7 +11091,7 @@ exports.getTemplateDataWithDate = async (req, res) => {
         let dateField = "created_at";
 
         for (const field of displayFields) {
-            const { name, data_type, not_null, default_value } = field;
+            const { name, data_type, not_null, default_value, case_dairy } = field;
 
             fields[name] = {
                 type: typeMapping[data_type?.toUpperCase()] || Sequelize.DataTypes.STRING,
@@ -11052,8 +11099,8 @@ exports.getTemplateDataWithDate = async (req, res) => {
                 defaultValue: default_value || null,
             };
 
-            if (name === "field_case_diary") {
-                dateField = "field_case_diary";
+            if (case_dairy === true) {
+                dateField = name;
             }
         }
 
@@ -11076,19 +11123,22 @@ exports.getTemplateDataWithDate = async (req, res) => {
         const offset = (parseInt(page) - 1) * parseInt(limit);
         const parsedDate = date.split("T")[0];
 
-        const whereConditions = [
-            Sequelize.where(
-                Sequelize.fn("DATE", Sequelize.col(dateField)),
-                parsedDate
-            )
-        ];
+        const startDate = new Date(parsedDate + "T00:00:00");
+        const endDate = new Date(parsedDate + "T23:59:59.999");
+
+        const whereConditions = {
+            [dateField]: {
+                [Op.gte]: startDate,
+                [Op.lte]: endDate
+            }
+        };
 
         if (fields["ui_case_id"] && ui_case_id) {
-        whereConditions.push({ ui_case_id });
+            whereConditions.push({ ui_case_id });
         }
 
         if (fields["pt_case_id"] && pt_case_id) {
-        whereConditions.push({ pt_case_id });
+            whereConditions.push({ pt_case_id });
         }
 
         if (search) {
