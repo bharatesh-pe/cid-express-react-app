@@ -24,6 +24,8 @@ const TableField = ({ field, onChange, errors, readOnly, formData, onFocus, isFo
     const [headers, setHeaders] = useState(field.tableHeaders ? { [field.name]: field.tableHeaders } : {});
     const [focusedCell, setFocusedCell] = useState({ row: null, col: null });
 
+    const [dependentOptions, setDependentOptions] = useState({});
+
     useEffect(() => {
         setHeaders(field.tableHeaders ? { [field.name]: field.tableHeaders } : {});
     }, [field]);
@@ -76,6 +78,25 @@ const TableField = ({ field, onChange, errors, readOnly, formData, onFocus, isFo
             newRows = data;
         }
 
+        if(formData){
+            headers?.[field?.name].map((header)=>{
+
+                if(header?.fieldType?.is_dependent === "true" && header?.fieldType?.dependent_table){
+                    const dependentTable = headers?.[field?.name]?.find((t) => Array.isArray(header?.fieldType?.dependent_table) && header.fieldType.dependent_table.includes(t.fieldType.table));
+
+                    if(dependentTable){
+                        newRows.forEach((row, rowIndex) => {
+                            const rowData = row[dependentTable.header];
+                            if (rowData) {
+                                fetchDependentOptions(dependentTable, rowData, rowIndex);
+                            }
+                        });
+                    }
+                }
+
+            });
+        }
+
         setRows(newRows);
         onChange(field, newRows);
     }, [formData]);
@@ -92,10 +113,14 @@ const TableField = ({ field, onChange, errors, readOnly, formData, onFocus, isFo
 
     const addRow = () => {
         const defaultRow = {};
+        let defaultRowHeader = false;
+        let defaultRowValue = false;
 
         field?.tableHeaders?.forEach(header => {
             const defaultOpt = header?.fieldType?.options?.find(opt => opt.defaultValue === true);
             if (defaultOpt) {
+                defaultRowValue = header.fieldType?.type === 'multi_select' ? [defaultOpt.code] : defaultOpt.code;;
+                defaultRowHeader = header;
                 defaultRow[header.header] =  header.fieldType?.type === 'multi_select' ? [defaultOpt.code] : defaultOpt.code;
             }
         });
@@ -103,12 +128,31 @@ const TableField = ({ field, onChange, errors, readOnly, formData, onFocus, isFo
         const updatedRows = [...rows, defaultRow];
         setRows(updatedRows);
         onChange && onChange(field, updatedRows);
+
+        if(defaultRowHeader){
+            fetchDependentOptions(defaultRowHeader, defaultRowValue, updatedRows.length - 1);
+        }
+
     };
 
     const deleteRow = (index) => {
         const updatedRows = rows.filter((_, i) => i !== index);
-        setRows(updatedRows);
 
+        const newDependentOptions = {};
+        Object.keys(dependentOptions).forEach((key) => {
+            const [rowStr, fieldName] = key.split("_");
+            const rowIndex = parseInt(rowStr, 10);
+
+            if (rowIndex < index) {
+                newDependentOptions[key] = dependentOptions[key];
+            } else if (rowIndex > index) {
+                const newKey = `${rowIndex - 1}_${fieldName}`;
+                newDependentOptions[newKey] = dependentOptions[key];
+            }
+        });
+
+        setRows(updatedRows);
+        setDependentOptions(newDependentOptions);
         onChange && onChange(field, updatedRows);
     };
 
@@ -119,6 +163,18 @@ const TableField = ({ field, onChange, errors, readOnly, formData, onFocus, isFo
             for (let i = 0; i < updatedHeaders.length; i++) {
                 const header = updatedHeaders[i];
                 if (header?.fieldType?.api) {
+
+                    if(header?.fieldType?.is_dependent === "true" && header?.fieldType?.dependent_table){
+                        updatedHeaders[i] = {
+                            ...header,
+                            fieldType: {
+                                ...header.fieldType,
+                                options: []
+                            }
+                        };
+                        continue;
+                    }
+
                     try {
                         const payload = {
                             table_name: header?.fieldType?.table
@@ -172,6 +228,78 @@ const TableField = ({ field, onChange, errors, readOnly, formData, onFocus, isFo
 
         fetchAllOptions();
     }, []);
+
+    const fetchDependentOptions = async (header, rowData, rowIndex) => {
+        const { table: tableName, forign_key } = header.fieldType;
+        
+        if(!tableName || !rowData || !forign_key){
+            return false;
+        }
+
+        const dependentTable = headers?.[field?.name]?.find((t) => Array.isArray(t?.fieldType?.dependent_table) && t.fieldType.dependent_table.includes(tableName));
+
+        if (!dependentTable){
+            console.log("dependentTable not found for table:", tableName);
+            return;
+        } 
+
+        const { api: apiPath, table } = dependentTable.fieldType;
+        
+        const payload = {
+            table_name: table,
+            [forign_key]: rowData
+        }
+
+        try {
+            const response = await api.post(apiPath, payload);
+
+            const data = response.data;
+
+            var updatedOptions = [];
+
+            if (apiPath === "/templateData/getTemplateData") {
+                updatedOptions =  data.map(option => {
+                    const nameKey = Object.keys(option).find(k => !['id', 'created_at', 'updated_at'].includes(k));
+                    return {
+                        name: nameKey ? option[nameKey] : '',
+                        code: option.id
+                    };
+                });
+            } else {
+                updatedOptions = data.map(option => ({
+                    name: option[table === 'users' ? 'name' : `${table}_name`],
+                    code: option[table === 'users' ? 'user_id' : `${table}_id`]
+                }));
+            }
+
+            const updatedHeaders = [...headers[field.name]];
+            const depIndex = updatedHeaders.findIndex(h => h.header === dependentTable.header);
+
+            if (depIndex !== -1) {
+                updatedHeaders[depIndex] = {
+                    ...updatedHeaders[depIndex],
+                    fieldType: {
+                        ...updatedHeaders[depIndex].fieldType,
+                        options: updatedOptions
+                    }
+                };
+
+                setHeaders((prev) => ({
+                    ...prev,
+                    [field.name]: updatedHeaders
+                }));
+            }
+
+            setDependentOptions(prev => ({
+                ...prev,
+                [`${rowIndex}_${dependentTable.header}`]: updatedOptions
+            }));
+
+        } catch (error) {
+            console.error(`Error fetching dependent options:`, error);
+            return [];
+        }
+    };
         
     if (!headers?.[field?.name] || headers[field.name].length === 0){
         return <p style={{ color: '#333', textAlign: 'center', width: '100%', fontWeight: 500 }}>No Table Headers. </p>;
@@ -254,8 +382,15 @@ const TableField = ({ field, onChange, errors, readOnly, formData, onFocus, isFo
                                     </Box>
                                 </TableCell>
 
-                                {headers?.[field?.name].map((header, colIndex) => (
-                                    
+                                {headers?.[field?.name].map((header, colIndex) => {
+
+                                    let options = header.fieldType?.options || [];
+
+                                    if(header?.fieldType?.is_dependent === "true" && header?.fieldType?.dependent_table){
+                                        options = dependentOptions[`${rowIndex}_${header.header}`] || [];
+                                    }
+
+                                    return (
                                     <TableCell key={colIndex}>
                                         {
 
@@ -310,9 +445,12 @@ const TableField = ({ field, onChange, errors, readOnly, formData, onFocus, isFo
                                                     <Select
                                                         value={row[header.header] || ''}
                                                         disabled={readOnly}
-                                                        onChange={(e) => handleCellChange(rowIndex, header.header, e.target.value)}
+                                                        onChange={(e) => {
+                                                            fetchDependentOptions(header, e.target.value, rowIndex);
+                                                            handleCellChange(rowIndex, header.header, e.target.value);
+                                                        }}
                                                     >
-                                                        {(header.fieldType?.options || []).map((opt, i) => (
+                                                        {(options || []).map((opt, i) => (
                                                             <MenuItem key={i} value={opt.code}>{opt.name}</MenuItem>
                                                         ))}
                                                     </Select>
@@ -324,13 +462,14 @@ const TableField = ({ field, onChange, errors, readOnly, formData, onFocus, isFo
                                                     <Autocomplete
                                                         multiple
                                                         disableCloseOnSelect
-                                                        options={header.fieldType?.options || []}
+                                                        options={options || []}
                                                         getOptionLabel={(option) => option.name}
                                                         value={
-                                                            (row[header.header] || []).map(code =>header.fieldType?.options?.find(opt => opt.code === code)).filter(Boolean)
+                                                            (row[header.header] || []).map(code =>options?.find(opt => opt.code === code)).filter(Boolean)
                                                         }
                                                         onChange={(_, newValue) => {
                                                             const codes = newValue.map(opt => opt.code);
+                                                            fetchDependentOptions(header, codes, rowIndex);
                                                             handleCellChange(rowIndex, header.header, codes);
                                                         }}
                                                         limitTags={2}
@@ -348,7 +487,8 @@ const TableField = ({ field, onChange, errors, readOnly, formData, onFocus, isFo
                                             )
                                         }
                                     </TableCell>
-                                ))}
+                                )}
+                            )}
                             </TableRow>
                         ))}
                     </TableBody>
