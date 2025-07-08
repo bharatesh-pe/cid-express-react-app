@@ -50,7 +50,6 @@ const TableField = ({ field, onChange, errors, readOnly, formData, onFocus, isFo
         if (initialized.current) return;
 
         const data = formData?.[field?.name];
-        initialized.current = true;
 
         let newRows = [];
 
@@ -67,11 +66,13 @@ const TableField = ({ field, onChange, errors, readOnly, formData, onFocus, isFo
             newRows = [defaultRow];
         } else if (typeof data === "string") {
             try {
+                initialized.current = true;
                 newRows = JSON.parse(data);
             } catch (err) {
                 newRows = [{}];
             }
         } else {
+            initialized.current = true;
             newRows = data;
         }
 
