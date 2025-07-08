@@ -32,6 +32,16 @@ const fs = require("fs");
 const path = require("path");
 const { pdfDocEncodingDecode } = require("pdf-lib");
 const { sendSMS } = require("../services/smsService"); // <-- Add this import
+const typeMapping = {
+  STRING: Sequelize.DataTypes.STRING,
+  INTEGER: Sequelize.DataTypes.INTEGER,
+  TEXT: Sequelize.DataTypes.TEXT,
+  DATE: Sequelize.DataTypes.DATE,
+  BOOLEAN: Sequelize.DataTypes.BOOLEAN,
+  FLOAT: Sequelize.DataTypes.FLOAT,
+  DOUBLE: Sequelize.DataTypes.DOUBLE,
+  JSONB: Sequelize.DataTypes.JSONB,
+};
 const get_module = async (req, res) => {
   try {
     const { user_id } = req.user;
@@ -2516,17 +2526,68 @@ const dumpOldCmsDataFromExcel = async (req, res) => {
             //     throw new Error(`Insert failed for publickey: ${insertResult}`);
             // }
 
-            console.log("✅ Inserted case for publickey:", publickeyValue);
         }
 
         await transaction.commit();
         return res.status(200).json({ success: true, message: "Old CMS data processed successfully" });
     } catch (error) {
         await transaction.rollback();
-        console.error("❌ Error during Excel processing:", error);
         return res.status(500).json({ success: false, message: "Transaction failed", error: error.message });
     }
 };
+
+const store_cnr_table_data = async (req, res) => {
+    const data = req.body;
+  
+    try {
+      // Fetch template schema
+      const CNRtableData = await Template.findOne({ where: { table_name: "cid_pt_case_cnr" } });
+      if (!CNRtableData) {
+        return res.status(400).json({ success: false, message: "Table 'cid_pt_case_cnr' does not exist." });
+      }
+  
+      // Parse field structure
+      const schema = typeof CNRtableData.fields === "string" ? JSON.parse(CNRtableData.fields) : CNRtableData.fields;
+  
+      // Build model dynamically
+      const attributes = {
+        id: { type: Sequelize.DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+        created_at: { type: Sequelize.DataTypes.DATE, allowNull: false, defaultValue: Sequelize.NOW },
+        updated_at: { type: Sequelize.DataTypes.DATE, allowNull: false, defaultValue: Sequelize.NOW },
+      };
+  
+      for (const field of schema) {
+        const { name, data_type, not_null } = field;
+        attributes[name] = {
+          type: typeMapping[data_type?.toUpperCase()] || Sequelize.DataTypes.STRING,
+          allowNull: !not_null,
+        };
+      }
+  
+      const CNRModel = sequelize.define("cid_pt_case_cnr", attributes, {
+        freezeTableName: true,
+        timestamps: true,
+        createdAt: 'created_at',
+        updatedAt: 'updated_at',
+      });
+  
+      await CNRModel.sync();
+  
+      // Append fixed metadata
+      data.created_by = 'system';
+      data.created_by_id = 0;
+      data.created_at = new Date();
+      data.updated_at = new Date();
+  
+      // Insert record
+      await CNRModel.create(data);
+  
+      return res.status(200).json({ success: true, message: "CNR data stored successfully." });
+    } catch (error) {
+      console.error("CNR Save Error:", error);
+      return res.status(500).json({ success: false, message: "Failed to save CNR data.", error: error.message });
+    }
+  };
 
 
   
@@ -2544,7 +2605,8 @@ module.exports = {
   fetch_dash_count,
   mapUIandPT,
   updatePoliceStationFromExcel,
-  dumpOldCmsDataFromExcel
+  dumpOldCmsDataFromExcel,
+  store_cnr_table_data
 };
 
 
