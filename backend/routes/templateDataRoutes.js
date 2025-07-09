@@ -321,6 +321,9 @@ router.post('/getTemplateDataWithAccused',
 router.post('/getDateWiseTableCounts',
     [validate_token],
     templateDataController.getDateWiseTableCounts)
+router.post('/viewMagazineTemplateAllData',
+    [validate_token],
+    templateDataController.viewMagazineTemplateAllData)
 
 router.post('/getTemplateDataWithDate',
     [gwtDataValidation],[validate_token],
