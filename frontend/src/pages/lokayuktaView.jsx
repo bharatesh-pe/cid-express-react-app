@@ -2594,6 +2594,45 @@ if ((!currentTableName || currentTableName === "") && (!activeSidebar?.table || 
 
     // end --- bulk upload functions
 
+
+    // start magazine view 
+
+    const showMagazineView = () => {
+
+        const actionArray = sidebarContentArray
+            .filter(item => item.table)
+            .map(item => ({
+                table: item.table,
+                name: item.name
+            }));
+
+
+        if(actionArray.length === 0){
+            toast.error('No Template Action Was Found !', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+        
+
+        var overAllObj = {
+            actionArray : actionArray,
+            ui_case_id: module === "pt_case" ? rowData?.ui_case_id :  rowData?.id,
+            pt_case_id: module === "pt_case" ? rowData?.id :  rowData?.pt_case_id,
+            headerDetails
+        }
+
+        navigate("/magazine-view", { state: overAllObj });
+
+    };
+
     return (
         <Stack direction="row" justifyContent="space-between">
 
@@ -3223,6 +3262,16 @@ if ((!currentTableName || currentTableName === "") && (!activeSidebar?.table || 
                                         Bulk Upload
                                     </Button>
                                 }
+
+                                <Button
+                                    onClick={showMagazineView}
+                                    sx={{height: "38px",}}
+                                    className="blueButton"
+                                    variant="contained"
+                                >
+                                    View Magazine
+                                </Button>
+
                             </Box>
                         </Box>
 
