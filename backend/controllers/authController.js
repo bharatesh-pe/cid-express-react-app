@@ -2540,49 +2540,62 @@ const store_cnr_table_data = async (req, res) => {
     const data = req.body;
   
     try {
-      // Fetch template schema
-      const CNRtableData = await Template.findOne({ where: { table_name: "cid_pt_case_cnr" } });
-      if (!CNRtableData) {
-        return res.status(400).json({ success: false, message: "Table 'cid_pt_case_cnr' does not exist." });
-      }
-  
-      // Parse field structure
-      const schema = typeof CNRtableData.fields === "string" ? JSON.parse(CNRtableData.fields) : CNRtableData.fields;
-  
-      // Build model dynamically
-      const attributes = {
-        id: { type: Sequelize.DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
-        created_at: { type: Sequelize.DataTypes.DATE, allowNull: false, defaultValue: Sequelize.NOW },
-        updated_at: { type: Sequelize.DataTypes.DATE, allowNull: false, defaultValue: Sequelize.NOW },
-      };
-  
-      for (const field of schema) {
-        const { name, data_type, not_null } = field;
-        attributes[name] = {
-          type: typeMapping[data_type?.toUpperCase()] || Sequelize.DataTypes.STRING,
-          allowNull: !not_null,
+        // Fetch template schema
+        const CNRtableData = await Template.findOne({ where: { table_name: "cid_pt_case_cnr" } });
+        if (!CNRtableData) {
+            return res.status(400).json({ success: false, message: "Table 'cid_pt_case_cnr' does not exist." });
+        }
+    
+        // Parse field structure
+        const schema = typeof CNRtableData.fields === "string" ? JSON.parse(CNRtableData.fields) : CNRtableData.fields;
+    
+        // Build model dynamically
+        const attributes = {
+            id: { type: Sequelize.DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+            created_at: { type: Sequelize.DataTypes.DATE, allowNull: false, defaultValue: Sequelize.NOW },
+            updated_at: { type: Sequelize.DataTypes.DATE, allowNull: false, defaultValue: Sequelize.NOW },
+            pt_case_id: { type: Sequelize.DataTypes.TEXT, allowNull: false},
         };
-      }
+    
+        for (const field of schema) {
+            const { name, data_type, not_null } = field;
+            attributes[name] = {
+            type: typeMapping[data_type?.toUpperCase()] || Sequelize.DataTypes.STRING,
+            allowNull: !not_null,
+            };
+        }
   
-      const CNRModel = sequelize.define("cid_pt_case_cnr", attributes, {
-        freezeTableName: true,
-        timestamps: true,
-        createdAt: 'created_at',
-        updatedAt: 'updated_at',
-      });
-  
-      await CNRModel.sync();
-  
-      // Append fixed metadata
-      data.created_by = 'system';
-      data.created_by_id = 0;
-      data.created_at = new Date();
-      data.updated_at = new Date();
-  
-      // Insert record
-      await CNRModel.create(data);
-  
-      return res.status(200).json({ success: true, message: "CNR data stored successfully." });
+        const CNRModel = sequelize.define("cid_pt_case_cnr", attributes, {
+            freezeTableName: true,
+            timestamps: true,
+            createdAt: 'created_at',
+            updatedAt: 'updated_at',
+        });
+    
+        await CNRModel.sync();
+
+        //get the pt_case_id from cid_pending_trial table
+        if (data.field_cnr_number) {
+            const [results] = await sequelize.query(
+            `SELECT id FROM cid_pending_trial WHERE field_cnr_number = :cnr`,
+            { replacements: { cnr: data.field_cnr_number } }
+            );
+    
+            data.pt_case_id = results.length > 0 ? results[0].id : null;
+        } else {
+            data.pt_case_id = null;
+        }
+
+        // Append fixed metadata
+        data.created_by = 'system';
+        data.created_by_id = 0;
+        data.created_at = new Date();
+        data.updated_at = new Date();
+    
+        // Insert record
+        await CNRModel.create(data);
+    
+        return res.status(200).json({ success: true, message: "CNR data stored successfully." });
     } catch (error) {
       console.error("CNR Save Error:", error);
       return res.status(500).json({ success: false, message: "Failed to save CNR data.", error: error.message });
