@@ -667,7 +667,7 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
                             sx={{height: "38px", textTransform: 'none'}}
                             className="whiteBorderedBtn"
                         >
-                            View Magazine
+                            View Docket
                         </Button>
                     }
                 </Box>

@@ -2591,7 +2591,7 @@ const PlanOfAction = ({templateName, headerDetails, rowId, options, selectedRowD
                                         sx={{height: "38px", textTransform: 'none'}}
                                         className="whiteBorderedBtn"
                                     >
-                                        View Magazine
+                                        View Docket
                                     </Button>
                                 }
                             </Box>

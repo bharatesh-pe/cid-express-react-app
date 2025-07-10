@@ -2452,7 +2452,7 @@ const NormalViewForm = ({
                     sx={{height: "38px", textTransform: 'none'}}
                     className="whiteBorderedBtn"
                 >
-                    View Magazine
+                    View Docket
                 </Button>
             }
             
