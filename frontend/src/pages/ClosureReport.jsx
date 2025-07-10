@@ -10,7 +10,8 @@ const ClosureReport = ({
     rowId,
     options,
     selectedRowData,
-    backNavigation
+    backNavigation,
+    showMagazineView
 }) => {
     const [loading, setLoading] = useState(false);
     const [record, setRecord] = useState(null);
@@ -299,6 +300,7 @@ const ClosureReport = ({
                     noPadding={true}
                     showUpdateButton={!!record}
                     onEdit={handleEdit}
+                    showMagazineView={showMagazineView}
                 />
             )}
         </Box>

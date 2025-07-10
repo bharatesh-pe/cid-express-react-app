@@ -10,12 +10,36 @@ const APPROX_FIELD_HEIGHT = 80; // Approximate height of one field in pixels
 const PAGE_PADDING = 48; // Total vertical padding (24px top + 24px bottom)
 const TITLE_HEIGHT = 64; // Approximate height of title section
 
-const MagazinePage = React.forwardRef(({ title, content, isContinuation }, ref) => (
+const MagazinePage = React.forwardRef(({ title, content, isContinuation, table, overAllAction, onClick }, ref) => (
     <div ref={ref} className="page bg-white">
         <Box sx={{ p: 3, height: '90%', overflowY: 'auto' }}>
-            <Typography variant="h6" gutterBottom>
-                {isContinuation ? `${title} (continued)` : title}
-            </Typography>
+            {overAllAction ? (
+                <Typography 
+                    variant="h6" 
+                    gutterBottom
+                    component="a"
+                    sx={{
+                        cursor: 'pointer',
+                        color: 'primary.main',
+                        textDecoration: 'underline',
+                        '&:hover': {
+                            color: 'primary.dark'
+                        }
+                    }}
+                    onClick={(e) => {
+                        e.preventDefault();
+                        if(onClick){
+                            onClick(table)
+                        }
+                    }}
+                >
+                    {isContinuation ? `${title} (continued)` : title}
+                </Typography>
+            ) : (
+                <Typography variant="h6" gutterBottom>
+                    {isContinuation ? `${title} (continued)` : title}
+                </Typography>
+            )}
             <p dangerouslySetInnerHTML={{ __html: content ? content : '' }}></p>
         </Box>
     </div>
@@ -38,11 +62,68 @@ const MagazineView = () => {
         navigate(-1);
     }
 
-    const { actionArray, ui_case_id, pt_case_id, headerDetails } = overAllObj;
+    const { actionArray, ui_case_id, pt_case_id, headerDetails, overAllAction, contentArray } = overAllObj;
 
     const backToInvestigation = () => {
-        navigate(-1);
+
+        var activeSidebarObj = [];  
+        
+        if (overAllAction === false) {
+            try {
+                const parsedContent = JSON.parse(contentArray);
+
+                const getPerticularAction = parsedContent.filter((item) => {
+                    return item.table === actionArray[0]?.table;
+                });
+
+                if (getPerticularAction?.[0]) {
+                    activeSidebarObj = getPerticularAction;
+                }
+
+            } catch (error) {
+                console.log("Error parsing contentArray:", error);
+            }
+        }
+
+        navigate('/caseView', { 
+            state: {
+                ...overAllObj,
+                activeSidebarObj : activeSidebarObj
+            }
+        });
     };
+
+    const backToIndividualInvestigation = (table)=>{
+
+        var activeSidebarObj = [];  
+    
+        try {
+            const parsedContent = JSON.parse(contentArray);
+
+            const getPerticularAction = parsedContent.filter((item) => {
+                return item.table === table;
+            });
+
+            if (getPerticularAction?.[0]) {
+                activeSidebarObj = getPerticularAction;
+            }
+
+        } catch (error) {
+            console.log("Error parsing contentArray:", error);
+        }
+
+        if(activeSidebarObj.length > 0){
+            navigate('/caseView', { 
+                state: {
+                    ...overAllObj,
+                    activeSidebarObj : activeSidebarObj
+                }
+            });
+        }else{
+            console.log("action not found");
+        }
+
+    }
 
     const getTemplateOverAllData = async () => {
         const table_name = actionArray.map((item) => item.table);
@@ -68,6 +149,7 @@ const MagazineView = () => {
                         entries.forEach((entry, idx) => {
                             const findingTemplate = actionArray.find((item) => item.table === tableKey);
                             const baseTitle = `${findingTemplate ? findingTemplate?.name : tableKey} - #${idx + 1}`;
+                            const baseTableName = findingTemplate.table;
                             
                             const allEntries = Object.entries(entry)
                                 .filter(([key]) => key !== 'id')
@@ -104,6 +186,7 @@ const MagazineView = () => {
                                     if (currentChunk.length > 0) {
                                         generatedPages.push({
                                             title: baseTitle,
+                                            table: baseTableName,
                                             content: currentChunk.map(item => item.html).join("\n"),
                                             isContinuation: generatedPages.some(p => p.title === baseTitle)
                                         });
@@ -113,6 +196,7 @@ const MagazineView = () => {
                                     
                                     generatedPages.push({
                                         title: baseTitle,
+                                        table: baseTableName,
                                         content: entry.html,
                                         isContinuation: generatedPages.some(p => p.title === baseTitle)
                                     });
@@ -122,6 +206,7 @@ const MagazineView = () => {
                                 if (currentChunkHeight + entry.height > availableHeight - 40 && currentChunk.length > 0) {
                                     generatedPages.push({
                                         title: baseTitle,
+                                        table: baseTableName,
                                         content: currentChunk.map(item => item.html).join("\n"),
                                         isContinuation: generatedPages.some(p => p.title === baseTitle)
                                     });
@@ -136,6 +221,7 @@ const MagazineView = () => {
                                 if (index === allEntries.length - 1 && currentChunk.length > 0) {
                                     generatedPages.push({
                                         title: baseTitle,
+                                        table: baseTableName,
                                         content: currentChunk.map(item => item.html).join("\n"),
                                         isContinuation: generatedPages.some(p => p.title === baseTitle)
                                     });
@@ -309,6 +395,9 @@ const MagazineView = () => {
                                     title={page.title}
                                     content={page.content}
                                     isContinuation={page.isContinuation}
+                                    overAllAction={overAllAction}
+                                    table={page.table}
+                                    onClick={backToIndividualInvestigation}
                                 />
                             ))}
                         </ReactPageFlip>

@@ -32,7 +32,7 @@ import AutocompleteField from "../components/form/AutoComplete";
 import ShortText from "../components/form/ShortText";
 import WestIcon from '@mui/icons-material/West';
 
-const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowData, backNavigation}) => {
+const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowData, backNavigation, showMagazineView}) => {
 
     console.log("ActionPlan component rendered with options:", options);
     const location = useLocation();
@@ -2795,6 +2795,16 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                                         {JSON.parse(localStorage.getItem("role_title")).toLowerCase() === "investigation officer" ? "Submit for Approval" : "Approve"}
                                     </Button>
                                 )}
+                                {
+                                    showMagazineView && 
+                                    <Button
+                                        onClick={()=>showMagazineView(false)}
+                                        sx={{height: "38px", textTransform: 'none'}}
+                                        className="whiteBorderedBtn"
+                                    >
+                                        View Magazine
+                                    </Button>
+                                }
                             </Box>
                         </Box>
                     </Box>

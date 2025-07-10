@@ -32,7 +32,7 @@ import WestIcon from '@mui/icons-material/West';
 import { Tabs, Tab } from '@mui/material';
 import { CircularProgress } from "@mui/material";
 
-const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedRowData, backNavigation }) => {
+const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedRowData, backNavigation, showMagazineView }) => {
 
   useEffect(() => {
     const fetchData = async () => {
@@ -2666,6 +2666,16 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
                         >
                             Submit
                         </Button>
+                        {
+                            showMagazineView && 
+                            <Button
+                                onClick={()=>showMagazineView(false)}
+                                sx={{height: "38px", textTransform: 'none'}}
+                                className="whiteBorderedBtn"
+                            >
+                                View Magazine
+                            </Button>
+                        }
                         </Box>
                     </Box>
                     </Box>

@@ -39,7 +39,7 @@ import ImportExportIcon from '@mui/icons-material/ImportExport';
 import dayjs from "dayjs";
 import React from "react";
 
-const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData, backNavigation }) => {
+const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData, backNavigation, showMagazineView }) => {
     const location = useLocation();
     const navigate = useNavigate();
     const { pageCount, systemStatus } = location.state || {};
@@ -2119,6 +2119,16 @@ const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData
                                             Add
                                         </Button>
                                     )}
+                                    {
+                                        showMagazineView && 
+                                        <Button
+                                            onClick={()=>showMagazineView(false)}
+                                            sx={{height: "38px", textTransform: 'none'}}
+                                            className="whiteBorderedBtn"
+                                        >
+                                            View Magazine
+                                        </Button>
+                                    }
                                 </Box>
                                 </Box>     
                             </Box>

@@ -1694,3 +1694,17 @@ div::first-letter {
     .newStyleButton:hover {
         box-shadow: 0 10px 15px -3px #488aec4f, 0 4px 6px -2px #488aec17 !important;
     }
+
+    .whiteBorderedBtn{
+        display: inline-block;
+        padding: 12px 24px;
+        border: 1px solid #4f4f4f !important;
+        border-radius: 4px;
+        transition: all 0.2s ease-in;
+        position: relative;
+        overflow: hidden;
+        font-size: 19px;
+        cursor: pointer;
+        color: #333 !important;
+        z-index: 1;
+    }
