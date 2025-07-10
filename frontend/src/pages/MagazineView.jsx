@@ -1,7 +1,7 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { West } from "@mui/icons-material";
-import { Chip, Typography, Box } from "@mui/material";
+import { Chip, Typography, Box, Tabs, Tab } from "@mui/material";
 import ReactPageFlip from "react-pageflip";
 import api from "../services/api";
 
@@ -57,6 +57,35 @@ const MagazineView = () => {
     const overAllObj = location.state;
 
     const [pages, setPages] = useState([]);
+
+    const [activeTab, setActiveTab] = useState(0);
+
+    const tableToPagesMap = useMemo(() => {
+        const map = {};
+        pages.forEach((page, index) => {
+            if (page.table) {
+                if (!map[page.table]) {
+                    map[page.table] = [];
+                }
+                map[page.table].push(index);
+            }
+        });
+        return map;
+    }, [pages]);
+
+    const handleTabClick = (table, tabIndex) => {
+        const pageIndices = tableToPagesMap[table];
+        if (!pageIndices || !pageIndices.length || !pageFlip.current) return;
+
+        const targetPageIndex = pageIndices[0];
+
+        setCurrentPage(targetPageIndex);
+
+        pageFlip.current.pageFlip().turnToPage(targetPageIndex);
+        
+        setActiveTab(tabIndex);
+        setCurrentPage(targetPageIndex);
+    };
 
     if (!overAllObj) {
         navigate(-1);
@@ -148,7 +177,7 @@ const MagazineView = () => {
                     if (Array.isArray(entries) && entries.length > 0) {
                         entries.forEach((entry, idx) => {
                             const findingTemplate = actionArray.find((item) => item.table === tableKey);
-                            const baseTitle = `${findingTemplate ? findingTemplate?.name : tableKey} - #${idx + 1}`;
+                            const baseTitle = `${findingTemplate ? findingTemplate?.name : tableKey} - ${idx + 1}`;
                             const baseTableName = findingTemplate.table;
                             
                             const allEntries = Object.entries(entry)
@@ -343,35 +372,68 @@ const MagazineView = () => {
 
     const onPageFlip = (e) => {
         setCurrentPage(e.data);
+
+        const currentTable = pages[e.data]?.table;
+        if (currentTable) {
+            const tabIndex = actionArray.findIndex(action => action.table === currentTable);
+            if (tabIndex >= 0){
+                setActiveTab(tabIndex);
+            }
+        }
     };
 
     return (
         <div style={{ padding: "1rem" }}>
-            <Typography
-                sx={{
-                    fontSize: "19px",
-                    fontWeight: "500",
-                    color: "#171A1C",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "6px",
-                    cursor: "pointer",
-                }}
-                className="Roboto"
-                onClick={backToInvestigation}
-            >
-                <West />
-                Back
-                {headerDetails && (
-                    <Chip
-                        label={headerDetails}
-                        color="primary"
-                        variant="outlined"
-                        size="small"
-                        sx={{ fontWeight: 500, marginTop: "2px" }}
-                    />
+             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                <Typography
+                    sx={{
+                        fontSize: "19px",
+                        fontWeight: "500",
+                        color: "#171A1C",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        cursor: "pointer",
+                    }}
+                    className="Roboto"
+                    onClick={backToInvestigation}
+                >
+                    <West />
+                    Back
+                    {headerDetails && (
+                        <Chip
+                            label={headerDetails}
+                            color="primary"
+                            variant="outlined"
+                            size="small"
+                            sx={{ fontWeight: 500, marginTop: "2px" }}
+                        />
+                    )}
+                </Typography>
+                {overAllAction && (
+                    <Tabs
+                        value={activeTab}
+                        variant="scrollable"
+                        scrollButtons="auto"
+                        sx={{ 
+                            flexGrow: 1,
+                            '& .MuiTabs-scroller': {
+                                overflow: 'auto !important',
+                            }
+                        }}
+                    >
+                        {actionArray?.map((action, index) => (
+                            action.table ? (
+                                <Tab 
+                                    key={index}
+                                    label={action.name}
+                                    onClick={() => handleTabClick(action.table, index)}
+                                />
+                            ) : null
+                        ))}
+                    </Tabs>
                 )}
-            </Typography>
+             </Box>
 
             <Box mt={3}>
                 {pages.length > 0 ? (
@@ -387,7 +449,7 @@ const MagazineView = () => {
                             height={viewportHeight}
                             className="magazine-flip"
                             ref={pageFlip}
-                            onFlip={onPageFlip}
+                            onFlip={(e) => onPageFlip(e)}
                         >
                             {pages.map((page, index) => (
                                 <MagazinePage
