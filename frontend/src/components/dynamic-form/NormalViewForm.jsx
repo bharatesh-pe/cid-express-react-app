@@ -51,7 +51,7 @@ import TableField from '../form/Table';
 
 const NormalViewForm = ({ 
     formConfig, initialData, onSubmit, onError, stepperData, closeForm, table_name, template_name, readOnly, editData, onUpdate, template_id, table_row_id, headerDetails, selectedRow, noPadding, disableEditButton, disableSaveNew, overAllReadonly, investigationViewTable, editedForm
-    , showAssignIo, investigationAction, reloadApproval, showCaseActionBtn, reloadForm , showCaseLog, reloadFormConfig , onSkip , skip , editName ,  oldCase , onViewOldCase
+    , showAssignIo, investigationAction, reloadApproval, showCaseActionBtn, reloadForm , showCaseLog, reloadFormConfig , onSkip , skip , editName ,  oldCase , onViewOldCase, showMagazineView
  }) => {
 
 //   let storageFormData = localStorage.getItem(template_name + '-formData') ? JSON.parse(localStorage.getItem(template_name + '-formData')) : {};
@@ -2445,6 +2445,16 @@ const NormalViewForm = ({
                 </Button>
             }
 
+            {
+                showMagazineView && 
+                <Button
+                    onClick={()=>showMagazineView(true)}
+                    sx={{height: "38px", textTransform: 'none'}}
+                    className="whiteBorderedBtn"
+                >
+                    View Docket
+                </Button>
+            }
             
             {oldCase &&  table_name === 'cid_under_investigation' && (
             <Typography

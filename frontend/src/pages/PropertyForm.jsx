@@ -38,7 +38,7 @@ import { saveAs } from 'file-saver';
 import ImportExportIcon from '@mui/icons-material/ImportExport';
 import dayjs from "dayjs";
 
-const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRowData, backNavigation }) => {
+const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRowData, backNavigation, showMagazineView }) => {
     const location = useLocation();
     const navigate = useNavigate();
     const { pageCount, systemStatus } = location.state || {};
@@ -2152,6 +2152,16 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
                                     >
                                         Submit
                                     </Button>
+                                    {
+                                        showMagazineView && 
+                                        <Button
+                                            onClick={()=>showMagazineView(false)}
+                                            sx={{height: "38px", textTransform: 'none'}}
+                                            className="whiteBorderedBtn"
+                                        >
+                                            View Docket
+                                        </Button>
+                                    }
                                 </Box>
                                 </Box>     
                             </Box>
