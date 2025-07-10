@@ -2556,7 +2556,7 @@ const Report41A = ({templateName, headerDetails, rowId, options, selectedRowData
                                             sx={{height: "38px", textTransform: 'none'}}
                                             className="whiteBorderedBtn"
                                         >
-                                            View Docket
+                                            Case Docket
                                         </Button>
                                     }
 

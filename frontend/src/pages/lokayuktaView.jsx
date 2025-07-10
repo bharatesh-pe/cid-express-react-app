@@ -2619,7 +2619,7 @@ if ((!currentTableName || currentTableName === "") && (!activeSidebar?.table || 
 
         if(overAllAction){     
             actionArray = sidebarContentArray
-                .filter(item => item.table)
+                .filter(item => (item.table && !item?.field))
                 .map(item => ({
                     table: item.table,
                     name: item.name
@@ -3322,7 +3322,7 @@ if ((!currentTableName || currentTableName === "") && (!activeSidebar?.table || 
                                     sx={{height: "38px", textTransform: 'none'}}
                                     className="whiteBorderedBtn"
                                 >
-                                    View Docket
+                                    Case Docket
                                 </Button>
 
                             </Box>

@@ -2802,7 +2802,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                                         sx={{height: "38px", textTransform: 'none'}}
                                         className="whiteBorderedBtn"
                                     >
-                                        View Docket
+                                        Case Docket
                                     </Button>
                                 }
                             </Box>
