@@ -331,7 +331,7 @@ const NormalViewForm = ({
                 if (wantUpdateDateFields.includes(field?.name)) {
                     return {
                         ...field,
-                        maxValue: values
+                        minValue: values
                     };
                 }
                 return field;
@@ -373,7 +373,7 @@ const NormalViewForm = ({
                 if (wantUpdateDateFields.includes(field?.name)) {
                     return {
                         ...field,
-                        maxValue: formData["field_date_of_registration_by_ps/range"]
+                        minValue: formData["field_date_of_registration_by_ps/range"]
                     };
                 }
                 return field;
