@@ -1,82 +1,248 @@
+import React, { useEffect, useRef, useState } from "react";
+
+import { Box, Button, Chip, CircularProgress, IconButton, InputAdornment, Tooltip, Typography } from "@mui/material";
+
 import {
-    Box,
-    Accordion,
-    AccordionSummary,
-    AccordionDetails,
-    Typography,
-    Button,
-    TextField,
-    IconButton,
-    Tooltip,
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    CircularProgress,
-    InputAdornment,
-} from "@mui/material";
+  Dialog,
+  DialogTitle,
+  DialogContent,
+} from '@mui/material';
 
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import ExpandLessIcon from "@mui/icons-material/ExpandLess";
-import { West } from '@mui/icons-material';
+import { West } from "@mui/icons-material";
+import DeleteIcon from '@mui/icons-material/Delete';
 import TextFieldInput from "@mui/material/TextField";
-import SearchIcon from "@mui/icons-material/Search";
+import AddIcon from "@mui/icons-material/Add";
 
-import SaveIcon from "@mui/icons-material/Save";
-import PrintIcon from "@mui/icons-material/Print";
-import { useEffect, useRef, useState } from "react";
+import NormalViewForm from "../components/dynamic-form/NormalViewForm";
+import TableView from "../components/table-view/TableView";
 import api from "../services/api";
+import Swal from "sweetalert2";
+
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import SearchIcon from "@mui/icons-material/Search";
 
-import TableView from "../components/table-view/TableView";
-import NormalViewForm from "../components/dynamic-form/NormalViewForm";
+const CaseDairy = ({headerDetails, backToForm, showMagazineView, rowData, module, actionArray}) => {
 
-const CaseDairy = ({ actionArray, ui_case_id, pt_case_id, closeForm }) => {
+    const [tableColumnData, setTableColumnData] = useState([
+        { field: 'sl_no', headerName: 'Sl. No.' },
+    ]);
+
+    const [tableRowData, setTableRowData] = useState([]);
+
+    const tablePaginationCount = useRef(1);
+    
+    const [tableSearchValue, setTableSearchValue] = useState(null);
+    const [tableTotalPage, setTableTotalPage] = useState(1);
+    const [tableTotalRecord, setTableTotalRecord] = useState(0);
+
+    const [formOpen, setFormOpen] = useState(false);
+    const [selectedRowId, setSelectedRowId] = useState(null);
+    const [selectedTemplateId, setSelectedTemplateId] = useState(null);
+    const [selectedTableName, setSelectedTableName] = useState(null);
+    const [selectedTemplateName, setSelectedTemplateName] = useState(null);
+    const [readonlyForm, setReadonlyForm] = useState(null);
+    const [editOnlyForm, setEditOnlyForm] = useState(null);
+
+    const [rowValueId,setRowValueId] = useState({});
+    const [formFields, setFormFields] = useState([]);
+    const [initalFormData, setInitialFormData] = useState({});
+    const [formStepperData, setFormStepperData] = useState([]);
+    
     const [loading, setLoading] = useState(false);
 
-    const [dateWiseData, setDateWiseData] = useState([]);
-    const [expandedDates, setExpandedDates] = useState([]);
-    const [comments, setComments] = useState({});
+    const editedForm = useRef(false);
 
-    const [focusedField, setFocusedField] = useState({});
+    useEffect(()=>{
+        getTableData({table:"cid_ui_case_case_diary"})
+    },[]);
 
-    useEffect(() => {
-        const filteredActions = actionArray.filter((action) => action.table);
+    const getTableData = async (options, reOpen, noFilters) => {
 
-        const gettingData = async () => {
-            const payload = {
-                table_name: filteredActions.map((e) => e.table),
-                ui_case_id,
-                pt_case_id,
-            };
-            try {
-                const response = await api.post("/templateData/getDateWiseTableCounts", payload);
-                if (response?.success) {
-                    const transformedData = response.data.map((item) => ({
-                        date: item.date,
-                        tables: Object.entries(item)
-                            .filter(([key]) => key !== "date")
-                            .map(([table, count]) => ({
-                                table,
-                                count,
-                                label: actionArray.find((a) => a.table === table)?.name || table,
-                            })),
-                    }));
-                    setDateWiseData(transformedData);
-                } else {
-                    toast.error(response.message || "Failed to fetch data.", {
-                        position: "top-right",
-                        autoClose: 3000,
-                        hideProgressBar: false,
-                        closeOnClick: true,
-                        pauseOnHover: true,
-                        draggable: true,
-                        progress: undefined,
-                        className: "toast-error",
-                    });
+        var ui_case_id = rowData?.id;
+        var pt_case_id = rowData?.pt_case_id;
+
+        if(module === "pt_case"){
+            ui_case_id = rowData?.ui_case_id
+            pt_case_id = rowData?.id
+        }
+
+        var getTemplatePayload = {
+            table_name: options.table || options,
+            ui_case_id: ui_case_id,
+            case_io_id: rowData?.field_io_name_id || "",
+            pt_case_id: pt_case_id,
+            limit : 10,
+            page : tablePaginationCount.current,
+            search: noFilters ? "" : tableSearchValue,
+            module: module ? module : 'ui_case',
+            checkTabs : true,
+        };
+
+        setLoading(true);
+        try {
+
+            const getTemplateResponse = await api.post("/templateData/getTemplateData",getTemplatePayload);
+            setLoading(false);
+
+            if (getTemplateResponse && getTemplateResponse.success) {
+
+                editedForm.current = false;
+
+                const { meta, data } = getTemplateResponse;
+            
+                const totalPages = meta?.meta?.totalPages;
+                const totalItems = meta?.meta?.totalItems;
+                const templateJson = meta?.meta?.template_json;
+                
+                if (totalPages !== null && totalPages !== undefined) {
+                    setTableTotalPage(totalPages);
                 }
-            } catch (error) {
-                toast.error(error?.response?.data?.message || "Please Try Again!", {
+                
+                if (totalItems !== null && totalItems !== undefined) {
+                    setTableTotalRecord(totalItems);
+                }
+
+                const generateReadableHeader = (key) =>key.replace(/^field_/, "").replace(/_/g, " ").toLowerCase().replace(/^\w|\s\w/g, (c) => c.toUpperCase());
+                
+                const renderCellFunc = (key, count) => (params) => tableCellRender(key, params, params.value, count, options.table || options);
+
+                if (data?.length > 0) {
+
+                    const excludedKeys = [
+                        "created_at", "updated_at", "id", "deleted_at", "attachments",
+                        "Starred", "ReadStatus", "linked_profile_info",
+                        "ui_case_id", "pt_case_id", "sys_status", "task_unread_count" , "field_cid_crime_no./enquiry_no","field_io_name" , "field_io_name_id", "field_approval_done_by"
+                    ];
+
+                    const updatedHeader = [
+                        {
+                            field: "sl_no",
+                            headerName: "S.No",
+                            resizable: false,
+                            width: 65,
+                            renderCell: (params) => {
+
+                                return (
+                                    <Box
+                                        sx={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "end",
+                                            gap: "8px",
+                                        }}
+                                    >
+                                        {params.value}
+                                        <DeleteIcon
+                                            sx={{ cursor: "pointer", color: "red", fontSize: 20 }}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleActionDelete(params.row, options);
+                                            }}
+                                        />
+                                    </Box>
+                                );
+                            }
+                        },
+                        ...Object.keys(data[0]).filter((key) => !excludedKeys.includes(key))
+                        .map((key, index) => ({
+                            field: key,
+                            headerName: generateReadableHeader(key),
+                            width: generateReadableHeader(key).length < 15 ? 100 : 200,
+                            resizable: true,
+                            renderHeader: (params) => (
+                                tableHeaderRender(params, key)
+                            ),
+                            renderCell: renderCellFunc(key, index),
+                        })),
+                    ]
+
+                    const formatDate = (value) => {
+                        const parsed = Date.parse(value);
+                        if (isNaN(parsed)) return value;
+                        return new Date(parsed).toLocaleDateString("en-GB");
+                    };
+
+                    const formatTime = (value) => {
+                        const parsed = Date.parse(value);
+                        if (isNaN(parsed)) return value;
+                        return new Date(parsed).toLocaleTimeString("en-GB", {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            second: '2-digit',
+                            hour12: true, 
+                        });
+                    };
+
+                    const formatDateTime = (value) => {
+                        const parsed = Date.parse(value);
+                        if (isNaN(parsed)) return value;
+                        return new Date(parsed).toLocaleString("en-GB", {
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            second: "2-digit",
+                            hour12: true,
+                        });
+                    };
+
+                    const updatedTableData = getTemplateResponse.data.map((field, index) => {
+
+                        const updatedField = {};
+
+                        Object.keys(field).forEach((key) => {
+
+                            const templateField = templateJson && templateJson.find((element)=> element.name === key);
+
+                            if(templateField){
+
+                                if (templateField?.type === "date") {
+                                    updatedField[key] = formatDate(field[key]);
+                                } else if (templateField?.type === "time") {
+                                    updatedField[key] = formatTime(field[key]);
+                                } else if (templateField?.type === "datetime") {
+                                    updatedField[key] = formatDateTime(field[key]);
+                                } else {
+                                    updatedField[key] = field[key];
+                                }
+
+                            }else if (field[key] && key !== 'id' && isValidISODate(field[key])) {
+                                updatedField[key] = formatDate(field[key]);
+                            } else {
+                                updatedField[key] = field[key];
+                            }
+                        });
+
+                        return {
+                            ...updatedField,
+                            sl_no: (tablePaginationCount.current - 1) * 10 + (index + 1),
+                            ...(field.id ? {} : { id: "unique_id_" + index }),
+                        };
+                    });
+
+                    setTableColumnData(updatedHeader);
+                    setTableRowData(updatedTableData);
+                }else{
+                    setTableColumnData([]);
+                    setTableRowData([]);
+                }
+
+                setFormOpen(false);
+
+                if(reOpen){
+                    showAddNewForm();
+                    return;
+                }
+            }
+
+        } catch (error) {
+            setLoading(false);
+            setTableColumnData([]);
+            setTableRowData([]);
+            if (error && error.response && error.response["data"]) {
+                toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !", {
                     position: "top-right",
                     autoClose: 3000,
                     hideProgressBar: false,
@@ -87,50 +253,9 @@ const CaseDairy = ({ actionArray, ui_case_id, pt_case_id, closeForm }) => {
                     className: "toast-error",
                 });
             }
-        };
+        }
+    }
 
-        if (filteredActions.length > 0) gettingData();
-    }, [actionArray, ui_case_id, pt_case_id]);
-
-    const handleAccordionChange = (date) => (_, isExpanded) => {
-        setExpandedDates((prev) =>
-            isExpanded ? [...prev, date] : prev.filter((d) => d !== date)
-        );
-    };
-
-    const handleCommentChange = (date, table, value) => {
-        setComments((prev) => ({
-            ...prev,
-            [date]: {
-                ...(prev[date] || {}),
-                [table]: value,
-            },
-        }));
-    };
-
-    const handleSave = (date) => {
-        const dataToSave = comments[date] || {};
-        console.log("Saving for:", date, dataToSave);
-    };
-
-    const handlePrint = (date) => {
-        console.log("Print clicked for:", date);
-    };
-
-
-    const [tableShow, setTableShow] = useState(false);
-
-    const paginationCount = useRef(1);
-    const [searchValue, setSearchValue] = useState("");
-
-    const [tableTotalPage, setTableTotalPage] = useState(0);
-    const [tableTotalRecord, setTableTotalRecord] = useState(0);
-
-    const [tableRowData, setTableRowData] = useState([]);
-    const [tableColumnData, setTableColumnData] = useState([]);
-    
-    const [selectedObj, setSelectedObj] = useState({});
-    
     function isValidISODate(value) {
         return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(value) && !isNaN(new Date(value).getTime());
     }
@@ -161,6 +286,88 @@ const CaseDairy = ({ actionArray, ui_case_id, pt_case_id, closeForm }) => {
         );
     };
 
+    const handleActionDelete = async (data, options)=>{
+
+        if(!data?.id || !options?.table){
+            toast.error('Invaild Template ID', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+
+        Swal.fire({
+            title: "Are you sure?",
+            text: "Do you want to delete this data ?",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonText: "Yes, Delete it!",
+            cancelButtonText: "No",
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                const deleteTemplateData = {
+                    table_name: options?.table,
+                    where: { id: data.id },
+                };
+
+                setLoading(true);
+
+                try {
+                    const deleteTemplateDataResponse = await api.post("templateData/deleteTemplateData",deleteTemplateData);
+                    setLoading(false);
+
+                    if (deleteTemplateDataResponse && deleteTemplateDataResponse.success) {
+                        toast.success(deleteTemplateDataResponse.message ? deleteTemplateDataResponse.message : "Template Deleted Successfully",{
+                            position: "top-right",
+                            autoClose: 3000,
+                            hideProgressBar: false,
+                            closeOnClick: true,
+                            pauseOnHover: true,
+                            draggable: true,
+                            progress: undefined,
+                            className: "toast-success",
+                            onOpen: () => {getTableData(options)}
+                        });
+                    } else {
+                        const errorMessage = deleteTemplateDataResponse.message ? deleteTemplateDataResponse.message : "Failed to delete the template. Please try again.";
+                        toast.error(errorMessage, {
+                            position: "top-right",
+                            autoClose: 3000,
+                            hideProgressBar: false,
+                            closeOnClick: true,
+                            pauseOnHover: true,
+                            draggable: true,
+                            progress: undefined,
+                            className: "toast-error",
+                        });
+                    }
+                } catch (error) {
+                    setLoading(false);
+                    if (error && error.response && error.response["data"]) {
+                        toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !", {
+                            position: "top-right",
+                            autoClose: 3000,
+                            hideProgressBar: false,
+                            closeOnClick: true,
+                            pauseOnHover: true,
+                            draggable: true,
+                            progress: undefined,
+                            className: "toast-error",
+                        });
+                    }
+                }
+            } else {
+                console.log("Template deletion canceled.");
+            }
+        });
+    }
+
     const tableCellRender = (key, params, value, index, tableName) => {
 
         let highlightColor = {};
@@ -183,18 +390,6 @@ const CaseDairy = ({ actionArray, ui_case_id, pt_case_id, closeForm }) => {
             </Tooltip>
         );
     };
-
-    const [formOpen, setFormOpen] = useState(false);
-    const [selectedRowId, setSelectedRowId] = useState(null);
-    const [selectedTemplateId, setSelectedTemplateId] = useState(null);
-    const [selectedTableName, setSelectedTableName] = useState(null);
-    const [selectedTemplateName, setSelectedTemplateName] = useState(null);
-    const [readonlyForm, setReadonlyForm] = useState(null);
-    const [editOnlyForm, setEditOnlyForm] = useState(null);
-
-    const [formFields, setFormFields] = useState([]);
-    const [initalFormData, setInitialFormData] = useState({});
-    const [formStepperData, setFormStepperData] = useState([]);
 
     const handleTemplateDataView = async (rowData, editData, table_name) => {
 
@@ -231,9 +426,9 @@ const CaseDairy = ({ actionArray, ui_case_id, pt_case_id, closeForm }) => {
                     setFormStepperData(viewTemplateResponse.data.sections || []);
                     setInitialFormData(viewTemplateData.data || {});
                     setReadonlyForm(true);
-                    setEditOnlyForm(false);
+                    setEditOnlyForm(editData || false);
                     setFormOpen(true);
-
+                    setRowValueId(rowData);
                 } else {
                     toast.error(viewTemplateResponse.message || "Failed to fetch template.", {
                         position: "top-right",
@@ -273,132 +468,59 @@ const CaseDairy = ({ actionArray, ui_case_id, pt_case_id, closeForm }) => {
         }
     };
 
-    const closeAddForm = async ()=>{
-        setFormOpen(false);
-    }
+    const showAddNewForm = async ()=>{
 
+        const viewTableData = {
+            table_name: "cid_ui_case_case_diary",
+        };
 
-    const getIndividualTableData = async (table, date, clearFilter)=>{
-
+        setLoading(true);
+    
         try {
-            const payload = {
-                table_name : table,
-                date : date,
-                ui_case_id,
-                pt_case_id,
-                limit: 10,
-                page: clearFilter ? "1" : paginationCount.current,
-                search: clearFilter ? "" : searchValue || ""
+
+            const viewTemplateResponse = await api.post("/templates/viewTemplate",viewTableData);
+            setLoading(false);
+
+            if (viewTemplateResponse && viewTemplateResponse.success) {
+                
+                setSelectedRowId(null);
+                setSelectedTemplateId(viewTemplateResponse?.["data"]?.template_id);
+                setSelectedTableName(viewTemplateResponse?.["data"]?.table_name);
+                setSelectedTemplateName(viewTemplateResponse?.["data"]?.template_name);
+                
+                setReadonlyForm(false);
+                setEditOnlyForm(false);
+                
+                setFormFields(viewTemplateResponse?.["data"]?.["fields"] || []);
+                setInitialFormData({});
+            
+                if (viewTemplateResponse?.["data"]?.no_of_sections && viewTemplateResponse?.["data"]?.no_of_sections > 0) {
+                    setFormStepperData(viewTemplateResponse?.["data"]?.sections ? viewTemplateResponse?.["data"]?.sections: []);
+                }else{
+                    setFormStepperData([]);
+                }
+                setFormOpen(true);
+
+            } else {
+
+                const errorMessage = viewTemplateResponse.message ? viewTemplateResponse.message : "Failed to get the template. Please try again.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+
             }
 
-            const response = await api.post("/templateData/getTemplateDataWithDate", payload);
-
-            if(response?.success && response?.data){
-
-                const { meta, data } = response.data;
-                
-                const totalPages = meta?.totalPages;
-                const totalItems = meta?.totalItems;
-
-                if (totalPages !== null && totalPages !== undefined) {
-                    setTableTotalPage(totalPages);
-                }
-                
-                if (totalItems !== null && totalItems !== undefined) {
-                    setTableTotalRecord(totalItems);
-                }
-
-                const generateReadableHeader = (key) =>key.replace(/^field_/, "").replace(/_/g, " ").toLowerCase().replace(/^\w|\s\w/g, (c) => c.toUpperCase());
-                
-                const renderCellFunc = (key, count) => (params) => tableCellRender(key, params, params.value, count, table);
-
-                if (data?.length > 0) {
-
-                    const excludedKeys = [
-                        "created_at", "updated_at", "id", "deleted_at", "attachments",
-                        "Starred", "ReadStatus", "linked_profile_info",
-                        "ui_case_id", "pt_case_id", "sys_status", "task_unread_count" , "field_cid_crime_no./enquiry_no","field_io_name" , "field_io_name_id", "field_approval_done_by"
-                    ];
-
-                    const updatedHeader = [
-                        {
-                            field: "sl_no",
-                            headerName: "S.No",
-                            resizable: false,
-                            width: 65,
-                            renderCell: (params) => {
-
-                                return (
-                                    <Box
-                                        sx={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            justifyContent: "end",
-                                            gap: "8px",
-                                        }}
-                                    >
-                                        {params.value}
-                                    </Box>
-                                );
-                            }
-                        },
-                        ...Object.keys(data[0]).filter((key) => !excludedKeys.includes(key))
-                        .map((key, index) => ({
-                            field: key,
-                            headerName: generateReadableHeader(key),
-                            width: generateReadableHeader(key).length < 15 ? 100 : 200,
-                            resizable: true,
-                            renderHeader: (params) => (
-                                tableHeaderRender(params, key)
-                            ),
-                            renderCell: renderCellFunc(key, index),
-                        })),
-                    ]
-
-                    const formatDate = (value) => {
-                        const parsed = Date.parse(value);
-                        if (isNaN(parsed)) return value;
-                        return new Date(parsed).toLocaleDateString("en-GB");
-                    };
-
-                    const updatedTableData = data.map((field, index) => {
-
-                        const updatedField = {};
-
-                        Object.keys(field).forEach((key) => {
-                            if (field[key] && key !== 'id' && isValidISODate(field[key])) {
-                                updatedField[key] = formatDate(field[key]);
-                            } else {
-                                updatedField[key] = field[key];
-                            }
-                        });
-
-                        return {
-                            ...updatedField,
-                            sl_no: (paginationCount.current - 1) * 10 + (index + 1),
-                            ...(field.id ? {} : { id: "unique_id_" + index }),
-                        };
-                    });
-
-                    setTableColumnData(updatedHeader);
-                    setTableRowData(updatedTableData);
-                }else{
-                    setTableColumnData([]);
-                    setTableRowData([]);
-                }
-
-                setTableShow(true);
-                setSelectedObj({
-                    table,
-                    date
-                })
-
-            }else{
-                
-                setTableColumnData([]);
-                setTableRowData([]);
-
-                toast.error(response.message || "Failed to fetch data.", {
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response["data"]) {
+                toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !", {
                     position: "top-right",
                     autoClose: 3000,
                     hideProgressBar: false,
@@ -409,14 +531,103 @@ const CaseDairy = ({ actionArray, ui_case_id, pt_case_id, closeForm }) => {
                     className: "toast-error",
                 });
             }
+        }
+    }
 
-            
+    const formSubmit = async (data, formOpen)=>{
+    
+        if (Object.keys(data).length === 0) {
+            toast.warning("Data Is Empty Please Check Once", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-warning",
+            });
+            return;
+        }
+
+        const formData = new FormData();
+        let normalData = {};
+
+        formFields.forEach((field) => {
+            if (data[field.name]) {
+                if (field.type === "file" || field.type === "profilepicture") {
+                    if (Array.isArray(data[field.name])) {
+                        data[field.name].forEach((file) => {
+                            if (file.filename instanceof File) {
+                                formData.append(field.name, file.filename);
+                            }
+                        });
+                    } else {
+                        formData.append(field.name, data[field.name]);
+                    }
+                } else {
+                    normalData[field.name] = Array.isArray(data[field.name]) ? data[field.name].join(",") : data[field.name];
+                }
+            }
+        });
+
+        normalData.sys_status = module ? module : "ui_case";
+
+        var ui_case_id = rowData?.id;
+        var pt_case_id = rowData?.pt_case_id;
+
+        if(module === "pt_case"){
+            ui_case_id = rowData?.ui_case_id
+            pt_case_id = rowData?.id
+        }
+
+        normalData["ui_case_id"] = ui_case_id;
+        normalData["pt_case_id"] = pt_case_id;
+
+        var othersData = {};
+
+        formData.append("table_name", "cid_ui_case_case_diary");
+        formData.append("data", JSON.stringify(normalData));
+        formData.append("transaction_id", `pt_${Date.now()}_${Math.floor(Math.random() * 10000)}`);
+        formData.append("user_designation_id", localStorage.getItem('designation_id') || null);
+        formData.append("others_data", JSON.stringify(othersData));
+
+        setLoading(true);
+
+        try {
+            const saveResponse = await api.post("/templateData/saveDataWithApprovalToTemplates", formData);
+            setLoading(false);
+
+            if (saveResponse && saveResponse.success) {
+                toast.success(saveResponse.message || "Case Created Successfully", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-success",
+                    onOpen: () => {
+                        getTableData({table:"cid_ui_case_case_diary"}, formOpen);
+                    }
+                });
+            } else {
+                toast.error(saveResponse.message || "Failed to Add Case. Please try again.", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
         } catch (error) {
-
-            setTableColumnData([]);
-            setTableRowData([]);
-
-            toast.error(error?.response?.data?.message || "Please Try Again!", {
+            setLoading(false);
+            toast.error(
+                error?.response?.data?.message || "Please Try Again !", {
                 position: "top-right",
                 autoClose: 3000,
                 hideProgressBar: false,
@@ -428,329 +639,285 @@ const CaseDairy = ({ actionArray, ui_case_id, pt_case_id, closeForm }) => {
             });
         }
 
-    }
-    
-    const handlePagination = (page) => {
-        paginationCount.current = page
-        getIndividualTableData(selectedObj.table, selectedObj.date);
+        return;
     }
 
-    const searchTableData = ()=>{
-        paginationCount.current = 1
-        getIndividualTableData(selectedObj.table, selectedObj.date);
-    }
-    
     const handleClear = () => {
-        paginationCount.current = 1
-        setSearchValue("");
-        getIndividualTableData(selectedObj.table, selectedObj.date, true);
+        tablePaginationCount.current = 1;
+        setTableSearchValue("");
+        getTableData({table:"cid_ui_case_case_diary"}, false, true);
     };
 
+    const searchTableData = ()=>{
+        tablePaginationCount.current = 1;
+        getTableData({table:"cid_ui_case_case_diary"});
+    }
+
+    const handlePagination = (page) => {
+        tablePaginationCount.current = page
+        getTableData({table:"cid_ui_case_case_diary"});
+    }
+
+    const formError = (error)=>{
+        console.log(error,"error");
+    }
+
+    const editedFormFlag = (edited)=>{
+        editedForm.current = edited;
+    }
+
+    const formUpdate = async (data) => {
+    
+        if (Object.keys(data).length === 0) {
+            toast.warning("Data Is Empty Please Check Once", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-warning",
+            });
+            return;
+        }
+
+        const formData = new FormData();
+        const normalData = {};
+
+        formFields.forEach((field) => {
+            if (data[field.name]) {
+                if (field.type === "file" || field.type === "profilepicture") {
+                    if (Array.isArray(data[field.name])) {
+                        data[field.name].forEach(file => {
+                            if (file.filename instanceof File) {
+                                formData.append(field.name, file.filename);
+                            }
+                        });
+                    } else {
+                        formData.append(field.name, data[field.name]);
+                    }
+                } else {
+                    normalData[field.name] = Array.isArray(data[field.name]) ? data[field.name].join(",") : data[field.name];
+                }
+            }
+        });
+
+
+        normalData.sys_status = module ? module : "ui_case";    
+        
+        var ui_case_id = rowData?.id;
+        var pt_case_id = rowData?.pt_case_id;
+
+        if(module === "pt_case"){
+            ui_case_id = rowData?.ui_case_id
+            pt_case_id = rowData?.id
+        }
+
+        normalData["ui_case_id"] = ui_case_id;
+        normalData["pt_case_id"] = pt_case_id;
+
+        formData.append("table_name", "cid_ui_case_case_diary");
+        formData.append("data", JSON.stringify(normalData));
+        formData.append("id",rowValueId.id);
+        formData.append("transaction_id", `pt_${Date.now()}_${Math.floor(Math.random() * 10000)}`);
+        formData.append("user_designation_id", localStorage.getItem("designation_id") || null);
+        formData.append("others_data", JSON.stringify({}));
+
+        setLoading(true);
+        try {
+            const updateResponse = await api.post("/templateData/updateDataWithApprovalToTemplates", formData);
+            setLoading(false);
+
+            if (updateResponse?.success) {
+                toast.success(updateResponse.message || "Case Updated Successfully", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-success",
+                    onOpen: () => {
+                        getTableData({table:"cid_ui_case_case_diary"});    
+                    }
+                });
+                setRowValueId({});
+            } else {
+                toast.error(updateResponse.message || "Failed to update case.", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        } catch (error) {
+            setLoading(false);
+            toast.error(error?.response?.data?.message || "Please Try Again !", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+        }
+    }
+
+    const closeAddForm = async ()=>{
+        if(editedForm.current){
+            const result = await Swal.fire({
+                title: 'Unsaved Changes',
+                text: 'You have unsaved changes. Are you sure you want to leave?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, Exit',
+                cancelButtonText: 'No',
+            });
+    
+            if (result.isConfirmed) {
+                setFormOpen(false);
+                editedForm.current = false;
+            }
+
+        }else{
+            setFormOpen(false);
+            editedForm.current = false;
+        }
+
+    }
+
     return (
-        <Box sx={{height : '100vh', overflowY: 'auto', p: 2}}>
-
-            <Typography
-                sx={{ fontSize: "19px", fontWeight: "500", color: "#171A1C", display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', mb: 2 }}
-                className="Roboto"
-                onClick={() => closeForm?.()}
-            >
-                <West />
-                <Typography sx={{ fontSize: '19px', fontWeight: '500', color: '#171A1C' }} className='Roboto'>
-                    {'Case Dairy'}
+        <Box p={2}>
+            <Box pb={1} px={1} sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'start'}}>
+                <Typography
+                    sx={{ fontSize: "19px", fontWeight: "500", color: "#171A1C", display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
+                    className="Roboto"
+                    onClick={backToForm}
+                >
+                    <West />
+                    <Typography sx={{ fontSize: '19px', fontWeight: '500', color: '#171A1C' }} className='Roboto'>
+                        Case Dairy
+                    </Typography>
+                    {headerDetails && (
+                        <Chip
+                            label={headerDetails}
+                            color="primary"
+                            variant="outlined"
+                            size="small"
+                            sx={{ fontWeight: 500, marginTop: '2px' }}
+                        />
+                    )}
                 </Typography>
-            </Typography>    
 
-            <Box
-                sx={{
-                    width: "100%",
-                    borderRadius: 2,
-                    overflow: "hidden",
-                    boxShadow: "0 4px 12px rgba(0,0,0,0.04)",
-                    backgroundColor: "#fff",
-                    paddingBottom: '100px'
-                }}
-            >
-                {dateWiseData.length === 0 ? (
-                    <Box sx={{ p: 3, textAlign: "center" }}>
-                        <Typography variant="body2" color="text.secondary">
-                            No case diary entries found
-                        </Typography>
-                    </Box>
-                ) : (
-                    dateWiseData.map(({ date, tables }, index) => (
-                        <Accordion
-                            key={date}
-                            expanded={expandedDates.includes(date)}
-                            onChange={handleAccordionChange(date)}
-                            sx={{
-                                "&:before": { display: "none" },
-                                borderBottom: "1px solid #e2e8f0",
-                                transition: "all 0.2s ease-in-out",
+                <Box sx={{display: 'flex', alignItems: 'start', gap: '12px'}}>
+                    <Box sx={{display: 'flex', flexDirection: 'column', alignItems: 'end'}}>
+                        <TextFieldInput
+                            InputProps={{
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <SearchIcon sx={{ color: '#475467' }} />
+                                    </InputAdornment>
+                                )
                             }}
-                        >
-                            <AccordionSummary
-                                expandIcon={null}
+                            onInput={(e) => setTableSearchValue(e.target.value)}
+                            value={tableSearchValue}
+                            id="tableSearch"
+                            size="small"
+                            placeholder='Search..'
+                            variant="outlined"
+                            className="profileSearchClass"
+                            onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                    e.preventDefault();
+                                    searchTableData();
+                                }
+                            }}
+                            sx={{
+                                width: '300px', borderRadius: '6px', outline: 'none',
+                                '& .MuiInputBase-input::placeholder': {
+                                    color: '#475467',
+                                    opacity: '1',
+                                    fontSize: '14px',
+                                    fontWeight: '400',
+                                    fontFamily: 'Roboto'
+                                },
+                            }}
+                        />
+                        {tableSearchValue && (
+                            <Typography
+                                onClick={handleClear}
                                 sx={{
-                                    background: '#f3f4f6',
-                                    borderBottom: `1px solid #c4c4c433`,
-                                    minHeight: "56px !important",
-                                    px: 2,
+                                    fontSize: "13px",
+                                    fontWeight: "500",
+                                    textDecoration: "underline",
+                                    cursor: "pointer",
                                 }}
+                                mt={1}
                             >
-                                <Box
-                                    sx={{
-                                        width: "100%",
-                                        display: "flex",
-                                        justifyContent: "space-between",
-                                        alignItems: "center",
-                                    }}
-                                >
-                                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                                        <Box
-                                            sx={{
-                                                borderRadius: "50%",
-                                                border: `1px solid #14b473`,
-                                                width: 15,
-                                                height: 15,
-                                                display: "flex",
-                                                alignItems: "center",
-                                                justifyContent: "center",
-                                                transition: "all 0.3s ease-in-out",
-                                            }}
-                                        >
-                                            {expandedDates.includes(date) ? (
-                                                <ExpandLessIcon sx={{ fontSize: 20, color: "#14b473" }} />
-                                            ) : (
-                                                <ExpandMoreIcon sx={{ fontSize: 20, color: "#14b473" }} />
-                                            )}
-                                        </Box>
-                                        <Typography
-                                            variant="subtitle1"
-                                            sx={{
-                                                fontWeight: 500,
-                                                fontSize: '15px',
-                                                color: "#000",
-                                            }}
-                                        >
-                                            {new Date(date).toLocaleDateString("en-GB", {
-                                                day: "2-digit",
-                                                month: "short",
-                                                year: "numeric",
-                                            }).replace(/ /g, "/")}
-                                        </Typography>
-                                    </Box>
+                                Clear Filter
+                            </Typography>
+                        )}
+                    </Box>
 
-                                    <Box sx={{ display: "flex", gap: 1 }}>
-                                        <Button
-                                            size="small"
-                                            variant="contained"
-                                            startIcon={<SaveIcon />}
-                                            onClick={() => handleSave(date)}
-                                            className="blueButton"
-                                            sx={{ fontSize: "0.75rem", padding: "0px 16px", height: '30px !important' }}
-                                        >
-                                            Save
-                                        </Button>
-                                        <Tooltip title="Print">
-                                            <IconButton
-                                                size="small"
-                                                onClick={() => handlePrint(date)}
-                                                sx={{ color: "#475569" }}
-                                            >
-                                                <PrintIcon fontSize="small" />
-                                            </IconButton>
-                                        </Tooltip>
-                                    </Box>
-                                </Box>
-                            </AccordionSummary>
+                    <Button
+                        onClick={showAddNewForm}
+                        sx={{height: "38px",}}
+                        className="blueButton"
+                        startIcon={
+                            <AddIcon
+                                sx={{
+                                    border: "1.3px solid #FFFFFF",
+                                    borderRadius: "50%",
+                                    background:"#4D4AF3 !important",
+                                }}
+                            />
+                        }
+                        variant="contained"
+                    >
+                        Add New
+                    </Button>
 
-                            <AccordionDetails sx={{ p: '8px 0px', bgcolor: "#fff" }}>
-                                <Box
-                                    component="table"
-                                    sx={{
-                                        width: "100%",
-                                        borderCollapse: "collapse",
-                                        border: '1px solid #e2e8f0',
-                                        "& th, & td": {
-                                            padding: "12px 16px",
-                                            fontSize: "0.875rem",
-                                        },
-                                        "& th": {
-                                            backgroundColor: "#488aec",
-                                            color: "#FFFFFF",
-                                            textAlign: "left",
-                                            borderBottom: "1px solid #e2e8f0",
-                                            fontWeight: 600,
-                                            fontSize: "14px"
-                                        },
-                                        "& td": {
-                                            borderBottom: "1px solid #e2e8f0",
-                                        },
-                                        "& tr:last-child td": {
-                                            borderBottom: "none",
-                                        },
-                                        "& tr:nth-of-type(even)": {
-                                            backgroundColor: "#f9fafb",
-                                        },
-                                    }}
-                                >
-                                    <thead>
-                                        <tr>
-                                            <th style={{fontSize: '16px', fontWeight: '600', width: '15%'}}>Investigations</th>
-                                            <th style={{ width: '7%'}}>Count</th>
-                                            <th>Remarks</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {tables.map(({ table, count, label }) => (
-                                            <tr key={table} sx={{border: '1px solid #e2e8f0'}}>
-                                                <td style={{padding: "12px 16px", fontSize: "14px", fontWeight: 400}}>
-                                                    {label}
-                                                </td>
-                                                <td>
-                                                    <Box
-                                                        sx={{
-                                                            backgroundColor: "#e2e8f0",
-                                                            borderRadius: "50%",
-                                                            width: 35,
-                                                            height: 35,
-                                                            display: "flex",
-                                                            alignItems: "center",
-                                                            justifyContent: "center",
-                                                            transition: "all 0.3s ease-in-out",
-                                                            cursor: 'pointer',
-                                                            color: '#0167F8',
-                                                            textDecoration: 'underline'
-                                                        }}
-                                                        onClick={()=> getIndividualTableData(table, date)}
-                                                    >
-                                                        {count}
-                                                    </Box>
-                                                </td>
-                                                <td>
-                                                    <TextField
-                                                        fullWidth
-                                                        size="small"
-                                                        placeholder="Remarks"
-                                                        inputProps={{
-                                                            style: { fontSize: '14px' }
-                                                        }}
-                                                        value={comments?.[date]?.[table] || ""}
-                                                        multiline
-                                                        minRows={focusedField[`${date}_${table}`] ? 4 : 1}
-                                                        onFocus={() => setFocusedField(prev => ({ ...prev, [`${date}_${table}`]: true }))}
-                                                        onBlur={() => setFocusedField(prev => ({ ...prev, [`${date}_${table}`]: false }))}
-                                                        onChange={(e) =>
-                                                            handleCommentChange(date, table, e.target.value)
-                                                        }
-                                                    />
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </Box>
-                            </AccordionDetails>
-                        </Accordion>
-                    ))
-                )}
+                    <Button
+                        onClick={()=>showMagazineView(false)}
+                        sx={{height: "38px", textTransform: 'none'}}
+                        className="whiteBorderedBtn"
+                    >
+                        Case Docket
+                    </Button>
+
+                </Box>
             </Box>
 
-            {loading && (
-                <div className="parent_spinner" tabIndex="-1" aria-hidden="true">
-                    <CircularProgress size={100} />
-                </div>
-            )}
-
-            {
-                tableShow &&
-                <Dialog
-                    open={tableShow}
-                    onClose={()=>setTableShow(false)}
-                    maxWidth="xl"
-                    fullWidth
-                    fullScreen
-                    sx={{marginLeft: '50px'}}
-                >
-                    <Box display="flex" justifyContent="space-between" alignItems="center" px={3} py={2}>
-                        <DialogTitle sx={{ fontWeight: 600, fontSize: '20px', p: 0, cursor: 'pointer' }} onClick={()=>setTableShow(false)}>
-                            <IconButton>
-                                <West sx={{color: '#333'}} />
-                            </IconButton>
-                            {actionArray.find((a) => a.table === selectedObj.table)?.name || selectedObj.table}
-                        </DialogTitle>
-                        <Box sx={{display: 'flex', flexDirection: 'column', alignItems: 'end'}}>
-                            <TextFieldInput
-                                InputProps={{
-                                    startAdornment: (
-                                        <InputAdornment position="start">
-                                            <SearchIcon sx={{ color: '#475467' }} />
-                                        </InputAdornment>
-                                    )
-                                }}
-                                onInput={(e) => setSearchValue(e.target.value)}
-                                value={searchValue}
-                                id="tableSearch"
-                                size="small"
-                                placeholder='Search..'
-                                variant="outlined"
-                                className="profileSearchClass"
-                                onKeyDown={(e) => {
-                                    if (e.key === "Enter") {
-                                        e.preventDefault();
-                                        searchTableData();
-                                    }
-                                }}
-                                sx={{
-                                    width: '300px', borderRadius: '6px', outline: 'none',
-                                    '& .MuiInputBase-input::placeholder': {
-                                        color: '#475467',
-                                        opacity: '1',
-                                        fontSize: '14px',
-                                        fontWeight: '400',
-                                        fontFamily: 'Roboto'
-                                    },
-                                }}
-                            />
-                            {searchValue && (
-                                <Typography
-                                    onClick={handleClear}
-                                    sx={{
-                                        fontSize: "13px",
-                                        fontWeight: "500",
-                                        textDecoration: "underline",
-                                        cursor: "pointer",
-                                    }}
-                                    mt={1}
-                                >
-                                    Clear Filter
-                                </Typography>
-                            )}
-                        </Box>
-                    </Box>
-
-                    <DialogContent sx={{paddingY: '0 !important'}}>    
-                        <Box sx={{ width: '100%' }}>
-                            <TableView
-                                rows={tableRowData}
-                                columns={tableColumnData}
-                                totalPage={tableTotalPage}
-                                totalRecord={tableTotalRecord}
-                                paginationCount={paginationCount.current}
-                                handlePagination={handlePagination}
-                            />
-                        </Box>
-                    </DialogContent>
-                </Dialog>
-            }
+            <Box sx={{ width: '100%' }}>
+                <TableView
+                    rows={tableRowData}
+                    columns={tableColumnData}
+                    totalPage={tableTotalPage}
+                    totalRecord={tableTotalRecord}
+                    paginationCount={tablePaginationCount.current}
+                    handlePagination={handlePagination}
+                />
+            </Box>
 
             {formOpen && (
                 <Dialog
                     open={formOpen}
                     onClose={closeAddForm}
-                    maxWidth="xl"
+                    aria-labelledby="alert-dialog-title"
+                    aria-describedby="alert-dialog-description"
+                    fullScreen
                     fullWidth
+                    sx={{ marginLeft: '50px' }}
                 >
-                    <DialogContent sx={{p: 0, mt: 2, pb: 2}}>
+                    <DialogContent sx={{padding: 0}}>
                         <NormalViewForm
                             table_row_id={selectedRowId}
                             template_id={selectedTemplateId}
@@ -761,16 +928,29 @@ const CaseDairy = ({ actionArray, ui_case_id, pt_case_id, closeForm }) => {
                             formConfig={formFields}
                             initialData={initalFormData}
                             stepperData={formStepperData}
+                            onSubmit={formSubmit}
+                            onUpdate={formUpdate}
+                            onError={formError}
                             closeForm={closeAddForm}
                             noPadding={true}
-                            disableEditButton={true}
+                            editedForm={editedFormFlag}
+                            caseDiary={true}
+                            caseDiaryArray={actionArray}
+                            caseDairy_ui_case_id={module === "pt_case" ? rowData?.ui_case_id : rowData?.id}
+                            caseDairy_pt_case_id={module === "pt_case" ? rowData?.id : rowData?.pt_case_id}
                         />
                     </DialogContent>
                 </Dialog>
             )}
 
+            {loading && (
+                <div className="parent_spinner" tabIndex="-1" aria-hidden="true">
+                    <CircularProgress size={100} />
+                </div>
+            )}
+
         </Box>
-    );
+    )
 };
 
 export default CaseDairy;

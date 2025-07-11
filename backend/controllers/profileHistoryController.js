@@ -96,7 +96,7 @@ exports.getProfileHistory = async (req, res, next) => {
                        {
                             model: KGID,
                             as: "kgidDetails",
-                            attributes: ["kgid", "name", "mobile"],
+                            attributes: ["kgid", "name", "mobile"  ],
                         },
                     ],  
                     
@@ -104,9 +104,69 @@ exports.getProfileHistory = async (req, res, next) => {
             ]
         });
 
-        profileHistory = profileHistory.map((history) => {
+        // profileHistory = profileHistory.map((history) => {
+        //     const { userDetails } = history;
+        //     const { kgidDetails } = userDetails;
+        //     return {
+        //         ...history.toJSON(),
+        //         userDetails: {
+        //             kgid: kgidDetails.kgid,
+        //             user_firstname: kgidDetails.name,
+        //             mobile: kgidDetails.mobile,
+        //         },
+        //     };
+        // });
+
+        profileHistory = await Promise.all(profileHistory.map(async (history) => {
             const { userDetails } = history;
             const { kgidDetails } = userDetails;
+        
+            let oldValueDetails = null;
+            let updatedValueDetails = null;
+        
+            if (field_name === "field_io_name") {
+                // Fetch details for old_value (user_id)
+                if (history.old_value) {
+                    const oldUser = await Users.findOne({
+                        where: { user_id: history.old_value },
+                        attributes: ["kgid_id"]
+                    });
+                    if (oldUser && oldUser.kgid_id) {
+                        const oldKGID = await KGID.findOne({
+                            where: { id: String(oldUser.kgid_id) },
+                            attributes: ["kgid", "name", "mobile"]
+                        });
+                        if (oldKGID) {
+                            oldValueDetails = {
+                                kgid: oldKGID.kgid,
+                                name: oldKGID.name,
+                                mobile: oldKGID.mobile
+                            };
+                        }
+                    }
+                }
+                // Fetch details for updated_value (user_id)
+                if (history.updated_value) {
+                    const updatedUser = await Users.findOne({
+                        where: { user_id: history.updated_value },
+                        attributes: ["kgid_id"]
+                    });
+                    if (updatedUser && updatedUser.kgid_id) {
+                        const updatedKGID = await KGID.findOne({
+                            where: { id: String(updatedUser.kgid_id) },
+                            attributes: ["kgid", "name", "mobile"]
+                        });
+                        if (updatedKGID) {
+                            updatedValueDetails = {
+                                kgid: updatedKGID.kgid,
+                                name: updatedKGID.name,
+                                mobile: updatedKGID.mobile
+                            };
+                        }
+                    }
+                }
+            }
+        
             return {
                 ...history.toJSON(),
                 userDetails: {
@@ -114,8 +174,12 @@ exports.getProfileHistory = async (req, res, next) => {
                     user_firstname: kgidDetails.name,
                     mobile: kgidDetails.mobile,
                 },
+                ...(field_name === "field_io_name" ? {
+                    old_value_details: oldValueDetails,
+                    updated_value_details: updatedValueDetails
+                } : {})
             };
-        });
+        }));
 
         if (profileHistory.length === 0) {
             return userSendResponse(res, 404, false, "No records found for the specified filters.");
