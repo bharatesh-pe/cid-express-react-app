@@ -326,7 +326,7 @@ router.post('/viewMagazineTemplateAllData',
     templateDataController.viewMagazineTemplateAllData)
 
 router.post('/getTemplateDataWithDate',
-    [gwtDataValidation],[validate_token],
+    [validate_token],
     templateDataController.getTemplateDataWithDate)
 
 router.post('/getPrimaryTemplateData',
