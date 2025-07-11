@@ -2,6 +2,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import isEqual from 'lodash.isequal';
 
+import Accordion from '@mui/material/Accordion';
+import AccordionSummary from '@mui/material/AccordionSummary';
+import AccordionDetails from '@mui/material/AccordionDetails';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+
 // import formConfig from './formConfig.json';
 import { Button, Grid, Box, Typography, IconButton, Chip, FormControl, Autocomplete, DialogActions, TextField } from '@mui/material';
 import { Stepper, Step, StepLabel } from '@mui/material';
@@ -49,9 +54,13 @@ import DropdownWithAdd from '../form/DropdownWithAdd';
 import dayjs from 'dayjs';
 import TableField from '../form/Table';
 
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+
 const NormalViewForm = ({ 
     formConfig, initialData, onSubmit, onError, stepperData, closeForm, table_name, template_name, readOnly, editData, onUpdate, template_id, table_row_id, headerDetails, selectedRow, noPadding, disableEditButton, disableSaveNew, overAllReadonly, investigationViewTable, editedForm
-    , showAssignIo, investigationAction, reloadApproval, showCaseActionBtn, reloadForm , showCaseLog, reloadFormConfig , onSkip , skip , editName ,  oldCase , onViewOldCase, showMagazineView
+    , showAssignIo, investigationAction, reloadApproval, showCaseActionBtn, reloadForm , showCaseLog, reloadFormConfig , onSkip , skip , editName ,  oldCase , onViewOldCase, showMagazineView, caseDiary, caseDiaryArray, caseDairy_pt_case_id, caseDairy_ui_case_id
  }) => {
 
 //   let storageFormData = localStorage.getItem(template_name + '-formData') ? JSON.parse(localStorage.getItem(template_name + '-formData')) : {};
@@ -2389,6 +2398,135 @@ const NormalViewForm = ({
         console.log(data,"data");
     }
 
+    // case diary actions
+
+    const [templateActions, setTemplateActions] = useState([]);
+
+    useEffect(()=>{
+
+        if(caseDiary === true && caseDiaryArray.length > 0){
+
+            const getTemplateActions = caseDiaryArray
+                .filter(item => item.table && !item.field)
+                .map(item => {
+                    return { table: item.table, name: item.name };
+                });
+            
+            setTemplateActions(getTemplateActions);
+        }
+
+    },[caseDiary, caseDiaryArray]);
+
+    const [selectedDates, setSelectedDates] = useState([]);
+    const [isAccordionOpen, setIsAccordionOpen] = useState(true);
+
+    const handleDateChange = (index, date) => {
+        const updated = [...selectedDates];
+
+        updated[index] = {
+            table: templateActions[index].table,
+            date: date ? date.format("YYYY-MM-DDT00:00:00") : null
+        };
+
+        setSelectedDates(updated);
+    };
+
+    useEffect(()=>{
+
+        if(caseDiary === true && caseDiaryArray.length > 0){
+            if(formData['field_each_action_date_entries']){
+                try {
+                    const dateFields = JSON.parse(formData['field_each_action_date_entries']);
+                    setSelectedDates(dateFields);
+                } catch (error) {
+                    console.log(error,"date data parsing issue");   
+                }
+            }
+        }
+
+    },[formData])
+
+    const handleFetch = async () => {
+
+        try {
+
+            const dateArray = selectedDates.filter(item => item !== null && item !== undefined)
+
+            const payload = {
+                data : dateArray,
+                ui_case_id: caseDairy_ui_case_id,
+                pt_case_id: caseDairy_pt_case_id,
+            }
+
+            const response = await api.post("/templateData/getTemplateDataWithDate", payload);
+
+            if (response?.success && response?.data) {
+                const { data } = response;
+
+                let html = "";
+
+                Object.entries(data).forEach(([key, items]) => {
+                    const matchedItem = caseDiaryArray.find((item) => item.table === key);
+
+                    if (!matchedItem) return;
+
+                    html += `
+                    <div style="border-bottom: 1px solid #EAECF0; padding-bottom: 12px;">
+                        <p class="Roboto ProfileViewHeading" style="font-weight: bold;text-decoration: underline;">${matchedItem.name}</p>
+                    `;
+
+                    items.forEach((itemObj) => {
+                        Object.entries(itemObj).forEach(([fieldKey, fieldValue]) => {
+                            html += `
+                                <div class="">
+                                    <div style="font-size: 16px; font-weight: 500;">${fieldKey}</div>
+                                    <div style="font-size: 14px; font-weight: 400;">${fieldValue}</div>
+                                </div>
+                                <br />
+                            `;
+                        });
+                    });
+
+                    html += `</div>`;
+                });
+
+                setFormData((prevData) => ({
+                    ...prevData,
+                    'field_description' : html,
+                    'field_each_action_date_entries' : JSON.stringify(selectedDates)
+                }));
+
+                setIsAccordionOpen(false);
+
+            }else{
+    
+                toast.error(response.message || "Failed to fetch data.", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+
+            
+        } catch (error) {
+
+            toast.error(error?.response?.data?.message || "Please Try Again!", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+        }
+    };
 
   return (
     <>
@@ -2603,6 +2741,67 @@ const NormalViewForm = ({
               </Box>
             }
           </Box>
+
+            {caseDiary === true && templateActions.length > 0 && (
+                <Box p={2}>
+                    <Accordion sx={{border: '1px solid #ddd'}} expanded={isAccordionOpen} onChange={() => setIsAccordionOpen(prev => !prev)}>
+                        <AccordionSummary
+                            expandIcon={<ExpandMoreIcon />}
+                            aria-controls="date-pickers-content"
+                            id="date-pickers-header"
+                        >
+                            <Typography sx={{fontWeight: '500', color: '#1976d2', textDecoration: 'underline'}}>Case Investigation Date</Typography>
+                        </AccordionSummary>
+                        <AccordionDetails>
+                            <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                <Box sx={{ mt: 2 }}>
+                                    {Array.from({ length: Math.ceil(templateActions.length / 4) }).map((_, rowIndex) => {
+                                        const start = rowIndex * 4;
+                                        const items = templateActions.slice(start, start + 4);
+                                        return (
+                                            <Grid container spacing={2} key={rowIndex} sx={{ mb: 2 }}>
+                                                {items.map((item, index) => {
+                                                    const actualIndex = start + index;
+                                                    return (
+                                                        <Grid item xs={3} key={actualIndex}>
+                                                            <Typography sx={{ mb: 1, fontWeight: 500 }}>{item.name}</Typography>
+                                                            <DatePicker
+                                                                value={
+                                                                    selectedDates[actualIndex]?.date ? dayjs(selectedDates[actualIndex].date) : null
+                                                                }
+                                                                onChange={(e) =>
+                                                                    handleDateChange(actualIndex, e)
+                                                                }
+                                                                format="DD-MM-YYYY"
+                                                                slotProps={{
+                                                                    textField: {
+                                                                        size: "small",
+                                                                        fullWidth: true,
+                                                                    },
+                                                                }}
+                                                                disabled={readOnlyTemplate}
+                                                            />
+                                                        </Grid>
+                                                    );
+                                                })}
+                                            </Grid>
+                                        );
+                                    })}
+
+                                    <Button
+                                        variant="contained"
+                                        color="primary"
+                                        onClick={handleFetch}
+                                        disabled={selectedDates.length === 0 || readOnlyTemplate}
+                                    >
+                                        Fetch
+                                    </Button>
+                                </Box>
+                            </LocalizationProvider>
+                        </AccordionDetails>
+                    </Accordion>
+                </Box>
+            )}
 
           <form onSubmit={handleSubmit} noValidate style={{ margin: 0 }} >
             <Grid container sx={{ alignItems: 'start' }}>

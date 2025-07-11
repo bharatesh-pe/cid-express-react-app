@@ -2696,11 +2696,11 @@ if ((!currentTableName || currentTableName === "") && (!activeSidebar?.table || 
 
                     <CaseDairy
                         actionArray={sidebarContentArray}
-                        ui_case_id={module === "pt_case" ? rowData?.ui_case_id :  rowData?.id}
-                        pt_case_id={module === "pt_case" ? rowData?.id :  rowData?.pt_case_id}
-                        closeForm={backToForm}
                         showMagazineView={showMagazineView}
-
+                        headerDetails={headerDetails}
+                        backToForm={backToForm}
+                        rowData={rowData}
+                        module={module}
                     />
 
                 ) : activeSidebar?.chargeSheet === true ? (
