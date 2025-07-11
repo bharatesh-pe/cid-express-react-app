@@ -933,38 +933,6 @@ const DynamicForm = ({
             }
         }
 
-    if (selectedField &&selectedField?.name === "field_ui_case") {
-        const callAlternativeApi = async () => {
-            try {
-                const response = await api.post("cidMaster/getUicaseDetails", {});
-                const updatedOptions = response.data.map((data) => ({
-                    name: data.name,
-                    code: data.id,
-                }));
-
-                setNewFormConfig((prevFormConfig) => 
-                    prevFormConfig.map((data) => 
-                        data.name === selectedField.name ? { ...data, options: updatedOptions } : data
-                    )
-                );
-            } catch (error) {
-                toast.error(error.response?.data?.message || "Error fetching data", {
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    className: "toast-error",
-                });
-            }
-        };
-
-        callAlternativeApi();
-    }
-
-
         if(selectedField && selectedField?.name === "field_io_name"){
             
             const gettingUserDetails = async () => {
@@ -1603,7 +1571,6 @@ const DynamicForm = ({
 
                     var apiPayload = {};
 
-                    // Check for field_ui_case condition
                     if (field.name === "field_ui_case") {
                         const response = await api.post("cidMaster/fetchUICaseDetails", {
                           allowedDepartmentIds : localStorage.getItem("allowedDepartmentIds") ,
@@ -1614,7 +1581,6 @@ const DynamicForm = ({
                             name: data.name,
                             code: data.code,
                         }));
-                        // Update the form config with the new options
                         setNewFormConfig((prevFormConfig) => {
                             return prevFormConfig.map((data) => {
                                 if (data.name === field.name) {
