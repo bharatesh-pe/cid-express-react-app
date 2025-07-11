@@ -35,7 +35,7 @@ import Autocomplete from "@mui/material/Autocomplete";
 import { Add } from "@mui/icons-material";
 import dayjs from "dayjs";
 
-const CDR = ({ templateName, headerDetails, rowId, options, selectedRowData, backNavigation, module }) => {
+const CDR = ({ templateName, headerDetails, rowId, options, selectedRowData, backNavigation, module, showMagazineView }) => {
     const location = useLocation();
     const navigate = useNavigate();
     const { pageCount, systemStatus } = location.state || {};
@@ -3156,6 +3156,17 @@ const CDR = ({ templateName, headerDetails, rowId, options, selectedRowData, bac
                                             Status Update
                                         </Button>
                                     )}
+
+                                    {
+                                        showMagazineView && 
+                                        <Button
+                                            onClick={()=>showMagazineView(false)}
+                                            sx={{height: "38px", textTransform: 'none'}}
+                                            className="whiteBorderedBtn"
+                                        >
+                                            Case Docket
+                                        </Button>
+                                    }
                                 </Box>
                             </Box>
                         </Box>

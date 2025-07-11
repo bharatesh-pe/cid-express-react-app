@@ -32,7 +32,7 @@ import AutocompleteField from "../components/form/AutoComplete";
 import ShortText from "../components/form/ShortText";
 import WestIcon from '@mui/icons-material/West';
 
-const PlanOfAction = ({templateName, headerDetails, rowId, options, selectedRowData, backNavigation}) => {
+const PlanOfAction = ({templateName, headerDetails, rowId, options, selectedRowData, backNavigation, showMagazineView}) => {
     const location = useLocation();
     const navigate = useNavigate();
     const { pageCount, systemStatus } = location.state || {};
@@ -2584,6 +2584,16 @@ const PlanOfAction = ({templateName, headerDetails, rowId, options, selectedRowD
                                         Submit
                                     </Button>
                                 )}
+                                {
+                                    showMagazineView && 
+                                    <Button
+                                        onClick={()=>showMagazineView(false)}
+                                        sx={{height: "38px", textTransform: 'none'}}
+                                        className="whiteBorderedBtn"
+                                    >
+                                        Case Docket
+                                    </Button>
+                                }
                             </Box>
                         </Box>
                     </Box>

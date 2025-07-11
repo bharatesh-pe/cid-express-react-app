@@ -2825,6 +2825,256 @@ exports.viewTemplateData = async (req, res, next) => {
     }
 };
 
+exports.viewMagazineTemplateAllData = async (req, res) => {
+    try {
+        let { table_name, ui_case_id, pt_case_id } = req.body;
+
+        if (!table_name) {
+            return userSendResponse(res, 400, false, "Table name is required.", null);
+        }
+
+        // Support both string and array for table_name
+        if (!Array.isArray(table_name)) {
+            table_name = [table_name];
+        }
+
+        const allData = {};
+
+        for (const tblName of table_name) {
+            const tableTemplate = await Template.findOne({ where: { table_name: tblName } });
+            if (!tableTemplate) {
+                allData[tblName] = { error: `Table ${tblName} does not exist.` };
+                continue;
+            }
+
+            let fieldsArray;
+            try {
+                fieldsArray = typeof tableTemplate.fields === "string" ? JSON.parse(tableTemplate.fields) : tableTemplate.fields;
+            } catch (err) {
+                allData[tblName] = { error: "Invalid table schema format." };
+                continue;
+            }
+
+            if (!Array.isArray(fieldsArray)) {
+                allData[tblName] = { error: "Fields must be an array in the table schema." };
+                continue;
+            }
+
+            // Filter out divider fields and fields with hide_from_ux true
+            const filteredFieldsArray = fieldsArray.filter(
+                (field) => field.type !== "divider" && !field.hide_from_ux
+            );
+
+            const fields = {};
+            const radioFieldMappings = {};
+            const checkboxFieldMappings = {};
+            const dropdownFieldMappings = {};
+            const fieldTypeMap = {};
+            const fieldLabelMap = {};
+            const associations = [];
+
+            for (const field of filteredFieldsArray) {
+                const {
+                    name: columnName,
+                    label,
+                    data_type,
+                    max_length,
+                    not_null,
+                    default_value,
+                    options,
+                    type,
+                    table,
+                    forign_key,
+                    attributes,
+                } = field;
+
+                fieldTypeMap[columnName] = type;
+                fieldLabelMap[columnName] = label || columnName;
+
+                const sequelizeType = data_type?.toUpperCase() === "VARCHAR" && max_length
+                    ? Sequelize.DataTypes.STRING(max_length)
+                    : Sequelize.DataTypes[data_type?.toUpperCase()] || Sequelize.DataTypes.STRING;
+
+                fields[columnName] = {
+                    type: sequelizeType,
+                    allowNull: !not_null,
+                    defaultValue: default_value || null,
+                };
+
+                if (type === "radio" && Array.isArray(options)) {
+                    radioFieldMappings[columnName] = options.reduce((acc, option) => {
+                        acc[option.code] = option.name;
+                        return acc;
+                    }, {});
+                }
+
+                if (type === "checkbox" && Array.isArray(options)) {
+                    checkboxFieldMappings[columnName] = options.reduce((acc, option) => {
+                        acc[option.code] = option.name;
+                        return acc;
+                    }, {});
+                }
+
+                if (type === "dropdown" && Array.isArray(options)) {
+                    dropdownFieldMappings[columnName] = options.reduce((acc, option) => {
+                        acc[option.code] = option.name;
+                        return acc;
+                    }, {});
+                }
+
+                if (table && forign_key && attributes) {
+                    associations.push({
+                        relatedTable: table,
+                        foreignKey: columnName,
+                        targetAttribute: attributes,
+                    });
+                }
+            }
+
+            const DynamicTable = sequelize.define(tblName, fields, {
+                freezeTableName: true,
+                timestamps: true,
+            });
+
+            const include = [];
+            
+            for (const association of associations) {
+                const RelatedModel = require(`../models`)[association.relatedTable];
+
+                if (RelatedModel) {
+                    DynamicTable.belongsTo(RelatedModel, {
+                        foreignKey: association.foreignKey,
+                        as: `${association.relatedTable}Details`,
+                    });
+
+                    include.push({
+                        model: RelatedModel,
+                        as: `${association.relatedTable}Details`,
+                        attributes: association.targetAttribute || {
+                            exclude: ["created_date", "modified_date"],
+                        },
+                    });
+                }
+            }
+
+            let whereClause = {};
+            if (ui_case_id && pt_case_id) {
+                whereClause = { [Sequelize.Op.or]: [{ ui_case_id }, { pt_case_id }] };
+            } else if (ui_case_id) {
+                whereClause = { ui_case_id };
+            } else if (pt_case_id) {
+                whereClause = { pt_case_id };
+            }
+
+            const results = await DynamicTable.findAll({
+                attributes: ["id", ...Object.keys(fields)],
+                include,
+                where: Object.keys(whereClause).length > 0 ? whereClause : undefined,
+            });
+
+            const data = [];
+            for (const result of results) {
+                let row = result.toJSON();
+
+                const labelValueRow = {};
+
+                for (const fieldName in radioFieldMappings) {
+                    if (row[fieldName] !== undefined && radioFieldMappings[fieldName][row[fieldName]]) {
+                        row[fieldName] = radioFieldMappings[fieldName][row[fieldName]];
+                    }
+                }
+
+                for (const fieldName in checkboxFieldMappings) {
+                    if (row[fieldName]) {
+                        const codes = row[fieldName].split(",").map((code) => code.trim());
+                        row[fieldName] = codes
+                            .map((code) => checkboxFieldMappings[fieldName][code] || code)
+                            .join(", ");
+                    }
+                }
+
+                for (const fieldName in dropdownFieldMappings) {
+                    if (row[fieldName] !== undefined && dropdownFieldMappings[fieldName][row[fieldName]]) {
+                        row[fieldName] = dropdownFieldMappings[fieldName][row[fieldName]];
+                    }
+                }
+                
+                const formatTime = (value) => {
+                    const parsed = Date.parse(value);
+                    if (isNaN(parsed)) return value;
+                    
+                    const date = new Date(parsed);
+                    let hours = date.getHours();
+                    const ampm = hours >= 12 ? 'PM' : 'AM';
+                    
+                    hours = hours % 12;
+                    hours = hours ? hours : 12; // the hour '0' should be '12'
+                    
+                    return `${hours.toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}:${date.getSeconds().toString().padStart(2, '0')} ${ampm}`;
+                };
+
+                const formatDateTime = (value) => {
+                    const parsed = Date.parse(value);
+                    if (isNaN(parsed)) return value;
+                    
+                    const date = new Date(parsed);
+                    let hours = date.getHours();
+                    const ampm = hours >= 12 ? 'PM' : 'AM';
+                    
+                    hours = hours % 12;
+                    hours = hours ? hours : 12; // the hour '0' should be '12'
+                    
+                    return `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()} ${hours.toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}:${date.getSeconds().toString().padStart(2, '0')} ${ampm}`;
+                };
+
+                const formatDate = (value) => {
+                    const parsed = Date.parse(value);
+                    if (isNaN(parsed)) return value;
+                    return new Date(parsed).toLocaleDateString("en-GB");
+                };
+
+                for (const fieldName in fieldTypeMap) {
+                    const type = fieldTypeMap[fieldName];
+                    if (row[fieldName] !== undefined && row[fieldName] !== null && row[fieldName] !== "") {
+                        if (type === "date") {
+                            row[fieldName] = formatDate(row[fieldName]);
+                        } else if (type === "time") {
+                            row[fieldName] = formatTime(row[fieldName]);
+                        } else if (type === "dateandtime") {
+                            row[fieldName] = formatDateTime(row[fieldName]);
+                        }
+                    }
+                }
+
+                for (const association of associations) {
+                    const alias = `${association.relatedTable}Details`;
+                    if (row[alias]) {
+                        Object.entries(row[alias]).forEach(([key, value]) => {
+                            row[association.foreignKey] = value;
+                            delete row[alias];
+                        });
+                    }
+                }
+
+                for (const fieldName in row) {
+                    if (fieldLabelMap[fieldName]) {
+                        labelValueRow[fieldLabelMap[fieldName]] = row[fieldName];
+                    }
+                }
+
+                data.push(labelValueRow);
+            }
+
+            allData[tblName] = data;
+        }
+
+        return userSendResponse(res, 200, true, "Data fetched successfully", allData);
+    } catch (error) {
+        console.error("Error fetching view data:", error);
+        return userSendResponse(res, 500, false, error?.message || "Server error", error);
+    }
+};
+
 exports.viewMagazineTemplateData = async (req, res) => {
   try {
     const { table_name, id } = req.body;

@@ -53,6 +53,7 @@ import ActionPlan from './pages/ActionPlan';
 import IframePage from './pages/IframePage';
 import SettingsPage from './pages/SettingsPage';
 import ImportOldData from './pages/ImportOldData';
+import MagazineView from './pages/MagazineView';
 
 import { ToastContainer } from 'react-toastify';
 function App() {
@@ -485,6 +486,16 @@ function App() {
                 </ProtectedRoute>
                 }
             />
+
+            <Route
+                path="/magazine-view"
+                element={
+                    <ProtectedRoute>
+                        <MagazineView />
+                    </ProtectedRoute>
+                }
+            />
+
 
             <Route
                 path="/action_plan"

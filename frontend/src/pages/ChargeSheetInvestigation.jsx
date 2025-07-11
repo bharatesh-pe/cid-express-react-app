@@ -16,7 +16,7 @@ import pngIcon from "../Images/pngIcon.svg";
 import FileInput from "../components/form/FileInput";
 
 
-const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, options, rowData, module, backNavigation, overAllTemplateActions, cs_fir_cases_data }) => {
+const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, options, rowData, module, backNavigation, overAllTemplateActions, cs_fir_cases_data, showMagazineView }) => {
 
     const [loading, setLoading] = useState(false);
 
@@ -660,6 +660,16 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
                             />
                         )}
                     </Typography>
+                    {
+                        showMagazineView && 
+                        <Button
+                            onClick={()=>showMagazineView(false)}
+                            sx={{height: "38px", textTransform: 'none'}}
+                            className="whiteBorderedBtn"
+                        >
+                            Case Docket
+                        </Button>
+                    }
                 </Box>
                 {/* <Typography
                     sx={{

@@ -53,7 +53,7 @@ const LokayuktaView = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const { state } = location;
-    const { contentArray, actionKey, headerDetails, backNavigation, paginationCount, sysStatus, rowData, tableFields, stepperData, template_id, template_name, table_name, module, overAllReadonly, dashboardName, record_id, caseExtension} = state || {};
+    const { contentArray, actionKey, headerDetails, backNavigation, paginationCount, sysStatus, rowData, tableFields, stepperData, template_id, template_name, table_name, module, overAllReadonly, dashboardName, record_id, caseExtension, activeSidebarObj } = state || {};
 
     const fromCDR = location.state?.fromCDR || false;
 
@@ -336,13 +336,13 @@ const LokayuktaView = () => {
         setCurrentTableName(null); 
     }
 
-    const sidebarActive = async (item)=>{
+    const sidebarActive = async (item, ignored)=>{
 
         if(!item){
             return false;
         }
 
-        if(editedForm.current){
+        if(editedForm.current && !ignored){
             const result = await Swal.fire({
                 title: 'Unsaved Changes',
                 text: 'You have unsaved changes. Are you sure you want to leave?',
@@ -967,7 +967,23 @@ const LokayuktaView = () => {
             setSidebarContentArray([cdrSidebarItem]);
             setActiveSidebar(cdrSidebarItem);
         } else {
-            setActiveSidebar(sidebarContentArray?.[0] || null);
+
+            let activeSidebarArray = [];
+            
+            try {
+                if (activeSidebarObj) {
+                    activeSidebarArray = Array.isArray(activeSidebarObj) ? activeSidebarObj : [activeSidebarObj];
+                }
+            } catch (error) {
+                activeSidebarArray = [];
+            }
+
+            if(activeSidebarArray?.[0]){
+                sidebarActive(activeSidebarArray?.[0], true)
+            }else{
+                setActiveSidebar(sidebarContentArray?.[0] || null);
+            }
+
         }
     }, []);
 
@@ -2594,6 +2610,58 @@ if ((!currentTableName || currentTableName === "") && (!activeSidebar?.table || 
 
     // end --- bulk upload functions
 
+
+    // start magazine view 
+
+    const showMagazineView = (overAllAction) => {
+
+        var actionArray = [];
+
+        if(overAllAction){     
+            actionArray = sidebarContentArray
+                .filter(item => (item.table && !item?.field))
+                .map(item => ({
+                    table: item.table,
+                    name: item.name
+                }));
+        }else{
+            actionArray = sidebarContentArray
+                .filter(item => item.table === activeSidebar.table)
+                .map(item => ({
+                    table: item.table,
+                    name: item.name
+                }));
+        }
+
+
+        if(actionArray.length === 0){
+            toast.error('No Template Action Was Found !', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+        
+
+        var overAllObj = {
+            ...state,
+            actionArray : actionArray,
+            ui_case_id: module === "pt_case" ? rowData?.ui_case_id :  rowData?.id,
+            pt_case_id: module === "pt_case" ? rowData?.id :  rowData?.pt_case_id,
+            headerDetails,
+            overAllAction,
+        }
+        
+        navigate("/magazine-view", { state: overAllObj });
+
+    };
+
     return (
         <Stack direction="row" justifyContent="space-between">
 
@@ -2609,6 +2677,8 @@ if ((!currentTableName || currentTableName === "") && (!activeSidebar?.table || 
                         options={state?.options}
                         selectedRowData={rowData}
                         backNavigation={backToForm}
+                        showMagazineView={showMagazineView}
+
                     />
                 ) : activeSidebar?.table === "cid_ui_case_action_plan" ? (
 
@@ -2619,6 +2689,8 @@ if ((!currentTableName || currentTableName === "") && (!activeSidebar?.table || 
                         options={activeSidebar}
                         selectedRowData={rowData}
                         backNavigation={backToForm}
+                        showMagazineView={showMagazineView}
+
                     />
                 ) : activeSidebar?.caseDairy === true ? (
 
@@ -2627,6 +2699,8 @@ if ((!currentTableName || currentTableName === "") && (!activeSidebar?.table || 
                         ui_case_id={module === "pt_case" ? rowData?.ui_case_id :  rowData?.id}
                         pt_case_id={module === "pt_case" ? rowData?.id :  rowData?.pt_case_id}
                         closeForm={backToForm}
+                        showMagazineView={showMagazineView}
+
                     />
 
                 ) : activeSidebar?.chargeSheet === true ? (
@@ -2640,6 +2714,8 @@ if ((!currentTableName || currentTableName === "") && (!activeSidebar?.table || 
                             rowData={rowData}
                             module={module}
                             backNavigation={backToForm}
+                            showMagazineView={showMagazineView}
+
                         />
                     ) : (
                         <Box>
@@ -2677,6 +2753,8 @@ if ((!currentTableName || currentTableName === "") && (!activeSidebar?.table || 
                         options={activeSidebar}
                         selectedRowData={rowData}
                         backNavigation={backToForm}
+                        showMagazineView={showMagazineView}
+
                     />
                 ) : activeSidebar?.table === "cid_ui_case_property_form" ? (
 
@@ -2688,6 +2766,8 @@ if ((!currentTableName || currentTableName === "") && (!activeSidebar?.table || 
                         options={activeSidebar}
                         selectedRowData={rowData}
                         backNavigation={backToForm}
+                        showMagazineView={showMagazineView}
+
                     />
                 ) : activeSidebar?.table === "cid_ui_case_mahajars" ? (
 
@@ -2699,6 +2779,8 @@ if ((!currentTableName || currentTableName === "") && (!activeSidebar?.table || 
                         options={activeSidebar}
                         selectedRowData={rowData}
                         backNavigation={backToForm}
+                        showMagazineView={showMagazineView}
+
                     />    
                 ) : activeSidebar?.table === "cid_ui_case_cdr_ipdr" ? (
 
@@ -2711,6 +2793,8 @@ if ((!currentTableName || currentTableName === "") && (!activeSidebar?.table || 
                         selectedRowData={rowData}
                         backNavigation={backToForm}
                         module={module}
+                        showMagazineView={showMagazineView}
+
                     />
                     
                 ) : activeSidebar?.table === "cid_ui_case_41a_notices" ? (
@@ -2724,6 +2808,8 @@ if ((!currentTableName || currentTableName === "") && (!activeSidebar?.table || 
                         selectedRowData={rowData}
                         backNavigation={backToForm}
                         case_table_name = {table_name}
+                        showMagazineView={showMagazineView}
+
                     />
                     
                 ) : activeSidebar?.table === "cid_eq_case_plan_of_action" ? (
@@ -2736,6 +2822,8 @@ if ((!currentTableName || currentTableName === "") && (!activeSidebar?.table || 
                         options={activeSidebar}
                         selectedRowData={rowData}
                         backNavigation={backToForm}
+                        showMagazineView={showMagazineView}
+
                     />
                 ) : activeSidebar?.table === "cid_eq_case_progress_report" ? (
 
@@ -2747,6 +2835,8 @@ if ((!currentTableName || currentTableName === "") && (!activeSidebar?.table || 
                         options={activeSidebar}
                         selectedRowData={rowData}
                         backNavigation={backToForm}
+                        showMagazineView={showMagazineView}
+
                     />
                 ) : activeSidebar?.table === "cid_eq_case_closure_report" ? (
 
@@ -2757,6 +2847,8 @@ if ((!currentTableName || currentTableName === "") && (!activeSidebar?.table || 
                         options={activeSidebar}
                         selectedRowData={rowData}
                         backNavigation={backToForm}
+                        showMagazineView={showMagazineView}
+
                     />
 
                     
@@ -2940,6 +3032,7 @@ if ((!currentTableName || currentTableName === "") && (!activeSidebar?.table || 
                             reloadApproval={reloadApproval}
                             showCaseActionBtn={showCaseActionBtn}
                             reloadForm={reloadForm}
+                            showMagazineView={showMagazineView}
                         />
                     </Box>
                     :
@@ -3223,6 +3316,15 @@ if ((!currentTableName || currentTableName === "") && (!activeSidebar?.table || 
                                         Bulk Upload
                                     </Button>
                                 }
+
+                                <Button
+                                    onClick={()=>showMagazineView(false)}
+                                    sx={{height: "38px", textTransform: 'none'}}
+                                    className="whiteBorderedBtn"
+                                >
+                                    Case Docket
+                                </Button>
+
                             </Box>
                         </Box>
 
