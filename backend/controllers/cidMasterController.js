@@ -4,6 +4,7 @@ const db = require("../models");
 const { Department, Designation, Division, UsersDepartment,  UsersDivision,  UserDesignation,  Users, Role , KGID ,UsersHierarchyNew,DesignationDivision , Act , Section} = require("../models");
 const { Op, where } = require("sequelize");
 const e = require("express");
+const Sequelize = require("sequelize");
 const sequelize = db.sequelize;
 
 const getAllDepartments = async (req, res) => {
@@ -785,6 +786,108 @@ const getDivisionBasedOnDepartment = async (req, res) => {
     }
 };
 
+
+function normalizeValues(values, expectedType) {
+  return values
+    .filter((v) => v !== null && v !== undefined)
+    .map((v) => {
+      if (expectedType === 'string') return String(v);
+      if (expectedType === 'int') return Number(v);
+      return v;
+    });
+}
+
+
+const fetchUICaseDetails = async (req, res) => {
+    try {
+        const {
+            allowedDepartmentIds = [],
+            allowedDivisionIds = [],
+            allowedUserIds = [],
+        } = req.body;
+
+        if (allowedDepartmentIds.length === 0 && allowedDivisionIds.length === 0) {
+            return res.status(200).json({
+                success: true,
+                message: "No department or division provided, so no data returned.",
+                data: [],
+            });
+        }
+        const normalizedDepartmentIds = normalizeValues(allowedDepartmentIds, 'number');
+        const normalizedDivisionIds = normalizeValues(allowedDivisionIds, 'number');
+
+        const departmentNames = normalizedDepartmentIds.length
+            ? (await sequelize.query(
+                `SELECT department_id FROM department WHERE department_id IN (:ids)`,
+                {
+                    replacements: { ids: normalizedDepartmentIds },
+                    type: Sequelize.QueryTypes.SELECT,
+                }
+            )).map(d => String(d.department_id)) 
+            : [];
+
+            const divisionNames = normalizedDivisionIds.length
+                ? (await sequelize.query(
+                    `SELECT division_id FROM division WHERE division_id IN (:ids)`,
+                    {
+                        replacements: { ids: normalizedDivisionIds },
+                        type: Sequelize.QueryTypes.SELECT,
+                    }
+                )).map(d => String(d.division_id))
+                : [];
+
+                let conditions = [];
+                let replacements = {};
+
+                if (departmentNames.length) {
+                    conditions.push(`field_dept_unit IN (:deptNames)`);
+                    replacements.deptNames = departmentNames;
+                }
+
+                if (divisionNames.length) {
+                    conditions.push(`field_division IN (:divisionNames)`);
+                    replacements.divisionNames = divisionNames;
+                }
+
+                const whereSQL = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+
+                const results = await sequelize.query(`
+                    SELECT 
+                        cui.id,
+                        cui.field_crime_number_of_ps,
+                        cui."field_cid_crime_no./enquiry_no",
+                        cps.field_name_of_the_police_station
+                    FROM cid_under_investigation cui
+                    LEFT JOIN cid_police_station cps
+                        ON CAST(cui.field_name_of_the_police_station AS INTEGER) = cps.id
+                    ${whereSQL}
+                `, {
+                    replacements,
+                    type: Sequelize.QueryTypes.SELECT,
+                });
+
+                const transformedResults = results.map(record => ({
+                    name: `${record.field_crime_number_of_ps || ''} - ${record["field_cid_crime_no./enquiry_no"] || ''} - ${record.field_name_of_the_police_station || ''}`,
+                    code: record.id,
+                }));
+
+                return res.status(200).json({
+                    success: true,
+                    message: "UICase details fetched successfully",
+                    data: transformedResults,
+                });
+
+            } catch (error) {
+                console.error("Error:", error);
+                return res.status(500).json({
+                    success: false,
+                    message: "An error occurred while fetching UICase details",
+                    error: error.message,
+                });
+            }
+        };
+
+
 module.exports = {
     getAllDepartments,
     getAllDesignations,
@@ -797,4 +900,5 @@ module.exports = {
     getAllSectionAndActBasedSection,
     getDivisionBasedOnDepartment,
     getSpecificIoUsersCases,
+    fetchUICaseDetails,
 };
