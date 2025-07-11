@@ -105,7 +105,7 @@ export default function DateField({ field, formData, errors, onChange, onFocus, 
                     required={field.required === true}
                     disabled={readOnly || field.disabled === true}
                     fullWidth
-                    minDate={minDate} // Pass minDate as dayjs object
+                    minDate={field?.minValue ? dayjs(field.minValue) : minDate} // Pass minDate as dayjs object
                     maxDate={field?.maxValue ? dayjs(field.maxValue) : maxDate} // Pass maxDate as dayjs object (end of today)
                     format="DD-MM-YYYY"
                     sx={{
