@@ -66,6 +66,7 @@ const DynamicForm = ({
 //     : {};
   //   console.log('template_name', template_name);
 
+
   var userPermissions = JSON.parse(localStorage.getItem("user_permissions")) || [];
 
   const [formData, setFormData] = useState({});
@@ -1569,6 +1570,28 @@ const DynamicForm = ({
                 try {
 
                     var apiPayload = {};
+
+                    if (field.name === "field_ui_case") {
+                        const response = await api.post("cidMaster/fetchUICaseDetails", {
+                          allowedDepartmentIds : localStorage.getItem("allowedDepartmentIds") ,
+                          allowedDivisionIds : localStorage.getItem("allowedDivisionIds") ,
+                          allowedUserIds :  localStorage.getItem("allowedUserIds") 
+                        });
+                        const updatedOptions = response.data.map((data) => ({
+                            name: data.name,
+                            code: data.code,
+                        }));
+                        setNewFormConfig((prevFormConfig) => {
+                            return prevFormConfig.map((data) => {
+                                if (data.name === field.name) {
+                                    return { ...data, options: updatedOptions };
+                                }
+                                return data;
+                            });
+                        });
+                        // Return early since we already handled this case
+                        return { id: field.id, options: updatedOptions };
+                    }
 
                     if(field.api === "/templateData/getTemplateData"){
                         apiPayload = {
