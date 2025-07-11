@@ -1436,12 +1436,38 @@ const NormalViewForm = ({
                 hour12: true,
             });
 
-            return {
-              ...data,
-              id: data.profile_history_id,
-              sl_no: index + 1,
-              username: fullname,
-              date: readableDate
+            if(payload.field_name === "field_io_name"){
+
+                sethistoryHeaderData([
+                    { field: 'sl_no', headerName: 'Sl. No.' },
+                    { field: 'updated_user', headerName: 'New IO', flex: 4 },
+                    { field: 'updated_user_mobile', headerName: 'New IO Mobile', flex: 4 },
+                    { field: 'old_user', headerName: 'Old IO', flex: 4 },
+                    { field: 'old_user_mobile', headerName: 'Old IO Mobile', flex: 4 },
+                    { field: 'username', headerName: 'Updated By', flex: 4 },
+                    { field: 'date', headerName: 'Updated At', flex: 4 }
+                  ]);
+                return {
+                  ...data,
+                  id: data.profile_history_id,
+                  sl_no: index + 1,
+                  username: fullname,
+                  date: readableDate,
+                  old_user: data.old_value_details &&  data.old_value_details.name || "",
+                  old_user_mobile: data.old_value_details &&  data.old_value_details.mobile || "",
+                  updated_user: data.updated_value_details &&  data.updated_value_details.name || "",
+                  updated_user_mobile: data.updated_value_details &&  data.updated_value_details.mobile || "",
+                }
+             
+            }
+            else{
+                return {
+                  ...data,
+                  id: data.profile_history_id,
+                  sl_no: index + 1,
+                  username: fullname,
+                  date: readableDate
+                }
             }
           });
 
