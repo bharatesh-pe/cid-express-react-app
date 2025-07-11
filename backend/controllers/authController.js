@@ -2554,7 +2554,6 @@ const store_cnr_table_data = async (req, res) => {
             id: { type: Sequelize.DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
             created_at: { type: Sequelize.DataTypes.DATE, allowNull: false, defaultValue: Sequelize.NOW },
             updated_at: { type: Sequelize.DataTypes.DATE, allowNull: false, defaultValue: Sequelize.NOW },
-            pt_case_id: { type: Sequelize.DataTypes.TEXT, allowNull: false},
         };
     
         for (const field of schema) {
@@ -2564,6 +2563,11 @@ const store_cnr_table_data = async (req, res) => {
             allowNull: !not_null,
             };
         }
+
+        attributes['pt_case_id'] = {
+            type: Sequelize.DataTypes.TEXT,
+            allowNull: true,
+        };
   
         const CNRModel = sequelize.define("cid_pt_case_cnr", attributes, {
             freezeTableName: true,
