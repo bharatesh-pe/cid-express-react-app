@@ -117,8 +117,6 @@ const LokayuktaSidebar = ({ui_case_id, pt_case_id, contentArray, onClick, active
 
     const cdrIndex = investigationItems.findIndex(item => item.name?.toLowerCase().includes("cdr"));
 
-    console.log("investigationItems ##############################################", investigationItems);
-
     useEffect(() => {
         const fetchCounts = async () => {
             if (!ui_case_id && !pt_case_id) return;
@@ -137,7 +135,7 @@ const LokayuktaSidebar = ({ui_case_id, pt_case_id, contentArray, onClick, active
             }
         };
         fetchCounts();
-    }, [ui_case_id, pt_case_id, investigationItems]);
+    }, [ui_case_id, pt_case_id]);
 
     return (
         <>
