@@ -2453,6 +2453,59 @@ const NormalViewForm = ({
 
           <Box sx={{ display: 'flex', alignItems: 'center', }}>
 
+
+            {
+                showMagazineView && 
+                <Button
+                variant="outlined"
+                    onClick={()=>showMagazineView(true)}
+                    sx={{marginLeft: "10px", marginRight: "4px", height: '40px'}}
+                    // sx={{height: "38px", textTransform: 'none'}}
+                    // className="whiteBorderedBtn"
+                >
+                    Case Docket
+                </Button>
+            }
+            
+            {oldCase &&  table_name === 'cid_under_investigation' && (
+            <Button
+                variant="outlined"
+                onClick={() => {
+                    if (onViewOldCase) {
+                        onViewOldCase();
+                    }
+                }}
+                sx={{marginLeft: "10px", marginRight: "4px", height: '40px'}}
+            // sx={{
+            //     borderColor: "#390c93",
+            //     color: "#370d8d",
+            //     height: "38px",
+            //     textTransform: 'none',
+            //     fontSize: "14px",
+            //     marginLeft: "10px",
+            //     marginRight: "4px",
+            //     '&:hover': {
+            //         borderColor: "#4527a0",
+            //         backgroundColor: "rgba(94,53,177,0.04)",
+            //     }
+            // }}
+            >
+                View Old Case
+            </Button>
+
+            )}
+
+            {
+                table_row_id && showAssignIo &&
+                <Button
+                    variant="outlined"
+                    sx={{marginLeft: "10px", marginRight: "10px", height: '40px'}}
+                    onClick = {() => {CaseLogs()}}
+                >
+                    Case Log
+                </Button>
+            }
+
             {
                 showAssignIo && investigationAction && investigationAction?.field && !showCaseActionBtn && userrole !== "investigation officer" &&
                 <Button
@@ -2471,54 +2524,6 @@ const NormalViewForm = ({
                 </Button>
             }
 
-            {
-                showMagazineView && 
-                <Button
-                    onClick={()=>showMagazineView(true)}
-                    sx={{height: "38px", textTransform: 'none'}}
-                    className="whiteBorderedBtn"
-                >
-                    Case Docket
-                </Button>
-            }
-            
-            {oldCase &&  table_name === 'cid_under_investigation' && (
-            <Typography
-                onClick={() => {
-                if (onViewOldCase) {
-                    onViewOldCase();
-                }
-                }}
-                sx={{
-                fontSize: "14px",
-                fontWeight: "500",
-                color: "#1976d2",
-                cursor: "pointer",
-                marginLeft: "10px",
-                marginRight: "10px",
-                textDecoration: "underline",
-                "&:hover": {
-                    color: "#0d47a1",
-                    textDecoration: "underline",
-                },
-                }}
-                className="Roboto"
-                component="span"
-            >
-                VIEW OLD CASE
-            </Typography>
-            )}
-
-            {
-                table_row_id && showAssignIo &&
-                <Button
-                    variant="outlined"
-                    sx={{marginLeft: "10px", marginRight: "10px", height: '40px'}}
-                    onClick = {() => {CaseLogs()}}
-                >
-                    Case Log
-                </Button>
-            }
 
             {onSkip && (
                 <Button
