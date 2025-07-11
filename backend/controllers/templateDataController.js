@@ -11315,158 +11315,152 @@ exports.getDateWiseTableCounts = async (req, res) => {
 
 exports.getTemplateDataWithDate = async (req, res) => {
     try {
-        const {
-            table_name,
-            date,
-            ui_case_id,
-            pt_case_id,
-            page = 1,
-            limit = 10,
-            search = ""
-        } = req.body;
+        const { ui_case_id, pt_case_id, data: tableDateArray } = req.body;
 
-        if (!table_name || !date) {
-            return userSendResponse(res, 400, false, "table_name and date are required.", null);
+        if (!Array.isArray(tableDateArray) || tableDateArray.length === 0) {
+            return userSendResponse(res, 400, false, "data array is required.", null);
         }
-
-        const tableData = await Template.findOne({ where: { table_name } });
-        if (!tableData) {
-            return userSendResponse(res, 400, false, `Table ${table_name} does not exist.`, null);
-        }
-
-        const schema = typeof tableData.fields === "string" ? JSON.parse(tableData.fields) : tableData.fields;
-        const displayFields = schema.filter(f => f.table_display_content);
-
-        const fields = {};
-        let dateField = "created_at";
-
-        for (const field of displayFields) {
-            const { name, data_type, not_null, default_value, case_dairy } = field;
-
-            fields[name] = {
-                type: typeMapping[data_type?.toUpperCase()] || Sequelize.DataTypes.STRING,
-                allowNull: !not_null,
-                defaultValue: default_value || null,
-            };
-
-            if (case_dairy === true) {
-                dateField = name;
-            }
-        }
-
-        fields["id"] = { type: Sequelize.DataTypes.INTEGER, primaryKey: true, autoIncrement: true };
-        fields["created_at"] = { type: Sequelize.DataTypes.DATE, allowNull: false };
-        fields["updated_at"] = { type: Sequelize.DataTypes.DATE, allowNull: false };
-
-        const Model =
-            sequelize.models[table_name] ||
-            sequelize.define(table_name, fields, {
-                freezeTableName: true,
-                timestamps: true,
-                createdAt: "created_at",
-                updatedAt: "updated_at",
-            });
-
-        await Model.sync();
 
         const Op = Sequelize.Op;
-        const offset = (parseInt(page) - 1) * parseInt(limit);
-        const parsedDate = date.split("T")[0];
+        const results = {};
 
-        const startDate = new Date(parsedDate + "T00:00:00");
-        const endDate = new Date(parsedDate + "T23:59:59.999");
+        for (const entry of tableDateArray) {
+            const { table: table_name, date } = entry;
+            if (!table_name || !date) continue;
 
-        const whereConditions = {
-            [dateField]: {
-                [Op.gte]: startDate,
-                [Op.lte]: endDate
+            // Fetch template and schema
+            const tableData = await Template.findOne({ where: { table_name } });
+            if (!tableData) {
+                results[table_name] = { error: `Table ${table_name} does not exist.` };
+                continue;
             }
-        };
 
-        if (fields["ui_case_id"] && ui_case_id) {
-            whereConditions.push({ ui_case_id });
-        }
+            const schema = typeof tableData.fields === "string" ? JSON.parse(tableData.fields) : tableData.fields;
 
-        if (fields["pt_case_id"] && pt_case_id) {
-            whereConditions.push({ pt_case_id });
-        }
+            let displayFields = schema.filter(f => f.case_dairy === true);
 
-        if (search) {
-            const searchConditions = [];
+            if (!displayFields.length) {
+                displayFields = schema.filter(f => f.is_primary_field === true);
+            }
+
+            if (!displayFields.length) {
+                displayFields = schema;
+            }
+
+            let dateField = "created_at";
             for (const field of displayFields) {
-                if (["STRING", "TEXT"].includes((typeMapping[field.data_type?.toUpperCase()] || {}).key)) {
-                    searchConditions.push({ [field.name]: { [Op.iLike]: `%${search}%` } });
+                if (field.case_dairy === true) {
+                    dateField = field.name;
+                    break;
                 }
             }
-            if (searchConditions.length > 0) {
-                whereConditions.push({ [Op.or]: searchConditions });
-            }
-        }
 
-        const whereClause = { [Op.and]: whereConditions };
-
-        const { rows, count } = await Model.findAndCountAll({
-            where: whereClause,
-            limit: parseInt(limit),
-            offset: parseInt(offset),
-            order: [["created_at", "DESC"]],
-        });
-
-        const result = [];
-        for (const row of rows) {
-            const data = row.toJSON();
-
+            // Build model attributes
+            const fields = {};
             for (const field of displayFields) {
-                if (field.table && field.attributes && Array.isArray(field.attributes)) {
-                    const relatedFieldName = field.name;
-                    const relatedAttr = field.attributes[0];
+                const { name, data_type, not_null, default_value } = field;
+                fields[name] = {
+                    type: typeMapping[data_type?.toUpperCase()] || Sequelize.DataTypes.STRING,
+                    allowNull: !not_null,
+                    defaultValue: default_value || null,
+                };
+            }
+            fields["id"] = { type: Sequelize.DataTypes.INTEGER, primaryKey: true, autoIncrement: true };
+            fields["created_at"] = { type: Sequelize.DataTypes.DATE, allowNull: false };
+            fields["updated_at"] = { type: Sequelize.DataTypes.DATE, allowNull: false };
 
-                    const RelatedModel = require("../models")[field.table];
+            const Model =
+                sequelize.models[table_name] ||
+                sequelize.define(table_name, fields, {
+                    freezeTableName: true,
+                    timestamps: true,
+                    createdAt: "created_at",
+                    updatedAt: "updated_at",
+                });
 
-                    if (RelatedModel) {
-                        const related = await RelatedModel.findOne({
-                            where: { id: data[relatedFieldName] },
-                            attributes: [relatedAttr],
-                        });
+            await Model.sync();
 
-                        if (related && related[relatedAttr] !== undefined) {
-                            data[relatedFieldName] = related[relatedAttr];
-                        }
-                    } else {
-                        const [resultRow] = await sequelize.query(
-                            `SELECT ${relatedAttr} FROM ${field.table} WHERE id = :id LIMIT 1`,
-                            {
-                                replacements: { id: data[relatedFieldName] },
-                                type: Sequelize.QueryTypes.SELECT,
-                            }
-                        );
+            let parsedDate;
+            if (typeof date === "string") {
+                parsedDate = date.split("T")[0];
+            } else if (date instanceof Date) {
+                parsedDate = date.toISOString().split("T")[0];
+            } else {
+                parsedDate = new Date(date).toISOString().split("T")[0];
+            }
+            const startDate = new Date(parsedDate + "T00:00:00");
+            const endDate = new Date(parsedDate + "T23:59:59.999");
 
-                        if (resultRow && resultRow[relatedAttr] !== undefined) {
-                            data[relatedFieldName] = resultRow[relatedAttr];
-                        }
+            const whereClause = {
+                [dateField]: { [Op.gte]: startDate, [Op.lte]: endDate }
+            };
+            if (fields["ui_case_id"] && ui_case_id) whereClause.ui_case_id = ui_case_id;
+            if (fields["pt_case_id"] && pt_case_id) whereClause.pt_case_id = pt_case_id;
+
+            const rows = await Model.findAll({ where: whereClause, order: [["created_at", "DESC"]] });
+
+            const formatTime = (value) => {
+                const parsed = Date.parse(value);
+                if (isNaN(parsed)) return value;
+                
+                const date = new Date(parsed);
+                let hours = date.getHours();
+                const ampm = hours >= 12 ? 'PM' : 'AM';
+                
+                hours = hours % 12;
+                hours = hours ? hours : 12; // the hour '0' should be '12'
+                
+                return `${hours.toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}:${date.getSeconds().toString().padStart(2, '0')} ${ampm}`;
+            };
+
+            const formatDateTime = (value) => {
+                const parsed = Date.parse(value);
+                if (isNaN(parsed)) return value;
+                
+                const date = new Date(parsed);
+                let hours = date.getHours();
+                const ampm = hours >= 12 ? 'PM' : 'AM';
+                
+                hours = hours % 12;
+                hours = hours ? hours : 12; // the hour '0' should be '12'
+                
+                return `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()} ${hours.toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}:${date.getSeconds().toString().padStart(2, '0')} ${ampm}`;
+            };
+
+            const formatDate = (value) => {
+                const parsed = Date.parse(value);
+                if (isNaN(parsed)) return value;
+                return new Date(parsed).toLocaleDateString("en-GB");
+            };
+
+            const mappedRows = [];
+            for (const row of rows) {
+                const data = row.toJSON();
+                const labelValue = {};
+
+                for (const field of displayFields) {
+                    let value = data[field.name];
+
+                    if (field.data_type === "date" && value) {
+                        value = formatDate(value);
+                    } else if (field.data_type === "time" && value) {
+                        value = formatTime(value)
+                    } else if (field.data_type === "dateandtime" && value) {
+                        value = formatDateTime(value);
                     }
+
+                    labelValue[field.label || field.name] = value;
                 }
+                mappedRows.push(labelValue);
             }
 
-            result.push(data);
+            results[table_name] = mappedRows;
         }
 
-        const totalPages = Math.ceil(count / limit);
-
-        return userSendResponse(res, 200, true, "Fetched data successfully.", {
-            data: result,
-            meta: {
-                page: parseInt(page),
-                limit: parseInt(limit),
-                totalItems: count,
-                totalPages,
-                date: parsedDate,
-                table_name,
-            },
-        });
+        return userSendResponse(res, 200, true, "Fetched data successfully.", results);
     } catch (error) {
         console.error("Error in getTemplateDataWithDate:", error);
-        return userSendResponse(res, 500, false," Failed to fetch template data with date", error.message);
+        return userSendResponse(res, 500, false, "Failed to fetch template data with date", error.message);
     }
 };
 
