@@ -12465,3 +12465,71 @@ exports.checkCaseStatusCombined = async (req, res) => {
             });
         }
 };
+
+exports.getTableCountsByCaseId = async (req, res) => {
+    try {
+      const { table_names = [], ui_case_id, pt_case_id } = req.body;
+  
+      if (!Array.isArray(table_names) || table_names.length === 0) {
+        return userSendResponse(res, 400, false, "table_names must be a non-empty array.", null);
+      }
+      if (!ui_case_id && !pt_case_id) {
+        return userSendResponse(res, 400, false, "Either ui_case_id or pt_case_id is required.", null);
+      }
+  
+      const result = {};
+      for (const table_name of table_names) {
+        try {
+          const tableData = await Template.findOne({ where: { table_name } });
+          if (!tableData) {
+            result[table_name] = 0;
+            continue;
+          }
+          const schema = typeof tableData.fields === "string" ? JSON.parse(tableData.fields) : tableData.fields;
+          const modelAttributes = {};
+          for (const field of schema) {
+            const { name, data_type, not_null, default_value } = field;
+            const sequelizeType = typeMapping[data_type?.toUpperCase()] || Sequelize.DataTypes.STRING;
+            modelAttributes[name] = {
+              type: sequelizeType,
+              allowNull: !not_null,
+              defaultValue: default_value || null,
+            };
+          }
+          if (!modelAttributes.id) {
+            modelAttributes.id = {
+              type: Sequelize.DataTypes.INTEGER,
+              primaryKey: true,
+              autoIncrement: true,
+            };
+          }
+          const Model = sequelize.define(table_name, modelAttributes, {
+            freezeTableName: true,
+            timestamps: true,
+            createdAt: "created_at",
+            updatedAt: "updated_at",
+          });
+          await Model.sync();
+  
+          let whereClause = {};
+          if (ui_case_id && pt_case_id) {
+            whereClause = { [Sequelize.Op.or]: [{ ui_case_id }, { pt_case_id }] };
+          } else if (ui_case_id) {
+            whereClause = { ui_case_id };
+          } else if (pt_case_id) {
+            whereClause = { pt_case_id };
+          }
+  
+          const count = await Model.count({ where: whereClause });
+          result[table_name] = count;
+        } catch (err) {
+          result[table_name] = 0;
+        }
+      }
+  
+      return userSendResponse(res, 200, true, "Counts fetched successfully.", result);
+    } catch (error) {
+      console.error("Error in getTableCountsByCaseId:", error);
+      return userSendResponse(res, 500, false, "Failed to get table counts.", error.message);
+    }
+  };

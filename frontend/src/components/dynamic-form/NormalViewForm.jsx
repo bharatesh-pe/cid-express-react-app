@@ -340,7 +340,7 @@ const NormalViewForm = ({
                 if (wantUpdateDateFields.includes(field?.name)) {
                     return {
                         ...field,
-                        maxValue: values
+                        minValue: values
                     };
                 }
                 return field;
@@ -382,7 +382,7 @@ const NormalViewForm = ({
                 if (wantUpdateDateFields.includes(field?.name)) {
                     return {
                         ...field,
-                        maxValue: formData["field_date_of_registration_by_ps/range"]
+                        minValue: formData["field_date_of_registration_by_ps/range"]
                     };
                 }
                 return field;
@@ -1445,12 +1445,38 @@ const NormalViewForm = ({
                 hour12: true,
             });
 
-            return {
-              ...data,
-              id: data.profile_history_id,
-              sl_no: index + 1,
-              username: fullname,
-              date: readableDate
+            if(payload.field_name === "field_io_name"){
+
+                sethistoryHeaderData([
+                    { field: 'sl_no', headerName: 'Sl. No.' },
+                    { field: 'updated_user', headerName: 'New IO', flex: 4 },
+                    { field: 'updated_user_mobile', headerName: 'New IO Mobile', flex: 4 },
+                    { field: 'old_user', headerName: 'Old IO', flex: 4 },
+                    { field: 'old_user_mobile', headerName: 'Old IO Mobile', flex: 4 },
+                    { field: 'username', headerName: 'Updated By', flex: 4 },
+                    { field: 'date', headerName: 'Updated At', flex: 4 }
+                  ]);
+                return {
+                  ...data,
+                  id: data.profile_history_id,
+                  sl_no: index + 1,
+                  username: fullname,
+                  date: readableDate,
+                  old_user: data.old_value_details &&  data.old_value_details.name || "",
+                  old_user_mobile: data.old_value_details &&  data.old_value_details.mobile || "",
+                  updated_user: data.updated_value_details &&  data.updated_value_details.name || "",
+                  updated_user_mobile: data.updated_value_details &&  data.updated_value_details.mobile || "",
+                }
+             
+            }
+            else{
+                return {
+                  ...data,
+                  id: data.profile_history_id,
+                  sl_no: index + 1,
+                  username: fullname,
+                  date: readableDate
+                }
             }
           });
 
@@ -2565,6 +2591,59 @@ const NormalViewForm = ({
 
           <Box sx={{ display: 'flex', alignItems: 'center', }}>
 
+
+            {
+                showMagazineView && 
+                <Button
+                variant="outlined"
+                    onClick={()=>showMagazineView(true)}
+                    sx={{marginLeft: "10px", marginRight: "4px", height: '40px'}}
+                    // sx={{height: "38px", textTransform: 'none'}}
+                    // className="whiteBorderedBtn"
+                >
+                    Case Docket
+                </Button>
+            }
+            
+            {oldCase &&  table_name === 'cid_under_investigation' && (
+            <Button
+                variant="outlined"
+                onClick={() => {
+                    if (onViewOldCase) {
+                        onViewOldCase();
+                    }
+                }}
+                sx={{marginLeft: "10px", marginRight: "4px", height: '40px'}}
+            // sx={{
+            //     borderColor: "#390c93",
+            //     color: "#370d8d",
+            //     height: "38px",
+            //     textTransform: 'none',
+            //     fontSize: "14px",
+            //     marginLeft: "10px",
+            //     marginRight: "4px",
+            //     '&:hover': {
+            //         borderColor: "#4527a0",
+            //         backgroundColor: "rgba(94,53,177,0.04)",
+            //     }
+            // }}
+            >
+                View Old Case
+            </Button>
+
+            )}
+
+            {
+                table_row_id && showAssignIo &&
+                <Button
+                    variant="outlined"
+                    sx={{marginLeft: "10px", marginRight: "10px", height: '40px'}}
+                    onClick = {() => {CaseLogs()}}
+                >
+                    Case Log
+                </Button>
+            }
+
             {
                 showAssignIo && investigationAction && investigationAction?.field && !showCaseActionBtn && userrole !== "investigation officer" &&
                 <Button
@@ -2583,54 +2662,6 @@ const NormalViewForm = ({
                 </Button>
             }
 
-            {
-                showMagazineView && 
-                <Button
-                    onClick={()=>showMagazineView(true)}
-                    sx={{height: "38px", textTransform: 'none'}}
-                    className="whiteBorderedBtn"
-                >
-                    Case Docket
-                </Button>
-            }
-            
-            {oldCase &&  table_name === 'cid_under_investigation' && (
-            <Typography
-                onClick={() => {
-                if (onViewOldCase) {
-                    onViewOldCase();
-                }
-                }}
-                sx={{
-                fontSize: "14px",
-                fontWeight: "500",
-                color: "#1976d2",
-                cursor: "pointer",
-                marginLeft: "10px",
-                marginRight: "10px",
-                textDecoration: "underline",
-                "&:hover": {
-                    color: "#0d47a1",
-                    textDecoration: "underline",
-                },
-                }}
-                className="Roboto"
-                component="span"
-            >
-                VIEW OLD CASE
-            </Typography>
-            )}
-
-            {
-                table_row_id && showAssignIo &&
-                <Button
-                    variant="outlined"
-                    sx={{marginLeft: "10px", marginRight: "10px", height: '40px'}}
-                    onClick = {() => {CaseLogs()}}
-                >
-                    Case Log
-                </Button>
-            }
 
             {onSkip && (
                 <Button

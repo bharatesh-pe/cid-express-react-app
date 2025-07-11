@@ -512,5 +512,7 @@ router.post('/submitActionPlanPR',[validate_token],
 router.post('/checkFinalSheet',[validate_token],
    templateDataController.checkFinalSheet)
    
+router.post('/getTableCountsByCaseId', templateDataController.getTableCountsByCaseId)
+   
         
 module.exports = router;
