@@ -1,12 +1,13 @@
 import React, { useEffect, useRef, useState, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { West } from "@mui/icons-material";
-import { Chip, Typography, Box, Tabs, Tab } from "@mui/material";
+import { Chip, Typography, Box, Tabs, Tab, CircularProgress } from "@mui/material";
 import ReactPageFlip from "react-pageflip";
 import api from "../services/api";
 
-// Constants for calculations
-const APPROX_FIELD_HEIGHT = 80; // Approximate height of one field in pixels
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+
 const PAGE_PADDING = 48; // Total vertical padding (24px top + 24px bottom)
 const TITLE_HEIGHT = 64; // Approximate height of title section
 
@@ -49,6 +50,8 @@ const MagazineView = () => {
     const location = useLocation();
     const navigate = useNavigate();
 
+    const [loading, setLoading] = useState(false);
+    
     const pageFlip = useRef();
     const [currentPage, setCurrentPage] = useState(0);
     const [viewportWidth, setViewportWidth] = useState((window.innerWidth / 2) - 20);
@@ -75,7 +78,20 @@ const MagazineView = () => {
 
     const handleTabClick = (table, tabIndex) => {
         const pageIndices = tableToPagesMap[table];
-        if (!pageIndices || !pageIndices.length || !pageFlip.current) return;
+
+        if (!pageIndices || !pageIndices.length || !pageFlip.current){
+            toast.error('No Data Found', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
 
         const targetPageIndex = pageIndices[0];
 
@@ -163,11 +179,13 @@ const MagazineView = () => {
             pt_case_id,
         };
 
+        setLoading(true);
         try {
             const response = await api.post(
                 "/templateData/viewMagazineTemplateAllData",
                 payload
             );
+            setLoading(false);
 
             if(response.success){
                 const data = response.data || {};
@@ -263,7 +281,17 @@ const MagazineView = () => {
                 setPages(generatedPages);
             }
         } catch (error) {
-            console.log(error, "error");
+            setLoading(false);
+            toast.error('Something Went Wrong Please Try Again !', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
         }
     };
 
@@ -476,6 +504,11 @@ const MagazineView = () => {
                     </Typography>
                 )}
             </Box>
+            {loading && (
+                <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%" }}>
+                    <CircularProgress size={100} />
+                </Box>
+            )}
         </div>
     );
 };
