@@ -120,7 +120,7 @@ exports.createTemplate = async (req, res, next) => {
           const message = `Field ${fieldName} is marked as dependent, but "api", "forign_key", and "attributes" must be provided.`;
           return adminSendResponse(res, 400, false, message, null);
         }
-        data_type = "INTEGER"; // Set the data type to INTEGER for foreign keys if the table exists
+        // data_type = "INTEGER"; // Set the data type to INTEGER for foreign keys if the table exists
       }
 
       // Check data type and apply max_length if applicable
@@ -431,7 +431,7 @@ exports.updateTemplate = async (req, res, next) => {
           const message = `Field ${fieldName} is marked as dependent, but "api", "table", "forign_key", and "attributes" must be provided.`;
           return adminSendResponse(res, 400, false, message, null);
         }
-        data_type = "INTEGER"; // Set the data type to INTEGER for foreign keys
+        // data_type = "INTEGER"; // Set the data type to INTEGER for foreign keys
       }
 
       // Check data type and apply max_length if applicable
