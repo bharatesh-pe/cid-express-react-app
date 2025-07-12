@@ -11498,7 +11498,7 @@ exports.getTemplateDataWithDate = async (req, res) => {
 
             const schema = typeof tableData.fields === "string" ? JSON.parse(tableData.fields) : tableData.fields;
 
-            let displayFields = schema.filter(f => f.case_dairy === true);
+            let displayFields = schema.filter(f => (f.case_diary === true && f.hide_from_ux !== true));
 
             if (!displayFields.length) {
                 displayFields = schema.filter(f => f.is_primary_field === true);
@@ -11510,7 +11510,7 @@ exports.getTemplateDataWithDate = async (req, res) => {
 
             let dateField = "created_at";
             for (const field of displayFields) {
-                if (field.case_dairy === true) {
+                if (field.case_diary === true) {
                     dateField = field.name;
                     break;
                 }
