@@ -3085,85 +3085,30 @@ const Formbuilder = () => {
                         >
                             <Box sx={{ backgroundColor: '#F2F4F7', border: '1px solid #D0D5DD', borderTopLeftRadius: '8px', borderTopRightRadius: '8px', height: '50vh', overflow: 'auto' }}>
 
-                                <Grid container sx={{ backgroundColor: '#FFFFFF', borderBottom: '1px solid #D0D5DD', borderRadius: '8px' }} p={2}>
-                                    <Grid item xs={12} md={8} sx={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                            {steps && steps.length > 0 && <Typography className='HighlightedSquare'>
-                                                {activeStep + 1}
-                                            </Typography>
-                                            }
-                                            <Typography className='HighlightedText'>
-                                                {steps && steps.length ? steps[activeStep] : 'General Detail'}
-                                            </Typography>
-                                        </Box>
-                                        {/* <Box sx={{ display: 'flex', alignItems: 'center', gap: '20px', background: '#F9FAFB', border: '.8px solid #D0D5DD', borderRadius: '6px', padding: '4px 8px' }} px={1}>
-                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                <img src={Infoicon} />
-                                                <Typography className='moreInfoText'>
-                                                    For more information
+                                {steps && steps.length > 0 && 
+                                    <Grid container sx={{ backgroundColor: '#FFFFFF', borderBottom: '1px solid #D0D5DD', borderRadius: '8px' }} p={2}>
+
+                                        <Grid item xs={12} md={8} sx={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                {steps && steps.length > 0 && <Typography className='HighlightedSquare'>
+                                                    {activeStep + 1}
+                                                </Typography>
+                                                }
+                                                <Typography className='HighlightedText'>
+                                                    {steps && steps.length ? steps[activeStep] : 'General Detail'}
                                                 </Typography>
                                             </Box>
-                                            <Box sx={{ border: '1px solid #D0D5DD', height: '12px', alignSelf: 'auto' }}></Box>
-                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                <img src={PreviousLog} />
-                                                <Typography className='moreInfoText'>
-                                                    To check previous logs
-                                                </Typography>
+                                        </Grid>
+
+                                        <Grid item xs={12} md={4} sx={{ display: 'flex', justifyContent: 'end', alignItems: 'center', gap: '17px' }}>
+                                            <Box sx={{display:'flex',alignItems:'center',gap:'12px'}}>
+                                                <Button onClick={handleBack} sx={{display:'flex',alignItems:'center',justifyContent:'center',minWidth:'16px'}} > <ArrowBackIosIcon sx={{height:'16px',width:'16px',color:'rgba(0, 0, 0, 0.56)',cursor:'pointer'}} /> </Button>
+                                                <Button onClick={handleNext} sx={{display:'flex',alignItems:'center',justifyContent:'center',minWidth:'16px'}} > <ArrowForwardIosIcon sx={{height:'16px',width:'16px',color:'rgba(0, 0, 0, 0.56)',cursor:'pointer'}} /> </Button>
                                             </Box>
-                                        </Box> */}
-                                    </Grid>
-                                    {steps && steps.length > 0 && <Grid item xs={12} md={4} sx={{ display: 'flex', justifyContent: 'end', alignItems: 'center', gap: '17px' }}>
-                                        <Box sx={{display:'flex',alignItems:'center',gap:'12px'}}>
-                                            <Button onClick={handleBack} sx={{display:'flex',alignItems:'center',justifyContent:'center',minWidth:'16px'}} > <ArrowBackIosIcon sx={{height:'16px',width:'16px',color:'rgba(0, 0, 0, 0.56)',cursor:'pointer'}} /> </Button>
-                                            <Button onClick={handleNext} sx={{display:'flex',alignItems:'center',justifyContent:'center',minWidth:'16px'}} > <ArrowForwardIosIcon sx={{height:'16px',width:'16px',color:'rgba(0, 0, 0, 0.56)',cursor:'pointer'}} /> </Button>
-                                        </Box>
-                                        {/* <Button onClick={handleBack} className='smallSecondaryBtn' sx={{ textTransform: 'none' }}>
-                                            <img src={LeftIcon} />
-                                            Back
-                                        </Button>
-                                        <Button onClick={handleNext} className='fillPrimaryBtn' sx={{ textTransform: 'none' }}>
-                                            Next
-                                            <img src={RightIcon} />
-                                        </Button> */}
-                                    </Grid>
-                                    }
-                                </Grid>
+                                        </Grid>
 
-                                {/* <Grid container>
-                                    {previewFormData.map((field, index) => {
-                                        switch (field.type) {
-                                            case 'text':
-                                                return (
-                                                    <Grid item xs={12} md={6} px={2} py={0.5}>
-                                                        <div className='form-field-wrapper_selectedField'>
-                                                            <ShortText
-                                                                field={field}
-                                                                formData={formData}
-                                                                errors={null}
-                                                                onChange={handleChange}
-                                                                onFocus={(e) => { console.log(e); console.log(field); setSelectedField(field) }}
-                                                            />
-                                                        </div>
-                                                    </Grid>
-                                                );
-
-                                            case 'number':
-                                                return (
-                                                    <Grid item xs={12} md={6} px={2} py={0.5}>
-                                                        <div className='form-field-wrapper_selectedField'>
-                                                            <NumberField
-                                                                field={field}
-                                                                formData={formData}
-                                                                errors={null}
-                                                                onChange={handleChange}
-                                                            />
-                                                        </div>
-                                                    </Grid>
-                                                );
-                                        }
-                                    }
-                                    )}
-                                </Grid> */}
+                                    </Grid>
+                                }
 
                                 <DragDropContext onDragEnd={handleDragEnd}>
                                     <Droppable droppableId="droppableFields" direction="vertical">

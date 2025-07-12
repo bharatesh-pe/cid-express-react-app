@@ -324,6 +324,14 @@ const NormalViewForm = ({
     handleMaxDateChange(name,newValues);
   }
 
+    const originalFormConfigRef = useRef([]);
+  
+    useEffect(() => {
+        if (newFormConfig && originalFormConfigRef.current.length === 0) {
+            originalFormConfigRef.current = JSON.parse(JSON.stringify(newFormConfig));
+        }
+    }, [newFormConfig]);
+
     const handleMaxDateChange = (name, values)=>{
 
         if(name && name === "field_date_of_registration_by_ps/range" && table_name === "cid_under_investigation"){
@@ -336,27 +344,36 @@ const NormalViewForm = ({
                 "field_date_of_submission_of_fr_to_court"
             ]
         
-            var updatedFormConfigData = formConfigData.map((field) => {
+            const isBefore2015 = (() => {
+                const date = new Date(values);
+                return !isNaN(date.getTime()) && date.getFullYear() < 2015;
+            })();
+
+            const updatedFormConfigData = formConfigData.map((field) => {
+                const originalField = originalFormConfigRef.current.find(f => f.name === field.name) || {};
+
+                let updatedField = { ...field };
+
                 if (wantUpdateDateFields.includes(field?.name)) {
-                    return {
-                        ...field,
-                        minValue: values
-                    };
+                    updatedField.minValue = values;
                 }
-                return field;
+
+                if (isBefore2015) {
+                    updatedField.required = false;
+                } else {
+                    updatedField.required = originalField.required || false;
+                }
+
+                return updatedField;
             });
 
             const updatedFormData = { ...formData };
-
-            wantUpdateDateFields.forEach((name) => {
-                delete updatedFormData[name];
-            });
-
-            updatedFormData[name] = values
+            wantUpdateDateFields.forEach((n) => delete updatedFormData[n]);
+            updatedFormData[name] = values;
 
             setFormData(updatedFormData);
-
             setNewFormConfig(updatedFormConfigData);
+
         }else{
             setFormData({
                 ...formData,
@@ -479,6 +496,16 @@ const NormalViewForm = ({
   
         const tabFields = newFormConfig.filter((field) => field.type === "tabs");
 
+        const regDateStr = formData?.["field_date_of_registration_by_ps/range"];
+        let isBefore2015 = false;
+
+        if (regDateStr) {
+            const regDate = new Date(regDateStr);
+            if (!isNaN(regDate.getTime()) && regDate.getFullYear() < 2015) {
+                isBefore2015 = true;
+            }
+        }
+
         newFormConfig.forEach((field) => {
 
             if(field?.hide_from_ux){
@@ -520,6 +547,7 @@ const NormalViewForm = ({
             }
 
             if(field.type === "table" && Boolean(field.required)){
+                if (isBefore2015) return null;
                 let error = false;
 
                 let tableData = formData?.[field?.name];
@@ -555,7 +583,7 @@ const NormalViewForm = ({
                 return null;
             }
 
-            if (Boolean(field.required) && !formData[field.name]) {
+            if (Boolean(field.required) && !formData[field.name] && !isBefore2015) {
                 tempErrors[field.name] = `${field.label} is required`;
             } else if (field.minLength && formData[field.name] !== "" && formData[field.name]?.length < field.minLength) {
                 tempErrors[field.name] = `${field.label} must be at least ${field.minLength} characters long`;
@@ -587,6 +615,17 @@ const NormalViewForm = ({
     const roleTitle = JSON.parse(localStorage.getItem("role_title")?.toLowerCase().trim());
 
     if(roleTitle === "admin organization" && table_name === "cid_under_investigation"){
+
+        const regDateStr = formData?.["field_date_of_registration_by_ps/range"];
+        let skipActValidation = false;
+
+        if (regDateStr) {
+            const regDate = new Date(regDateStr);
+            if (!isNaN(regDate.getTime()) && regDate.getFullYear() < 2015) {
+                skipActValidation = true;
+            }
+        }
+        if (!skipActValidation) {
         var errorActFlag = false;
     
         tableActRow.map((element)=>{
@@ -608,6 +647,7 @@ const NormalViewForm = ({
             });
             return
         }
+    }
     }
 
     if (roleTitle === "admin organization" && orderCopyFieldMandatory.current === true && !formData?.["field_order_copy_(_17a_done_)"]) {
@@ -1139,7 +1179,7 @@ const NormalViewForm = ({
                                    if (getOptionsValue && getOptionsValue.data) {                                
                                        updatedOptions = getOptionsValue.data.map((templateData) => {
    
-                                           const nameKey = Object.keys(templateData).find((key) => !["id", "created_at", "updated_at"].includes(key));
+                                           const nameKey = Object.keys(templateData).find((key) => !["id", "created_at", "updated_at", "field_approval_done_by"].includes(key));
    
                                            var headerName = nameKey;
                                            var headerId = 'id';
@@ -1240,7 +1280,7 @@ const NormalViewForm = ({
                                    if (getOptionsValue && getOptionsValue.data) {                                
                                        updatedOptions = getOptionsValue.data.map((templateData) => {
    
-                                           const nameKey = Object.keys(templateData).find((key) => !["id", "created_at", "updated_at"].includes(key));
+                                           const nameKey = Object.keys(templateData).find((key) => !["id", "created_at", "updated_at", "field_approval_done_by"].includes(key));
    
                                            var headerName = nameKey;
                                            var headerId = 'id';
@@ -1562,7 +1602,7 @@ const NormalViewForm = ({
 
                     const updatedOptions = response.data.map((templateData) => {
 
-                        const nameKey = Object.keys(templateData).find((key) => !["id", "created_at", "updated_at", "created_by"].includes(key));
+                        const nameKey = Object.keys(templateData).find((key) => !["id", "created_at", "updated_at", "created_by", "field_approval_done_by"].includes(key));
 
                         var headerName = nameKey;
                         var headerId = 'id';
@@ -1890,7 +1930,7 @@ const NormalViewForm = ({
                                 if (getSelectedField[0].api === "/templateData/getTemplateData") {
                                     updatedOptions = getOptionsValue.data.map((templateData) => {
                                         const nameKey = Object.keys(templateData).find(
-                                            (key) => !["id", "created_at", "updated_at"].includes(key)
+                                            (key) => !["id", "created_at", "updated_at", "field_approval_done_by"].includes(key)
                                         );
                                         return {
                                             name: nameKey ? templateData[nameKey] : "",
@@ -2474,6 +2514,20 @@ const NormalViewForm = ({
 
     const handleFetch = async () => {
 
+        if(formData['field_description']){
+            const result = await Swal.fire({
+                title: 'Do You Want Replace Investigations Content ?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Yes',
+                cancelButtonText: 'No',
+            });
+    
+            if (!result.isConfirmed) {
+                return;
+            }
+        }
+
         try {
 
             const dateArray = selectedDates.filter(item => item !== null && item !== undefined)
@@ -2752,26 +2806,24 @@ const NormalViewForm = ({
         </Box>
         <Box sx={{ height: `calc(99% - ${stepperData && stepperData.length > 0 ? '150px' : '100px'})`, overflow: 'auto', background: '#FFFFFF', border: '1px solid #636B744D', borderRadius: '8px' }} mx={1} mt={1}>
 
-          <Box sx={{ borderBottom: '1px solid #636B744D', padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            {stepperData && stepperData.length > 0 && 
+                <Box sx={{ borderBottom: '1px solid #636B744D', padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
 
-            <Box sx={{ display: 'inline-flex', gap: '12px', alignItems: 'center' }}>
-              {stepperData && stepperData.length > 0 &&
-                <Typography className='HighlightedSquare'>
-                  {activeStep + 1}
-                </Typography>
-              }
-              <Typography className='HighlightedText'>
-                {stepperData && stepperData[activeStep] ? stepperData[activeStep] : 'General Detail'}
-              </Typography>
-            </Box>
+                    <Box sx={{ display: 'inline-flex', gap: '12px', alignItems: 'center' }}>
+                        <Typography className='HighlightedSquare'>
+                            {activeStep + 1}
+                        </Typography>
+                        <Typography className='HighlightedText'>
+                            {stepperData && stepperData[activeStep] ? stepperData[activeStep] : 'General Detail'}
+                        </Typography>
+                    </Box>
 
-            {stepperData && stepperData.length > 0 &&
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <Button onClick={stepperPrevNavigation} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '16px' }} > <ArrowBackIosIcon sx={{ height: '16px', width: '16px', color: 'rgba(0, 0, 0, 0.56)', cursor: 'pointer' }} /> </Button>
-                <Button onClick={stepperNextNavigation} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '16px' }} > <ArrowForwardIosIcon sx={{ height: '16px', width: '16px', color: 'rgba(0, 0, 0, 0.56)', cursor: 'pointer' }} /> </Button>
-              </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <Button onClick={stepperPrevNavigation} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '16px' }} > <ArrowBackIosIcon sx={{ height: '16px', width: '16px', color: 'rgba(0, 0, 0, 0.56)', cursor: 'pointer' }} /> </Button>
+                        <Button onClick={stepperNextNavigation} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '16px' }} > <ArrowForwardIosIcon sx={{ height: '16px', width: '16px', color: 'rgba(0, 0, 0, 0.56)', cursor: 'pointer' }} /> </Button>
+                    </Box>
+                </Box>
             }
-          </Box>
 
             {caseDiary === true && templateActions.length > 0 && (
                 <Box p={2}>
@@ -2865,9 +2917,22 @@ const NormalViewForm = ({
                     if (shouldHide) return null;
                 }
 
-                const isRequired = field.required === 'true' || field.required === true;
 
                 var readOnlyData = readOnlyTemplate
+
+                if (table_name === "cid_under_investigation") {
+                    const regDateStr = formData?.["field_date_of_registration_by_ps/range"];
+
+                    if (regDateStr) {
+                        const regDate = new Date(regDateStr);
+
+                        if (!isNaN(regDate.getTime()) && regDate.getFullYear() < 2015) {
+                            field.required = false;
+                        }
+                    }
+                }
+
+                const isRequired = field.required === 'true' || field.required === true;
 
                 // if(table_name === "cid_under_investigation" || table_name === "cid_pending_trial" || table_name === "cid_enquiries"){
 

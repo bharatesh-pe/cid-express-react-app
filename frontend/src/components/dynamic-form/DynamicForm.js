@@ -66,6 +66,7 @@ const DynamicForm = ({
 //     : {};
   //   console.log('template_name', template_name);
 
+
   var userPermissions = JSON.parse(localStorage.getItem("user_permissions")) || [];
 
   const [formData, setFormData] = useState({});
@@ -268,46 +269,61 @@ const DynamicForm = ({
     handleMaxDateChange(name,newValues);
   };
 
-    const handleMaxDateChange = (name, values)=>{
+  const originalFormConfigRef = useRef([]);
 
-        if(name && name === "field_date_of_registration_by_ps/range" && table_name === "cid_under_investigation"){
-            var formConfigData = (stepperData && stepperData.length > 0) ? stepperConfigData : newFormConfig;
-        
-            var wantUpdateDateFields = [
-                "field_date_of_entrustment_to_cid",
-                "field_date_of_taking_over_by_cid",
-                "field_date_of_taking_over_by_present_io",
-                "field_date_of_submission_of_fr_to_court"
-            ]
-        
-            var updatedFormConfigData = formConfigData.map((field) => {
-                if (wantUpdateDateFields.includes(field?.name)) {
-                    return {
-                        ...field,
-                        maxValue: values
-                    };
-                }
-                return field;
-            });
+  useEffect(() => {
+      if (newFormConfig && originalFormConfigRef.current.length === 0) {
+          originalFormConfigRef.current = JSON.parse(JSON.stringify(newFormConfig));
+      }
+  }, [newFormConfig]);
 
-            const updatedFormData = { ...formData };
+  const handleMaxDateChange = (name, values) => {
+    if (name === "field_date_of_registration_by_ps/range" && table_name === "cid_under_investigation") {
+        const formConfigData = (stepperData && stepperData.length > 0) ? stepperConfigData : newFormConfig;
 
-            wantUpdateDateFields.forEach((name) => {
-                delete updatedFormData[name];
-            });
+        const wantUpdateDateFields = [
+            "field_date_of_entrustment_to_cid",
+            "field_date_of_taking_over_by_cid",
+            "field_date_of_taking_over_by_present_io",
+            "field_date_of_submission_of_fr_to_court"
+        ];
 
-            updatedFormData[name] = values
+        const isBefore2015 = (() => {
+            const date = new Date(values);
+            return !isNaN(date.getTime()) && date.getFullYear() < 2015;
+        })();
 
-            setFormData(updatedFormData);
-    
-            setNewFormConfig(updatedFormConfigData);
-        }else{
-            setFormData({
-                ...formData,
-                [name]: values,
-            });
-        }
+        const updatedFormConfigData = formConfigData.map((field) => {
+            const originalField = originalFormConfigRef.current.find(f => f.name === field.name) || {};
+
+            let updatedField = { ...field };
+
+            if (wantUpdateDateFields.includes(field?.name)) {
+                updatedField.maxValue = values;
+            }
+
+            if (isBefore2015) {
+                updatedField.required = false;
+            } else {
+                updatedField.required = originalField.required || false;
+            }
+
+            return updatedField;
+        });
+
+        const updatedFormData = { ...formData };
+        wantUpdateDateFields.forEach((n) => delete updatedFormData[n]);
+        updatedFormData[name] = values;
+
+        setFormData(updatedFormData);
+        setNewFormConfig(updatedFormConfigData);
+    } else {
+        setFormData({
+            ...formData,
+            [name]: values,
+        });
     }
+  };
 
     useEffect(()=>{
 
@@ -574,6 +590,17 @@ const DynamicForm = ({
     const roleTitle = JSON.parse(localStorage.getItem("role_title")?.toLowerCase().trim());
 
     if(roleTitle === "admin organization" && table_name === "cid_under_investigation"){
+
+       const regDateStr = formData?.["field_date_of_registration_by_ps/range"];
+        let skipActValidation = false;
+
+        if (regDateStr) {
+            const regDate = new Date(regDateStr);
+            if (!isNaN(regDate.getTime()) && regDate.getFullYear() < 2015) {
+                skipActValidation = true;
+            }
+        }
+         if (!skipActValidation) {
         var errorActFlag = false;
     
         tableActRow.map((element)=>{
@@ -582,6 +609,7 @@ const DynamicForm = ({
             }
         });
     
+        
         if(errorActFlag){
             toast.error("Please Fill All Act & Section Data",{
                 position: "top-right",
@@ -595,6 +623,7 @@ const DynamicForm = ({
             });
             return
         }
+      }
     }
 
     if (roleTitle === "admin organization" && orderCopyFieldMandatory.current === true && !formData?.["field_order_copy_(_17a_done_)"]) {
@@ -1134,7 +1163,7 @@ const DynamicForm = ({
                                 if (getOptionsValue && getOptionsValue.data) {                                
                                     updatedOptions = getOptionsValue.data.map((templateData) => {
 
-                                        const nameKey = Object.keys(templateData).find((key) => !["id", "created_at", "updated_at"].includes(key));
+                                        const nameKey = Object.keys(templateData).find((key) => !["id", "created_at", "updated_at", "field_approval_done_by"].includes(key));
 
                                         var headerName = nameKey;
                                         var headerId = 'id';
@@ -1239,7 +1268,7 @@ const DynamicForm = ({
                                 if (getOptionsValue && getOptionsValue.data) {                                
                                     updatedOptions = getOptionsValue.data.map((templateData) => {
 
-                                        const nameKey = Object.keys(templateData).find((key) => !["id", "created_at", "updated_at"].includes(key));
+                                        const nameKey = Object.keys(templateData).find((key) => !["id", "created_at", "updated_at", "field_approval_done_by"].includes(key));
 
                                         var headerName = nameKey;
                                         var headerId = 'id';
@@ -1570,6 +1599,28 @@ const DynamicForm = ({
 
                     var apiPayload = {};
 
+                    if (field.name === "field_ui_case") {
+                        const response = await api.post("cidMaster/fetchUICaseDetails", {
+                          allowedDepartmentIds : localStorage.getItem("allowedDepartmentIds") ,
+                          allowedDivisionIds : localStorage.getItem("allowedDivisionIds") ,
+                          allowedUserIds :  localStorage.getItem("allowedUserIds") 
+                        });
+                        const updatedOptions = response.data.map((data) => ({
+                            name: data.name,
+                            code: data.code,
+                        }));
+                        setNewFormConfig((prevFormConfig) => {
+                            return prevFormConfig.map((data) => {
+                                if (data.name === field.name) {
+                                    return { ...data, options: updatedOptions };
+                                }
+                                return data;
+                            });
+                        });
+                        // Return early since we already handled this case
+                        return { id: field.id, options: updatedOptions };
+                    }
+
                     if(field.api === "/templateData/getTemplateData"){
                         apiPayload = {
                             table_name: field.table
@@ -1589,7 +1640,7 @@ const DynamicForm = ({
 
                     const updatedOptions = response.data.map((templateData) => {
 
-                        const nameKey = Object.keys(templateData).find((key) => !["id", "created_at", "updated_at", "created_by"].includes(key));
+                        const nameKey = Object.keys(templateData).find((key) => !["id", "created_at", "updated_at", "created_by", "field_approval_done_by"].includes(key));
 
                         var headerName = nameKey;
                         var headerId = 'id';
@@ -2373,71 +2424,24 @@ const DynamicForm = ({
           mx={2}
           mt={2}
         >
-          <Box
-            sx={{
-              borderBottom: "1px solid #636B744D",
-              padding: "16px",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <Box
-              sx={{ display: "inline-flex", gap: "12px", alignItems: "center" }}
-            >
-              {stepperData && stepperData.length > 0 && (
-                <Typography className="HighlightedSquare">
-                  {activeStep + 1}
-                </Typography>
-              )}
-              <Typography className="HighlightedText">
-                {stepperData && stepperData[activeStep] ? stepperData[activeStep] : "General Detail"}
-              </Typography>
-            </Box>
+            {stepperData && stepperData.length > 0 && 
+                <Box sx={{ borderBottom: '1px solid #636B744D', padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
 
-            {stepperData && stepperData.length > 0 && (
-              <Box sx={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                <Button
-                  onClick={stepperPrevNavigation}
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    minWidth: "16px",
-                  }}
-                >
-                  {" "}
-                  <ArrowBackIosIcon
-                    sx={{
-                      height: "16px",
-                      width: "16px",
-                      color: "rgba(0, 0, 0, 0.56)",
-                      cursor: "pointer",
-                    }}
-                  />{" "}
-                </Button>
-                <Button
-                  onClick={stepperNextNavigation}
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    minWidth: "16px",
-                  }}
-                >
-                  {" "}
-                  <ArrowForwardIosIcon
-                    sx={{
-                      height: "16px",
-                      width: "16px",
-                      color: "rgba(0, 0, 0, 0.56)",
-                      cursor: "pointer",
-                    }}
-                  />{" "}
-                </Button>
-              </Box>
-            )}
-          </Box>
+                    <Box sx={{ display: 'inline-flex', gap: '12px', alignItems: 'center' }}>
+                        <Typography className='HighlightedSquare'>
+                            {activeStep + 1}
+                        </Typography>
+                        <Typography className='HighlightedText'>
+                            {stepperData && stepperData[activeStep] ? stepperData[activeStep] : 'General Detail'}
+                        </Typography>
+                    </Box>
+
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <Button onClick={stepperPrevNavigation} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '16px' }} > <ArrowBackIosIcon sx={{ height: '16px', width: '16px', color: 'rgba(0, 0, 0, 0.56)', cursor: 'pointer' }} /> </Button>
+                        <Button onClick={stepperNextNavigation} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '16px' }} > <ArrowForwardIosIcon sx={{ height: '16px', width: '16px', color: 'rgba(0, 0, 0, 0.56)', cursor: 'pointer' }} /> </Button>
+                    </Box>
+                </Box>
+            }
 
           <form onSubmit={handleSubmit} noValidate style={{ margin: 0 }}>
             <Grid container sx={{ alignItems: "start" }}>
