@@ -11302,15 +11302,42 @@ exports.getTemplateDataWithAccused = async (req, res, next) => {
                         }
                     } else {
                         const attr = Array.isArray(field.attributes) ? field.attributes[0] : field.attributes;
-                        const [resultRow] = await sequelize.query(
-                            `SELECT ${attr} FROM ${field.table} WHERE id = :id LIMIT 1`,
-                            {
-                                replacements: { id: data[field.name] },
-                                type: Sequelize.QueryTypes.SELECT,
+                        // Handle multiple IDs (comma-separated)
+                        let idValue = data[field.name];
+                        let ids = [];
+                        if (typeof idValue === "string" && idValue.includes(",")) {
+                            ids = idValue.split(",").map((id) => id.trim()).filter(Boolean);
+                        } else if (Array.isArray(idValue)) {
+                            ids = idValue;
+                        } else {
+                            ids = [idValue];
+                        }
+
+                        if (ids.length > 1) {
+                            const resultRows = await sequelize.query(
+                                `SELECT id, ${attr} FROM ${field.table} WHERE id IN (:ids)`,
+                                {
+                                    replacements: { ids },
+                                    type: Sequelize.QueryTypes.SELECT,
+                                }
+                            );
+                            const idToValue = {};
+                            resultRows.forEach(row => {
+                                idToValue[row.id] = row[attr];
+                            });
+                            data[field.name] = ids.map(id => idToValue[id] || id).join(", ");
+                        } else {
+                            // Single value fallback
+                            const [resultRow] = await sequelize.query(
+                                `SELECT ${attr} FROM ${field.table} WHERE id = :id LIMIT 1`,
+                                {
+                                    replacements: { id: ids[0] },
+                                    type: Sequelize.QueryTypes.SELECT,
+                                }
+                            );
+                            if (resultRow && resultRow[attr] !== undefined) {
+                                data[field.name] = resultRow[attr];
                             }
-                        );
-                        if (resultRow && resultRow[attr] !== undefined) {
-                            data[field.name] = resultRow[attr];
                         }
                     }
                 }
