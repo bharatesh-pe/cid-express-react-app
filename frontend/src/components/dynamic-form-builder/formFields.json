@@ -23,7 +23,8 @@
         "validation": "",
         "name": "",
         "type": "text",
-        "formType": "Short Text"
+        "formType": "Short Text",
+        "case_diary": true
     },
     {
         "field_id": 2,
@@ -49,7 +50,8 @@
         "validation": "",
         "name": "",
         "type": "number",
-        "formType": "Number"
+        "formType": "Number",
+        "case_diary": true
     },
     {
         "field_id": 3,
@@ -75,7 +77,8 @@
         "validation": "",
         "name": "",
         "type": "email",
-        "formType": "Email"
+        "formType": "Email",
+        "case_diary": true
     },
     {
         "field_id": 4,
@@ -101,7 +104,8 @@
         "linkModule":false,
         "options": [],
         "type": "dropdown",
-        "formType": "Dropdown"
+        "formType": "Dropdown",
+        "case_diary": true
     },
     {
         "field_id": 5,
@@ -127,7 +131,8 @@
         "maxLength": 100,
         "name": "",
         "type": "valuesinput",
-        "formType": "Values input"
+        "formType": "Values input",
+        "case_diary": true
     },
     {
         "field_id": 6,
@@ -151,7 +156,7 @@
         "name": "",
         "ao_field": false,
         "hide_from_edit": false,
-        "case_dairy": false,
+        "case_diary": true,
         "disableFutureDate": true,
         "disablePreviousDate": true,
         "type": "date",
@@ -174,9 +179,10 @@
         "duplicateCheck": false,
         "info": "",
         "disabled": "",
-        "name": "",
         "ao_field": false,
         "hide_from_edit": false,
+        "name": "",
+        "case_diary": true,
         "type": "time",
         "formType": "Time"
     },
@@ -202,6 +208,7 @@
         "name": "",
         "ao_field": false,
         "hide_from_edit": false,
+        "case_diary": true,
         "type": "datetime",
         "formType": "Date & Time"
     },
@@ -226,6 +233,7 @@
         "hide_from_edit": false,
         "info": "",
         "name": "",
+        "case_diary": true,
         "type": "textarea",
         "formType": "Long text"
     },
@@ -251,6 +259,7 @@
         "name": "",
         "particular_case_options": false,
         "linkModule":false,
+        "case_diary": true,
         "options": [],
         "type": "autocomplete",
         "formType": "Autocomplete"
@@ -277,6 +286,7 @@
         "name": "",
         "particular_case_options": false,
         "linkModule":false,
+        "case_diary": true,
         "options": [],
         "type": "multidropdown",
         "formType": "Multiple Dropdown"
@@ -300,6 +310,7 @@
         "disabled": "",
         "ao_field": false,
         "hide_from_edit": false,
+        "case_diary": true,
         "type": "checkbox",
         "formType": "Checkbox"
     },
@@ -322,6 +333,7 @@
         "disabled": "",
         "ao_field": false,
         "hide_from_edit": false,
+        "case_diary": true,
         "type": "radio",
         "formType": "Radio"
     },
@@ -414,6 +426,7 @@
         "table_display_content": true,
         "info": "",
         "disabled": "",
+        "case_diary": true,
         "type": "texteditor",
         "formType": "Text Editor"
     },
@@ -439,6 +452,7 @@
         "name": "",
         "particular_case_options": false,
         "linkModule":false,
+        "case_diary": true,
         "options": [],
         "type": "dropdown_with_add",
         "formType": "Dropdown With Add"

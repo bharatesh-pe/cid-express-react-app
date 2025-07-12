@@ -34,6 +34,7 @@ import NumberField from '../form/NumberField';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 
+import InfoIcon from '@mui/icons-material/Info';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Swal from 'sweetalert2';
@@ -2550,25 +2551,38 @@ const NormalViewForm = ({
 
                     if (!matchedItem) return;
 
-                    html += `
-                    <div style="border-bottom: 1px solid #EAECF0; padding-bottom: 12px;">
-                        <p class="Roboto ProfileViewHeading" style="font-weight: bold;text-decoration: underline;">${matchedItem.name}</p>
-                    `;
+                html += `
+                    <div style="margin-bottom: 20px;">
+                        <p class="Roboto ProfileViewHeading" style="font-weight: bold; text-decoration: underline;">${matchedItem.name}</p>
+                        <table style="width: 100%; border-collapse: collapse; border: 1px solid #000; margin-top: 10px;">
+                            <thead>
+                                <tr>
+                                    <th style="text-align: left; border: 1px solid #000; padding: 8px;">Field</th>
+                                    <th style="text-align: left; border: 1px solid #000; padding: 8px;">Value</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
 
-                    items.forEach((itemObj) => {
-                        Object.entries(itemObj).forEach(([fieldKey, fieldValue]) => {
-                            html += `
-                                <div class="">
-                                    <div style="font-size: 16px; font-weight: 500;">${fieldKey}</div>
-                                    <div style="font-size: 14px; font-weight: 400;">${fieldValue}</div>
-                                </div>
-                                <br />
-                            `;
-                        });
+                items.forEach((itemObj) => {
+                    Object.entries(itemObj).forEach(([fieldKey, fieldValue]) => {
+                        html += `
+                            <tr>
+                                <td style="padding: 8px; font-weight: 500; border: 1px solid #000;">${fieldKey}</td>
+                                <td style="padding: 8px; font-weight: 400; border: 1px solid #000;">${fieldValue}</td>
+                            </tr>
+                        `;
                     });
-
-                    html += `</div>`;
                 });
+
+                html += `
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+
+                });
+
 
                 setFormData((prevData) => ({
                     ...prevData,
@@ -2838,16 +2852,24 @@ const NormalViewForm = ({
                         <AccordionDetails>
                             <LocalizationProvider dateAdapter={AdapterDayjs}>
                                 <Box sx={{ mt: 2 }}>
-                                    {Array.from({ length: Math.ceil(templateActions.length / 4) }).map((_, rowIndex) => {
-                                        const start = rowIndex * 4;
-                                        const items = templateActions.slice(start, start + 4);
+                                    {Array.from({ length: Math.ceil(templateActions.length / 5) }).map((_, rowIndex) => {
+                                        const start = rowIndex * 5;
+                                        const items = templateActions.slice(start, start + 5);
                                         return (
                                             <Grid container spacing={2} key={rowIndex} sx={{ mb: 2 }}>
                                                 {items.map((item, index) => {
                                                     const actualIndex = start + index;
                                                     return (
-                                                        <Grid item xs={3} key={actualIndex}>
-                                                            <Typography sx={{ mb: 1, fontWeight: 500 }}>{item.name}</Typography>
+                                                        <Grid item xs={2.4} key={actualIndex}>
+                                                            <Box display="flex" alignItems="center" mb={1}>
+                                                                <Typography fontWeight={500}>
+                                                                    {item.name}
+                                                                </Typography>
+                                                                <Box display="flex" alignItems="center" sx={{ cursor: 'pointer', color: 'primary.main' }}>
+                                                                    <InfoIcon sx={{ fontSize: 18, mr: 0.5 }} />
+                                                                </Box>
+                                                            </Box>
+
                                                             <DatePicker
                                                                 value={
                                                                     selectedDates[actualIndex]?.date ? dayjs(selectedDates[actualIndex].date) : null
