@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Box, CircularProgress, Collapse, Divider, List, ListItem, ListItemIcon, ListItemText, Paper, Tooltip, Typography } from "@mui/material";
 import { ExpandLess, ExpandMore } from "@mui/icons-material";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -12,7 +12,7 @@ import HomeIcon from '@mui/icons-material/Home';
 import DashboardCustomizeIcon from '@mui/icons-material/DashboardCustomize';
 import Navbar from "./navbar";
 
-const LokayuktaSidebar = ({contentArray, onClick, activeSidebar, templateName, fromCDR}) => {
+const LokayuktaSidebar = ({ui_case_id, pt_case_id, contentArray, onClick, activeSidebar, templateName, fromCDR}) => {
 
     const navigate = useNavigate();
     const location = useLocation();
@@ -25,6 +25,7 @@ const LokayuktaSidebar = ({contentArray, onClick, activeSidebar, templateName, f
     const [selectedInvestigationIndex, setSelectedInvestigationIndex] = useState(fromCDR ? 0 : null);
 
     const [notificationCount, setNotificationCount] = useState(localStorage.getItem("unreadNotificationCount") || 0);
+    const [tableCounts, setTableCounts] = useState({});
 
     const handleLogout = async () => {
         const token = localStorage.getItem("auth_token");
@@ -115,6 +116,26 @@ const LokayuktaSidebar = ({contentArray, onClick, activeSidebar, templateName, f
     const investigationItems = validSidebarItems.filter(item => !registerItemArray.includes(item.name));
 
     const cdrIndex = investigationItems.findIndex(item => item.name?.toLowerCase().includes("cdr"));
+
+    useEffect(() => {
+        const fetchCounts = async () => {
+            if (!ui_case_id && !pt_case_id) return;
+            const table_names = investigationItems.map(item => item.table).filter(Boolean);
+            try {
+                const serverURL = process.env.REACT_APP_SERVER_URL;
+                const response = await fetch(`${serverURL}/templateData/getTableCountsByCaseId`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ table_names, ui_case_id, pt_case_id })
+                });
+                const data = await response.json();
+                if (data.success) setTableCounts(data.data);
+            } catch (err) {
+                setTableCounts({});
+            }
+        };
+        fetchCounts();
+    }, [ui_case_id, pt_case_id]);
 
     return (
         <>
@@ -264,7 +285,16 @@ const LokayuktaSidebar = ({contentArray, onClick, activeSidebar, templateName, f
                                                             </svg>
                                                         </span>
                                                         )}
-                                                        <ListItemText primary={element?.name} />
+                                                        <ListItemText
+                                                            primary={
+                                                                <>
+                                                                    {element?.name}
+                                                                    <span style={{ marginLeft: 8, color: "#1F1DAC", fontWeight: 600 }}>
+                                                                        {typeof tableCounts[element.table] === "number" ? `(${tableCounts[element.table]})` : ""}
+                                                                    </span>
+                                                                </>
+                                                            }
+                                                        />
                                                     </ListItem>
                                                 </Tooltip>
                                             ))

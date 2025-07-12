@@ -7527,6 +7527,11 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
                 }
             }
 
+            if (table_name === "cid_pending_trail") {
+                if (parsedData.field_ui_case && !parsedData.ui_case_id) {
+                    parsedData.ui_case_id = parsedData.field_ui_case;
+                }
+            }
 
             const validData = {};
             for (const field of schema) {
