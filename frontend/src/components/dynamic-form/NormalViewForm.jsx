@@ -2550,25 +2550,38 @@ const NormalViewForm = ({
 
                     if (!matchedItem) return;
 
-                    html += `
-                    <div style="border-bottom: 1px solid #EAECF0; padding-bottom: 12px;">
-                        <p class="Roboto ProfileViewHeading" style="font-weight: bold;text-decoration: underline;">${matchedItem.name}</p>
-                    `;
+                html += `
+                    <div style="margin-bottom: 20px;">
+                        <p class="Roboto ProfileViewHeading" style="font-weight: bold; text-decoration: underline;">${matchedItem.name}</p>
+                        <table style="width: 100%; border-collapse: collapse; border: 1px solid #000; margin-top: 10px;">
+                            <thead>
+                                <tr>
+                                    <th style="text-align: left; border: 1px solid #000; padding: 8px;">Field</th>
+                                    <th style="text-align: left; border: 1px solid #000; padding: 8px;">Value</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
 
-                    items.forEach((itemObj) => {
-                        Object.entries(itemObj).forEach(([fieldKey, fieldValue]) => {
-                            html += `
-                                <div class="">
-                                    <div style="font-size: 16px; font-weight: 500;">${fieldKey}</div>
-                                    <div style="font-size: 14px; font-weight: 400;">${fieldValue}</div>
-                                </div>
-                                <br />
-                            `;
-                        });
+                items.forEach((itemObj) => {
+                    Object.entries(itemObj).forEach(([fieldKey, fieldValue]) => {
+                        html += `
+                            <tr>
+                                <td style="padding: 8px; font-weight: 500; border: 1px solid #000;">${fieldKey}</td>
+                                <td style="padding: 8px; font-weight: 400; border: 1px solid #000;">${fieldValue}</td>
+                            </tr>
+                        `;
                     });
-
-                    html += `</div>`;
                 });
+
+                html += `
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+
+                });
+
 
                 setFormData((prevData) => ({
                     ...prevData,
