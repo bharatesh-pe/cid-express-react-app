@@ -791,7 +791,7 @@ const DynamicForm = ({
       field.name === "field_ui_case" &&
       field.table === "cid_under_investigation" &&
       selectedFullObject &&
-      table_name === "cid_pending_trail"
+      table_name === "cid_pending_trial"
     ) {
       updatedFormData["field_ps_crime_number"] = selectedFullObject.crime_number || "";
       updatedFormData["field_cid_crime_no./enquiry_no"] = selectedFullObject.cid_enquiry_number || "";
