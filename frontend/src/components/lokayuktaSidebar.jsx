@@ -286,14 +286,34 @@ const LokayuktaSidebar = ({ui_case_id, pt_case_id, contentArray, onClick, active
                                                         </span>
                                                         )}
                                                         <ListItemText
-                                                            primary={
-                                                                <>
-                                                                    {element?.name}
-                                                                    <span style={{ marginLeft: 8, color: "#1F1DAC", fontWeight: 600 }}>
-                                                                        {typeof tableCounts[element.table] === "number" ? `(${tableCounts[element.table]})` : ""}
-                                                                    </span>
-                                                                </>
-                                                            }
+                                                        primary={
+                                                            <Box sx={{ position: "relative", display: "flex", alignItems: "center" }}>
+                                                            {element?.name}
+                                                            {typeof tableCounts[element.table] === "number" && (
+                                                                <Box
+                                                                sx={{
+                                                                    position: "absolute",
+                                                                    right: 0,
+                                                                    top: "50%",
+                                                                    transform: "translateY(-50%)",
+                                                                    backgroundColor: activeSidebar?.name === element.name ? "#1F1DAC" : "#FFFFFF",
+                                                                    color: activeSidebar?.name === element.name ? "#FFFFFF" : "#1F1DAC",
+                                                                    border: activeSidebar?.name === element.name ? "1px solid #1F1DAC" : "1px solid #dfdfec",
+                                                                    fontSize: "12px",
+                                                                    fontWeight: "bold",
+                                                                    borderRadius: "50%",
+                                                                    width: 20,
+                                                                    height: 20,
+                                                                    display: "flex",
+                                                                    alignItems: "center",
+                                                                    justifyContent: "center",
+                                                                }}
+                                                                >
+                                                                {tableCounts[element.table]}
+                                                                </Box>
+                                                            )}
+                                                            </Box>
+                                                        }
                                                         />
                                                     </ListItem>
                                                 </Tooltip>
