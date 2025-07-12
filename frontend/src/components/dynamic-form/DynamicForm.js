@@ -103,6 +103,7 @@ const DynamicForm = ({
     // based on department get division options state
 
     const [departmentDivisionField, setDepartmentDivisionField] = useState([]);
+    const [uiCaseOptions, setUiCaseOptions] = useState([]);
 
     // --- end --- 
 
@@ -774,8 +775,28 @@ const DynamicForm = ({
     }
 
   const handleAutocomplete = (field, selectedValue) => {
-    let updatedFormData = { ...formData, [field.name]: selectedValue };
-    setSelectedField(field);
+      const selectedFullObject =
+          field.name === "field_ui_case" && typeof selectedValue === "number"
+            ? uiCaseOptions.find((opt) => opt.code === selectedValue)
+            : selectedValue;
+
+      let updatedFormData = {
+        ...formData,
+        [field.name]: selectedFullObject?.code || selectedValue,
+      };
+
+      setSelectedField(field);
+
+    if (
+      field.name === "field_ui_case" &&
+      field.table === "cid_under_investigation" &&
+      selectedFullObject &&
+      table_name === "cid_pending_trial"
+    ) {
+      updatedFormData["field_ps_crime_number"] = selectedFullObject.crime_number || "";
+      updatedFormData["field_cid_crime_no./enquiry_no"] = selectedFullObject.cid_enquiry_number || "";
+      updatedFormData["field_name_of_the_police_station"] = selectedFullObject.police_station?.id || "";
+    }
 
     if (field.table) {
       var updatedFormConfig = newFormConfig.map((data) => {
@@ -1606,9 +1627,11 @@ const DynamicForm = ({
                           allowedUserIds :  localStorage.getItem("allowedUserIds") 
                         });
                         const updatedOptions = response.data.map((data) => ({
+                            ...data,
                             name: data.name,
                             code: data.code,
                         }));
+                        setUiCaseOptions(updatedOptions);
                         setNewFormConfig((prevFormConfig) => {
                             return prevFormConfig.map((data) => {
                                 if (data.name === field.name) {
@@ -1617,7 +1640,6 @@ const DynamicForm = ({
                                 return data;
                             });
                         });
-                        // Return early since we already handled this case
                         return { id: field.id, options: updatedOptions };
                     }
 

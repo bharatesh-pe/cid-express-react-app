@@ -855,8 +855,9 @@ const fetchUICaseDetails = async (req, res) => {
                     SELECT 
                         cui.id,
                         cui.field_crime_number_of_ps,
-                        cui."field_cid_crime_no./enquiry_no",
-                        cps.field_name_of_the_police_station
+                        cui."field_cid_crime_no./enquiry_no" AS cid_enquiry_no,
+                        cps.id AS police_station_id,
+                        cps.field_name_of_the_police_station AS police_station_name
                     FROM cid_under_investigation cui
                     LEFT JOIN cid_police_station cps
                         ON CAST(cui.field_name_of_the_police_station AS INTEGER) = cps.id
@@ -867,8 +868,14 @@ const fetchUICaseDetails = async (req, res) => {
                 });
 
                 const transformedResults = results.map(record => ({
-                    name: `${record.field_crime_number_of_ps || ''} - ${record["field_cid_crime_no./enquiry_no"] || ''} - ${record.field_name_of_the_police_station || ''}`,
+                    name: `${record.field_crime_number_of_ps || ''} - ${record.cid_enquiry_no || ''} - ${record.police_station_name || ''}`,
                     code: record.id,
+                    crime_number: record.field_crime_number_of_ps || '',
+                    cid_enquiry_number: record.cid_enquiry_no || '',
+                    police_station: {
+                        id: record.police_station_id || null,
+                        name: record.police_station_name || ''
+                    }
                 }));
 
                 return res.status(200).json({
