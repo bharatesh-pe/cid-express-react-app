@@ -2229,11 +2229,29 @@ exports.getTemplateData = async (req, res, next) => {
         }
         }
         // Foreign key display via options (attributes)
-        if (fieldConfig.options && Array.isArray(fieldConfig.options) && data[fieldName] !== undefined && data[fieldName] !== null) {
-        const found = fieldConfig.options.find(opt => String(opt.code) === String(data[fieldName]));
-        if (found) {
-          data[fieldName] = found.name;
-        }
+        // Handle multi-select (multi-dropdown) foreign key fields
+        if (fieldConfig.options && Array.isArray(fieldConfig.options) && data[fieldName] !== undefined && data[fieldName] !== null ) {
+          if (fieldConfig.type === "multidropdown" || fieldConfig.type === "autocomplete" ||
+            (Array.isArray(data[fieldName]) && data[fieldName].length > 0) ||
+            (typeof data[fieldName] === "string" && data[fieldName].includes(","))
+          ) {
+            // Handle comma-separated string or array of IDs
+            const idList = Array.isArray(data[fieldName])
+              ? data[fieldName]
+              : String(data[fieldName]).split(",").map((id) => id.trim()).filter(Boolean);
+            data[fieldName] = idList
+              .map((id) => {
+                const found = fieldConfig.options.find(opt => String(opt.code) === String(id));
+                return found ? found.name : id;
+              })
+              .join(", ");
+          } else {
+            // Single value
+            const found = fieldConfig.options.find(opt => String(opt.code) === String(data[fieldName]));
+            if (found) {
+              data[fieldName] = found.name;
+            }
+          }
         }
       }
 

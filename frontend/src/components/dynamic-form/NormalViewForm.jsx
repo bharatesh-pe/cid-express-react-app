@@ -1139,7 +1139,7 @@ const NormalViewForm = ({
                                    if (getOptionsValue && getOptionsValue.data) {                                
                                        updatedOptions = getOptionsValue.data.map((templateData) => {
    
-                                           const nameKey = Object.keys(templateData).find((key) => !["id", "created_at", "updated_at"].includes(key));
+                                           const nameKey = Object.keys(templateData).find((key) => !["id", "created_at", "updated_at", "field_approval_done_by"].includes(key));
    
                                            var headerName = nameKey;
                                            var headerId = 'id';
@@ -1240,7 +1240,7 @@ const NormalViewForm = ({
                                    if (getOptionsValue && getOptionsValue.data) {                                
                                        updatedOptions = getOptionsValue.data.map((templateData) => {
    
-                                           const nameKey = Object.keys(templateData).find((key) => !["id", "created_at", "updated_at"].includes(key));
+                                           const nameKey = Object.keys(templateData).find((key) => !["id", "created_at", "updated_at", "field_approval_done_by"].includes(key));
    
                                            var headerName = nameKey;
                                            var headerId = 'id';
@@ -1562,7 +1562,7 @@ const NormalViewForm = ({
 
                     const updatedOptions = response.data.map((templateData) => {
 
-                        const nameKey = Object.keys(templateData).find((key) => !["id", "created_at", "updated_at", "created_by"].includes(key));
+                        const nameKey = Object.keys(templateData).find((key) => !["id", "created_at", "updated_at", "created_by", "field_approval_done_by"].includes(key));
 
                         var headerName = nameKey;
                         var headerId = 'id';
@@ -1890,7 +1890,7 @@ const NormalViewForm = ({
                                 if (getSelectedField[0].api === "/templateData/getTemplateData") {
                                     updatedOptions = getOptionsValue.data.map((templateData) => {
                                         const nameKey = Object.keys(templateData).find(
-                                            (key) => !["id", "created_at", "updated_at"].includes(key)
+                                            (key) => !["id", "created_at", "updated_at", "field_approval_done_by"].includes(key)
                                         );
                                         return {
                                             name: nameKey ? templateData[nameKey] : "",
@@ -2474,6 +2474,20 @@ const NormalViewForm = ({
 
     const handleFetch = async () => {
 
+        if(formData['field_description']){
+            const result = await Swal.fire({
+                title: 'Do You Want Replace Investigations Content ?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Yes',
+                cancelButtonText: 'No',
+            });
+    
+            if (!result.isConfirmed) {
+                return;
+            }
+        }
+
         try {
 
             const dateArray = selectedDates.filter(item => item !== null && item !== undefined)
@@ -2752,26 +2766,24 @@ const NormalViewForm = ({
         </Box>
         <Box sx={{ height: `calc(99% - ${stepperData && stepperData.length > 0 ? '150px' : '100px'})`, overflow: 'auto', background: '#FFFFFF', border: '1px solid #636B744D', borderRadius: '8px' }} mx={1} mt={1}>
 
-          <Box sx={{ borderBottom: '1px solid #636B744D', padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            {stepperData && stepperData.length > 0 && 
+                <Box sx={{ borderBottom: '1px solid #636B744D', padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
 
-            <Box sx={{ display: 'inline-flex', gap: '12px', alignItems: 'center' }}>
-              {stepperData && stepperData.length > 0 &&
-                <Typography className='HighlightedSquare'>
-                  {activeStep + 1}
-                </Typography>
-              }
-              <Typography className='HighlightedText'>
-                {stepperData && stepperData[activeStep] ? stepperData[activeStep] : 'General Detail'}
-              </Typography>
-            </Box>
+                    <Box sx={{ display: 'inline-flex', gap: '12px', alignItems: 'center' }}>
+                        <Typography className='HighlightedSquare'>
+                            {activeStep + 1}
+                        </Typography>
+                        <Typography className='HighlightedText'>
+                            {stepperData && stepperData[activeStep] ? stepperData[activeStep] : 'General Detail'}
+                        </Typography>
+                    </Box>
 
-            {stepperData && stepperData.length > 0 &&
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <Button onClick={stepperPrevNavigation} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '16px' }} > <ArrowBackIosIcon sx={{ height: '16px', width: '16px', color: 'rgba(0, 0, 0, 0.56)', cursor: 'pointer' }} /> </Button>
-                <Button onClick={stepperNextNavigation} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '16px' }} > <ArrowForwardIosIcon sx={{ height: '16px', width: '16px', color: 'rgba(0, 0, 0, 0.56)', cursor: 'pointer' }} /> </Button>
-              </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <Button onClick={stepperPrevNavigation} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '16px' }} > <ArrowBackIosIcon sx={{ height: '16px', width: '16px', color: 'rgba(0, 0, 0, 0.56)', cursor: 'pointer' }} /> </Button>
+                        <Button onClick={stepperNextNavigation} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '16px' }} > <ArrowForwardIosIcon sx={{ height: '16px', width: '16px', color: 'rgba(0, 0, 0, 0.56)', cursor: 'pointer' }} /> </Button>
+                    </Box>
+                </Box>
             }
-          </Box>
 
             {caseDiary === true && templateActions.length > 0 && (
                 <Box p={2}>
