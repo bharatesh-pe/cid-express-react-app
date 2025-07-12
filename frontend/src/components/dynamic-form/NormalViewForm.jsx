@@ -2919,6 +2919,13 @@ const NormalViewForm = ({
 
 
                 var readOnlyData = readOnlyTemplate
+                
+                if(table_name === "cid_pending_trial" ){
+                  if(field.name === "field_ps_crime_number" || field.name === "field_cid_crime_no./enquiry_no" || field.name === "field_name_of_the_police_station" ){
+                      readOnlyData = true;
+                  }
+
+                }
 
                 if (table_name === "cid_under_investigation") {
                     const regDateStr = formData?.["field_date_of_registration_by_ps/range"];

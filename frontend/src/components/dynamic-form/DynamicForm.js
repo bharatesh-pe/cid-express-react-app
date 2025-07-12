@@ -2503,6 +2503,13 @@ const DynamicForm = ({
 
                 var readOnlyData = readOnlyTemplate
 
+                if(table_name === "cid_pending_trial" ){
+                  if(field.name === "field_ps_crime_number" || field.name === "field_cid_crime_no./enquiry_no" || field.name === "field_name_of_the_police_station" ){
+                      readOnlyData = true;
+                  }
+
+                }
+
                 // if(table_name === "cid_under_investigation" || table_name === "cid_pending_trial" || table_name === "cid_enquiries"){
                 //     const roleTitle = JSON.parse(localStorage.getItem("role_title")?.toLowerCase().trim());
 
