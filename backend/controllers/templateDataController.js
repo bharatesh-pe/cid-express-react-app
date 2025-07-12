@@ -2878,6 +2878,18 @@ exports.viewMagazineTemplateAllData = async (req, res) => {
                 continue;
             }
 
+            // Section logic
+            let sections = [];
+            if (Array.isArray(tableTemplate.sections)) {
+                sections = tableTemplate.sections;
+            } else if (typeof tableTemplate.sections === "string") {
+                try {
+                    sections = JSON.parse(tableTemplate.sections);
+                } catch (e) {
+                    sections = [];
+                }
+            }
+
             // Filter out divider fields and fields with hide_from_ux true
             const filteredFieldsArray = fieldsArray.filter(
                 (field) => field.type !== "divider" && !field.hide_from_ux
@@ -2890,6 +2902,7 @@ exports.viewMagazineTemplateAllData = async (req, res) => {
             const fieldTypeMap = {};
             const fieldLabelMap = {};
             const associations = [];
+            let primaryKeyField = {}
 
             for (const field of filteredFieldsArray) {
                 const {
@@ -2904,10 +2917,15 @@ exports.viewMagazineTemplateAllData = async (req, res) => {
                     table,
                     forign_key,
                     attributes,
+                    is_primary_field
                 } = field;
 
                 fieldTypeMap[columnName] = type;
                 fieldLabelMap[columnName] = label || columnName;
+
+                if(is_primary_field === true){
+                    primaryKeyField = field
+                }
 
                 const sequelizeType = data_type?.toUpperCase() === "VARCHAR" && max_length
                     ? Sequelize.DataTypes.STRING(max_length)
@@ -2990,100 +3008,193 @@ exports.viewMagazineTemplateAllData = async (req, res) => {
                 where: Object.keys(whereClause).length > 0 ? whereClause : undefined,
             });
 
-            const data = [];
-            for (const result of results) {
-                let row = result.toJSON();
 
-                const labelValueRow = {};
+            if (sections && Array.isArray(sections) && sections.length > 0) {
 
-                for (const fieldName in radioFieldMappings) {
-                    if (row[fieldName] !== undefined && radioFieldMappings[fieldName][row[fieldName]]) {
-                        row[fieldName] = radioFieldMappings[fieldName][row[fieldName]];
-                    }
-                }
+                const sectionedData = [];
 
-                for (const fieldName in checkboxFieldMappings) {
-                    if (row[fieldName]) {
-                        const codes = row[fieldName].split(",").map((code) => code.trim());
-                        row[fieldName] = codes
-                            .map((code) => checkboxFieldMappings[fieldName][code] || code)
-                            .join(", ");
-                    }
-                }
+                for (const result of results) {
+                    let row = result.toJSON();
+                    const flatRow = { id: row.id };
 
-                for (const fieldName in dropdownFieldMappings) {
-                    if (row[fieldName] !== undefined && dropdownFieldMappings[fieldName][row[fieldName]]) {
-                        row[fieldName] = dropdownFieldMappings[fieldName][row[fieldName]];
-                    }
-                }
-                
-                const formatTime = (value) => {
-                    const parsed = Date.parse(value);
-                    if (isNaN(parsed)) return value;
-                    
-                    const date = new Date(parsed);
-                    let hours = date.getHours();
-                    const ampm = hours >= 12 ? 'PM' : 'AM';
-                    
-                    hours = hours % 12;
-                    hours = hours ? hours : 12; // the hour '0' should be '12'
-                    
-                    return `${hours.toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}:${date.getSeconds().toString().padStart(2, '0')} ${ampm}`;
-                };
-
-                const formatDateTime = (value) => {
-                    const parsed = Date.parse(value);
-                    if (isNaN(parsed)) return value;
-                    
-                    const date = new Date(parsed);
-                    let hours = date.getHours();
-                    const ampm = hours >= 12 ? 'PM' : 'AM';
-                    
-                    hours = hours % 12;
-                    hours = hours ? hours : 12; // the hour '0' should be '12'
-                    
-                    return `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()} ${hours.toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}:${date.getSeconds().toString().padStart(2, '0')} ${ampm}`;
-                };
-
-                const formatDate = (value) => {
-                    const parsed = Date.parse(value);
-                    if (isNaN(parsed)) return value;
-                    return new Date(parsed).toLocaleDateString("en-GB");
-                };
-
-                for (const fieldName in fieldTypeMap) {
-                    const type = fieldTypeMap[fieldName];
-                    if (row[fieldName] !== undefined && row[fieldName] !== null && row[fieldName] !== "") {
-                        if (type === "date") {
-                            row[fieldName] = formatDate(row[fieldName]);
-                        } else if (type === "time") {
-                            row[fieldName] = formatTime(row[fieldName]);
-                        } else if (type === "dateandtime") {
-                            row[fieldName] = formatDateTime(row[fieldName]);
+                    for (const fieldName in radioFieldMappings) {
+                        if (row[fieldName] !== undefined && radioFieldMappings[fieldName][row[fieldName]]) {
+                            row[fieldName] = radioFieldMappings[fieldName][row[fieldName]];
                         }
                     }
-                }
-
-                for (const association of associations) {
-                    const alias = `${association.relatedTable}Details`;
-                    if (row[alias]) {
-                        Object.entries(row[alias]).forEach(([key, value]) => {
-                            row[association.foreignKey] = value;
-                            delete row[alias];
-                        });
+                    for (const fieldName in checkboxFieldMappings) {
+                        if (row[fieldName]) {
+                            const codes = row[fieldName].split(",").map((code) => code.trim());
+                            row[fieldName] = codes
+                                .map((code) => checkboxFieldMappings[fieldName][code] || code)
+                                .join(", ");
+                        }
                     }
-                }
-
-                for (const fieldName in row) {
-                    if (fieldLabelMap[fieldName]) {
-                        labelValueRow[fieldLabelMap[fieldName]] = row[fieldName];
+                    for (const fieldName in dropdownFieldMappings) {
+                        if (row[fieldName] !== undefined && dropdownFieldMappings[fieldName][row[fieldName]]) {
+                            row[fieldName] = dropdownFieldMappings[fieldName][row[fieldName]];
+                        }
                     }
+
+                    const formatTime = (value) => {
+                        const parsed = Date.parse(value);
+                        if (isNaN(parsed)) return value;
+                        const date = new Date(parsed);
+                        let hours = date.getHours();
+                        const ampm = hours >= 12 ? 'PM' : 'AM';
+                        hours = hours % 12;
+                        hours = hours ? hours : 12;
+                        return `${hours.toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}:${date.getSeconds().toString().padStart(2, '0')} ${ampm}`;
+                    };
+                    const formatDateTime = (value) => {
+                        const parsed = Date.parse(value);
+                        if (isNaN(parsed)) return value;
+                        const date = new Date(parsed);
+                        let hours = date.getHours();
+                        const ampm = hours >= 12 ? 'PM' : 'AM';
+                        hours = hours % 12;
+                        hours = hours ? hours : 12;
+                        return `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()} ${hours.toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}:${date.getSeconds().toString().padStart(2, '0')} ${ampm}`;
+                    };
+                    const formatDate = (value) => {
+                        const parsed = Date.parse(value);
+                        if (isNaN(parsed)) return value;
+                        return new Date(parsed).toLocaleDateString("en-GB");
+                    };
+
+                    for (const fieldName in fieldTypeMap) {
+                        const type = fieldTypeMap[fieldName];
+                        if (row[fieldName] !== undefined && row[fieldName] !== null && row[fieldName] !== "") {
+                            if (type === "date") {
+                                row[fieldName] = formatDate(row[fieldName]);
+                            } else if (type === "time") {
+                                row[fieldName] = formatTime(row[fieldName]);
+                            } else if (type === "dateandtime") {
+                                row[fieldName] = formatDateTime(row[fieldName]);
+                            }
+                        }
+                    }
+
+                    for (const association of associations) {
+                        const alias = `${association.relatedTable}Details`;
+                        if (row[alias]) {
+                            Object.entries(row[alias]).forEach(([key, value]) => {
+                                row[association.foreignKey] = value;
+                                delete row[alias];
+                            });
+                        }
+                    }
+
+                    sections.forEach(section => {
+
+                        if (Object.keys(primaryKeyField).length > 0 && primaryKeyField?.label && !flatRow['Primary_Key_Field']) {
+                            flatRow['Primary_Key_Field'] = row?.[primaryKeyField?.name] || "";
+                        }
+
+                        flatRow['Section_Title_'+section] = `--- ${section} ---`;
+                        
+                        filteredFieldsArray
+                            .filter(field => field.section === section)
+                            .forEach(field => {
+                                if (row[field.name] !== undefined) {
+                                    flatRow[field.name] = row[field.name];
+                                }
+                            });
+                    });
+                    
+                    sectionedData.push(flatRow);
                 }
 
-                data.push(labelValueRow);
+                allData[tblName] = sectionedData;
+            } else {
+                // No section, fallback to flat array
+                const data = [];
+                for (const result of results) {
+                    let row = result.toJSON();
+                    const labelValueRow = {};
+
+                    for (const fieldName in radioFieldMappings) {
+                        if (row[fieldName] !== undefined && radioFieldMappings[fieldName][row[fieldName]]) {
+                            row[fieldName] = radioFieldMappings[fieldName][row[fieldName]];
+                        }
+                    }
+                    for (const fieldName in checkboxFieldMappings) {
+                        if (row[fieldName]) {
+                            const codes = row[fieldName].split(",").map((code) => code.trim());
+                            row[fieldName] = codes
+                                .map((code) => checkboxFieldMappings[fieldName][code] || code)
+                                .join(", ");
+                        }
+                    }
+                    for (const fieldName in dropdownFieldMappings) {
+                        if (row[fieldName] !== undefined && dropdownFieldMappings[fieldName][row[fieldName]]) {
+                            row[fieldName] = dropdownFieldMappings[fieldName][row[fieldName]];
+                        }
+                    }
+
+                    const formatTime = (value) => {
+                        const parsed = Date.parse(value);
+                        if (isNaN(parsed)) return value;
+                        const date = new Date(parsed);
+                        let hours = date.getHours();
+                        const ampm = hours >= 12 ? 'PM' : 'AM';
+                        hours = hours % 12;
+                        hours = hours ? hours : 12;
+                        return `${hours.toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}:${date.getSeconds().toString().padStart(2, '0')} ${ampm}`;
+                    };
+                    const formatDateTime = (value) => {
+                        const parsed = Date.parse(value);
+                        if (isNaN(parsed)) return value;
+                        const date = new Date(parsed);
+                        let hours = date.getHours();
+                        const ampm = hours >= 12 ? 'PM' : 'AM';
+                        hours = hours % 12;
+                        hours = hours ? hours : 12;
+                        return `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()} ${hours.toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}:${date.getSeconds().toString().padStart(2, '0')} ${ampm}`;
+                    };
+                    const formatDate = (value) => {
+                        const parsed = Date.parse(value);
+                        if (isNaN(parsed)) return value;
+                        return new Date(parsed).toLocaleDateString("en-GB");
+                    };
+
+                    for (const fieldName in fieldTypeMap) {
+                        const type = fieldTypeMap[fieldName];
+                        if (row[fieldName] !== undefined && row[fieldName] !== null && row[fieldName] !== "") {
+                            if (type === "date") {
+                                row[fieldName] = formatDate(row[fieldName]);
+                            } else if (type === "time") {
+                                row[fieldName] = formatTime(row[fieldName]);
+                            } else if (type === "dateandtime") {
+                                row[fieldName] = formatDateTime(row[fieldName]);
+                            }
+                        }
+                    }
+
+                    for (const association of associations) {
+                        const alias = `${association.relatedTable}Details`;
+                        if (row[alias]) {
+                            Object.entries(row[alias]).forEach(([key, value]) => {
+                                row[association.foreignKey] = value;
+                                delete row[alias];
+                            });
+                        }
+                    }
+
+                    for (const fieldName in row) {
+                        if (fieldLabelMap[fieldName]) {
+                            labelValueRow[fieldLabelMap[fieldName]] = row[fieldName];
+                        }
+                    }
+
+                    if (Object.keys(primaryKeyField).length > 0 && primaryKeyField?.label) {
+                        labelValueRow['Primary_Key_Field'] = row?.[primaryKeyField?.name] || "";
+                    }
+
+                    data.push(labelValueRow);
+                }
+                allData[tblName] = data;
             }
-
-            allData[tblName] = data;
         }
 
         return userSendResponse(res, 200, true, "Data fetched successfully", allData);
