@@ -1184,7 +1184,7 @@ const DynamicForm = ({
                                 if (getOptionsValue && getOptionsValue.data) {                                
                                     updatedOptions = getOptionsValue.data.map((templateData) => {
 
-                                        const nameKey = Object.keys(templateData).find((key) => !["id", "created_at", "updated_at"].includes(key));
+                                        const nameKey = Object.keys(templateData).find((key) => !["id", "created_at", "updated_at", "field_approval_done_by"].includes(key));
 
                                         var headerName = nameKey;
                                         var headerId = 'id';
@@ -1289,7 +1289,7 @@ const DynamicForm = ({
                                 if (getOptionsValue && getOptionsValue.data) {                                
                                     updatedOptions = getOptionsValue.data.map((templateData) => {
 
-                                        const nameKey = Object.keys(templateData).find((key) => !["id", "created_at", "updated_at"].includes(key));
+                                        const nameKey = Object.keys(templateData).find((key) => !["id", "created_at", "updated_at", "field_approval_done_by"].includes(key));
 
                                         var headerName = nameKey;
                                         var headerId = 'id';
@@ -1662,7 +1662,7 @@ const DynamicForm = ({
 
                     const updatedOptions = response.data.map((templateData) => {
 
-                        const nameKey = Object.keys(templateData).find((key) => !["id", "created_at", "updated_at", "created_by"].includes(key));
+                        const nameKey = Object.keys(templateData).find((key) => !["id", "created_at", "updated_at", "created_by", "field_approval_done_by"].includes(key));
 
                         var headerName = nameKey;
                         var headerId = 'id';
@@ -2446,71 +2446,24 @@ const DynamicForm = ({
           mx={2}
           mt={2}
         >
-          <Box
-            sx={{
-              borderBottom: "1px solid #636B744D",
-              padding: "16px",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <Box
-              sx={{ display: "inline-flex", gap: "12px", alignItems: "center" }}
-            >
-              {stepperData && stepperData.length > 0 && (
-                <Typography className="HighlightedSquare">
-                  {activeStep + 1}
-                </Typography>
-              )}
-              <Typography className="HighlightedText">
-                {stepperData && stepperData[activeStep] ? stepperData[activeStep] : "General Detail"}
-              </Typography>
-            </Box>
+            {stepperData && stepperData.length > 0 && 
+                <Box sx={{ borderBottom: '1px solid #636B744D', padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
 
-            {stepperData && stepperData.length > 0 && (
-              <Box sx={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                <Button
-                  onClick={stepperPrevNavigation}
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    minWidth: "16px",
-                  }}
-                >
-                  {" "}
-                  <ArrowBackIosIcon
-                    sx={{
-                      height: "16px",
-                      width: "16px",
-                      color: "rgba(0, 0, 0, 0.56)",
-                      cursor: "pointer",
-                    }}
-                  />{" "}
-                </Button>
-                <Button
-                  onClick={stepperNextNavigation}
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    minWidth: "16px",
-                  }}
-                >
-                  {" "}
-                  <ArrowForwardIosIcon
-                    sx={{
-                      height: "16px",
-                      width: "16px",
-                      color: "rgba(0, 0, 0, 0.56)",
-                      cursor: "pointer",
-                    }}
-                  />{" "}
-                </Button>
-              </Box>
-            )}
-          </Box>
+                    <Box sx={{ display: 'inline-flex', gap: '12px', alignItems: 'center' }}>
+                        <Typography className='HighlightedSquare'>
+                            {activeStep + 1}
+                        </Typography>
+                        <Typography className='HighlightedText'>
+                            {stepperData && stepperData[activeStep] ? stepperData[activeStep] : 'General Detail'}
+                        </Typography>
+                    </Box>
+
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <Button onClick={stepperPrevNavigation} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '16px' }} > <ArrowBackIosIcon sx={{ height: '16px', width: '16px', color: 'rgba(0, 0, 0, 0.56)', cursor: 'pointer' }} /> </Button>
+                        <Button onClick={stepperNextNavigation} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '16px' }} > <ArrowForwardIosIcon sx={{ height: '16px', width: '16px', color: 'rgba(0, 0, 0, 0.56)', cursor: 'pointer' }} /> </Button>
+                    </Box>
+                </Box>
+            }
 
           <form onSubmit={handleSubmit} noValidate style={{ margin: 0 }}>
             <Grid container sx={{ alignItems: "start" }}>

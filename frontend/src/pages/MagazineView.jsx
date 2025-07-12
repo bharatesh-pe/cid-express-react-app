@@ -195,7 +195,7 @@ const MagazineView = () => {
                     if (Array.isArray(entries) && entries.length > 0) {
                         entries.forEach((entry, idx) => {
                             const findingTemplate = actionArray.find((item) => item.table === tableKey);
-                            const baseTitle = `${findingTemplate ? findingTemplate?.name : tableKey} - ${idx + 1}`;
+                            let baseTitle = `${findingTemplate ? findingTemplate?.name : tableKey} - ${idx + 1}`;
                             const baseTableName = findingTemplate.table;
                             
                             const allEntries = Object.entries(entry)
@@ -212,6 +212,22 @@ const MagazineView = () => {
                                         const lineCount = Math.ceil(value.length / 60); // Approx 60 chars per line
                                         fieldHeight = Math.max(60, lineCount * 20); // Minimum 60px, 20px per line
                                     }
+
+                                    if(key === "Primary_Key_Field"){
+                                        baseTitle = `${findingTemplate ? findingTemplate?.name : tableKey} - ${value}`;
+                                        return null
+                                    }
+
+                                    if (key.startsWith('Section_Title_')) {
+                                        return {
+                                            key,
+                                            html: `<div style="padding-bottom: 12px;">
+                                                    <p class="Roboto ProfileViewHeading">${value}</p>
+                                                </div>`,
+                                            height: fieldHeight,
+                                            isTable
+                                        };
+                                    }
                                     
                                     return {
                                         key,
@@ -222,7 +238,7 @@ const MagazineView = () => {
                                         height: fieldHeight,
                                         isTable
                                     };
-                                });
+                                }).filter(entry => entry !== null);;
                             
                             const availableHeight = viewportHeight - PAGE_PADDING - TITLE_HEIGHT;
                             let currentChunkHeight = 0;
