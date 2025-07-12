@@ -3097,7 +3097,7 @@ exports.viewMagazineTemplateAllData = async (req, res) => {
                             .filter(field => field.section === section)
                             .forEach(field => {
                                 if (row[field.name] !== undefined) {
-                                    flatRow[field.name] = row[field.name];
+                                    flatRow[field.label] = row[field.name];
                                 }
                             });
                     });
