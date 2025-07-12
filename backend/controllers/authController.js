@@ -2606,6 +2606,32 @@ const store_cnr_table_data = async (req, res) => {
     }
   };
 
+const datewisereport = async (req, res) => {
+    try {
+        const { startDate, endDate } = req.body;
+
+        if (!startDate || !endDate) {
+            return res.status(400).json({ success: false, message: "Start date and end date are required." });
+        }
+
+        const formattedStartDate = new Date(startDate);
+        const formattedEndDate = new Date(endDate);
+
+        const results = await sequelize.query(
+            `SELECT * FROM cid_pending_trial WHERE created_at BETWEEN :startDate AND :endDate`,
+            {
+                replacements: { startDate: formattedStartDate, endDate: formattedEndDate },
+                type: sequelize.QueryTypes.SELECT
+            }
+        );
+
+        return res.status(200).json({ success: true, data: results });
+    } catch (error) {
+        console.error("Error fetching date-wise report:", error);
+        return res.status(500).json({ success: false, message: "Failed to fetch date-wise report.", error: error.message });
+    }
+}
+
 
   
 
