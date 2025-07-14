@@ -862,7 +862,7 @@ const CaseDairy = ({headerDetails, backToForm, showMagazineView, rowData, module
                                 }}
                                 mt={1}
                             >
-                                Clear Filter
+                                Clear Search
                             </Typography>
                         )}
                     </Box>

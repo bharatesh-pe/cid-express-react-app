@@ -2512,16 +2512,16 @@ const PlanOfAction = ({templateName, headerDetails, rowId, options, selectedRowD
                                                     <SearchIcon sx={{ color: "#475467" }} />
                                                 </InputAdornment>
                                             ),
-                                            endAdornment: (
-                                                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                                                    <IconButton
-                                                        sx={{ px: 1, borderRadius: 0 }}
-                                                        onClick={() => handleOthersFilter(selectedOtherTemplate)}
-                                                    >
-                                                        <FilterListIcon sx={{ color: "#475467" }} />
-                                                    </IconButton>
-                                                </Box>
-                                            ),
+                                            // endAdornment: (
+                                            //     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                            //         <IconButton
+                                            //             sx={{ px: 1, borderRadius: 0 }}
+                                            //             onClick={() => handleOthersFilter(selectedOtherTemplate)}
+                                            //         >
+                                            //             <FilterListIcon sx={{ color: "#475467" }} />
+                                            //         </IconButton>
+                                            //     </Box>
+                                            // ),
                                         }}
                                         onInput={(e) => setOtherSearchValue(e.target.value)}
                                         value={otherSearchValue}
@@ -2559,7 +2559,7 @@ const PlanOfAction = ({templateName, headerDetails, rowId, options, selectedRowD
                                                 mt: 1,
                                             }}
                                         >
-                                            Clear Filter
+                                            Clear Search
                                         </Typography>
                                     )}
                                 </Box>

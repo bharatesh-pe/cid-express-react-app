@@ -2535,16 +2535,16 @@ const EqProgressReport = ({ templateName, headerDetails, rowId, options, selecte
                                 <SearchIcon sx={{ color: "#475467" }} />
                                 </InputAdornment>
                             ),
-                            endAdornment: (
-                                <Box sx={{ display: "flex", alignItems: "center" }}>
-                                <IconButton
-                                    sx={{ px: 1, borderRadius: 0 }}
-                                    onClick={() => handleOthersFilter(selectedOtherTemplate)}
-                                >
-                                    <FilterListIcon sx={{ color: "#475467" }} />
-                                </IconButton>
-                                </Box>
-                            ),
+                            // endAdornment: (
+                            //     <Box sx={{ display: "flex", alignItems: "center" }}>
+                            //     <IconButton
+                            //         sx={{ px: 1, borderRadius: 0 }}
+                            //         onClick={() => handleOthersFilter(selectedOtherTemplate)}
+                            //     >
+                            //         <FilterListIcon sx={{ color: "#475467" }} />
+                            //     </IconButton>
+                            //     </Box>
+                            // ),
                             }}
                             onInput={(e) => setOtherSearchValue(e.target.value)}
                             value={otherSearchValue}
@@ -2584,7 +2584,7 @@ const EqProgressReport = ({ templateName, headerDetails, rowId, options, selecte
                                 textAlign: { xs: 'left', sm: 'right' },
                             }}
                             >
-                            Clear Filter
+                            Clear Search
                             </Typography>
                         )}
                         </Box>
