@@ -329,6 +329,10 @@ router.post('/getTemplateDataWithDate',
     [validate_token],
     templateDataController.getTemplateDataWithDate)
 
+router.post('/getSingleTemplateDataWithDate',
+    [validate_token],
+    templateDataController.getSingleTemplateDataWithDate)
+
 router.post('/getPrimaryTemplateData',
     [gwtDataValidation],[validate_token],
     templateDataController.getPrimaryTemplateData)
