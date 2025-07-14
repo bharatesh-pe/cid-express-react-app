@@ -2569,7 +2569,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
                             value={otherSearchValue}
                             id="tableSearch"
                             size="small"
-                            placeholder="Search anything"
+                            placeholder="Search"
                             variant="outlined"
                             className="profileSearchClass"
                             onKeyDown={(e) => {

@@ -2550,7 +2550,7 @@ const EqProgressReport = ({ templateName, headerDetails, rowId, options, selecte
                             value={otherSearchValue}
                             id="tableSearch"
                             size="small"
-                            placeholder="Search anything"
+                            placeholder="Search"
                             variant="outlined"
                             className="profileSearchClass"
                             onKeyDown={(e) => {

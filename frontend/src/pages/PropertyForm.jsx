@@ -2060,7 +2060,7 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
                                             value={otherSearchValue}
                                             id="tableSearch"
                                             size="small"
-                                            placeholder="Search anything"
+                                            placeholder="Search"
                                             variant="outlined"
                                             className="profileSearchClass"
                                             onKeyDown={(e) => {

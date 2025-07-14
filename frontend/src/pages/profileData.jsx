@@ -1753,7 +1753,7 @@ const ProfileData = () => {
                                 value={searchValue}
                                 id="tableSearch"
                                 size="small"
-                                placeholder="Search anything"
+                                placeholder="Search"
                                 variant="outlined"
                                 className="profileSearchClass"
                                 onKeyDown={(e) => {
@@ -1867,7 +1867,7 @@ const ProfileData = () => {
                         value={searchValue}
                         id="tableSearch"
                         size="small"
-                        placeholder='Search anything'
+                        placeholder='Search'
                         variant="outlined"
                         onKeyDown={(e) => {
                             if (e.key === "Enter") {

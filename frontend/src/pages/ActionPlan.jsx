@@ -2738,7 +2738,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                                         value={otherSearchValue}
                                         id="tableSearch"
                                         size="small"
-                                        placeholder="Search anything"
+                                        placeholder="Search"
                                         variant="outlined"
                                         className="profileSearchClass"
                                         onKeyDown={(e) => {

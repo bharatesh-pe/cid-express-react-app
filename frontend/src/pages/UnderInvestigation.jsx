@@ -13454,7 +13454,7 @@ return (
                 value={searchValue}
                 id="tableSearch"
                 size="small"
-                placeholder="Search anything"
+                placeholder="Search"
                 variant="outlined"
                 className="profileSearchClass"
                 onKeyDown={(e) => {
@@ -14224,7 +14224,7 @@ return (
                         value={otherSearchValue}
                         id="tableSearch"
                         size="small"
-                        placeholder='Search anything'
+                        placeholder='Search'
                         variant="outlined"
                         className="profileSearchClass"
                         onKeyDown={(e) => {
@@ -14352,7 +14352,7 @@ return (
                         value={otherSearchValue}
                         id="tableSearch"
                         size="small"
-                        placeholder='Search anything'
+                        placeholder='Search'
                         variant="outlined"
                         className="profileSearchClass"
                         onKeyDown={(e) => {
@@ -16275,7 +16275,7 @@ return (
                                         value={listApprovalSearchValue}
                                         id="tableSearch"
                                         size="small"
-                                        placeholder='Search anything'
+                                        placeholder='Search'
                                         variant="outlined"
                                         className="profileSearchClass"
                                         onKeyDown={(e) => {

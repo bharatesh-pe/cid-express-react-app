@@ -2505,7 +2505,7 @@ const Report41A = ({templateName, headerDetails, rowId, options, selectedRowData
                                         value={otherSearchValue}
                                         id="tableSearch"
                                         size="small"
-                                        placeholder="Search anything"
+                                        placeholder="Search"
                                         variant="outlined"
                                         className="profileSearchClass"
                                         onKeyDown={(e) => {

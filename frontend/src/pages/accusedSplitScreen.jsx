@@ -992,7 +992,7 @@ const AccusedSplitScreen = ({tableObj, selectedAccused, closeForm, ui_case_id, p
                                 value={tableSearchValue}
                                 id="tableSearch"
                                 size="small"
-                                placeholder='Search..'
+                                placeholder='Search'
                                 variant="outlined"
                                 className="profileSearchClass"
                                 onKeyDown={(e) => {

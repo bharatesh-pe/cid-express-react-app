@@ -3016,7 +3016,7 @@ const CDR = ({ templateName, headerDetails, rowId, options, selectedRowData, bac
                                             value={otherSearchValue}
                                             id="tableSearch"
                                             size="small"
-                                            placeholder="Search anything"
+                                            placeholder="Search"
                                             variant="outlined"
                                             className="profileSearchClass"
                                             onKeyDown={(e) => {

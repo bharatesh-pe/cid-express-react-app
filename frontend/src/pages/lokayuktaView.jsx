@@ -3233,7 +3233,7 @@ if ((!currentTableName || currentTableName === "") && (!activeSidebar?.table || 
                                         value={tableSearchValue}
                                         id="tableSearch"
                                         size="small"
-                                        placeholder='Search..'
+                                        placeholder='Search'
                                         variant="outlined"
                                         className="profileSearchClass"
                                         onKeyDown={(e) => {
