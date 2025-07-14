@@ -11625,6 +11625,160 @@ exports.getTemplateDataWithDate = async (req, res) => {
     }
 };
 
+exports.getSingleTemplateDataWithDate = async (req, res) => {
+    try {
+        const { table_name, date, ui_case_id, pt_case_id } = req.body;
+
+        if (!table_name || !date) {
+            return userSendResponse(res, 400, false, "Both 'table' and 'date' are required.", null);
+        }
+
+        const Op = Sequelize.Op;
+
+        const tableData = await Template.findOne({ where: { table_name } });
+        if (!tableData) {
+            return userSendResponse(res, 404, false, `Table ${table_name} does not exist.`, null);
+        }
+
+        const schema = typeof tableData.fields === "string" ? JSON.parse(tableData.fields) : tableData.fields;
+
+        let displayFields = schema.filter(f => f.case_dairy === true);
+        if (!displayFields.length) displayFields = schema.filter(f => f.is_primary_field === true);
+        if (!displayFields.length) displayFields = schema;
+
+        let dateField = "created_at";
+        for (const field of displayFields) {
+            if (field.case_dairy === true) {
+                dateField = field.name;
+                break;
+            }
+        }
+
+        const fields = {};
+        for (const field of displayFields) {
+            const { name, data_type, not_null, default_value } = field;
+            fields[name] = {
+                type: typeMapping[data_type?.toUpperCase()] || Sequelize.DataTypes.STRING,
+                allowNull: !not_null,
+                defaultValue: default_value || null,
+            };
+        }
+        fields["id"] = { type: Sequelize.DataTypes.INTEGER, primaryKey: true, autoIncrement: true };
+        fields["created_at"] = { type: Sequelize.DataTypes.DATE, allowNull: false };
+        fields["updated_at"] = { type: Sequelize.DataTypes.DATE, allowNull: false };
+        fields["created_by"] = { type: Sequelize.DataTypes.STRING, allowNull: true };
+        fields["created_by_id"] = { type: Sequelize.DataTypes.STRING, allowNull: true };
+        fields["updated_by"] = { type: Sequelize.DataTypes.STRING, allowNull: true };
+        fields["updated_by_id"] = { type: Sequelize.DataTypes.STRING, allowNull: true };
+
+        const Model =
+            sequelize.models[table_name] ||
+            sequelize.define(table_name, fields, {
+                freezeTableName: true,
+                timestamps: true,
+                createdAt: "created_at",
+                updatedAt: "updated_at",
+            });
+
+        await Model.sync();
+
+        // const parsedDate = new Date(date).toISOString().split("T")[0];
+        // const startDate = new Date(parsedDate + "T00:00:00");
+        // const endDate = new Date(parsedDate + "T23:59:59.999");
+
+
+        const toIST = (d) => {
+            const offsetMs = 5.5 * 60 * 60 * 1000;
+            return new Date(d.getTime() + offsetMs);
+        };
+
+        const inputDate = new Date(date);
+        const istDate = toIST(new Date(inputDate.setHours(0, 0, 0, 0)));
+        const startDate = new Date(istDate);
+        const endDate = new Date(istDate.getTime() + (23 * 60 * 60 * 1000) + (59 * 60 * 1000) + 59999);
+
+
+        const whereClause = {
+            [Op.or]: [
+                { [dateField]: { [Op.gte]: startDate, [Op.lte]: endDate } },
+                { updated_at: { [Op.gte]: startDate, [Op.lte]: endDate } }
+            ]
+        };
+
+        if (fields["ui_case_id"] && ui_case_id) whereClause.ui_case_id = ui_case_id;
+        if (fields["pt_case_id"] && pt_case_id) whereClause.pt_case_id = pt_case_id;
+
+        const rows = await Model.findAll({
+            where: whereClause,
+            order: [["created_at", "DESC"]],
+        });
+
+        const formatTime = (value) => {
+            const parsed = Date.parse(value);
+            if (isNaN(parsed)) return value;
+            const date = new Date(parsed);
+            let hours = date.getHours();
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12 || 12;
+            return `${hours.toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}:${date.getSeconds().toString().padStart(2, '0')} ${ampm}`;
+        };
+
+        const formatDateTime = (value) => {
+            const parsed = Date.parse(value);
+            if (isNaN(parsed)) return value;
+            const date = new Date(parsed);
+            let hours = date.getHours();
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12 || 12;
+            return `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()} ${hours.toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}:${date.getSeconds().toString().padStart(2, '0')} ${ampm}`;
+        };
+
+        const formatDate = (value) => {
+            const parsed = Date.parse(value);
+            return isNaN(parsed) ? value : new Date(parsed).toLocaleDateString("en-GB");
+        };
+
+        const formattedData = rows.map(row => {
+            const data = row.toJSON();
+            const formatted = {};
+
+            for (const field of displayFields) {
+                let value = data[field.name];
+                if (field.data_type === "date" && value) value = formatDate(value);
+                else if (field.data_type === "time" && value) value = formatTime(value);
+                else if (field.data_type === "dateandtime" && value) value = formatDateTime(value);
+                formatted[field.label || field.name] = value;
+            }
+
+            const createdAt = data.created_at ? new Date(data.created_at) : null;
+            const updatedAt = data.updated_at ? new Date(data.updated_at) : null;
+
+            formatted["Created At"] = createdAt ? formatDateTime(createdAt) : "";
+
+            // Show Updated At only if it differs in date/time from Created At
+            if (createdAt && updatedAt && createdAt.getTime() !== updatedAt.getTime()) {
+                formatted["Updated At"] = formatDateTime(updatedAt);
+            } else {
+                formatted["Updated At"] = "";
+            }
+
+            formatted["Created By"] = data.created_by || "";
+            // formatted["Created By ID"] = data.created_by_id || "";
+            formatted["Updated By"] = data.updated_by || "";
+            // formatted["Updated By ID"] = data.updated_by_id || "";
+
+
+            return formatted;
+        });
+
+
+        return userSendResponse(res, 200, true, "Fetched data successfully.", { [table_name]: formattedData });
+    } catch (error) {
+        console.error("Error in getSingleTemplateDataWithDate:", error);
+        return userSendResponse(res, 500, false, "Failed to fetch template data", error.message);
+    }
+};
+
 
 exports.saveActionPlan = async (req, res) => {
 
