@@ -493,6 +493,7 @@ const MagazineView = () => {
                             height={viewportHeight}
                             className="magazine-flip"
                             ref={pageFlip}
+                            flippingTime={500}
                             onFlip={(e) => onPageFlip(e)}
                         >
                             {pages.map((page, index) => (
