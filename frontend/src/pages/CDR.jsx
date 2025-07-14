@@ -3157,7 +3157,7 @@ const CDR = ({ templateName, headerDetails, rowId, options, selectedRowData, bac
                                         </Button>
                                     )}
 
-                                    {
+                                    {/* {
                                         showMagazineView && 
                                         <Button
                                             onClick={()=>showMagazineView(false)}
@@ -3166,7 +3166,7 @@ const CDR = ({ templateName, headerDetails, rowId, options, selectedRowData, bac
                                         >
                                             Case Docket
                                         </Button>
-                                    }
+                                    } */}
                                 </Box>
                             </Box>
                         </Box>

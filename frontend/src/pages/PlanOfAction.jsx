@@ -2584,7 +2584,7 @@ const PlanOfAction = ({templateName, headerDetails, rowId, options, selectedRowD
                                         Submit
                                     </Button>
                                 )}
-                                {
+                                {/* {
                                     showMagazineView && 
                                     <Button
                                         onClick={()=>showMagazineView(false)}
@@ -2593,7 +2593,7 @@ const PlanOfAction = ({templateName, headerDetails, rowId, options, selectedRowD
                                     >
                                         Case Docket
                                     </Button>
-                                }
+                                } */}
                             </Box>
                         </Box>
                     </Box>

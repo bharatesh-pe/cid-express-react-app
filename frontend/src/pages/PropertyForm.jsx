@@ -2152,7 +2152,7 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
                                     >
                                         Submit
                                     </Button>
-                                    {
+                                    {/* {
                                         showMagazineView && 
                                         <Button
                                             onClick={()=>showMagazineView(false)}
@@ -2161,7 +2161,7 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
                                         >
                                             Case Docket
                                         </Button>
-                                    }
+                                    } */}
                                 </Box>
                                 </Box>     
                             </Box>

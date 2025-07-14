@@ -2119,7 +2119,7 @@ const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData
                                             Add
                                         </Button>
                                     )}
-                                    {
+                                    {/* {
                                         showMagazineView && 
                                         <Button
                                             onClick={()=>showMagazineView(false)}
@@ -2128,7 +2128,7 @@ const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData
                                         >
                                             Case Docket
                                         </Button>
-                                    }
+                                    } */}
                                 </Box>
                                 </Box>     
                             </Box>

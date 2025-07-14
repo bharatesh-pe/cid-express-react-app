@@ -2666,7 +2666,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
                         >
                             Submit
                         </Button>
-                        {
+                        {/* {
                             showMagazineView && 
                             <Button
                                 onClick={()=>showMagazineView(false)}
@@ -2675,7 +2675,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
                             >
                                 Case Docket
                             </Button>
-                        }
+                        } */}
                         </Box>
                     </Box>
                     </Box>
