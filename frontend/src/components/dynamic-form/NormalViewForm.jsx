@@ -2544,45 +2544,48 @@ const NormalViewForm = ({
             if (response?.success && response?.data) {
                 const { data } = response;
 
-                let html = "";
+                 let html = "";
 
-                Object.entries(data).forEach(([key, items]) => {
-                    const matchedItem = caseDiaryArray.find((item) => item.table === key);
+                    Object.entries(data).forEach(([key, items]) => {
+                        const matchedItem = caseDiaryArray.find((item) => item.table === key);
+                        if (!matchedItem || !Array.isArray(items) || items.length === 0) return;
 
-                    if (!matchedItem) return;
+                        const headers = Object.keys(items[0]);
 
-                html += `
-                    <div style="margin-bottom: 20px;">
-                        <p class="Roboto ProfileViewHeading" style="font-weight: bold; text-decoration: underline;">${matchedItem.name}</p>
-                        <table style="width: 100%; border-collapse: collapse; border: 1px solid #000; margin-top: 10px;">
-                            <thead>
-                                <tr>
-                                    <th style="text-align: left; border: 1px solid #000; padding: 8px;">Field</th>
-                                    <th style="text-align: left; border: 1px solid #000; padding: 8px;">Value</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                `;
-
-                items.forEach((itemObj) => {
-                    Object.entries(itemObj).forEach(([fieldKey, fieldValue]) => {
                         html += `
-                            <tr>
-                                <td style="padding: 8px; font-weight: 500; border: 1px solid #000;">${fieldKey}</td>
-                                <td style="padding: 8px; font-weight: 400; border: 1px solid #000;">${fieldValue}</td>
-                            </tr>
+                            <div style="margin-bottom: 20px;">
+                                <p class="Roboto ProfileViewHeading" style="font-weight: bold; text-decoration: underline;">${matchedItem.name}</p>
+                                <table style="width: 100%; border-collapse: collapse; border: 1px solid #000; margin-top: 10px;">
+                                    <thead>
+                                        <tr>
+                                            <th style="text-align: left; border: 1px solid #000; padding: 8px;">Sl. No</th>
+                        `;
+
+                        headers.forEach(header => {
+                            html += `<th style="text-align: left; border: 1px solid #000; padding: 8px;">${header}</th>`;
+                        });
+
+                        html += `
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                        `;
+
+                        items.forEach((item, index) => {
+                            html += `<tr>`;
+                            html += `<td style="padding: 8px; font-weight: 400; border: 1px solid #000;">${index + 1}</td>`; // Sl. No
+                            headers.forEach(header => {
+                                html += `<td style="padding: 8px; font-weight: 400; border: 1px solid #000;">${item[header] ?? ''}</td>`;
+                            });
+                            html += `</tr>`;
+                        });
+
+                        html += `
+                                    </tbody>
+                                </table>
+                            </div>
                         `;
                     });
-                });
-
-                html += `
-                            </tbody>
-                        </table>
-                    </div>
-                `;
-
-                });
-
 
                 setFormData((prevData) => ({
                     ...prevData,
