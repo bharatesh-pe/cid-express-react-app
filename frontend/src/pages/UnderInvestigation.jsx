@@ -5644,7 +5644,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                         chargeSheet : true
                     },
                     {
-                        name: "Case Dairy",
+                        name: "Case Diary",
                         caseView : true,
                         viewAction : true,
                         caseDairy : true
