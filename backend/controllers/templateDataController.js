@@ -11764,6 +11764,7 @@ exports.getSingleTemplateDataWithDate = async (req, res) => {
             // formatted["Created By ID"] = data.created_by_id || "";
             formatted["Updated By"] = data.updated_by || "";
             // formatted["Updated By ID"] = data.updated_by_id || "";
+            formatted["id"] = data.id || "";
 
 
             return formatted;
