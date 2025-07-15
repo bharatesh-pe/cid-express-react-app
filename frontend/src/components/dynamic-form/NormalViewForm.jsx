@@ -2303,6 +2303,8 @@ const NormalViewForm = ({
 
                 setShowLinkTemplate(true);
 
+                disabledEditBtn.current = false;
+
             }
 
         } catch (error) {
@@ -2629,6 +2631,7 @@ const NormalViewForm = ({
     const [caseDiaryHistoryLog, setCaseDiaryHistoryLog] = useState(false);
     const [caseDiaryHistoryData, setCaseDiaryHistoryData] = useState([]);
     const [caseDiaryHistoryHeaderData, setCaseDiaryHistoryHeaderData] = useState({});
+    const disabledEditBtn = useRef(false);
 
     const handleIndividualCaseDiaryLog = async (index)=>{
 
@@ -2684,8 +2687,7 @@ const NormalViewForm = ({
                 if (Array.isArray(tableData) && tableData.length > 0) {
 
                     const rowsWithId = tableData.map((row, index) => ({
-                        id: index + 1,
-                        id: index + 1,
+                        sno: index + 1,
                         ...row
                     }));
 
@@ -2693,13 +2695,31 @@ const NormalViewForm = ({
 
                     const headerKeys = Object.keys(tableData[0] || {});
 
+                    const excludedKeys = ['id']
+
+                    const filteredKeys = headerKeys.filter(key => !excludedKeys.includes(key));
+                    const firstDataKey = filteredKeys[0];
+
                     const headers = [
                         {
                             field: 'sno',
                             headerName: 'S.No',
                             width: 80
+                        },  
+                        {
+                            field: firstDataKey,
+                            headerName: firstDataKey,
+                            width: 200,
+                            renderCell: (params) => (
+                            <span
+                                style={{ color: '#1976d2', cursor: 'pointer', textDecoration: 'underline' }}
+                                onClick={() => handleViewCaseData(params.row, getPerticularCaseDiary?.table)}
+                            >
+                                {params.value}
+                            </span>
+                            )
                         },
-                        ...headerKeys.map((key) => ({
+                        ...filteredKeys.slice(1).map((key) => ({
                             field: key,
                             headerName: key,
                             width: 200
@@ -2761,6 +2781,71 @@ const NormalViewForm = ({
         setCaseDiaryHistoryData([]);
         setCaseDiaryHistoryHeaderData({});
         setCaseDiaryHistoryLog(false);
+        disabledEditBtn.current = false;
+    }
+
+    const handleViewCaseData = async (row, tableName)=>{
+
+        if(!row.id){
+            toast.error("ID not found !", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+
+        const payload = {
+            table_name : tableName,
+            key : 'id',
+            value : row.id
+        }
+
+        try {
+            
+            const gettingDetailedData = await api.post('/templateData/getTemplateAlongWithData', payload);
+            
+            if(gettingDetailedData?.success && gettingDetailedData?.data){
+
+                const { data, template } = gettingDetailedData?.data
+
+                setLinkTemplateName(template?.template_name);
+                setLinkTableName(template?.table_name);
+
+                setLinkTemplateRowId(data?.id);
+                setLinkTemplateId(template?.template_id);
+
+                setLinkTemplateFields(template?.fields);
+                setLinkTemplateStepperData(template?.sections ? template?.sections : []);
+
+                setLinkTemplateInitialData(data);
+
+                setShowLinkTemplate(true);
+
+                disabledEditBtn.current = true;
+
+            }
+
+        } catch (error) {
+            if (error && error.response && error.response.data) {
+                toast.error( error.response?.data?.message || "Please Try Again! ", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+                return;
+            }
+        }
     }
 
   return (
@@ -3743,7 +3828,6 @@ const NormalViewForm = ({
                 aria-describedby="alert-dialog-description"
                 maxWidth="xl"
                 fullWidth
-                className="approvalModal"
             >
                 <DialogTitle
                     id="alert-dialog-title"
@@ -3798,6 +3882,7 @@ const NormalViewForm = ({
                                 onUpdate={linkTemplateUpdateFunc}
                                 onError={linkTemplateErrorFunc}
                                 closeForm={closeLinkTemplateModal}
+                                disableEditButton={disabledEditBtn.current}
                             />
                         </FormControl>
                     </DialogContentText>
