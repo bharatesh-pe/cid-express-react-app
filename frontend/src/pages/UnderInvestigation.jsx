@@ -11697,9 +11697,23 @@ const handleExtensionApprovalWithUpdate = async () => {
 
                         });
 
+                        var headerDetails = ""
+
+                        if(rowData?.["field_crime_number_of_ps"]){
+                            headerDetails = rowData?.["field_crime_number_of_ps"] + " - "
+                        }
+
+                        if(rowData?.["field_name_of_the_police_station"]){
+                            headerDetails += rowData?.["field_name_of_the_police_station"] + " - "
+                        }
+
+                        if(rowData?.["field_cid_crime_no./enquiry_no"]){
+                            headerDetails += rowData?.["field_cid_crime_no./enquiry_no"]
+                        }
+
                         var stateObj = {
                             contentArray: JSON.stringify(actionTemplateMenus),
-                            headerDetails: rowData?.["field_cid_crime_no./enquiry_no"] || null,
+                            headerDetails: headerDetails,
                             backNavigation: "/case/ui_case",
                             paginationCount: paginationCount,
                             sysStatus: sysStatus,
@@ -13454,7 +13468,7 @@ return (
                 value={searchValue}
                 id="tableSearch"
                 size="small"
-                placeholder="Search anything"
+                placeholder="Search"
                 variant="outlined"
                 className="profileSearchClass"
                 onKeyDown={(e) => {
@@ -14224,7 +14238,7 @@ return (
                         value={otherSearchValue}
                         id="tableSearch"
                         size="small"
-                        placeholder='Search anything'
+                        placeholder='Search'
                         variant="outlined"
                         className="profileSearchClass"
                         onKeyDown={(e) => {
@@ -14352,7 +14366,7 @@ return (
                         value={otherSearchValue}
                         id="tableSearch"
                         size="small"
-                        placeholder='Search anything'
+                        placeholder='Search'
                         variant="outlined"
                         className="profileSearchClass"
                         onKeyDown={(e) => {
@@ -16275,7 +16289,7 @@ return (
                                         value={listApprovalSearchValue}
                                         id="tableSearch"
                                         size="small"
-                                        placeholder='Search anything'
+                                        placeholder='Search'
                                         variant="outlined"
                                         className="profileSearchClass"
                                         onKeyDown={(e) => {

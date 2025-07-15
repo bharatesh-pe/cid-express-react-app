@@ -831,7 +831,7 @@ const CaseDairy = ({headerDetails, backToForm, showMagazineView, rowData, module
                             value={tableSearchValue}
                             id="tableSearch"
                             size="small"
-                            placeholder='Search..'
+                            placeholder='Search'
                             variant="outlined"
                             className="profileSearchClass"
                             onKeyDown={(e) => {
@@ -862,7 +862,7 @@ const CaseDairy = ({headerDetails, backToForm, showMagazineView, rowData, module
                                 }}
                                 mt={1}
                             >
-                                Clear Filter
+                                Clear Search
                             </Typography>
                         )}
                     </Box>
@@ -885,13 +885,13 @@ const CaseDairy = ({headerDetails, backToForm, showMagazineView, rowData, module
                         Add New
                     </Button>
 
-                    <Button
+                    {/* <Button
                         onClick={()=>showMagazineView(false)}
                         sx={{height: "38px", textTransform: 'none'}}
                         className="whiteBorderedBtn"
                     >
                         Case Docket
-                    </Button>
+                    </Button> */}
 
                 </Box>
             </Box>

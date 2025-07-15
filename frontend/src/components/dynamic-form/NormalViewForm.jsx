@@ -34,6 +34,7 @@ import NumberField from '../form/NumberField';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 
+import InfoIcon from '@mui/icons-material/Info';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Swal from 'sweetalert2';
@@ -1575,7 +1576,7 @@ const NormalViewForm = ({
 
                     var payloadApi = field.api
 
-                    if((field.table === "cid_ui_case_accused" || field.table === "cid_ui_case_witness") && selectedRow && field?.particular_case_options){
+                    if((field.table === "cid_ui_case_accused" || field.table === "cid_pt_case_witness") && selectedRow && field?.particular_case_options){
 
                         payloadApi = "templateData/getAccusedWitness"
 
@@ -2543,32 +2544,48 @@ const NormalViewForm = ({
             if (response?.success && response?.data) {
                 const { data } = response;
 
-                let html = "";
+                 let html = "";
 
-                Object.entries(data).forEach(([key, items]) => {
-                    const matchedItem = caseDiaryArray.find((item) => item.table === key);
+                    Object.entries(data).forEach(([key, items]) => {
+                        const matchedItem = caseDiaryArray.find((item) => item.table === key);
+                        if (!matchedItem || !Array.isArray(items) || items.length === 0) return;
 
-                    if (!matchedItem) return;
+                        const headers = Object.keys(items[0]);
 
-                    html += `
-                    <div style="border-bottom: 1px solid #EAECF0; padding-bottom: 12px;">
-                        <p class="Roboto ProfileViewHeading" style="font-weight: bold;text-decoration: underline;">${matchedItem.name}</p>
-                    `;
+                        html += `
+                            <div style="margin-bottom: 20px;">
+                                <p class="Roboto ProfileViewHeading" style="font-weight: bold; text-decoration: underline;">${matchedItem.name}</p>
+                                <table style="width: 100%; border-collapse: collapse; border: 1px solid #000; margin-top: 10px;">
+                                    <thead>
+                                        <tr>
+                                            <th style="text-align: left; border: 1px solid #000; padding: 8px;">Sl. No</th>
+                        `;
 
-                    items.forEach((itemObj) => {
-                        Object.entries(itemObj).forEach(([fieldKey, fieldValue]) => {
-                            html += `
-                                <div class="">
-                                    <div style="font-size: 16px; font-weight: 500;">${fieldKey}</div>
-                                    <div style="font-size: 14px; font-weight: 400;">${fieldValue}</div>
-                                </div>
-                                <br />
-                            `;
+                        headers.forEach(header => {
+                            html += `<th style="text-align: left; border: 1px solid #000; padding: 8px;">${header}</th>`;
                         });
-                    });
 
-                    html += `</div>`;
-                });
+                        html += `
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                        `;
+
+                        items.forEach((item, index) => {
+                            html += `<tr>`;
+                            html += `<td style="padding: 8px; font-weight: 400; border: 1px solid #000;">${index + 1}</td>`; // Sl. No
+                            headers.forEach(header => {
+                                html += `<td style="padding: 8px; font-weight: 400; border: 1px solid #000;">${item[header] ?? ''}</td>`;
+                            });
+                            html += `</tr>`;
+                        });
+
+                        html += `
+                                    </tbody>
+                                </table>
+                            </div>
+                        `;
+                    });
 
                 setFormData((prevData) => ({
                     ...prevData,
@@ -2760,7 +2777,7 @@ const NormalViewForm = ({
                       formButtonRef.current &&
                       formButtonRef.current.click()
                   }}
-                    sx={{ background: '#0167F8', fontSize: '14px', fontWeight: '500', color: '#FFFFFF', padding: '6px 16px', marginRight: '8px' }}
+                    sx={{ background: '#0167F8', fontSize: '14px', fontWeight: '500', color: '#FFFFFF', padding: '8px 16px',lineHeight: '1.5', marginRight: '8px', textTransform: 'none',height: '40px !important' }}
                     className="Roboto blueButton"
                   >
                     {table_name === "cid_ui_case_mahajars" ? "Next" : "Save"}
@@ -2771,6 +2788,15 @@ const NormalViewForm = ({
                         table_name !== "cid_eq_case_extension_form" && table_name !== "cid_ui_case_mahajars" && table_name !== "cid_ui_case_property_form" &&
                         <Button
                             variant="contained" color="success"
+                            sx={{
+                                fontSize: '14px',
+                                fontWeight: 500,
+                                color: '#FFFFFF',
+                                padding: '8px 16px',
+                                lineHeight: '1.5',
+                                textTransform: 'none',
+                                height: '40px !important' 
+                            }}
                             onClick={() =>{
                                 saveNewActionRef.current = true;
                                 formButtonRef &&
@@ -2838,16 +2864,24 @@ const NormalViewForm = ({
                         <AccordionDetails>
                             <LocalizationProvider dateAdapter={AdapterDayjs}>
                                 <Box sx={{ mt: 2 }}>
-                                    {Array.from({ length: Math.ceil(templateActions.length / 4) }).map((_, rowIndex) => {
-                                        const start = rowIndex * 4;
-                                        const items = templateActions.slice(start, start + 4);
+                                    {Array.from({ length: Math.ceil(templateActions.length / 5) }).map((_, rowIndex) => {
+                                        const start = rowIndex * 5;
+                                        const items = templateActions.slice(start, start + 5);
                                         return (
                                             <Grid container spacing={2} key={rowIndex} sx={{ mb: 2 }}>
                                                 {items.map((item, index) => {
                                                     const actualIndex = start + index;
                                                     return (
-                                                        <Grid item xs={3} key={actualIndex}>
-                                                            <Typography sx={{ mb: 1, fontWeight: 500 }}>{item.name}</Typography>
+                                                        <Grid item xs={2.4} key={actualIndex}>
+                                                            <Box display="flex" alignItems="center" mb={1}>
+                                                                <Typography fontWeight={500}>
+                                                                    {item.name}
+                                                                </Typography>
+                                                                <Box display="flex" alignItems="center" sx={{ cursor: 'pointer', color: 'primary.main' }}>
+                                                                    <InfoIcon sx={{ fontSize: 18, mr: 0.5 }} />
+                                                                </Box>
+                                                            </Box>
+
                                                             <DatePicker
                                                                 value={
                                                                     selectedDates[actualIndex]?.date ? dayjs(selectedDates[actualIndex].date) : null

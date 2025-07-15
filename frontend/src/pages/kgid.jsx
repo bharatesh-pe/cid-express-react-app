@@ -686,7 +686,7 @@ const KGID = () => {
                                 value={searchValue}
                                 id="tableSearch"
                                 size="small"
-                                placeholder="Search Anything"
+                                placeholder="Search"
                                 variant="outlined"
                                 className="profileSearchClass"
                                 onKeyDown={(e) => {

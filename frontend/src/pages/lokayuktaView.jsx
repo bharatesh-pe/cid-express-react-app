@@ -787,7 +787,7 @@ const LokayuktaView = () => {
                         .map((key, index) => ({
                             field: key,
                             headerName: generateReadableHeader(key),
-                            width: generateReadableHeader(key).length < 15 ? 100 : 200,
+                            width: index === 0 ? 150 : generateReadableHeader(key).length < 15 ? 100 : 200,
                             resizable: true,
                             renderHeader: (params) => (
                                 tableHeaderRender(params, key)
@@ -2613,7 +2613,7 @@ if ((!currentTableName || currentTableName === "") && (!activeSidebar?.table || 
 
     // start magazine view 
 
-    const showMagazineView = (overAllAction) => {
+    const showMagazineView = (overAllAction, element) => {
 
         var actionArray = [];
 
@@ -2626,7 +2626,7 @@ if ((!currentTableName || currentTableName === "") && (!activeSidebar?.table || 
                 }));
         }else{
             actionArray = sidebarContentArray
-                .filter(item => item.table === activeSidebar.table)
+                .filter(item => item.table === (element?.table || activeSidebar.table))
                 .map(item => ({
                     table: item.table,
                     name: item.name
@@ -2665,7 +2665,7 @@ if ((!currentTableName || currentTableName === "") && (!activeSidebar?.table || 
     return (
         <Stack direction="row" justifyContent="space-between">
 
-            <LokayuktaSidebar ui_case_id={module === "pt_case" ? rowData?.ui_case_id :  rowData?.id}  pt_case_id={module === "pt_case" ? rowData?.id :  rowData?.pt_case_id} contentArray={sidebarContentArray} onClick={sidebarActive} activeSidebar={activeSidebar} templateName={template_name} fromCDR={fromCDR} />
+            <LokayuktaSidebar showMagazineView={showMagazineView} ui_case_id={module === "pt_case" ? rowData?.ui_case_id :  rowData?.id}  pt_case_id={module === "pt_case" ? rowData?.id :  rowData?.pt_case_id} contentArray={sidebarContentArray} onClick={sidebarActive} activeSidebar={activeSidebar} templateName={template_name} fromCDR={fromCDR} />
 
             <Box flex={4} sx={{ overflow: "hidden" }}>
 
@@ -3219,21 +3219,21 @@ if ((!currentTableName || currentTableName === "") && (!activeSidebar?.table || 
                                                     <SearchIcon sx={{ color: '#475467' }} />
                                                 </InputAdornment>
                                             ),
-                                            endAdornment: (
-                                                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                                                    <IconButton
-                                                        sx={{ padding: "0 5px", borderRadius: "0" }}
-                                                    >
-                                                        <FilterListIcon sx={{ color: "#475467" }} />
-                                                    </IconButton>
-                                                </Box>
-                                            )
+                                            // endAdornment: (
+                                            //     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                            //         <IconButton
+                                            //             sx={{ padding: "0 5px", borderRadius: "0" }}
+                                            //         >
+                                            //             <FilterListIcon sx={{ color: "#475467" }} />
+                                            //         </IconButton>
+                                            //     </Box>
+                                            // )
                                         }}
                                         onInput={(e) => setTableSearchValue(e.target.value)}
                                         value={tableSearchValue}
                                         id="tableSearch"
                                         size="small"
-                                        placeholder='Search..'
+                                        placeholder='Search'
                                         variant="outlined"
                                         className="profileSearchClass"
                                         onKeyDown={(e) => {
@@ -3265,7 +3265,7 @@ if ((!currentTableName || currentTableName === "") && (!activeSidebar?.table || 
                                             }}
                                             mt={1}
                                         >
-                                            Clear Filter
+                                            Clear Search
                                         </Typography>
                                     )}
                                 </Box>
@@ -3317,13 +3317,13 @@ if ((!currentTableName || currentTableName === "") && (!activeSidebar?.table || 
                                     </Button>
                                 }
 
-                                <Button
+                                {/* <Button
                                     onClick={()=>showMagazineView(false)}
                                     sx={{height: "38px", textTransform: 'none'}}
                                     className="whiteBorderedBtn"
                                 >
                                     Case Docket
-                                </Button>
+                                </Button> */}
 
                             </Box>
                         </Box>

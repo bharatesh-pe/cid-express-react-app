@@ -2554,22 +2554,22 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
                                 <SearchIcon sx={{ color: "#475467" }} />
                                 </InputAdornment>
                             ),
-                            endAdornment: (
-                                <Box sx={{ display: "flex", alignItems: "center" }}>
-                                <IconButton
-                                    sx={{ px: 1, borderRadius: 0 }}
-                                    onClick={() => handleOthersFilter(selectedOtherTemplate)}
-                                >
-                                    <FilterListIcon sx={{ color: "#475467" }} />
-                                </IconButton>
-                                </Box>
-                            ),
+                            // endAdornment: (
+                            //     <Box sx={{ display: "flex", alignItems: "center" }}>
+                            //     <IconButton
+                            //         sx={{ px: 1, borderRadius: 0 }}
+                            //         onClick={() => handleOthersFilter(selectedOtherTemplate)}
+                            //     >
+                            //         <FilterListIcon sx={{ color: "#475467" }} />
+                            //     </IconButton>
+                            //     </Box>
+                            // ),
                             }}
                             onInput={(e) => setOtherSearchValue(e.target.value)}
                             value={otherSearchValue}
                             id="tableSearch"
                             size="small"
-                            placeholder="Search anything"
+                            placeholder="Search"
                             variant="outlined"
                             className="profileSearchClass"
                             onKeyDown={(e) => {
@@ -2603,7 +2603,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
                                 textAlign: { xs: 'left', sm: 'right' },
                             }}
                             >
-                            Clear Filter
+                            Clear Search
                             </Typography>
                         )}
                         </Box>
@@ -2666,7 +2666,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
                         >
                             Submit
                         </Button>
-                        {
+                        {/* {
                             showMagazineView && 
                             <Button
                                 onClick={()=>showMagazineView(false)}
@@ -2675,7 +2675,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
                             >
                                 Case Docket
                             </Button>
-                        }
+                        } */}
                         </Box>
                     </Box>
                     </Box>

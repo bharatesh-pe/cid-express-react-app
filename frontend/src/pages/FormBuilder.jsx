@@ -146,6 +146,8 @@ const Formbuilder = () => {
         if (Createdfields && action === 'edit') {
             if (Createdfields.length > 0) {
 
+                const excludedTypes = ['file', 'profilepicture', 'table', 'tabs'];
+
                 var updatedFields = Createdfields.map((element)=>{
                     
                     if(element.type === "tabs"){
@@ -158,19 +160,21 @@ const Formbuilder = () => {
                         }
                     }
 
-                    if(element.type === "date"){
-                        return{
-                            ...element,
-                            case_dairy : element.case_dairy ? element.case_dairy : false,
-                        }
+                    const commonProps = {
+                        ...element,
+                        is_primary_field: element.is_primary_field || false,
+                        ao_field: element.ao_field || false,
+                        hide_from_edit: element.hide_from_edit || false,
+                    };
+
+                    if (!excludedTypes.includes(element.type)) {
+                        return {
+                            ...commonProps,
+                            case_diary: element.case_diary || true,
+                        };
                     }
 
-                    return{
-                        ...element,
-                        is_primary_field : element.is_primary_field ? element.is_primary_field : false,
-                        ao_field : element.ao_field ? element.ao_field : false,
-                        hide_from_edit : element.hide_from_edit ? element.hide_from_edit : false,
-                    }
+                    return commonProps;
                 })
                 
                 setFields(updatedFields);
@@ -2878,7 +2882,7 @@ const Formbuilder = () => {
                     propmtMsg = `The field "${alreadyChecked[0].label}" is already marked as duplicate check. Please change that field before make this one as duplicate check.`
                 }else if(name === 'tableTabs'){
                     propmtMsg = `The field "${alreadyChecked[0].label}" is already enabled as table tabs. Please change that field before make this one as table tabs`
-                }else if(name === 'case_dairy'){
+                }else if(name === 'case_diary'){
                     propmtMsg = `The field "${alreadyChecked[0].label}" is already enabled as Case Dairy. Please change that field before make this one as Case Dairy`
                 }else{
                     propmtMsg = `The field "${alreadyChecked[0].label}" is already marked as primary. Please change that field before make this one as primary.`
@@ -3224,7 +3228,7 @@ const Formbuilder = () => {
                                                         if (DisplayNoneFields.includes(prop)) return null;
 
 
-                                                        const increment = (prop === 'required' || prop === 'ao_field' || prop === 'case_dairy' || prop === 'tableTabs' || prop === 'disabled' || prop === 'history' || prop === 'minDate' || prop === 'maxDate' || prop === 'multiple' || prop === 'table_display_content' || prop === 'is_primary_field') ? 2 : 5;
+                                                        const increment = (prop === 'required' || prop === 'ao_field' || prop === 'case_diary' || prop === 'tableTabs' || prop === 'disabled' || prop === 'history' || prop === 'minDate' || prop === 'maxDate' || prop === 'multiple' || prop === 'table_display_content' || prop === 'is_primary_field') ? 2 : 5;
                                                         rowCountValue += increment;
 
                                                         const isRowFull = rowCountValue === 10 && !toggleRenderedOnce;
@@ -3238,7 +3242,7 @@ const Formbuilder = () => {
 
                                                         var switchOnChange = handleSwitch;
 
-                                                        if (prop === 'required' || prop === 'ao_field' || prop === 'case_dairy' || prop === 'linkModule' || prop === 'tableTabs' || prop === 'disabled' || prop === 'history' || prop === 'minDate' || prop === 'maxDate' || prop === 'multiple' || prop === 'table_display_content' || prop === 'is_primary_field' || prop === 'duplicateCheck' || prop === 'hide_from_ux' || prop === 'hide_from_edit' || prop === 'particular_case_options') {
+                                                        if (prop === 'required' || prop === 'ao_field' || prop === 'case_diary' || prop === 'linkModule' || prop === 'tableTabs' || prop === 'disabled' || prop === 'history' || prop === 'minDate' || prop === 'maxDate' || prop === 'multiple' || prop === 'table_display_content' || prop === 'is_primary_field' || prop === 'duplicateCheck' || prop === 'hide_from_ux' || prop === 'hide_from_edit' || prop === 'particular_case_options') {
                                                             rowColValue = 2;
                                                             colText = (prop === 'required') ? 'Mandatory field' : (prop === 'history') ? 'Enable field history' : 'Disabled';
 
@@ -3269,8 +3273,8 @@ const Formbuilder = () => {
                                                             }else if(prop === 'tableTabs'){
                                                                 colText = 'Enable Tabs'
                                                                 switchOnChange = changePrimaryValue;
-                                                            }else if(prop === 'case_dairy'){
-                                                                colText = 'Case Dairy'
+                                                            }else if(prop === 'case_diary'){
+                                                                colText = 'Case Diary'
                                                                 switchOnChange = changePrimaryValue;
                                                             }
                                                         }
@@ -3304,7 +3308,7 @@ const Formbuilder = () => {
                                                                                 </Box>
                                                                             </Box>
                                                                         ) :
-                                                                        prop === 'hide_from_ux'|| prop === 'hide_from_edit' || prop === 'ao_field' || prop === 'case_dairy' || prop === 'linkModule' || prop === 'tableTabs' || prop === 'required' || prop === 'disabled' || prop === 'history' || prop === 'minDate' || prop === 'maxDate' || prop === 'multiple' || prop === 'table_display_content' || prop === 'is_primary_field' || prop === 'duplicateCheck' || prop === 'particular_case_options' ? (
+                                                                        prop === 'hide_from_ux'|| prop === 'hide_from_edit' || prop === 'ao_field' || prop === 'case_diary' || prop === 'linkModule' || prop === 'tableTabs' || prop === 'required' || prop === 'disabled' || prop === 'history' || prop === 'minDate' || prop === 'maxDate' || prop === 'multiple' || prop === 'table_display_content' || prop === 'is_primary_field' || prop === 'duplicateCheck' || prop === 'particular_case_options' ? (
                                                                                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
                                                                                     <Switch name={prop} checked={selectedField[prop]} onChange={switchOnChange} disabled={(prop === 'is_primary_field' && selectedField.options && module !== 'master') ? true : false} />
                                                                                     <Typography pt={1} sx={{ textTransform: 'capitalize', textWrap: 'nowrap' }} className='propsOptionsBtn'>
@@ -3473,7 +3477,7 @@ const Formbuilder = () => {
                                                                                                                                 <InputLabel>Field Type</InputLabel>
                                                                                                                                 <Select
                                                                                                                                     label="Field Type"
-                                                                                                                                    value={option.fieldType?.type || 'short_text'}
+                                                                                                                                    value={option.fieldType?.type || ""}
                                                                                                                                     onChange={(e) => handleTableHeaderChange(index, selectedField, e.target.value, "type")}
                                                                                                                                 >
                                                                                                                                     <MenuItem value="short_text">Short Text</MenuItem>
