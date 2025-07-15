@@ -3477,7 +3477,7 @@ const Formbuilder = () => {
                                                                                                                                 <InputLabel>Field Type</InputLabel>
                                                                                                                                 <Select
                                                                                                                                     label="Field Type"
-                                                                                                                                    value={option.fieldType?.type || 'short_text'}
+                                                                                                                                    value={option.fieldType?.type || ""}
                                                                                                                                     onChange={(e) => handleTableHeaderChange(index, selectedField, e.target.value, "type")}
                                                                                                                                 >
                                                                                                                                     <MenuItem value="short_text">Short Text</MenuItem>

@@ -591,7 +591,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                                 return {
                                     field: key,
                                     headerName: updatedKeyName || "",
-                                    width: 250,
+                                    flex : 1,
                                     resizable: true,
                                     renderHeader: () => (
                                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>

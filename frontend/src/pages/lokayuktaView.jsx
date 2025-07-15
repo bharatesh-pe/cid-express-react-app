@@ -787,7 +787,7 @@ const LokayuktaView = () => {
                         .map((key, index) => ({
                             field: key,
                             headerName: generateReadableHeader(key),
-                            width: generateReadableHeader(key).length < 15 ? 100 : 200,
+                            width: index === 0 ? 150 : generateReadableHeader(key).length < 15 ? 100 : 200,
                             resizable: true,
                             renderHeader: (params) => (
                                 tableHeaderRender(params, key)

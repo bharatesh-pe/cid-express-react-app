@@ -11668,6 +11668,8 @@ exports.getSingleTemplateDataWithDate = async (req, res) => {
         fields["created_by_id"] = { type: Sequelize.DataTypes.STRING, allowNull: true };
         fields["updated_by"] = { type: Sequelize.DataTypes.STRING, allowNull: true };
         fields["updated_by_id"] = { type: Sequelize.DataTypes.STRING, allowNull: true };
+        fields["ui_case_id"] = { type: Sequelize.DataTypes.STRING, allowNull: true };
+        fields["pt_case_id"] = { type: Sequelize.DataTypes.STRING, allowNull: true };
 
         const Model =
             sequelize.models[table_name] ||
@@ -11764,6 +11766,8 @@ exports.getSingleTemplateDataWithDate = async (req, res) => {
             // formatted["Created By ID"] = data.created_by_id || "";
             formatted["Updated By"] = data.updated_by || "";
             // formatted["Updated By ID"] = data.updated_by_id || "";
+            formatted["UI Case ID"] = data.ui_case_id || "";
+            formatted["PT Case ID"] = data.pt_case_id || "";
 
 
             return formatted;
