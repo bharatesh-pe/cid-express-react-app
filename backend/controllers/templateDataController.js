@@ -2016,7 +2016,7 @@ exports.getTemplateData = async (req, res, next) => {
 
     const pending = 'Pending';
 
-    if (module && tab && table_name === 'cid_ui_case_accused') {
+    if (module && tab && table_name === 'cid_ui_case_accused' && fields.hasOwnProperty("field_status_of_accused_in_charge_sheet")) {
         if (module === "ui_case" && tab === "178_cases") {
             whereClause.field_status_of_accused_in_charge_sheet = { [Op.iLike]: `%${pending}%` };
         } else if (module === "pt_case") {
@@ -11668,6 +11668,8 @@ exports.getSingleTemplateDataWithDate = async (req, res) => {
         fields["created_by_id"] = { type: Sequelize.DataTypes.STRING, allowNull: true };
         fields["updated_by"] = { type: Sequelize.DataTypes.STRING, allowNull: true };
         fields["updated_by_id"] = { type: Sequelize.DataTypes.STRING, allowNull: true };
+        fields["ui_case_id"] = { type: Sequelize.DataTypes.STRING, allowNull: true };
+        fields["pt_case_id"] = { type: Sequelize.DataTypes.STRING, allowNull: true };
 
         const Model =
             sequelize.models[table_name] ||
