@@ -2883,7 +2883,7 @@ const Formbuilder = () => {
                 }else if(name === 'tableTabs'){
                     propmtMsg = `The field "${alreadyChecked[0].label}" is already enabled as table tabs. Please change that field before make this one as table tabs`
                 }else if(name === 'case_diary'){
-                    propmtMsg = `The field "${alreadyChecked[0].label}" is already enabled as Case Dairy. Please change that field before make this one as Case Dairy`
+                    propmtMsg = `The field "${alreadyChecked[0].label}" is already enabled as Case Diary. Please change that field before make this one as Case Diary`
                 }else{
                     propmtMsg = `The field "${alreadyChecked[0].label}" is already marked as primary. Please change that field before make this one as primary.`
                 }
