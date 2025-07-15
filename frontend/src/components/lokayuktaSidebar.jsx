@@ -11,8 +11,12 @@ import "react-toastify/dist/ReactToastify.css";
 import HomeIcon from '@mui/icons-material/Home';
 import DashboardCustomizeIcon from '@mui/icons-material/DashboardCustomize';
 import Navbar from "./navbar";
+import DescriptionIcon from '@mui/icons-material/Description';
+import FolderOpenIcon from '@mui/icons-material/FolderOpen';
+import MenuBookIcon from '@mui/icons-material/MenuBook';
+import AutoStoriesIcon from '@mui/icons-material/AutoStories';
 
-const LokayuktaSidebar = ({ui_case_id, pt_case_id, contentArray, onClick, activeSidebar, templateName, fromCDR}) => {
+const LokayuktaSidebar = ({ui_case_id, pt_case_id, contentArray, onClick, activeSidebar, templateName, fromCDR, showMagazineView}) => {
 
     const navigate = useNavigate();
     const location = useLocation();
@@ -262,18 +266,23 @@ const LokayuktaSidebar = ({ui_case_id, pt_case_id, contentArray, onClick, active
                                                         className={`sidebarChildItem lokayuktaSidebarMenus menuColor_${index + 2} ${
                                                             (fromCDR && cdrIndex === index) ? "active" : (activeSidebar?.name === element.name ? "active" : "")
                                                         }`}
-                                                        onClick={() => {
-                                                            setSelectedInvestigationIndex(index);
-                                                            if (onClick) onClick(element);
-                                                        }}
                                                     >
                                                         {element?.icon && element?.icon?.props && element?.icon?.props.dangerouslySetInnerHTML ? (
                                                             <span
+                                                                onClick={() => {
+                                                                    setSelectedInvestigationIndex(index);
+                                                                    if (onClick) onClick(element);
+                                                                }}
                                                                 className="tableActionIcon"
                                                                 dangerouslySetInnerHTML={{ __html: element?.icon?.props.dangerouslySetInnerHTML?.__html }}
                                                             />
                                                         ) : (
-                                                        <span className="tableActionIcon">
+                                                        <span
+                                                            onClick={() => {
+                                                                setSelectedInvestigationIndex(index);
+                                                                if (onClick) onClick(element);
+                                                            }}
+                                                            className="tableActionIcon">
                                                             <svg width="50" height="50" viewBox="0 0 34 34" fill="none" xmlns="http://www.w3.org/2000/svg">
                                                                 <circle cx="12" cy="12" r="12" fill="" />
                                                                 <mask id="mask0_1120_40651" style={{ maskType: 'alpha' }} maskUnits="userSpaceOnUse" x="4" y="4" width="16" height="16">
@@ -286,34 +295,58 @@ const LokayuktaSidebar = ({ui_case_id, pt_case_id, contentArray, onClick, active
                                                         </span>
                                                         )}
                                                         <ListItemText
-                                                        primary={
-                                                            <Box sx={{ position: "relative", display: "flex", alignItems: "center" }}>
-                                                            {element?.name}
-                                                            {typeof tableCounts[element.table] === "number" && (
-                                                                <Box
-                                                                sx={{
-                                                                    position: "absolute",
-                                                                    right: 0,
-                                                                    top: "50%",
-                                                                    transform: "translateY(-50%)",
-                                                                    backgroundColor: activeSidebar?.name === element.name ? "#1F1DAC" : "#FFFFFF",
-                                                                    color: activeSidebar?.name === element.name ? "#FFFFFF" : "#1F1DAC",
-                                                                    border: activeSidebar?.name === element.name ? "1px solid #1F1DAC" : "1px solid #dfdfec",
-                                                                    fontSize: "12px",
-                                                                    fontWeight: "bold",
-                                                                    borderRadius: "50%",
-                                                                    width: 20,
-                                                                    height: 20,
-                                                                    display: "flex",
-                                                                    alignItems: "center",
-                                                                    justifyContent: "center",
-                                                                }}
-                                                                >
-                                                                {tableCounts[element.table]}
+                                                            primary={
+                                                                <Box sx={{ position: "relative", display: "flex", alignItems: "center", justifyContent: 'space-between' }}>
+                                                                    <Box   
+                                                                        onClick={() => {
+                                                                            setSelectedInvestigationIndex(index);
+                                                                            if (onClick) onClick(element);
+                                                                        }}
+                                                                        sx={{
+                                                                            width: '60%',
+                                                                            whiteSpace: 'nowrap',
+                                                                            overflow: 'hidden',
+                                                                            textOverflow: 'ellipsis',
+                                                                            fontWeight: 500,
+                                                                            fontSize: '14px',
+                                                                            color: '#333'
+                                                                        }}
+                                                                    >
+                                                                        {element?.name}
+                                                                    </Box>
+                                                                    {typeof tableCounts[element.table] === "number" && (
+                                                                        <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
+                                                                            <Tooltip title={'Overview Docket'} arrow placement="top">
+                                                                                {/* <AutoStoriesIcon sx={{ color: "#333", fontSize: 22 }} /> */}
+                                                                                <MenuBookIcon sx={{ color: "#333", fontSize: 22 }} onClick={()=> showMagazineView(false, element)} />
+                                                                                {/* <DescriptionIcon sx={{ color: "#333", fontSize: 22 }} /> */}
+                                                                                {/* <FolderOpenIcon sx={{ color: "#333", fontSize: 22 }} /> */}
+                                                                            </Tooltip>
+                                                                            <Box
+                                                                                onClick={() => {
+                                                                                    setSelectedInvestigationIndex(index);
+                                                                                    if (onClick) onClick(element);
+                                                                                }}
+                                                                                sx={{
+                                                                                    backgroundColor: activeSidebar?.name === element.name ? "#1F1DAC" : "#FFFFFF",
+                                                                                    color: activeSidebar?.name === element.name ? "#FFFFFF" : "#1F1DAC",
+                                                                                    border: activeSidebar?.name === element.name ? "1px solid #1F1DAC" : "1px solid #dfdfec",
+                                                                                    fontSize: "12px",
+                                                                                    fontWeight: "bold",
+                                                                                    borderRadius: "50%",
+                                                                                    width: 20,
+                                                                                    height: 20,
+                                                                                    display: "flex",
+                                                                                    alignItems: "center",
+                                                                                    justifyContent: "center",
+                                                                                }}
+                                                                            >
+                                                                                {tableCounts[element.table]}
+                                                                            </Box>
+                                                                        </Box>
+                                                                    )}
                                                                 </Box>
-                                                            )}
-                                                            </Box>
-                                                        }
+                                                            }
                                                         />
                                                     </ListItem>
                                                 </Tooltip>

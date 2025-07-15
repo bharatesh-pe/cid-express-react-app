@@ -2647,7 +2647,7 @@ const EqProgressReport = ({ templateName, headerDetails, rowId, options, selecte
                         >
                             Submit
                         </Button>
-                            {
+                            {/* {
                                 showMagazineView && 
                                 <Button
                                     onClick={()=>showMagazineView(false)}
@@ -2656,7 +2656,7 @@ const EqProgressReport = ({ templateName, headerDetails, rowId, options, selecte
                                 >
                                     Case Docket
                                 </Button>
-                            }
+                            } */}
                         </Box>
                     </Box>
                     </Box>

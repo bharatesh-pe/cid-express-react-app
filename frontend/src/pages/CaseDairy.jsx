@@ -885,13 +885,13 @@ const CaseDairy = ({headerDetails, backToForm, showMagazineView, rowData, module
                         Add New
                     </Button>
 
-                    <Button
+                    {/* <Button
                         onClick={()=>showMagazineView(false)}
                         sx={{height: "38px", textTransform: 'none'}}
                         className="whiteBorderedBtn"
                     >
                         Case Docket
-                    </Button>
+                    </Button> */}
 
                 </Box>
             </Box>

@@ -2549,7 +2549,7 @@ const Report41A = ({templateName, headerDetails, rowId, options, selectedRowData
                                     >
                                         Add
                                     </Button>
-                                    {
+                                    {/* {
                                         showMagazineView && 
                                         <Button
                                             onClick={()=>showMagazineView(false)}
@@ -2558,7 +2558,7 @@ const Report41A = ({templateName, headerDetails, rowId, options, selectedRowData
                                         >
                                             Case Docket
                                         </Button>
-                                    }
+                                    } */}
 
                             </Box>
                         </Box>

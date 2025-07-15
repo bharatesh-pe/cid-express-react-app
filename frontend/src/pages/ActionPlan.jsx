@@ -591,7 +591,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                                 return {
                                     field: key,
                                     headerName: updatedKeyName || "",
-                                    width: 250,
+                                    flex : 1,
                                     resizable: true,
                                     renderHeader: () => (
                                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
@@ -2795,7 +2795,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                                         {JSON.parse(localStorage.getItem("role_title")).toLowerCase() === "investigation officer" ? "Submit for Approval" : "Approve"}
                                     </Button>
                                 )}
-                                {
+                                {/* {
                                     showMagazineView && 
                                     <Button
                                         onClick={()=>showMagazineView(false)}
@@ -2804,7 +2804,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                                     >
                                         Case Docket
                                     </Button>
-                                }
+                                } */}
                             </Box>
                         </Box>
                     </Box>

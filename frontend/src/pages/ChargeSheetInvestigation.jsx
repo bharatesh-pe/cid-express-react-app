@@ -660,7 +660,7 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
                             />
                         )}
                     </Typography>
-                    {
+                    {/* {
                         showMagazineView && 
                         <Button
                             onClick={()=>showMagazineView(false)}
@@ -669,7 +669,7 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
                         >
                             Case Docket
                         </Button>
-                    }
+                    } */}
                 </Box>
                 {/* <Typography
                     sx={{
