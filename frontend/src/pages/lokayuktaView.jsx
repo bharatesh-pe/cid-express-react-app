@@ -3219,21 +3219,21 @@ if ((!currentTableName || currentTableName === "") && (!activeSidebar?.table || 
                                                     <SearchIcon sx={{ color: '#475467' }} />
                                                 </InputAdornment>
                                             ),
-                                            endAdornment: (
-                                                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                                                    <IconButton
-                                                        sx={{ padding: "0 5px", borderRadius: "0" }}
-                                                    >
-                                                        <FilterListIcon sx={{ color: "#475467" }} />
-                                                    </IconButton>
-                                                </Box>
-                                            )
+                                            // endAdornment: (
+                                            //     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                            //         <IconButton
+                                            //             sx={{ padding: "0 5px", borderRadius: "0" }}
+                                            //         >
+                                            //             <FilterListIcon sx={{ color: "#475467" }} />
+                                            //         </IconButton>
+                                            //     </Box>
+                                            // )
                                         }}
                                         onInput={(e) => setTableSearchValue(e.target.value)}
                                         value={tableSearchValue}
                                         id="tableSearch"
                                         size="small"
-                                        placeholder='Search..'
+                                        placeholder='Search'
                                         variant="outlined"
                                         className="profileSearchClass"
                                         onKeyDown={(e) => {
@@ -3265,7 +3265,7 @@ if ((!currentTableName || currentTableName === "") && (!activeSidebar?.table || 
                                             }}
                                             mt={1}
                                         >
-                                            Clear Filter
+                                            Clear Search
                                         </Typography>
                                     )}
                                 </Box>

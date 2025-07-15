@@ -2915,7 +2915,7 @@ const NormalViewForm = ({
                       formButtonRef.current &&
                       formButtonRef.current.click()
                   }}
-                    sx={{ background: '#0167F8', fontSize: '14px', fontWeight: '500', color: '#FFFFFF', padding: '6px 16px', marginRight: '8px' }}
+                    sx={{ background: '#0167F8', fontSize: '14px', fontWeight: '500', color: '#FFFFFF', padding: '8px 16px',lineHeight: '1.5', marginRight: '8px', textTransform: 'none',height: '40px !important' }}
                     className="Roboto blueButton"
                   >
                     {table_name === "cid_ui_case_mahajars" ? "Next" : "Save"}
@@ -2926,6 +2926,15 @@ const NormalViewForm = ({
                         table_name !== "cid_eq_case_extension_form" && table_name !== "cid_ui_case_mahajars" && table_name !== "cid_ui_case_property_form" &&
                         <Button
                             variant="contained" color="success"
+                            sx={{
+                                fontSize: '14px',
+                                fontWeight: 500,
+                                color: '#FFFFFF',
+                                padding: '8px 16px',
+                                lineHeight: '1.5',
+                                textTransform: 'none',
+                                height: '40px !important' 
+                            }}
                             onClick={() =>{
                                 saveNewActionRef.current = true;
                                 formButtonRef &&

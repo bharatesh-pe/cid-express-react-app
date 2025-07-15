@@ -7139,7 +7139,7 @@ const UnderInvestigation = () => {
                 value={searchValue}
                 id="tableSearch"
                 size="small"
-                placeholder="Search anything"
+                placeholder="Search"
                 variant="outlined"
                 className="profileSearchClass"
                 onKeyDown={(e) => {
@@ -7500,7 +7500,7 @@ const UnderInvestigation = () => {
                         value={otherSearchValue}
                         id="tableSearch"
                         size="small"
-                        placeholder='Search anything'
+                        placeholder='Search'
                         variant="outlined"
                         className="profileSearchClass"
                         onKeyDown={(e) => {
@@ -7578,7 +7578,7 @@ const UnderInvestigation = () => {
                         value={otherSearchValue}
                         id="tableSearch"
                         size="small"
-                        placeholder='Search anything'
+                        placeholder='Search'
                         variant="outlined"
                         className="profileSearchClass"
                         onKeyDown={(e) => {
@@ -8263,7 +8263,7 @@ const UnderInvestigation = () => {
                                         value={listApprovalSearchValue}
                                         id="tableSearch"
                                         size="small"
-                                        placeholder='Search anything'
+                                        placeholder='Search'
                                         variant="outlined"
                                         className="profileSearchClass"
                                         onKeyDown={(e) => {

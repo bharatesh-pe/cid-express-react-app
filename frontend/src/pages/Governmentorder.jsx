@@ -2767,7 +2767,7 @@ const defaultGovernmentOrderItem = approvalItem.find(
                         value={searchValue}
                         id="tableSearch"
                         size="small"
-                        placeholder='Search anything'
+                        placeholder='Search'
                         variant="outlined"
                         onKeyDown={(e) => {
                             if (e.key === "Enter") {

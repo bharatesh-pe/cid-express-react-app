@@ -762,7 +762,7 @@ const Repository = () => {
                                         value={tableSearchValue}
                                         id="tableSearch"
                                         size="small"
-                                        placeholder='Search..'
+                                        placeholder='Search'
                                         variant="outlined"
                                         className="profileSearchClass"
                                         onKeyDown={(e) => {
