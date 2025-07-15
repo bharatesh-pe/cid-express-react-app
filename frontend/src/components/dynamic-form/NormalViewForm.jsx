@@ -2303,6 +2303,8 @@ const NormalViewForm = ({
 
                 setShowLinkTemplate(true);
 
+                disabledEditBtn.current = false;
+
             }
 
         } catch (error) {
@@ -2625,6 +2627,227 @@ const NormalViewForm = ({
         }
     };
 
+
+    const [caseDiaryHistoryLog, setCaseDiaryHistoryLog] = useState(false);
+    const [caseDiaryHistoryData, setCaseDiaryHistoryData] = useState([]);
+    const [caseDiaryHistoryHeaderData, setCaseDiaryHistoryHeaderData] = useState({});
+    const disabledEditBtn = useRef(false);
+
+    const handleIndividualCaseDiaryLog = async (index)=>{
+
+        const getPerticularCaseDiary = selectedDates?.[index] || {}
+
+        if(!getPerticularCaseDiary?.table){
+            toast.error("Please Select Date Before Getting Log!", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+        
+        if(!getPerticularCaseDiary?.date){
+            toast.error("Please Select Date Before Getting Log!", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+
+        const payload = {
+            "table_name": getPerticularCaseDiary?.table,
+            "date": getPerticularCaseDiary?.date,
+            "ui_case_id": caseDairy_ui_case_id,
+            "pt_case_id": caseDairy_pt_case_id
+        }
+
+        setLoading(true);
+            
+        try {
+            const getActionsDetails = await api.post("/templateData/getSingleTemplateDataWithDate", payload);
+
+            setLoading(false);
+
+            if (getActionsDetails && getActionsDetails.success) {
+
+                const tableKey = getPerticularCaseDiary?.table;
+                const tableData = getActionsDetails.data?.[tableKey];
+
+                if (Array.isArray(tableData) && tableData.length > 0) {
+
+                    const rowsWithId = tableData.map((row, index) => ({
+                        sno: index + 1,
+                        ...row
+                    }));
+
+                    setCaseDiaryHistoryData(rowsWithId);
+
+                    const headerKeys = Object.keys(tableData[0] || {});
+
+                    const excludedKeys = ['id']
+
+                    const filteredKeys = headerKeys.filter(key => !excludedKeys.includes(key));
+                    const firstDataKey = filteredKeys[0];
+
+                    const headers = [
+                        {
+                            field: 'sno',
+                            headerName: 'S.No',
+                            width: 80
+                        },  
+                        {
+                            field: firstDataKey,
+                            headerName: firstDataKey,
+                            width: 200,
+                            renderCell: (params) => (
+                            <span
+                                style={{ color: '#1976d2', cursor: 'pointer', textDecoration: 'underline' }}
+                                onClick={() => handleViewCaseData(params.row, getPerticularCaseDiary?.table)}
+                            >
+                                {params.value}
+                            </span>
+                            )
+                        },
+                        ...filteredKeys.slice(1).map((key) => ({
+                            field: key,
+                            headerName: key,
+                            width: 200
+                        }))
+                    ];
+
+                    setCaseDiaryHistoryHeaderData(headers);
+                    
+                    setCaseDiaryHistoryLog(true);
+
+                }else{
+                    closeCaseDiaryLogModal()
+                    toast.error('No Data Found',{
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-error",
+                    });  
+                }
+                
+            }else{
+                closeCaseDiaryLogModal()
+                toast.error('Cant Able to Get Log !',{
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });    
+            }
+
+        } catch (error) {
+            closeCaseDiaryLogModal()
+            setLoading(false);
+            if (error && error.response && error.response['data']) {
+                toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !',{
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+                return false
+            }
+        }
+    }
+
+    const closeCaseDiaryLogModal = ()=>{
+        setCaseDiaryHistoryData([]);
+        setCaseDiaryHistoryHeaderData({});
+        setCaseDiaryHistoryLog(false);
+        disabledEditBtn.current = false;
+    }
+
+    const handleViewCaseData = async (row, tableName)=>{
+
+        if(!row.id){
+            toast.error("ID not found !", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+
+        const payload = {
+            table_name : tableName,
+            key : 'id',
+            value : row.id
+        }
+
+        try {
+            
+            const gettingDetailedData = await api.post('/templateData/getTemplateAlongWithData', payload);
+            
+            if(gettingDetailedData?.success && gettingDetailedData?.data){
+
+                const { data, template } = gettingDetailedData?.data
+
+                setLinkTemplateName(template?.template_name);
+                setLinkTableName(template?.table_name);
+
+                setLinkTemplateRowId(data?.id);
+                setLinkTemplateId(template?.template_id);
+
+                setLinkTemplateFields(template?.fields);
+                setLinkTemplateStepperData(template?.sections ? template?.sections : []);
+
+                setLinkTemplateInitialData(data);
+
+                setShowLinkTemplate(true);
+
+                disabledEditBtn.current = true;
+
+            }
+
+        } catch (error) {
+            if (error && error.response && error.response.data) {
+                toast.error( error.response?.data?.message || "Please Try Again! ", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+                return;
+            }
+        }
+    }
+
   return (
     <>
       <Box inert={loading ? true : false} p={noPadding ? 0 : 2} px={2}>
@@ -2858,28 +3081,39 @@ const NormalViewForm = ({
                             expandIcon={<ExpandMoreIcon />}
                             aria-controls="date-pickers-content"
                             id="date-pickers-header"
+                            sx={{minHeight: '44px !important'}}
                         >
                             <Typography sx={{fontWeight: '500', color: '#1976d2', textDecoration: 'underline'}}>Case Investigation Date</Typography>
                         </AccordionSummary>
                         <AccordionDetails>
                             <LocalizationProvider dateAdapter={AdapterDayjs}>
-                                <Box sx={{ mt: 2 }}>
-                                    {Array.from({ length: Math.ceil(templateActions.length / 5) }).map((_, rowIndex) => {
-                                        const start = rowIndex * 5;
-                                        const items = templateActions.slice(start, start + 5);
+                                <Box>
+                                    {Array.from({ length: Math.ceil(templateActions.length / 6) }).map((_, rowIndex) => {
+                                        const start = rowIndex * 6;
+                                        const items = templateActions.slice(start, start + 6);
                                         return (
                                             <Grid container spacing={2} key={rowIndex} sx={{ mb: 2 }}>
                                                 {items.map((item, index) => {
                                                     const actualIndex = start + index;
                                                     return (
-                                                        <Grid item xs={2.4} key={actualIndex}>
-                                                            <Box display="flex" alignItems="center" mb={1}>
-                                                                <Typography fontWeight={500}>
+                                                        <Grid item xs={12 / 6} key={actualIndex}>
+                                                            <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
+                                                                <Typography fontWeight={500} fontSize={14}>
                                                                     {item.name}
                                                                 </Typography>
-                                                                <Box display="flex" alignItems="center" sx={{ cursor: 'pointer', color: 'primary.main' }}>
-                                                                    <InfoIcon sx={{ fontSize: 18, mr: 0.5 }} />
-                                                                </Box>
+                                                                <Typography
+                                                                    onClick={()=> handleIndividualCaseDiaryLog(actualIndex)}
+                                                                    variant="caption"
+                                                                    sx={{
+                                                                        color: 'primary.main',
+                                                                        cursor: 'pointer',
+                                                                        fontWeight: 500,
+                                                                        fontSize: 12,
+                                                                        whiteSpace: 'nowrap'
+                                                                    }}
+                                                                >
+                                                                    View Data
+                                                                </Typography>
                                                             </Box>
 
                                                             <DatePicker
@@ -3586,6 +3820,43 @@ const NormalViewForm = ({
             </Dialog>
         )}
 
+        {caseDiaryHistoryLog && (
+            <Dialog
+                open={caseDiaryHistoryLog}
+                onClose={() => setCaseDiaryHistoryLog(false)}
+                aria-labelledby="alert-dialog-title"
+                aria-describedby="alert-dialog-description"
+                maxWidth="xl"
+                fullWidth
+            >
+                <DialogTitle
+                    id="alert-dialog-title"
+                    sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        paddingBottom: 0
+                    }}
+                >
+                    <Box>Case History</Box>
+                    <IconButton
+                        aria-label="close"
+                        onClick={() => setCaseDiaryHistoryLog(false)}
+                        sx={{ color: (theme) => theme.palette.grey[500] }}
+                    >
+                        <CloseIcon />
+                    </IconButton>
+                </DialogTitle>
+                <DialogContent>
+                    <DialogContentText id="alert-dialog-description">
+                        <Box py={2}>
+                            <TableView rows={caseDiaryHistoryData} columns={caseDiaryHistoryHeaderData} />
+                        </Box>
+                    </DialogContentText>
+                </DialogContent>
+            </Dialog>
+        )}
+
         {showLinkTemplate && (
             <Dialog
                 open={showLinkTemplate}
@@ -3611,6 +3882,7 @@ const NormalViewForm = ({
                                 onUpdate={linkTemplateUpdateFunc}
                                 onError={linkTemplateErrorFunc}
                                 closeForm={closeLinkTemplateModal}
+                                disableEditButton={disabledEditBtn.current}
                             />
                         </FormControl>
                     </DialogContentText>
