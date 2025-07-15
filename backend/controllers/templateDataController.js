@@ -2016,7 +2016,7 @@ exports.getTemplateData = async (req, res, next) => {
 
     const pending = 'Pending';
 
-    if (module && tab && table_name === 'cid_ui_case_accused') {
+    if (module && tab && table_name === 'cid_ui_case_accused' && fields.hasOwnProperty("field_status_of_accused_in_charge_sheet")) {
         if (module === "ui_case" && tab === "178_cases") {
             whereClause.field_status_of_accused_in_charge_sheet = { [Op.iLike]: `%${pending}%` };
         } else if (module === "pt_case") {
