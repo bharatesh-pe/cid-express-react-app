@@ -578,7 +578,7 @@ const LokayuktaView = () => {
         var ui_case_id = rowData?.id;
         var pt_case_id = rowData?.pt_case_id;
 
-        if(module === "pt_case"){
+        if(module === "pt_case" || module === "pt_trail_case"){
             ui_case_id = rowData?.ui_case_id
             pt_case_id = rowData?.id
         }

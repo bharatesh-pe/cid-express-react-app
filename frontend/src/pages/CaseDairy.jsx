@@ -804,7 +804,7 @@ const CaseDairy = ({headerDetails, backToForm, showMagazineView, rowData, module
                 >
                     <West />
                     <Typography sx={{ fontSize: '19px', fontWeight: '500', color: '#171A1C' }} className='Roboto'>
-                        Case Dairy
+                        Case Diary
                     </Typography>
                     {headerDetails && (
                         <Chip
