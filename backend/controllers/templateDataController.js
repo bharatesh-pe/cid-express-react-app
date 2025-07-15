@@ -7638,7 +7638,7 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
                 }
             }
 
-            if (table_name === "cid_pending_trail") {
+            if (table_name === "cid_pending_trial") {
                 if (parsedData.field_ui_case && !parsedData.ui_case_id) {
                     parsedData.ui_case_id = parsedData.field_ui_case;
                 }
