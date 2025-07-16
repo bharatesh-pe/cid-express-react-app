@@ -188,29 +188,57 @@ const MagazineView = () => {
             setLoading(false);
 
             if(response.success){
-                const data = response.data || {};
+                const { data, meta } = response;
                 const generatedPages = [];
                     
                 Object.entries(data).forEach(([tableKey, entries]) => {
                     if (Array.isArray(entries) && entries.length > 0) {
-                        entries.forEach((entry, idx) => {
+                        entries.forEach(async (entry, idx) => {
                             const findingTemplate = actionArray.find((item) => item.table === tableKey);
                             let baseTitle = `${findingTemplate ? findingTemplate?.name : tableKey} - ${idx + 1}`;
                             const baseTableName = findingTemplate.table;
                             
-                            const allEntries = Object.entries(entry)
+                            const allEntryPromises = Object.entries(entry)
                                 .filter(([key]) => key !== 'id')
-                                .map(([key, val]) => {
-                                    const value = formatValue(val);
-                                    const isTable = value.includes('<table'); // Check if value is a table
+                                .map(async ([key, val]) => {
+                                    
+                                    const value = typeof val === 'object' && val !== null ? formatValue(val.value) : formatValue(val); // updated
+                                    const type = typeof val === 'object' && val !== null ? val.type : 'text';
+                                    const isTable = value.includes('<table');
+
+                                    if (type === "profilepicture" && value !== '-') {
+                                        const attachmentObj = meta?.[tableKey]?.['files']?.[entry?.id];
+                                        if (attachmentObj?.[key]?.profile_attachment_id) {
+                                            try {
+                                                setLoading(true);
+                                                const response = await api.post("/templateData/downloadDocumentAttachments/" + attachmentObj[key].profile_attachment_id);
+                                                setLoading(false);
+                                                if (response) {
+                                                    const imageUrl = URL.createObjectURL(response);
+                                                    return {
+                                                        key,
+                                                        html: `<div style="border-bottom: 1px solid #EAECF0; padding-bottom: 12px;">
+                                                                <p class="Roboto ProfileViewHeading" style="padding-bottom: 12px;">${key}</p>
+                                                                <img src="${imageUrl}" style="width: 187px; height: 235px; border-radius: 12px; object-fit: cover;" />
+                                                            </div>`,
+                                                        height: 200,
+                                                        isTable
+                                                    };
+                                                }
+                                            } catch (err) {
+                                                console.log(err, "Download error");
+                                                setLoading(false);
+                                            }
+                                        }
+                                    }
                                     
                                     let fieldHeight;
                                     if (isTable) {
                                         const rowCount = (value.match(/<tr/g) || []).length;
-                                        fieldHeight = 40 + (rowCount * 24); // 40px base + 24px per row
+                                        fieldHeight = 40 + (rowCount * 24);
                                     } else {
-                                        const lineCount = Math.ceil(value.length / 60); // Approx 60 chars per line
-                                        fieldHeight = Math.max(60, lineCount * 20); // Minimum 60px, 20px per line
+                                        const lineCount = Math.ceil(value.length / 60);
+                                        fieldHeight = Math.max(60, lineCount * 20);
                                     }
 
                                     if(key === "Primary_Key_Field"){
@@ -238,11 +266,13 @@ const MagazineView = () => {
                                         height: fieldHeight,
                                         isTable
                                     };
-                                }).filter(entry => entry !== null);;
+                                }).filter(entry => entry !== null);
                             
                             const availableHeight = viewportHeight - PAGE_PADDING - TITLE_HEIGHT;
                             let currentChunkHeight = 0;
                             let currentChunk = [];
+
+                            const allEntries = (await Promise.all(allEntryPromises)).filter(Boolean);
                             
                             allEntries.forEach((entry, index) => {
                                 if (entry.isTable && entry.height > availableHeight) {
