@@ -2504,19 +2504,19 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
                     {selectedOtherTemplate?.name}
                     </Typography>
 
-                    {selectedRowData?.["field_cid_crime_no./enquiry_no"] && (
+                    {/* {selectedRowData?.["field_cid_crime_no./enquiry_no"] && ( */}
                     <Chip
-                        label={selectedRowData["field_cid_crime_no./enquiry_no"]}
+                        label={headerDetails}
                         color="primary"
                         variant="outlined"
                         size="small"
                         sx={{ fontWeight: 500, mt: '2px' }}
                     />
-                    )}
+                    {/* )} */}
 
-                    <Box className="totalRecordCaseStyle">
+                    {/* <Box className="totalRecordCaseStyle">
                     {otherTemplatesTotalRecord} Records
-                    </Box>
+                    </Box> */}
 
                     {/* {APIsSubmited && (
                     <Box className="notifyAtTopCaseStyle">

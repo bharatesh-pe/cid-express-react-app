@@ -833,6 +833,19 @@ const NormalViewForm = ({
       setNewFormConfig(updatedFormConfig);
     }
 
+    if (field.name === "field_mahajar_type") {
+      const updatedFormConfig = newFormConfig.map((fld) => {
+        if (fld.name === "field_is_nill_mahazar_applicable") {
+          if (selectedValue === "Seizure Mahazar") {
+            return { ...fld, hide_from_ux: false, required: true };
+          } else {
+            return { ...fld, hide_from_ux: true, required: false };
+          }
+        }
+        return fld;
+      });
+      setNewFormConfig(updatedFormConfig);
+    }
     setFormData(updatedFormData);
 
   }
@@ -3658,7 +3671,7 @@ const NormalViewForm = ({
             </FormControl>
 
             <div style={{ marginTop: 16}}>
-              <h4 className="form-field-heading">Cases for Selected Action</h4>
+              <h4 className="form-field-heading">Selected IO handling Case Details</h4>
               <div style={{ }}>
               <TableView
                 rows={actionCases
