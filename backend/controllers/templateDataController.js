@@ -7643,7 +7643,7 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
                 }
             }
 
-            if (table_name === "cid_pending_trail") {
+            if (table_name === "cid_pending_trial") {
                 if (parsedData.field_ui_case && !parsedData.ui_case_id) {
                     parsedData.ui_case_id = parsedData.field_ui_case;
                 }
@@ -11558,8 +11558,8 @@ exports.getTemplateDataWithDate = async (req, res) => {
             const whereClause = {
                 [dateField]: { [Op.gte]: startDate, [Op.lte]: endDate }
             };
-            if (fields["ui_case_id"] && ui_case_id) whereClause.ui_case_id = ui_case_id;
-            if (fields["pt_case_id"] && pt_case_id) whereClause.pt_case_id = pt_case_id;
+            if (ui_case_id) whereClause.ui_case_id = ui_case_id;
+            if (pt_case_id) whereClause.pt_case_id = pt_case_id;
 
             const rows = await Model.findAll({ where: whereClause, order: [["created_at", "DESC"]] });
 

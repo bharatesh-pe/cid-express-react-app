@@ -3275,7 +3275,6 @@ const Formbuilder = () => {
                                                                 switchOnChange = changePrimaryValue;
                                                             }else if(prop === 'case_diary'){
                                                                 colText = 'Case Diary'
-                                                                switchOnChange = changePrimaryValue;
                                                             }
                                                         }
 

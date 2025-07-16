@@ -2216,7 +2216,7 @@ const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData
                                 onError={onSaveTemplateError}
                                 closeForm={() => setPropertyFormOpen(false)}
                                 headerDetails={selectedRowData?.["field_cid_crime_no./enquiry_no"]}
-                                onSkip={pendingMahazarData?.data?.field_mahajar_type === "Spot Mahazar" ? handleSkipPropertyForm : undefined}
+                                onSkip={pendingMahazarData?.data?.field_mahajar_type === "Seizure Mahazar" ? false : handleSkipPropertyForm}
                                 skip = {handleSkipPropertyForm}
                                 />
 
