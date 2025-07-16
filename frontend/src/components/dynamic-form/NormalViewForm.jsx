@@ -2957,33 +2957,34 @@ const NormalViewForm = ({
             }
 
 
-            {onSkip && (
-                <Button
-                  onClick={() => {skip();}}
-                  sx={{
-                    border: "1.5px solid #E53935",
-                    background: "transparent",
-                    fontSize: "14px",
-                    fontWeight: "500",
-                    color: "#E53935",
-                    padding: "6px 16px",
-                    marginLeft: "10px",
-                    marginRight: "10px",
-                    boxShadow: "none",
-                    borderRadius: "8px",
-                    transition: "background 0.2s, color 0.2s, border-color 0.2s",
-                    "&:hover": {
+            {typeof onSkip === 'function' && (
+            <Button
+                onClick={() => { skip(); }}
+                sx={{
+                border: "1.5px solid #E53935",
+                background: "transparent",
+                fontSize: "14px",
+                fontWeight: "500",
+                color: "#E53935",
+                padding: "6px 16px",
+                marginLeft: "10px",
+                marginRight: "10px",
+                boxShadow: "none",
+                borderRadius: "8px",
+                transition: "background 0.2s, color 0.2s, border-color 0.2s",
+                "&:hover": {
                     background: "#FFEBEE",
                     borderColor: "#B71C1C",
                     color: "#B71C1C",
-                    },
-                  }}
-                  className="Roboto"
-                  variant="outlined"
-                  >
-                  Skip PF & Save
-                  </Button>
-                )}
+                },
+                }}
+                className="Roboto"
+                variant="outlined"
+            >
+                Skip PF & Save
+            </Button>
+            )}
+
               
               {!readOnlyTemplate && editDataTemplate && onUpdate ?
 
