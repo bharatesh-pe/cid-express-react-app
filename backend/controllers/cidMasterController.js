@@ -581,7 +581,7 @@ const getSpecificIoUsersCases = async (req, res) => {
         if (template_module === "ui_case") {
             table_name = "cid_under_investigation";
         } else if (template_module === "pt_case") {
-            table_name = "cid_pending_trail";
+            table_name = "cid_pending_trial";
         } else if (template_module === "eq_case") {
             table_name = "cid_enquiry";
         } else {
