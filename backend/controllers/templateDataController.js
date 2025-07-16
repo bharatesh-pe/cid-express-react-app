@@ -2857,6 +2857,7 @@ exports.viewMagazineTemplateAllData = async (req, res) => {
         }
 
         const allData = {};
+        const allMeta = {};
 
         for (const tblName of table_name) {
             const tableTemplate = await Template.findOne({ where: { table_name: tblName } });
@@ -2904,6 +2905,9 @@ exports.viewMagazineTemplateAllData = async (req, res) => {
             const associations = [];
             let primaryKeyField = {}
 
+            // Track file/profilepicture fields for meta
+            const fileFields = [];
+
             for (const field of filteredFieldsArray) {
                 const {
                     name: columnName,
@@ -2922,6 +2926,10 @@ exports.viewMagazineTemplateAllData = async (req, res) => {
 
                 fieldTypeMap[columnName] = type;
                 fieldLabelMap[columnName] = label || columnName;
+
+                if (type === "file" || type === "profilepicture") {
+                    fileFields.push({name : columnName, label});
+                }
 
                 if(is_primary_field === true){
                     primaryKeyField = field
@@ -3008,9 +3016,66 @@ exports.viewMagazineTemplateAllData = async (req, res) => {
                 where: Object.keys(whereClause).length > 0 ? whereClause : undefined,
             });
 
+            let meta = {};
+            if (fileFields.length > 0 && results.length > 0) {
+                meta.files = {};
+                for (const row of results) {
+                    const rowObj = row.toJSON();
+                    for (const fileField of fileFields) {
+                        const fileValue = rowObj[fileField.name];
+                        if (fileValue) {
 
-            if (sections && Array.isArray(sections) && sections.length > 0) {
+                            const attachment = await ProfileAttachment.findOne({
+                                where: {
+                                    template_id: tableTemplate.template_id,
+                                    table_row_id: rowObj.id,
+                                    field_name: fileField.name,
+                                    attachment_name: fileValue
+                                }
+                            });
+                            if (attachment && attachment.s3_key) {
+                                if (!meta.files[rowObj.id]) meta.files[rowObj.id] = {};
 
+                                meta.files[rowObj.id][fileField.label] = {
+                                    s3_key: attachment.s3_key,
+                                    profile_attachment_id: attachment.profile_attachment_id,
+                                    attachment_name: attachment.attachment_name,
+                                    attachment_extension: attachment.attachment_extension,
+                                    attachment_size: attachment.attachment_size,
+                                };
+                            }
+                        }
+                    }
+                }
+            }
+
+            const formatTime = (value) => {
+                const parsed = Date.parse(value);
+                if (isNaN(parsed)) return value;
+                const date = new Date(parsed);
+                let hours = date.getHours();
+                const ampm = hours >= 12 ? 'PM' : 'AM';
+                hours = hours % 12 || 12;
+                return `${hours.toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}:${date.getSeconds().toString().padStart(2, '0')} ${ampm}`;
+            };
+
+            const formatDateTime = (value) => {
+                const parsed = Date.parse(value);
+                if (isNaN(parsed)) return value;
+                const date = new Date(parsed);
+                let hours = date.getHours();
+                const ampm = hours >= 12 ? 'PM' : 'AM';
+                hours = hours % 12 || 12;
+                return `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()} ${hours.toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}:${date.getSeconds().toString().padStart(2, '0')} ${ampm}`;
+            };
+
+            const formatDate = (value) => {
+                const parsed = Date.parse(value);
+                if (isNaN(parsed)) return value;
+                return new Date(parsed).toLocaleDateString("en-GB");
+            };
+
+            if (sections?.length > 0) {
                 const sectionedData = [];
 
                 for (const result of results) {
@@ -3018,60 +3083,28 @@ exports.viewMagazineTemplateAllData = async (req, res) => {
                     const flatRow = { id: row.id };
 
                     for (const fieldName in radioFieldMappings) {
-                        if (row[fieldName] !== undefined && radioFieldMappings[fieldName][row[fieldName]]) {
-                            row[fieldName] = radioFieldMappings[fieldName][row[fieldName]];
+                        if (row[fieldName]) {
+                            row[fieldName] = radioFieldMappings[fieldName][row[fieldName]] || row[fieldName];
                         }
                     }
                     for (const fieldName in checkboxFieldMappings) {
                         if (row[fieldName]) {
                             const codes = row[fieldName].split(",").map((code) => code.trim());
-                            row[fieldName] = codes
-                                .map((code) => checkboxFieldMappings[fieldName][code] || code)
-                                .join(", ");
+                            row[fieldName] = codes.map((code) => checkboxFieldMappings[fieldName][code] || code).join(", ");
                         }
                     }
                     for (const fieldName in dropdownFieldMappings) {
-                        if (row[fieldName] !== undefined && dropdownFieldMappings[fieldName][row[fieldName]]) {
-                            row[fieldName] = dropdownFieldMappings[fieldName][row[fieldName]];
+                        if (row[fieldName]) {
+                            row[fieldName] = dropdownFieldMappings[fieldName][row[fieldName]] || row[fieldName];
                         }
                     }
 
-                    const formatTime = (value) => {
-                        const parsed = Date.parse(value);
-                        if (isNaN(parsed)) return value;
-                        const date = new Date(parsed);
-                        let hours = date.getHours();
-                        const ampm = hours >= 12 ? 'PM' : 'AM';
-                        hours = hours % 12;
-                        hours = hours ? hours : 12;
-                        return `${hours.toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}:${date.getSeconds().toString().padStart(2, '0')} ${ampm}`;
-                    };
-                    const formatDateTime = (value) => {
-                        const parsed = Date.parse(value);
-                        if (isNaN(parsed)) return value;
-                        const date = new Date(parsed);
-                        let hours = date.getHours();
-                        const ampm = hours >= 12 ? 'PM' : 'AM';
-                        hours = hours % 12;
-                        hours = hours ? hours : 12;
-                        return `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()} ${hours.toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}:${date.getSeconds().toString().padStart(2, '0')} ${ampm}`;
-                    };
-                    const formatDate = (value) => {
-                        const parsed = Date.parse(value);
-                        if (isNaN(parsed)) return value;
-                        return new Date(parsed).toLocaleDateString("en-GB");
-                    };
-
                     for (const fieldName in fieldTypeMap) {
                         const type = fieldTypeMap[fieldName];
-                        if (row[fieldName] !== undefined && row[fieldName] !== null && row[fieldName] !== "") {
-                            if (type === "date") {
-                                row[fieldName] = formatDate(row[fieldName]);
-                            } else if (type === "time") {
-                                row[fieldName] = formatTime(row[fieldName]);
-                            } else if (type === "dateandtime") {
-                                row[fieldName] = formatDateTime(row[fieldName]);
-                            }
+                        if (row[fieldName]) {
+                            if (type === "date") row[fieldName] = formatDate(row[fieldName]);
+                            else if (type === "time") row[fieldName] = formatTime(row[fieldName]);
+                            else if (type === "dateandtime") row[fieldName] = formatDateTime(row[fieldName]);
                         }
                     }
 
@@ -3085,89 +3118,62 @@ exports.viewMagazineTemplateAllData = async (req, res) => {
                         }
                     }
 
+                    if (primaryKeyField?.label) {
+                        flatRow["Primary_Key_Field"] = {
+                            value: row[primaryKeyField.name] || "",
+                            type: fieldTypeMap[primaryKeyField.name] || "text"
+                        };
+                    }
+
                     sections.forEach(section => {
+                        flatRow['Section_Title_' + section] = `--- ${section} ---`;
 
-                        if (Object.keys(primaryKeyField).length > 0 && primaryKeyField?.label && !flatRow['Primary_Key_Field']) {
-                            flatRow['Primary_Key_Field'] = row?.[primaryKeyField?.name] || "";
-                        }
-
-                        flatRow['Section_Title_'+section] = `--- ${section} ---`;
-                        
                         filteredFieldsArray
                             .filter(field => field.section === section)
                             .forEach(field => {
                                 if (row[field.name] !== undefined) {
-                                    flatRow[field.label] = row[field.name];
+                                    flatRow[field.label] = {
+                                        value: row[field.name],
+                                        type: fieldTypeMap[field.name] || "text"
+                                    };
                                 }
                             });
                     });
-                    
+
                     sectionedData.push(flatRow);
                 }
 
                 allData[tblName] = sectionedData;
             } else {
-                // No section, fallback to flat array
                 const data = [];
+
                 for (const result of results) {
                     let row = result.toJSON();
                     const labelValueRow = {};
 
                     for (const fieldName in radioFieldMappings) {
-                        if (row[fieldName] !== undefined && radioFieldMappings[fieldName][row[fieldName]]) {
-                            row[fieldName] = radioFieldMappings[fieldName][row[fieldName]];
+                        if (row[fieldName]) {
+                            row[fieldName] = radioFieldMappings[fieldName][row[fieldName]] || row[fieldName];
                         }
                     }
                     for (const fieldName in checkboxFieldMappings) {
                         if (row[fieldName]) {
                             const codes = row[fieldName].split(",").map((code) => code.trim());
-                            row[fieldName] = codes
-                                .map((code) => checkboxFieldMappings[fieldName][code] || code)
-                                .join(", ");
+                            row[fieldName] = codes.map((code) => checkboxFieldMappings[fieldName][code] || code).join(", ");
                         }
                     }
                     for (const fieldName in dropdownFieldMappings) {
-                        if (row[fieldName] !== undefined && dropdownFieldMappings[fieldName][row[fieldName]]) {
-                            row[fieldName] = dropdownFieldMappings[fieldName][row[fieldName]];
+                        if (row[fieldName]) {
+                            row[fieldName] = dropdownFieldMappings[fieldName][row[fieldName]] || row[fieldName];
                         }
                     }
 
-                    const formatTime = (value) => {
-                        const parsed = Date.parse(value);
-                        if (isNaN(parsed)) return value;
-                        const date = new Date(parsed);
-                        let hours = date.getHours();
-                        const ampm = hours >= 12 ? 'PM' : 'AM';
-                        hours = hours % 12;
-                        hours = hours ? hours : 12;
-                        return `${hours.toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}:${date.getSeconds().toString().padStart(2, '0')} ${ampm}`;
-                    };
-                    const formatDateTime = (value) => {
-                        const parsed = Date.parse(value);
-                        if (isNaN(parsed)) return value;
-                        const date = new Date(parsed);
-                        let hours = date.getHours();
-                        const ampm = hours >= 12 ? 'PM' : 'AM';
-                        hours = hours % 12;
-                        hours = hours ? hours : 12;
-                        return `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()} ${hours.toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}:${date.getSeconds().toString().padStart(2, '0')} ${ampm}`;
-                    };
-                    const formatDate = (value) => {
-                        const parsed = Date.parse(value);
-                        if (isNaN(parsed)) return value;
-                        return new Date(parsed).toLocaleDateString("en-GB");
-                    };
-
                     for (const fieldName in fieldTypeMap) {
                         const type = fieldTypeMap[fieldName];
-                        if (row[fieldName] !== undefined && row[fieldName] !== null && row[fieldName] !== "") {
-                            if (type === "date") {
-                                row[fieldName] = formatDate(row[fieldName]);
-                            } else if (type === "time") {
-                                row[fieldName] = formatTime(row[fieldName]);
-                            } else if (type === "dateandtime") {
-                                row[fieldName] = formatDateTime(row[fieldName]);
-                            }
+                        if (row[fieldName]) {
+                            if (type === "date") row[fieldName] = formatDate(row[fieldName]);
+                            else if (type === "time") row[fieldName] = formatTime(row[fieldName]);
+                            else if (type === "dateandtime") row[fieldName] = formatDateTime(row[fieldName]);
                         }
                     }
 
@@ -3183,21 +3189,32 @@ exports.viewMagazineTemplateAllData = async (req, res) => {
 
                     for (const fieldName in row) {
                         if (fieldLabelMap[fieldName]) {
-                            labelValueRow[fieldLabelMap[fieldName]] = row[fieldName];
+                            labelValueRow[fieldLabelMap[fieldName]] = {
+                                value: row[fieldName],
+                                type: fieldTypeMap[fieldName] || "text"
+                            };
                         }
                     }
 
-                    if (Object.keys(primaryKeyField).length > 0 && primaryKeyField?.label) {
-                        labelValueRow['Primary_Key_Field'] = row?.[primaryKeyField?.name] || "";
+                    if (primaryKeyField?.label) {
+                        labelValueRow["Primary_Key_Field"] = {
+                            value: row?.[primaryKeyField.name] || "",
+                            type: fieldTypeMap[primaryKeyField.name] || "text"
+                        };
                     }
 
                     data.push(labelValueRow);
                 }
                 allData[tblName] = data;
             }
+
+            // Attach meta if any file/profilepicture fields found
+            if (Object.keys(meta).length > 0) {
+                allMeta[tblName] = meta;
+            }
         }
 
-        return userSendResponse(res, 200, true, "Data fetched successfully", allData);
+        return userSendResponse(res, 200, true, "Data fetched successfully", allData, null, Object.keys(allMeta).length > 0 ? allMeta : undefined);
     } catch (error) {
         console.error("Error fetching view data:", error);
         return userSendResponse(res, 500, false, error?.message || "Server error", error);
