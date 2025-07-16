@@ -31,6 +31,7 @@ import ShortText from "../components/form/ShortText";
 import WestIcon from '@mui/icons-material/West';
 import { Tabs, Tab } from '@mui/material';
 import { CircularProgress } from "@mui/material";
+import AddIcon from "@mui/icons-material/Add";
 
 const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedRowData, backNavigation, showMagazineView }) => {
 
@@ -2618,16 +2619,21 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
                         }}
                         >
                         <Button
-                            variant="outlined"
-                            sx={{
-                            height: '40px',
-                            borderColor: '#1976d2',
-                            color: '#1976d2',
-                            textTransform: 'none',
-                            }}
+                            sx={{height: "38px",}}
+                            className="blueButton"
+                            startIcon={
+                                <AddIcon
+                                    sx={{
+                                        border: "1.3px solid #FFFFFF",
+                                        borderRadius: "50%",
+                                        background:"#4D4AF3 !important",
+                                    }}
+                                />
+                            }
+                            variant="contained"
                             onClick={() => showOptionTemplate(selectedOtherTemplate?.table)}
                         >
-                            Add
+                            Add New
                         </Button>
 
                         {/* {showReplacePdfButton && (
@@ -2656,7 +2662,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
                             variant="contained"
                             disabled={!isSubmitAllowed}
                             sx={{
-                            height: '40px',
+                            height: '38px',
                             backgroundColor: '#12B76A',
                             color: 'white',
                             textTransform: 'none',

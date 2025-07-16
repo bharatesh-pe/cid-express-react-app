@@ -38,6 +38,7 @@ import { saveAs } from 'file-saver';
 import ImportExportIcon from '@mui/icons-material/ImportExport';
 import dayjs from "dayjs";
 import React from "react";
+import AddIcon from "@mui/icons-material/Add";
 
 const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData, backNavigation, showMagazineView }) => {
     const location = useLocation();
@@ -2112,11 +2113,21 @@ const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData
                                     >
                                     {!viewModeOnly && (
                                         <Button
-                                            variant="outlined"
-                                            sx={{ height: '40px' }}
+                                           sx={{height: "38px",}}
+                                            className="blueButton"
+                                            startIcon={
+                                                <AddIcon
+                                                    sx={{
+                                                        border: "1.3px solid #FFFFFF",
+                                                        borderRadius: "50%",
+                                                        background:"#4D4AF3 !important",
+                                                    }}
+                                                />
+                                            }
+                                            variant="contained"
                                             onClick={() => showOptionTemplate(selectedOtherTemplate?.table)}
                                         >
-                                            Add
+                                            Add New
                                         </Button>
                                     )}
                                     {/* {
