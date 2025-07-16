@@ -4435,6 +4435,11 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
         }
         else
         {
+            if(table === "kgid")
+            {
+                attributes = [];
+                attributes.push("name");
+            }
             //get the table primary key value of the table
             var query = `SELECT ${attributes}  FROM ${table}`;
             const [results, metadata] = await sequelize.query(query);
@@ -7756,6 +7761,7 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
                 }
             // }
 
+            // if (table_name === "cid_under_investigation" && validData['field_io_name'] == null || validData['field_io_name'] == "" ) {
             if (table_name === "cid_under_investigation") {
                 const main_table = table_name;
                 const record_id = insertedId;
@@ -7801,34 +7807,21 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
                     console.error('Error inserting case alert:', error);
                   }
 
-
-                //   try {
-                //     await CaseAlerts.create({
-                //       module,
-                //       main_table,
-                //       record_id,
-                //       alert_type:"NATURE_OF_DISPOSAL",
-                //       alert_level,
-                //       alert_message : "Alert for IO",
-                //       due_date :new Date(createdAt.getTime() + 60 * 24 * 60 * 60 * 1000),
-                //       triggered_on,
-                //       resolved_on: null,
-                //       status,
-                //       created_by,
-                //       created_at: new Date(),
-                //       send_to_type,
-                //       division_id,
-                //       designation_id,
-                //       assigned_io,
-                //       user_id: null,
-                //       transaction: t 
-                //     });
-                //   } catch (error) {
-                //     console.error('Error inserting case alert:', error);
-                //   }
-
             }
 
+            // if(table_name === "cid_under_investigation" && validData['field_io_name'] != null && validData['field_io_name'] != "" )
+            // {
+            //     updateData = await Model.update(
+            //         { field_approval_done_by: 'DIG' },
+            //         { where: { id: insertedData.id }, transaction: t }
+            //     );
+            //     if (!updateData) {
+            //         await t.rollback();
+            //         return userSendResponse(res, 400, false, "Failed to update Approved By .", null);
+            //     }
+            // }
+
+            // if (table_name === "cid_enquiry" && validData['field_io_name'] == null || validData['field_io_name'] == "" ) {
             if (table_name === "cid_enquiry") {
                 const main_table = table_name;
                 const record_id = insertedId;
@@ -7876,6 +7869,18 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
             }
               
         }
+
+        // if(table_name === "enquiry" && validData['field_io_name'] != null && validData['field_io_name'] != ""  )
+        // {
+        //     updateData = await Model.update(
+        //         { field_approval_done_by: 'DIG' },
+        //         { where: { id: insertedData.id }, transaction: t }
+        //     );
+        //     if (!updateData) {
+        //         await t.rollback();
+        //         return userSendResponse(res, 400, false, "Failed to update Approved By .", null);
+        //     }
+        // }
 
         if(second_table_name && second_table_name != "")
 		{
