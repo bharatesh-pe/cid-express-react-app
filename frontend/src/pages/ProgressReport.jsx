@@ -2542,6 +2542,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
                     >
                         <Box sx={{ display: 'none' }}></Box>
 
+                    {selectedTab !== 0 && (
                         <Box
                         sx={{
                             display: 'flex',
@@ -2610,7 +2611,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
                             </Typography>
                         )}
                         </Box>
-
+                      )}
                         <Box
                         sx={{
                             display: 'flex',
