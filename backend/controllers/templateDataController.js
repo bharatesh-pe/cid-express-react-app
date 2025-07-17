@@ -11774,15 +11774,15 @@ exports.getSingleTemplateDataWithDate = async (req, res) => {
             const updatedAt = data.updated_at ? new Date(data.updated_at) : null;
 
             formatted["Created At"] = createdAt ? formatDateTime(createdAt) : "";
-
+            
+            formatted["Created By"] = data.created_by || "";
             // Show Updated At only if it differs in date/time from Created At
             if (createdAt && updatedAt && createdAt.getTime() !== updatedAt.getTime()) {
-                formatted["Updated At"] = formatDateTime(updatedAt);
+              formatted["Updated At"] = formatDateTime(updatedAt);
             } else {
-                formatted["Updated At"] = "";
+              formatted["Updated At"] = "";
             }
-
-            formatted["Created By"] = data.created_by || "";
+            
             // formatted["Created By ID"] = data.created_by_id || "";
             formatted["Updated By"] = data.updated_by || "";
             // formatted["Updated By ID"] = data.updated_by_id || "";

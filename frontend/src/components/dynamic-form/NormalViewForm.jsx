@@ -2525,13 +2525,50 @@ const NormalViewForm = ({
     const handleDateChange = (index, date) => {
         const updated = [...selectedDates];
 
+        if (!date) {
+            updated[index] = {
+                table: templateActions[index].table,
+                date: null
+            };
+            setSelectedDates(updated);
+            return;
+        }
+
+        const formattedDate = date.format("YYYY-MM-DD");
+
+        const isDuplicate = selectedDates.some((item, idx) =>
+            idx !== index &&
+            item?.date &&
+            dayjs(item.date).format("YYYY-MM-DD") === formattedDate
+        );
+
+        if (isDuplicate) {
+            toast.warning("This date has already been selected.", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-warning",
+            });
+
+            updated[index] = {
+                table: templateActions[index].table,
+                date: null
+            };
+            setSelectedDates(updated);
+            return;
+        }
+
         updated[index] = {
             table: templateActions[index].table,
-            date: date ? date.format("YYYY-MM-DDT00:00:00") : null
+            date: date.format("YYYY-MM-DDT00:00:00")
         };
-
         setSelectedDates(updated);
     };
+
 
     useEffect(()=>{
 
@@ -3130,7 +3167,7 @@ const NormalViewForm = ({
                                                 {items.map((item, index) => {
                                                     const actualIndex = start + index;
                                                     return (
-                                                    <Grid item xs={12 / 3} key={actualIndex} sx={{borderRight: index === 2 ? 'none' : '1px solid #ddd'}} px={2}>
+                                                    <Grid item xs={12} sm={6} md={4} key={actualIndex} sx={{borderRight: index === 2 ? 'none' : '1px solid #ddd'}} px={2}>
                                                         <Tooltip arrow title={item.name}>
                                                         <Box display="flex" alignItems="center" gap={1} borderBottom='1px solid #ddd' pb={1}>
 
@@ -3157,7 +3194,15 @@ const NormalViewForm = ({
                                                                 }
                                                                 onChange={(e) => handleDateChange(actualIndex, e)}
                                                                 format="DD-MM-YYYY"
-                                                                disabled={readOnlyTemplate}
+                                                                shouldDisableDate={(day) => {
+                                                                const selectedDay = day.format('YYYY-MM-DD');
+                                                                return selectedDates.some(
+                                                                    (item, idx) =>
+                                                                        idx !== actualIndex &&
+                                                                        item?.date &&
+                                                                        dayjs(item.date).format('YYYY-MM-DD') === selectedDay
+                                                                );
+                                                            }}
                                                                 slotProps={{
                                                                 textField: {
                                                                     size: "small",

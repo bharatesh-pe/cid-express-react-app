@@ -155,7 +155,28 @@ const CaseDairy = ({headerDetails, backToForm, showMagazineView, rowData, module
                             ),
                             renderCell: renderCellFunc(key, index),
                         })),
-                    ]
+                         {
+                                field: "action",
+                                headerName: "Action",
+                                width: 100,
+                                sortable: false,
+                                filterable: false,
+                                align: "left",
+                                renderCell: (params) => (
+                                    <Button
+                                        variant="contained" 
+                                        color="primary" 
+                                        size="small"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleTemplateDataView(params.row, true, options.table);
+                                        }}
+                                    >
+                                        Edit
+                                    </Button>
+                                ),
+                            }
+                        ];
 
                     const formatDate = (value) => {
                         const parsed = Date.parse(value);
@@ -425,8 +446,8 @@ const CaseDairy = ({headerDetails, backToForm, showMagazineView, rowData, module
                     setFormFields(viewTemplateResponse.data.fields || []);
                     setFormStepperData(viewTemplateResponse.data.sections || []);
                     setInitialFormData(viewTemplateData.data || {});
-                    setReadonlyForm(true);
-                    setEditOnlyForm(editData || false);
+                    setReadonlyForm(!editData);
+                    setEditOnlyForm(!!editData);
                     setFormOpen(true);
                     setRowValueId(rowData);
                 } else {
