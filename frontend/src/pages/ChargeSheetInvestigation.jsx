@@ -9,6 +9,7 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import InsertDriveFileIcon from "@mui/icons-material/InsertDriveFile";
 import pdfIcon from "../Images/pdfIcon.svg";
 import docIcon from "../Images/docIcon.svg";
+import docxIcon from "../Images/docxIcon.svg";
 import xlsIcon from "../Images/xlsIcon.svg";
 import pptIcon from "../Images/pptIcon.svg";
 import jpgIcon from "../Images/jpgIcon.svg";
@@ -542,6 +543,7 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
                 return <img src={xlsIcon} alt="xls" />;
             case 'csv':
             case 'docx':
+                return <img src={docxIcon} alt="docx" />;
             case 'doc':
                 return <img src={docIcon} alt="doc" />;
             case 'ppt':
