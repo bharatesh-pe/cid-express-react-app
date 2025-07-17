@@ -101,6 +101,29 @@ const router = express.Router();
         limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
     });
 
+
+    const uploadHelpVideos = multer({
+        storage: multer.diskStorage({
+            destination: (req, file, cb) => {
+                const safeModule = (req.body.module || 'default').replace(/[^a-zA-Z0-9-_]/g, '');
+                const uploadPath = path.join(__dirname, "../data/helpVideos", safeModule);
+                fs.mkdirSync(uploadPath, { recursive: true });
+                cb(null, uploadPath);
+            },
+            filename: (req, file, cb) => {
+                const safeModule = (req.body.module || 'default').replace(/[^a-zA-Z0-9-_]/g, '');
+                const uploadPath = path.join(__dirname, "../data/helpVideos", safeModule);
+                const fullPath = path.join(uploadPath, file.originalname);
+
+                if (fs.existsSync(fullPath)) {
+                    return cb(new Error(`File "${file.originalname}" already exists in this module`), null);
+                }
+                cb(null, file.originalname);
+            }
+        }),
+        limits: { fileSize: 500 * 1024 * 1024 }
+    });
+
 // AWS S3 Configuration
 // const s3Client = new S3Client({
 //     region: process.env.AWS_REGION,
@@ -324,6 +347,34 @@ router.post('/getDateWiseTableCounts',
 router.post('/viewMagazineTemplateAllData',
     [validate_token],
     templateDataController.viewMagazineTemplateAllData)
+
+    router.post('/gettingAllHelpVideos',
+        [validate_token],
+        templateDataController.gettingAllHelpVideos)
+
+    router.post("/uploadHelpVideo", (req, res) => {
+        uploadHelpVideos.any()(req, res, function (err) {
+            if (err) {
+                console.error('Error Message', err.message);
+                return res.json({
+                    success: false,
+                    message: err.message || "Upload failed",
+                });
+            }
+
+            return res.json({
+                success: true,
+                message: "File uploaded successfully",
+                files: req.files.map(file => ({
+                    originalname: file.originalname,
+                    filename: file.filename,
+                    size: file.size,
+                    path: file.path
+                })),
+                module: req.body.module
+            });
+        });
+    });
 
 router.post('/getTemplateDataWithDate',
     [validate_token],
