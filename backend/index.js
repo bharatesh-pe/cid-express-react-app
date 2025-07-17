@@ -31,6 +31,7 @@ app.use(cookieParser());
 
 // Serve static files from the 'public' directory
 app.use('/files', express.static(path.join(__dirname, 'public/files')));
+app.use('/helpVideos', express.static(path.join(__dirname, 'data/helpVideos')));
 
 // Example route to serve a PDF file
 app.get('/files/:filename', (req, res) => {

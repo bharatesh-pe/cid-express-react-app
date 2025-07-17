@@ -54,6 +54,7 @@ import IframePage from './pages/IframePage';
 import SettingsPage from './pages/SettingsPage';
 import ImportOldData from './pages/ImportOldData';
 import MagazineView from './pages/MagazineView';
+import VideoListViewer from './pages/HelpVideos'
 
 import { ToastContainer } from 'react-toastify';
 function App() {
@@ -241,6 +242,16 @@ function App() {
                     <ProtectedRoute>
                         <Layout>
                             <UnderInvestigation />
+                        </Layout>
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/videos"
+                element={
+                    <ProtectedRoute>
+                        <Layout>
+                            <VideoListViewer />
                         </Layout>
                     </ProtectedRoute>
                 }

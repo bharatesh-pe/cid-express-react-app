@@ -20,6 +20,7 @@ import "react-toastify/dist/ReactToastify.css";
 import InsertDriveFileIcon from "@mui/icons-material/InsertDriveFile";
 import pdfIcon from "../Images/pdfIcon.svg";
 import docIcon from "../Images/docIcon.svg";
+import docxIcon from "../Images/docxIcon.svg";
 import xlsIcon from "../Images/xlsIcon.svg";
 import pptIcon from "../Images/pptIcon.svg";
 import jpgIcon from "../Images/jpgIcon.svg";
@@ -27,6 +28,7 @@ import pngIcon from "../Images/pngIcon.svg";
 import FilterListIcon from "@mui/icons-material/FilterList";
 import MultiSelect from "../components/form/MultiSelect";
 import AutocompleteField from "../components/form/AutoComplete";
+import DateField from "../components/form/Date";
 import ShortText from "../components/form/ShortText";
 import WestIcon from '@mui/icons-material/West';
 import { Tabs, Tab } from '@mui/material';
@@ -1665,6 +1667,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
         return <img src={xlsIcon} />;
       case "csv":
       case "docx":
+        return <img src={docxIcon} />;
       case "doc":
         return <img src={docIcon} />;
       case "ppt":
@@ -2540,6 +2543,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
                     >
                         <Box sx={{ display: 'none' }}></Box>
 
+                    {selectedTab !== 0 && (
                         <Box
                         sx={{
                             display: 'flex',
@@ -2608,7 +2612,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
                             </Typography>
                         )}
                         </Box>
-
+                      )}
                         <Box
                         sx={{
                             display: 'flex',
@@ -2729,43 +2733,53 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, marginBottom: '10px', marginTop: '30px' }}>
                         {aoFields.length > 0 ? (
                         <Grid container spacing={2}>
-                            {aoFields.slice(0, 6).map((field, index) => (
-                            <Grid item xs={12} md={4} key={index}>
-                                {field.type === 'text' && (
-                                <ShortText
-                                    key={field.id}
-                                    field={field}
-                                    formData={filterAoValues}
-                                    disabled={true}
-                                />
-                                )}
-                                {field.type === 'multidropdown' && (
-                                <MultiSelect
-                                    key={field.id}
-                                    field={field}
-                                    formData={filterAoValues}
-                                    onChange={(name, selectedCode) => handleAutocomplete(field, selectedCode)}
-                                    disabled={true}
-                                />
-                                )}
-                                {(field.type === 'dropdown' || field.type === 'autocomplete') && (
-                                <AutocompleteField
-                                    key={field.id}
-                                    field={field}
-                                    formData={filterAoValues}
-                                    onChange={(name, selectedCode) => handleAutocomplete(field, selectedCode)}
-                                    value={(() => {
-                                    const fieldValue = filterAoValues?.[field.name];
-                                    const selectedOption = field.options.find(
-                                        (option) => String(option.code) === String(fieldValue)
-                                    );
-                                    return selectedOption || null;
-                                    })()}
-                                    disabled={true}
-                                />
-                                )}
-                            </Grid>
-                            ))}
+                            {aoFields.map((field, index) => (
+                              <Grid item xs={12} md={4} key={index}>
+                                  {field.type === 'text' && (
+                                  <ShortText
+                                      key={field.id}
+                                      field={field}
+                                      formData={filterAoValues}
+                                      disabled
+                                  />
+                                  )}
+
+                                  {field.type === 'multidropdown' && (
+                                  <MultiSelect
+                                      key={field.id}
+                                      field={field}
+                                      formData={filterAoValues}
+                                      onChange={(name, selectedCode) => handleAutocomplete(field, selectedCode)}
+                                      disabled
+                                  />
+                                  )}
+
+                                  {(field.type === 'dropdown' || field.type === 'autocomplete') && (
+                                  <AutocompleteField
+                                      key={field.id}
+                                      field={field}
+                                      formData={filterAoValues}
+                                      onChange={(name, selectedCode) => handleAutocomplete(field, selectedCode)}
+                                      value={(() => {
+                                      const fieldValue = filterAoValues?.[field.name];
+                                      return field.options.find(
+                                          (opt) => String(opt.code) === String(fieldValue)
+                                      ) || null;
+                                      })()}
+                                      disabled
+                                  />
+                                  )}
+
+                                  {field.type === 'date' && (
+                                  <DateField
+                                      field={field}
+                                      formData={filterAoValues}
+                                      readOnly={true}
+                                  />
+                                  )}
+                              </Grid>
+                              ))}
+                           
                             <Grid container item xs={12} spacing={2} alignItems="flex-start">
                             {aoFields
                                 .slice(4)

@@ -12869,3 +12869,32 @@ exports.getTableCountsByCaseId = async (req, res) => {
       return userSendResponse(res, 500, false, "Failed to get table counts.", error.message);
     }
   };
+
+    exports.gettingAllHelpVideos = async (req, res) => {
+        const { data } = req.body;
+
+        try {
+            const baseDir = path.join(__dirname, '../data/helpVideos');
+            const videoData = {};
+
+            data.forEach((moduleName) => {
+                const safeModule = moduleName.replace(/[^a-zA-Z0-9-_]/g, '');
+                const modulePath = path.join(baseDir, safeModule);
+
+                try {
+                    const files = fs.readdirSync(modulePath).filter(file =>
+                        file.endsWith('.mp4') || file.endsWith('.webm') || file.endsWith('.mov')
+                    );
+                    videoData[safeModule] = files.map(file => `/helpVideos/${safeModule}/${file}`);
+                } catch (err) {
+                    videoData[safeModule] = [];
+                }
+            });
+
+            return userSendResponse(res, 200, true, "Videos fetched successfully.", videoData);
+
+        } catch (error) {
+            console.error("Error in gettingAllHelpVideos:", error);
+            return userSendResponse(res, 500, false, "Failed to get help videos.", error.message);
+        }
+    };
