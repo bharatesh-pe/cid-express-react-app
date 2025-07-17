@@ -102,9 +102,11 @@ const KGID = () => {
     };
 
     const departmentColumnData = [
-        { field: 'kgid', headerName: 'KGID', width: 200 },
-        { field: 'name', headerName: 'Name', width: 200 },
-        { field: 'mobile', headerName: 'Mobile', width: 200 },
+        { field: 'kgid', headerName: 'KGID', width: 150 },
+        { field: 'name', headerName: 'Name', width: 150 },
+        { field: 'mobile', headerName: 'Mobile', width: 150 },
+        { field: 'start_date', headerName: 'Start Date', width: 150 },
+        { field: 'end_date', headerName: 'End Date', width: 150 },
         {
             field: '',
             headerName: 'Action',
@@ -297,14 +299,24 @@ const KGID = () => {
                     setTotalRecord(totalItems);
                 }
 
+                const formatDate = (dateStr) => {
+                    if (!dateStr) return "-";
+                    const date = new Date(dateStr);
+                    if (isNaN(date)) return "-";
+                    const yyyy = date.getFullYear();
+                    const mm = String(date.getMonth() + 1).padStart(2, '0');
+                    const dd = String(date.getDate()).padStart(2, '0');
+                    return `${dd}-${mm}-${yyyy}`;
+                };
+
                 const updatedData = data.map(row => {
                     return {
                         id: row.id,
                         kgid: row.kgid,
                         name: row.name,
                         mobile: row.mobile,
-                        start_date : row.start_date,
-                        end_date : row.end_date,
+                        start_date : formatDate(row.start_date),
+                        end_date : formatDate(row.end_date),
                     };
                 });
                 setDepartmentRowData(updatedData);
@@ -563,6 +575,17 @@ const KGID = () => {
             return;
         }
 
+        const convertToISODate = (dateStr) => {
+            if (!dateStr || dateStr === "-") return null;
+
+            const parts = dateStr.split("-");
+            if (parts.length === 3 && parts[0].length === 2) {
+                const [dd, mm, yyyy] = parts;
+                return `${yyyy}-${mm}-${dd}`;
+            }
+            return dateStr;
+        };
+
         const requestData = {
             master_name: "Kgid",
             data: {
@@ -570,8 +593,8 @@ const KGID = () => {
                 kgid: selectedRole.kgid,
                 name: selectedRole.name,
                 mobile: selectedRole.mobile,
-                start_date: selectedRole.start,
-                end_date: selectedRole.end,
+                start_date: convertToISODate(selectedRole.start),
+                end_date: convertToISODate(selectedRole.end),
             }
         };
 
@@ -641,6 +664,28 @@ const KGID = () => {
         setToDateValue(null);
         setForceTableLoad((prev) => !prev);
     };
+const formatForDateInput = (dateStr) => {
+  if (!dateStr || dateStr === "-") return "";
+  
+  // Handle DD-MM-YYYY format
+  const parts = dateStr.split("-");
+  if (parts.length === 3 && parts[0].length === 2) {
+    const [dd, mm, yyyy] = parts;
+    return `${yyyy}-${mm}-${dd}`; // Return in YYYY-MM-DD
+  }
+
+  // Fallback to parse ISO format
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return "";
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  const dd = String(date.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+};
+
+
+        console.log("Start Date Value:", formatForDateInput(selectedRole?.start));
+        console.log("SelectedRoleee", selectedRole)
 
     return (
         <Box inert={loading ? true : false}>
@@ -895,7 +940,7 @@ const KGID = () => {
                                     disabled={showViewModal}
                                 />
                             </Box>
-                            {showEditModal && (
+                            {(showEditModal || showViewModal) && (
                         <>
                             <Box sx={{ marginY: '18px' }}>
                                 <h4 className="form-field-heading">
@@ -905,7 +950,7 @@ const KGID = () => {
                                     fullWidth
                                     type="date"
                                     name="start_date"
-                                    value={selectedRole?.start ? selectedRole.start.split('T')[0] : ""}
+                                    value={selectedRole?.start ? formatForDateInput(selectedRole.start) : ""}
                                     onChange={handleDateInputChange}
                                     disabled={showViewModal}
                                 />
@@ -918,7 +963,7 @@ const KGID = () => {
                                     fullWidth
                                     type="date"
                                     name="end_date"
-                                    value={selectedRole?.end ? selectedRole.end.split('T')[0] : ""}
+                                    value={selectedRole?.end ? formatForDateInput(selectedRole.end) : ""}
                                     onChange={handleDateInputChange}
                                     disabled={showViewModal}
                                 />

@@ -668,7 +668,7 @@ exports.fetch_specific_master_data = async (req, res) => {
           limit,
           offset,
           order: [[sort_by, order]],
-          attributes: ["id", "kgid", "name", "mobile", "created_at"],
+          attributes: ["id", "kgid", "name", "mobile", "start_date", "end_date", "created_at"],
         });
 
         data = kgids.rows;

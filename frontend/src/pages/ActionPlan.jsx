@@ -33,6 +33,7 @@ import AutocompleteField from "../components/form/AutoComplete";
 import ShortText from "../components/form/ShortText";
 import DateField from "../components/form/Date";
 import WestIcon from '@mui/icons-material/West';
+import { CircularProgress } from "@mui/material";
 
 const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowData, backNavigation, showMagazineView}) => {
 
@@ -1991,7 +1992,6 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
       
         try {
           const response = await api.post("/templateData/saveActionPlan", formData);
-          setLoading(false);
       
           if (response?.success) {
             toast.success(response.message || "Case Updated Successfully", {
@@ -2030,6 +2030,8 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
             autoClose: 3000,
             className: "toast-error",
           });
+        }finally {
+            setLoading(false);
         }
     };
     
@@ -2973,6 +2975,12 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                 </Button>
             </DialogActions>
             </Dialog>
+        )}
+
+        {loading && (
+        <div className="parent_spinner" tabIndex="-1" aria-hidden="true">
+            <CircularProgress size={100} />
+        </div>
         )}
         </>
     );

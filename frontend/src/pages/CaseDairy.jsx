@@ -24,6 +24,8 @@ import SearchIcon from "@mui/icons-material/Search";
 
 const CaseDairy = ({headerDetails, backToForm, showMagazineView, rowData, module, actionArray}) => {
 
+    const [disabledDateArray, setDisabledDateArray] = useState([]);
+
     const [tableColumnData, setTableColumnData] = useState([
         { field: 'sl_no', headerName: 'Sl. No.' },
     ]);
@@ -107,6 +109,25 @@ const CaseDairy = ({headerDetails, backToForm, showMagazineView, rowData, module
                 
                 const renderCellFunc = (key, count) => (params) => tableCellRender(key, params, params.value, count, options.table || options);
 
+                let disabledDateList = [];
+
+                if (data?.length > 0) {
+                    disabledDateList = data
+                        .map(item => item.field_date)
+                        .filter(val => !!val)
+                        .map(val => {
+                            const parsed = Date.parse(val);
+                            if (isNaN(parsed)) return null;
+
+                            const date = new Date(parsed);
+                            return date.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+                        })
+                        .filter(date => date !== null);
+                }
+
+                setDisabledDateArray(disabledDateList);
+
+
                 if (data?.length > 0) {
 
                     const excludedKeys = [
@@ -155,7 +176,28 @@ const CaseDairy = ({headerDetails, backToForm, showMagazineView, rowData, module
                             ),
                             renderCell: renderCellFunc(key, index),
                         })),
-                    ]
+                         {
+                                field: "action",
+                                headerName: "Action",
+                                width: 100,
+                                sortable: false,
+                                filterable: false,
+                                align: "left",
+                                renderCell: (params) => (
+                                    <Button
+                                        variant="contained" 
+                                        color="primary" 
+                                        size="small"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleTemplateDataView(params.row, true, options.table);
+                                        }}
+                                    >
+                                        Edit
+                                    </Button>
+                                ),
+                            }
+                        ];
 
                     const formatDate = (value) => {
                         const parsed = Date.parse(value);
@@ -425,8 +467,8 @@ const CaseDairy = ({headerDetails, backToForm, showMagazineView, rowData, module
                     setFormFields(viewTemplateResponse.data.fields || []);
                     setFormStepperData(viewTemplateResponse.data.sections || []);
                     setInitialFormData(viewTemplateData.data || {});
-                    setReadonlyForm(true);
-                    setEditOnlyForm(editData || false);
+                    setReadonlyForm(!editData);
+                    setEditOnlyForm(!!editData);
                     setFormOpen(true);
                     setRowValueId(rowData);
                 } else {
@@ -935,6 +977,7 @@ const CaseDairy = ({headerDetails, backToForm, showMagazineView, rowData, module
                             noPadding={true}
                             editedForm={editedFormFlag}
                             caseDiary={true}
+                            disabledDates={disabledDateArray}
                             caseDiaryArray={actionArray}
                             caseDairy_ui_case_id={module === "pt_case" ? rowData?.ui_case_id : rowData?.id}
                             caseDairy_pt_case_id={module === "pt_case" ? rowData?.id : rowData?.pt_case_id}

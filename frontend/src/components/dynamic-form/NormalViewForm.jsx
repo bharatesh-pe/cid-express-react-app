@@ -61,7 +61,7 @@ import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 
 const NormalViewForm = ({ 
     formConfig, initialData, onSubmit, onError, stepperData, closeForm, table_name, template_name, readOnly, editData, onUpdate, template_id, table_row_id, headerDetails, selectedRow, noPadding, disableEditButton, disableSaveNew, overAllReadonly, investigationViewTable, editedForm
-    , showAssignIo, investigationAction, reloadApproval, showCaseActionBtn, reloadForm , showCaseLog, reloadFormConfig , onSkip , skip , editName ,  oldCase , onViewOldCase, showMagazineView, caseDiary, caseDiaryArray, caseDairy_pt_case_id, caseDairy_ui_case_id
+    , showAssignIo, investigationAction, reloadApproval, showCaseActionBtn, reloadForm , showCaseLog, reloadFormConfig , onSkip , skip , editName ,  oldCase , onViewOldCase, showMagazineView, caseDiary, caseDiaryArray, caseDairy_pt_case_id, caseDairy_ui_case_id, disabledDates
  }) => {
 
 //   let storageFormData = localStorage.getItem(template_name + '-formData') ? JSON.parse(localStorage.getItem(template_name + '-formData')) : {};
@@ -2529,9 +2529,9 @@ const NormalViewForm = ({
             table: templateActions[index].table,
             date: date ? date.format("YYYY-MM-DDT00:00:00") : null
         };
-
         setSelectedDates(updated);
     };
+
 
     useEffect(()=>{
 
@@ -3130,7 +3130,7 @@ const NormalViewForm = ({
                                                 {items.map((item, index) => {
                                                     const actualIndex = start + index;
                                                     return (
-                                                    <Grid item xs={12 / 3} key={actualIndex} sx={{borderRight: index === 2 ? 'none' : '1px solid #ddd'}} px={2}>
+                                                    <Grid item xs={12} sm={6} md={4} key={actualIndex} sx={{borderRight: index === 2 ? 'none' : '1px solid #ddd'}} px={2}>
                                                         <Tooltip arrow title={item.name}>
                                                         <Box display="flex" alignItems="center" gap={1} borderBottom='1px solid #ddd' pb={1}>
 
@@ -3157,7 +3157,7 @@ const NormalViewForm = ({
                                                                 }
                                                                 onChange={(e) => handleDateChange(actualIndex, e)}
                                                                 format="DD-MM-YYYY"
-                                                                disabled={readOnlyTemplate}
+                                                                disabled={readOnlyTemplate}                                                                
                                                                 slotProps={{
                                                                 textField: {
                                                                     size: "small",
@@ -3395,7 +3395,8 @@ const NormalViewForm = ({
                             errors={errors}
                             onHistory={() => showHistory(field.name)}
                             onChange={(value) => { handleChangeDate(field.name, value) }} 
-                            readOnly={readOnlyData}    
+                            readOnly={readOnlyData} 
+                            disabledDates={disabledDates}   
                         />
                         </div>
                       </Grid>

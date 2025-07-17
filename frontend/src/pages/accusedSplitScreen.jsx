@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
+import ReactDOM from 'react-dom';
 
 import { West } from '@mui/icons-material';
 import {
@@ -45,6 +46,8 @@ const AccusedSplitScreen = ({tableObj, selectedAccused, closeForm, ui_case_id, p
     const [accusedHeaderName, setAccusedHeaderName] = useState(
         () => (selectedAccused || []).map(item => item?.[gettingFieldName]).join(', ')
     );
+
+    const [isSaving, setIsSaving] = useState(false);
 
     const [tableRowData, setTableRowData] = useState([]);
 
@@ -720,6 +723,11 @@ const AccusedSplitScreen = ({tableObj, selectedAccused, closeForm, ui_case_id, p
 
     const formSubmit = async (data, formOpen)=>{
 
+        if (isSaving) 
+            return;
+
+        setIsSaving(true);
+
         if (!tableObj.table_name || tableObj.table_name === "") {
             toast.warning("Please Check The Template", {
                 position: "top-right",
@@ -838,6 +846,10 @@ const AccusedSplitScreen = ({tableObj, selectedAccused, closeForm, ui_case_id, p
                 className: "toast-error",
             });
         }
+        finally {
+            setIsSaving(false);
+        }
+
     };
 
     const formUpdate = async (data)=>{
@@ -1121,6 +1133,14 @@ const AccusedSplitScreen = ({tableObj, selectedAccused, closeForm, ui_case_id, p
                     <CircularProgress size={100} />
                 </div>
             )}
+
+            {isSaving && ReactDOM.createPortal(
+            <div className="parent_spinner_2">
+                <CircularProgress size={100} />
+            </div>,
+            document.body
+            )}
+
 
         </Dialog>
     )
