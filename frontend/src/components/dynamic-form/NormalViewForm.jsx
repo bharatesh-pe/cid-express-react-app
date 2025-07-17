@@ -1613,7 +1613,6 @@ const NormalViewForm = ({
 
                         payloadApi = "templateData/getAccusedWitness"
 
-
                         if(table_name === "cid_under_investigation" || investigationViewTable === "cid_under_investigation"){
                             apiPayload = {
                                 "table_name": field.table,
@@ -1625,6 +1624,14 @@ const NormalViewForm = ({
                                 "table_name": field.table,
                                 "ui_case_id": selectedRow?.['ui_case_id'] || "",
                                 "pt_case_id": selectedRow?.['id'] || "",
+                            }
+                        }
+                        else
+                        {
+                            apiPayload = {
+                                "table_name": field.table,
+                                "ui_case_id": selectedRow?.['ui_case_id'] || "",
+                                "pt_case_id": selectedRow?.['pt_case_id'] || "",
                             }
                         }
 
