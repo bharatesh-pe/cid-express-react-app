@@ -1783,6 +1783,7 @@ exports.getTemplateData = async (req, res, next) => {
       return userSendResponse(res, 400, false, message, null);
     }
 
+    console.log("Table Data:", tableData);
     // Parse the schema fields from Template
     const schema = typeof tableData.fields === "string" ? JSON.parse(tableData.fields) : tableData.fields;
 
@@ -1982,23 +1983,23 @@ exports.getTemplateData = async (req, res, next) => {
     }
 
     // Add TemplateUserStatus association
-    Model.hasOne(db.TemplateUserStatus, {
-        foreignKey: 'table_row_id',
-        sourceKey: 'id',
-        as: 'ReadStatus',
-        constraints: false,
-    });
+    // Model.hasOne(db.TemplateUserStatus, {
+    //     foreignKey: 'table_row_id',
+    //     sourceKey: 'id',
+    //     as: 'ReadStatus',
+    //     constraints: false,
+    // });
 
-    include.push({
-        model: db.TemplateUserStatus,
-        as: 'ReadStatus',
-        required: is_read,
-        where: {
-          user_id: userId,
-          template_id: tableData.template_id
-        },
-        attributes: ['template_user_status_id']
-    });
+    // include.push({
+    //     model: db.TemplateUserStatus,
+    //     as: 'ReadStatus',
+    //     required: is_read,
+    //     where: {
+    //       user_id: userId,
+    //       template_id: tableData.template_id
+    //     },
+    //     attributes: ['template_user_status_id']
+    // });
 
     await Model.sync();
 
@@ -2072,7 +2073,7 @@ exports.getTemplateData = async (req, res, next) => {
       } else if (fieldType === "DATE") {
         const parsedDate = Date.parse(search);
         if (!isNaN(parsedDate)) {
-        searchConditions.push({ [search_field]: new Date(parsedDate) });
+            searchConditions.push({ [search_field]: new Date(parsedDate) });
         }
       }
 
@@ -2113,64 +2114,61 @@ exports.getTemplateData = async (req, res, next) => {
         }
         }
       }
-      } else {
-      // General search across all fields
-      Object.keys(fields).forEach((field) => {
-        const fieldConfig = fields[field];
-        const fieldType = fieldConfig.type.key;
-        const isForeignKey = associations.some(
-        (assoc) => assoc.foreignKey === field
-        );
+      } 
+      else {
+        // General search across all fields
+        Object.keys(fields).forEach((field) => {
+            const fieldConfig = fields[field];
+            const fieldType = fieldConfig.type.key;
+            const isForeignKey = associations.some( (assoc) => assoc.foreignKey === field );
 
-        if (["STRING", "TEXT"].includes(fieldType)) {
-        searchConditions.push({ [field]: { [Op.iLike]: `%${search}%` } });
-        } else if (["INTEGER", "FLOAT", "DOUBLE"].includes(fieldType)) {
-        if (!isNaN(search)) {
-          searchConditions.push({ [field]: parseInt(search, 10) });
-        }
+            
+            if (["STRING", "TEXT"].includes(fieldType)) {
+                //if the field is having date in the name means avoid it.
+                if( field.toLowerCase().includes("date") || field.toLowerCase().includes("time") ) return;
+                searchConditions.push({ [field]: { [Op.iLike]: `%${search}%` } });
+            } else if (["INTEGER", "FLOAT", "DOUBLE"].includes(fieldType)) {
+                if (!isNaN(search)) {
+                searchConditions.push({ [field]: parseInt(search, 10) });
+                }
+            }else if (fieldType === "BOOLEAN") {
+                const boolValue = search.toLowerCase() === "true";
+                searchConditions.push({ [field]: boolValue });
+            } else if (fieldType === "DATE") {
+                const parsedDate = Date.parse(search);
+                if (!isNaN(parsedDate)) {
+                    searchConditions.push({ [field]: new Date(parsedDate) });
+                }
+            }
+
+
+            if ( fieldConfig.dropdownMap && Object.values(fieldConfig.dropdownMap).length) {
+                const match = Object.entries(fieldConfig.dropdownMap).find( ([, name]) => name.toLowerCase().includes(search.toLowerCase()));
+                if (match) searchConditions.push({ [field]: match[0] });
+            }
+            if ( fieldConfig.radioMap && Object.values(fieldConfig.radioMap).length ) {
+                const match = Object.entries(fieldConfig.radioMap).find( ([, name]) => name.toLowerCase().includes(search.toLowerCase()));
+                if (match) searchConditions.push({ [field]: match[0] });
+            }
+
+            if (isForeignKey) {
+                const association = associations.find((assoc) => assoc.foreignKey === field);
+                if (association) {
+                    const associatedModel = include.find( (inc) => inc.as === `${association.relatedTable}Details`);
+                    if (associatedModel) {
+                        searchConditions.push({
+                            [`$${association.relatedTable}Details.${association.targetAttribute}$`]:
+                            { [Op.iLike]: `%${search}%` },
+                        });
+                    }
+                }
+            }
+        });
         }
 
-        if (
-        fieldConfig.dropdownMap &&
-        Object.values(fieldConfig.dropdownMap).length
-        ) {
-        const match = Object.entries(fieldConfig.dropdownMap).find(
-          ([, name]) => name.toLowerCase().includes(search.toLowerCase())
-        );
-        if (match) searchConditions.push({ [field]: match[0] });
+        if (searchConditions.length > 0) {
+            whereClause[Op.or] = searchConditions;
         }
-        if (
-        fieldConfig.radioMap &&
-        Object.values(fieldConfig.radioMap).length
-        ) {
-        const match = Object.entries(fieldConfig.radioMap).find(
-          ([, name]) => name.toLowerCase().includes(search.toLowerCase())
-        );
-        if (match) searchConditions.push({ [field]: match[0] });
-        }
-
-        if (isForeignKey) {
-        const association = associations.find(
-          (assoc) => assoc.foreignKey === field
-        );
-        if (association) {
-          const associatedModel = include.find(
-          (inc) => inc.as === `${association.relatedTable}Details`
-          );
-          if (associatedModel) {
-          searchConditions.push({
-            [`$${association.relatedTable}Details.${association.targetAttribute}$`]:
-            { [Op.iLike]: `%${search}%` },
-          });
-          }
-        }
-        }
-      });
-      }
-
-      if (searchConditions.length > 0) {
-      whereClause[Op.or] = searchConditions;
-      }
     }
 
     const validSortBy = fields[sort_by] ? sort_by : "created_at";
