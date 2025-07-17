@@ -15192,7 +15192,7 @@ return (
             </FormControl>
           </div>
                 <div style={{ marginTop: 24, maxWidth: 700 }}>
-                <h4 className="form-field-heading">Cases for Selected IO User</h4>
+                <h4 className="form-field-heading">Selected IO handling Case Details</h4>
                 <div style={{ maxHeight: 250, overflowY: "auto" }}>
                   <TableView
                   rows={ioUserCases.slice(
@@ -15547,7 +15547,7 @@ return (
             </FormControl>
           </div>
                 <div style={{ marginTop: 24, maxWidth: '100vw'  }}>
-                <h4 className="form-field-heading">Cases for Selected IO User</h4>
+                <h4 className="form-field-heading">Selected IO handling Case Details</h4>
                 <div style={{  }}>
                   <TableView
                   rows={ioUserCases.slice(

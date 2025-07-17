@@ -17,6 +17,7 @@ import {
   Grid,
   TextField,
 } from "@mui/material";
+import AddIcon from "@mui/icons-material/Add";
 import TextFieldInput from "@mui/material/TextField";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
@@ -2689,19 +2690,19 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                                 {selectedOtherTemplate?.name}
                             </Typography>
 
-                            {selectedRowData?.["field_cid_crime_no./enquiry_no"] && (
+                            {/* {selectedRowData?.["field_cid_crime_no./enquiry_no"] && ( */}
                                 <Chip
-                                    label={selectedRowData["field_cid_crime_no./enquiry_no"]}
+                                    label={headerDetails}
                                     color="primary"
                                     variant="outlined"
                                     size="small"
                                     sx={{ fontWeight: 500, mt: '2px' }}
                                 />
-                            )}
+                            {/* )} */}
 
-                            <Box className="totalRecordCaseStyle">
+                            {/* <Box className="totalRecordCaseStyle">
                                 {otherTemplatesTotalRecord} Records
-                            </Box>
+                            </Box> */}
 
                             {/* {APIsSubmited && !isImmediateSupervisior && (
                                 <Box className="notifyAtTopCaseStyle">
@@ -2778,11 +2779,21 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
 
                                 {!viewModeOnly && !showSubmitAPButton && templateActionAddFlag.current === true && (
                                     <Button
-                                        variant="outlined"
-                                        sx={{ height: '40px' }}
+                                        sx={{height: "38px",}}
+                                        className="blueButton"
+                                        startIcon={
+                                            <AddIcon
+                                                sx={{
+                                                    border: "1.3px solid #FFFFFF",
+                                                    borderRadius: "50%",
+                                                    background:"#4D4AF3 !important",
+                                                }}
+                                            />
+                                        }
+                                        variant="contained"
                                         onClick={() => showOptionTemplate(selectedOtherTemplate?.table || 'cid_ui_case_action_plan')}
                                     >
-                                        Add
+                                        Add New
                                     </Button>
                                 )}
                                 {!showSubmitAPButton && (
