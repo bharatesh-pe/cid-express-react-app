@@ -8,7 +8,7 @@ import AccordionDetails from '@mui/material/AccordionDetails';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
 // import formConfig from './formConfig.json';
-import { Button, Grid, Box, Typography, IconButton, Chip, FormControl, Autocomplete, DialogActions, TextField } from '@mui/material';
+import { Button, Grid, Box, Typography, IconButton, Chip, FormControl, Autocomplete, DialogActions, TextField, Tooltip } from '@mui/material';
 import { Stepper, Step, StepLabel } from '@mui/material';
 import WestIcon from '@mui/icons-material/West';
 import ShortText from '../form/ShortText';
@@ -833,6 +833,19 @@ const NormalViewForm = ({
       setNewFormConfig(updatedFormConfig);
     }
 
+    if (field.name === "field_mahajar_type") {
+      const updatedFormConfig = newFormConfig.map((fld) => {
+        if (fld.name === "field_is_nill_mahazar_applicable") {
+          if (selectedValue === "Seizure Mahazar") {
+            return { ...fld, hide_from_ux: false, required: true };
+          } else {
+            return { ...fld, hide_from_ux: true, required: false };
+          }
+        }
+        return fld;
+      });
+      setNewFormConfig(updatedFormConfig);
+    }
     setFormData(updatedFormData);
 
   }
@@ -3089,51 +3102,78 @@ const NormalViewForm = ({
                         <AccordionDetails>
                             <LocalizationProvider dateAdapter={AdapterDayjs}>
                                 <Box>
-                                    {Array.from({ length: Math.ceil(templateActions.length / 6) }).map((_, rowIndex) => {
-                                        const start = rowIndex * 6;
-                                        const items = templateActions.slice(start, start + 6);
+                                    {Array.from({ length: Math.ceil(templateActions.length / 3) }).map((_, rowIndex) => {
+                                        const start = rowIndex * 3;
+                                        const items = templateActions.slice(start, start + 3);
                                         return (
                                             <Grid container spacing={2} key={rowIndex} sx={{ mb: 2 }}>
                                                 {items.map((item, index) => {
                                                     const actualIndex = start + index;
                                                     return (
-                                                        <Grid item xs={12 / 6} key={actualIndex}>
-                                                            <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
-                                                                <Typography fontWeight={500} fontSize={14}>
-                                                                    {item.name}
-                                                                </Typography>
-                                                                <Typography
-                                                                    onClick={()=> handleIndividualCaseDiaryLog(actualIndex)}
-                                                                    variant="caption"
-                                                                    sx={{
-                                                                        color: 'primary.main',
-                                                                        cursor: 'pointer',
-                                                                        fontWeight: 500,
-                                                                        fontSize: 12,
-                                                                        whiteSpace: 'nowrap'
-                                                                    }}
-                                                                >
-                                                                    View Data
-                                                                </Typography>
-                                                            </Box>
+                                                    <Grid item xs={12 / 3} key={actualIndex} sx={{borderRight: index === 2 ? 'none' : '1px solid #ddd'}} px={2}>
+                                                        <Tooltip arrow title={item.name}>
+                                                        <Box display="flex" alignItems="center" gap={1} borderBottom='1px solid #ddd' pb={1}>
+
+                                                            <Typography
+                                                                fontWeight={500}
+                                                                fontSize={14}
+                                                                noWrap
+                                                                sx={{
+                                                                width: '175px',
+                                                                overflow: 'hidden',
+                                                                textOverflow: 'ellipsis',
+                                                                whiteSpace: 'nowrap',
+                                                                flexShrink: 0
+                                                                }}
+                                                            >
+                                                                {item.name}
+                                                            </Typography>
 
                                                             <DatePicker
                                                                 value={
-                                                                    selectedDates[actualIndex]?.date ? dayjs(selectedDates[actualIndex].date) : null
+                                                                selectedDates[actualIndex]?.date
+                                                                    ? dayjs(selectedDates[actualIndex].date)
+                                                                    : null
                                                                 }
-                                                                onChange={(e) =>
-                                                                    handleDateChange(actualIndex, e)
-                                                                }
+                                                                onChange={(e) => handleDateChange(actualIndex, e)}
                                                                 format="DD-MM-YYYY"
-                                                                slotProps={{
-                                                                    textField: {
-                                                                        size: "small",
-                                                                        fullWidth: true,
-                                                                    },
-                                                                }}
                                                                 disabled={readOnlyTemplate}
+                                                                slotProps={{
+                                                                textField: {
+                                                                    size: "small",
+                                                                    variant: "standard",
+                                                                    InputProps: {
+                                                                    disableUnderline: true
+                                                                    },
+                                                                    sx: {
+                                                                        '& .MuiOutlinedInput-notchedOutline': { border: 'none' },
+                                                                        '& .MuiInputBase-root': { border: 'none' },
+                                                                        backgroundColor: 'transparent',
+                                                                        minWidth: '60px'
+                                                                    }
+                                                                }
+                                                                }}
                                                             />
-                                                        </Grid>
+
+                                                            <Typography
+                                                                onClick={() => handleIndividualCaseDiaryLog(actualIndex)}
+                                                                variant="caption"
+                                                                sx={{
+                                                                    minWidth: '90px',    
+                                                                    color: 'primary.main',
+                                                                    cursor: 'pointer',
+                                                                    fontWeight: 500,
+                                                                    fontSize: 12,
+                                                                    whiteSpace: 'nowrap',
+                                                                    marginLeft: 'auto',
+                                                                    textAlign: 'center'
+                                                                }}
+                                                            >
+                                                                View Data
+                                                            </Typography>
+                                                        </Box>
+                                                        </Tooltip>
+                                                    </Grid>
                                                     );
                                                 })}
                                             </Grid>
@@ -3658,7 +3698,7 @@ const NormalViewForm = ({
             </FormControl>
 
             <div style={{ marginTop: 16}}>
-              <h4 className="form-field-heading">Cases for Selected Action</h4>
+              <h4 className="form-field-heading">Selected IO handling Case Details</h4>
               <div style={{ }}>
               <TableView
                 rows={actionCases
@@ -3889,7 +3929,7 @@ const NormalViewForm = ({
                     </DialogContentText>
                 </DialogContent>
                 <DialogActions sx={{ padding: "12px 24px" }}>
-                    <Button onClick={()=>closeLinkTemplateModal}>
+                    <Button onClick={closeLinkTemplateModal}>
                         Cancel
                     </Button>
                 </DialogActions>

@@ -38,6 +38,7 @@ import { saveAs } from 'file-saver';
 import ImportExportIcon from '@mui/icons-material/ImportExport';
 import dayjs from "dayjs";
 import React from "react";
+import AddIcon from "@mui/icons-material/Add";
 
 const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData, backNavigation, showMagazineView }) => {
     const location = useLocation();
@@ -2019,19 +2020,19 @@ const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData
                                     {selectedOtherTemplate?.name}
                                 </Typography>
 
-                                {selectedRowData?.["field_cid_crime_no./enquiry_no"] && (
+                                {/* {selectedRowData?.["field_cid_crime_no./enquiry_no"] && ( */}
                                     <Chip
-                                        label={selectedRowData["field_cid_crime_no./enquiry_no"]}
+                                        label={headerDetails}
                                         color="primary"
                                         variant="outlined"
                                         size="small"
                                         sx={{ fontWeight: 500, mt: '2px' }}
                                     />
-                                )}
+                                {/* )} */}
 
-                                <Box className="totalRecordCaseStyle">
+                                {/* <Box className="totalRecordCaseStyle">
                                     {otherTemplatesTotalRecord} Records
-                                </Box>
+                                </Box> */}
 
                             </Box>
 
@@ -2112,11 +2113,21 @@ const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData
                                     >
                                     {!viewModeOnly && (
                                         <Button
-                                            variant="outlined"
-                                            sx={{ height: '40px' }}
+                                           sx={{height: "38px",}}
+                                            className="blueButton"
+                                            startIcon={
+                                                <AddIcon
+                                                    sx={{
+                                                        border: "1.3px solid #FFFFFF",
+                                                        borderRadius: "50%",
+                                                        background:"#4D4AF3 !important",
+                                                    }}
+                                                />
+                                            }
+                                            variant="contained"
                                             onClick={() => showOptionTemplate(selectedOtherTemplate?.table)}
                                         >
-                                            Add
+                                            Add New
                                         </Button>
                                     )}
                                     {/* {
@@ -2216,7 +2227,13 @@ const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData
                                 onError={onSaveTemplateError}
                                 closeForm={() => setPropertyFormOpen(false)}
                                 headerDetails={selectedRowData?.["field_cid_crime_no./enquiry_no"]}
-                                onSkip={pendingMahazarData?.data?.field_mahajar_type === "Seizure Mahazar" ? false : handleSkipPropertyForm}
+                                onSkip={
+                                pendingMahazarData?.data?.field_mahajar_type !== "Seizure Mahazar"
+                                    ? handleSkipPropertyForm
+                                    : pendingMahazarData?.data?.field_is_nill_mahazar_applicable === "Yes"
+                                    ? handleSkipPropertyForm
+                                    : false
+                                }
                                 skip = {handleSkipPropertyForm}
                                 />
 
