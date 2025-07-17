@@ -5,6 +5,7 @@ import { styled } from '@mui/material/styles';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import pdfIcon from '../../Images/pdfIcon.svg'
 import docIcon from '../../Images/docIcon.svg'
+import docxIcon from '../../Images/docxIcon.svg'
 import xlsIcon from '../../Images/xlsIcon.svg'
 import pptIcon from '../../Images/pptIcon.svg'
 import jpgIcon from '../../Images/jpgIcon.svg'
@@ -232,6 +233,7 @@ const FileInput = ({ field, formData, errors, onChange, onFocus, isFocused, onHi
                 return <img src={xlsIcon} />;
             case 'csv':
             case 'docx':
+                return <img src={docxIcon} />;
             case 'doc':
                 return <img src={docIcon} />;
             case 'ppt':
