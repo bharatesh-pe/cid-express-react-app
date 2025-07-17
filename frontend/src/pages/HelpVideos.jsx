@@ -15,7 +15,8 @@ import {
     Accordion,
     AccordionSummary,
     AccordionDetails,
-    IconButton
+    IconButton,
+    CircularProgress
 } from "@mui/material";
 
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
@@ -162,7 +163,7 @@ export default function VideoListViewer() {
     };
 
     return (
-        <Box p={3}>
+        <Box p={3} mb={5}>
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between'}} pb={2}>
                 <Typography variant="h6" gutterBottom>
                     Help Videos
@@ -241,7 +242,7 @@ export default function VideoListViewer() {
             <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
                 <DialogTitle>Upload Help Video</DialogTitle>
                 <DialogContent dividers>
-                    <FormControl fullWidth sx={{ mb: 3 }}>
+                    <FormControl fullWidth sx={{ my: 3 }}>
                         <InputLabel>Select Module</InputLabel>
                         <Select
                             value={selectedModule}
@@ -281,6 +282,12 @@ export default function VideoListViewer() {
                     </Button>
                 </DialogActions>
             </Dialog>
+
+            {loading && (
+                <div className="parent_spinner" tabIndex="-1" aria-hidden="true">
+                    <CircularProgress size={100} />
+                </div>
+            )}
 
         </Box>
     );
