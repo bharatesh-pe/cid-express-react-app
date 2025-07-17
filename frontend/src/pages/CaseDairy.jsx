@@ -24,6 +24,8 @@ import SearchIcon from "@mui/icons-material/Search";
 
 const CaseDairy = ({headerDetails, backToForm, showMagazineView, rowData, module, actionArray}) => {
 
+    const [disabledDateArray, setDisabledDateArray] = useState([]);
+
     const [tableColumnData, setTableColumnData] = useState([
         { field: 'sl_no', headerName: 'Sl. No.' },
     ]);
@@ -106,6 +108,25 @@ const CaseDairy = ({headerDetails, backToForm, showMagazineView, rowData, module
                 const generateReadableHeader = (key) =>key.replace(/^field_/, "").replace(/_/g, " ").toLowerCase().replace(/^\w|\s\w/g, (c) => c.toUpperCase());
                 
                 const renderCellFunc = (key, count) => (params) => tableCellRender(key, params, params.value, count, options.table || options);
+
+                let disabledDateList = [];
+
+                if (data?.length > 0) {
+                    disabledDateList = data
+                        .map(item => item.field_date)
+                        .filter(val => !!val)
+                        .map(val => {
+                            const parsed = Date.parse(val);
+                            if (isNaN(parsed)) return null;
+
+                            const date = new Date(parsed);
+                            return date.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+                        })
+                        .filter(date => date !== null);
+                }
+
+                setDisabledDateArray(disabledDateList);
+
 
                 if (data?.length > 0) {
 
@@ -956,6 +977,7 @@ const CaseDairy = ({headerDetails, backToForm, showMagazineView, rowData, module
                             noPadding={true}
                             editedForm={editedFormFlag}
                             caseDiary={true}
+                            disabledDates={disabledDateArray}
                             caseDiaryArray={actionArray}
                             caseDairy_ui_case_id={module === "pt_case" ? rowData?.ui_case_id : rowData?.id}
                             caseDairy_pt_case_id={module === "pt_case" ? rowData?.id : rowData?.pt_case_id}

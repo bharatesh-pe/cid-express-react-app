@@ -61,7 +61,7 @@ import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 
 const NormalViewForm = ({ 
     formConfig, initialData, onSubmit, onError, stepperData, closeForm, table_name, template_name, readOnly, editData, onUpdate, template_id, table_row_id, headerDetails, selectedRow, noPadding, disableEditButton, disableSaveNew, overAllReadonly, investigationViewTable, editedForm
-    , showAssignIo, investigationAction, reloadApproval, showCaseActionBtn, reloadForm , showCaseLog, reloadFormConfig , onSkip , skip , editName ,  oldCase , onViewOldCase, showMagazineView, caseDiary, caseDiaryArray, caseDairy_pt_case_id, caseDairy_ui_case_id
+    , showAssignIo, investigationAction, reloadApproval, showCaseActionBtn, reloadForm , showCaseLog, reloadFormConfig , onSkip , skip , editName ,  oldCase , onViewOldCase, showMagazineView, caseDiary, caseDiaryArray, caseDairy_pt_case_id, caseDairy_ui_case_id, disabledDates
  }) => {
 
 //   let storageFormData = localStorage.getItem(template_name + '-formData') ? JSON.parse(localStorage.getItem(template_name + '-formData')) : {};
@@ -2525,46 +2525,9 @@ const NormalViewForm = ({
     const handleDateChange = (index, date) => {
         const updated = [...selectedDates];
 
-        if (!date) {
-            updated[index] = {
-                table: templateActions[index].table,
-                date: null
-            };
-            setSelectedDates(updated);
-            return;
-        }
-
-        const formattedDate = date.format("YYYY-MM-DD");
-
-        const isDuplicate = selectedDates.some((item, idx) =>
-            idx !== index &&
-            item?.date &&
-            dayjs(item.date).format("YYYY-MM-DD") === formattedDate
-        );
-
-        if (isDuplicate) {
-            toast.warning("This date has already been selected.", {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-warning",
-            });
-
-            updated[index] = {
-                table: templateActions[index].table,
-                date: null
-            };
-            setSelectedDates(updated);
-            return;
-        }
-
         updated[index] = {
             table: templateActions[index].table,
-            date: date.format("YYYY-MM-DDT00:00:00")
+            date: date ? date.format("YYYY-MM-DDT00:00:00") : null
         };
         setSelectedDates(updated);
     };
@@ -3194,15 +3157,7 @@ const NormalViewForm = ({
                                                                 }
                                                                 onChange={(e) => handleDateChange(actualIndex, e)}
                                                                 format="DD-MM-YYYY"
-                                                                shouldDisableDate={(day) => {
-                                                                const selectedDay = day.format('YYYY-MM-DD');
-                                                                return selectedDates.some(
-                                                                    (item, idx) =>
-                                                                        idx !== actualIndex &&
-                                                                        item?.date &&
-                                                                        dayjs(item.date).format('YYYY-MM-DD') === selectedDay
-                                                                );
-                                                            }}
+                                                                disabled={readOnlyTemplate}                                                                
                                                                 slotProps={{
                                                                 textField: {
                                                                     size: "small",
@@ -3440,7 +3395,8 @@ const NormalViewForm = ({
                             errors={errors}
                             onHistory={() => showHistory(field.name)}
                             onChange={(value) => { handleChangeDate(field.name, value) }} 
-                            readOnly={readOnlyData}    
+                            readOnly={readOnlyData} 
+                            disabledDates={disabledDates}   
                         />
                         </div>
                       </Grid>
