@@ -362,6 +362,10 @@
                 "ext": ".doc"
             },
             {
+                "name": "Docx files",
+                "ext": ".docx"
+            },
+            {
                 "name": "Excel sheets",
                 "ext": ".xls"
             },
