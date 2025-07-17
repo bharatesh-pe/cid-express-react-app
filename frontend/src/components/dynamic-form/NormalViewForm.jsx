@@ -846,6 +846,26 @@ const NormalViewForm = ({
       });
       setNewFormConfig(updatedFormConfig);
     }
+
+    if (table_name === "cid_ui_case_notices" && field.tabOption === "41A") {
+        if (field.name === "field_whether_fir_&_complaint_copy_enclosed") {
+            if (selectedValue === "Yes" || selectedValue === "No") {
+            const updatedFormConfig = newFormConfig.map((fld) => {
+                if (fld.name === "field_fir_copy" || fld.name === "field_complaint_copy") {
+                if (selectedValue === "Yes") {
+                    return { ...fld, hide_from_ux: false, required: true };
+                } else {
+                    return { ...fld, hide_from_ux: true, required: false };
+                }
+                }
+                return fld;
+            });
+
+            setNewFormConfig(updatedFormConfig);
+            }
+        }
+    }
+
     setFormData(updatedFormData);
 
   }
