@@ -35,7 +35,7 @@ const AccusedSplitScreen = ({tableObj, selectedAccused, closeForm, ui_case_id, p
 
     console.log(mainTableName,"mainTableName");    
 
-    const gettingFieldName = mainTableName === "cid_ui_case_accused" ? "field_accused_name" : "field_name";
+    const gettingFieldName = mainTableName === "cid_ui_case_accused" ? "field_accused_name" : "field_witness_name";
 
     const [loading, setLoading] = useState(false);
 
@@ -604,10 +604,21 @@ const AccusedSplitScreen = ({tableObj, selectedAccused, closeForm, ui_case_id, p
                     });
                 }
 
-                console.log(accusedWitnessTabs,"accusedWitnessTabs");
-
                 if(accusedWitnessTabs !== false && accusedWitnessTabs !== ""){
                     initialFormConfig[accusedWitnessTabs] = mainTableName === "cid_ui_case_accused" ? "Accused" : "Witness"
+
+                    updatedFields = updatedFields.map((item)=>{
+
+                        if(item.name === accusedWitnessTabs){                            
+                            return{
+                                ...item,
+                                disabled : true
+                            }
+                        }
+                        return{
+                            ...item,
+                        }
+                    });
                 }
                 
                 setSelectedTemplateId(viewTemplateResponse?.["data"]?.template_id);

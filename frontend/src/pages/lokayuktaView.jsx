@@ -569,7 +569,7 @@ const LokayuktaView = () => {
     };
     const defaultMenuItems = [
         { label: 'Notices', table_name: 'cid_ui_case_notices' },
-        { label: 'Court matters', table_name: 'cid_pt_case_court_matters' },
+        { label: 'Court matters', table_name: 'cid_pt_case_petition' },
         { label: 'Petition', table_name: 'cid_pt_case_petition' },
         { label: 'Trial Monitoring', table_name: 'cid_pt_case_trial_monitoring' },
     ];
@@ -837,11 +837,18 @@ const LokayuktaView = () => {
                             ),
                             renderCell: renderCellFunc(key, index),
                         })),
-                        ...(splitScreenArray.includes(options?.table?.toLowerCase()) ? [
-                            {
-                                field: "notices",
-                                headerName: "Notices",
-                                width: 100,
+                         ...(splitScreenArray.includes((options?.table || "").toLowerCase()) ? [
+                            { label: "Notices", table_name: "cid_ui_case_notices", field: "notices", width: 100 },
+                            { label: "Recording of Statement", table_name: "cid_ui_case_recording_of_statements", field: "recording_of_statement", width: 240 },
+                            { label: "Court Matters", table_name: "cid_pt_case_petition", field: "court_matters", width: 150 },
+                            { label: "Petition", table_name: "cid_pt_case_petition", field: "petition", width: 120 },
+                            { label: "Trial Monitoring", table_name: "cid_pt_case_trial_monitoring", field: "trial_monitoring", width: 220 },
+                        ]
+                            .filter(item => contentTables.includes(item.table_name))
+                            .map(item => ({
+                                field: item.field,
+                                headerName: item.label,
+                                width: item.width,
                                 resizable: false,
                                 renderCell: (params) => (
                                     <Button
@@ -849,108 +856,14 @@ const LokayuktaView = () => {
                                         size="small"
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            handleOpenSplitScreen(params.row, 
-                                            {label: 'Notices', table_name: 'cid_ui_case_notices'}, 
-                                            options?.table
-                                            );
+                                            handleOpenSplitScreen(params.row, { label: item.label, table_name: item.table_name }, options?.table);
                                         }}
                                         className="newStyleButton"
                                     >
-                                        Notices
+                                        {item.label}
                                     </Button>
                                 )
-                            },
-                            {
-                                field: "recording_of_statement",
-                                headerName: "Recording of Statement",
-                                width: 260,
-                                resizable: false,
-                                renderCell: (params) => (
-                                    <Button
-                                        variant="contained"
-                                        size="small"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleOpenSplitScreen(params.row, 
-                                            {label: 'Recording of Statement', table_name: 'cid_ui_case_recording_of_statements'}, 
-                                            options?.table
-                                            );
-                                        }}
-                                        className="newStyleButton"
-                                    >
-                                        Recording of Statement
-                                    </Button>
-                                )
-                            },
-                                                                
-                            {
-                                field: "court_matters",
-                                headerName: "Court Matters",
-                                width: 150,
-                                resizable: false,
-                                renderCell: (params) => (
-                                    <Button
-                                        variant="contained"
-                                        size="small"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleOpenSplitScreen(params.row, 
-                                            {label: 'Court Matters', table_name: 'cid_pt_case_court_matters'}, 
-                                            options?.table
-                                            );
-                                        }}
-                                        className="newStyleButton"
-                                    >
-                                        Court Matters
-                                    </Button>
-                                )
-                            },
-                    
-                            {
-                                field: "petition",
-                                headerName: "Petition",
-                                width: 150,
-                                resizable: false,
-                                renderCell: (params) => (
-                                    <Button
-                                        variant="contained"
-                                        size="small"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleOpenSplitScreen(params.row, 
-                                            {label: 'Petition', table_name: 'cid_pt_case_petition'}, 
-                                            options?.table
-                                            );
-                                        }}
-                                        className="newStyleButton"
-                                    >
-                                        Petition
-                                    </Button>
-                                )
-                            },
-                            {
-                                field: "trial_monitoring",
-                                headerName: "Trial Monitoring",
-                                width: 230,
-                                resizable: false,
-                                renderCell: (params) => (
-                                    <Button
-                                        variant="contained"
-                                        size="small"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleOpenSplitScreen(params.row, 
-                                            {label: 'Trial Monitoring', table_name: 'cid_pt_case_trial_monitoring'}, 
-                                            options?.table
-                                            );
-                                        }}
-                                        className="newStyleButton"
-                                    >
-                                        Trial Monitoring
-                                    </Button>
-                                )
-                            }
-                        ] : []),
+                            })) : [])
                     ]
 
                     const formatDate = (value) => {
