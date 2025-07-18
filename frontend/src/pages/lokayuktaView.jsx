@@ -6,6 +6,7 @@ import LokayuktaSidebar from "../components/lokayuktaSidebar";
 import { West } from "@mui/icons-material";
 import DeleteIcon from '@mui/icons-material/Delete';
 import TextFieldInput from "@mui/material/TextField";
+import { Menu, MenuItem } from '@mui/material';
 
 import NormalViewForm from "../components/dynamic-form/NormalViewForm";
 import TableView from "../components/table-view/TableView";
@@ -63,6 +64,7 @@ const LokayuktaView = () => {
         }
     },[]);
 
+    
     const [splitScreenArray, setSplitScreenArray] = useState([
         'cid_ui_case_accused',
         'cid_pt_case_witness',
@@ -555,6 +557,47 @@ const LokayuktaView = () => {
         }
     };
 
+    const [anchorEl, setAnchorEl] = useState(null);
+    const open = Boolean(anchorEl);
+
+    const handleMenuClick = (event) => {
+        setAnchorEl(event.currentTarget);
+    };
+
+    const handleMenuClose = () => {
+        setAnchorEl(null);
+    };
+    const defaultMenuItems = [
+        { label: 'Notices', table_name: 'cid_ui_case_notices' },
+        { label: 'Court matters', table_name: 'cid_pt_case_court_matters' },
+        { label: 'Petition', table_name: 'cid_pt_case_petition' },
+        { label: 'Trial Monitoring', table_name: 'cid_pt_case_trial_monitoring' },
+    ];
+
+    let parsedContentArray = [];
+
+    try {
+        if (typeof contentArray === "string") {
+            parsedContentArray = JSON.parse(contentArray);
+        } else if (Array.isArray(contentArray)) {
+            parsedContentArray = contentArray;
+        } else {
+            parsedContentArray = Object.values(contentArray || {});
+        }
+    } catch (e) {
+        console.error("Failed to parse contentArray:", e);
+    }
+
+    const contentTables = parsedContentArray
+        .filter(item => typeof item.table === 'string')
+        .map(item => item.table);
+
+    const menuItems = defaultMenuItems.filter(item =>
+        contentTables.includes(item.table_name)
+    );
+
+
+
     useEffect(()=>{
         if(tableTabs.length > 0){
             getTableData(activeSidebar);
@@ -836,6 +879,74 @@ const LokayuktaView = () => {
                                         className="newStyleButton"
                                     >
                                         Recording of Statement
+                                    </Button>
+                                )
+                            },
+                                                                
+                            {
+                                field: "court_matters",
+                                headerName: "Court Matters",
+                                width: 150,
+                                resizable: false,
+                                renderCell: (params) => (
+                                    <Button
+                                        variant="contained"
+                                        size="small"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleOpenSplitScreen(params.row, 
+                                            {label: 'Court Matters', table_name: 'cid_pt_case_court_matters'}, 
+                                            options?.table
+                                            );
+                                        }}
+                                        className="newStyleButton"
+                                    >
+                                        Court Matters
+                                    </Button>
+                                )
+                            },
+                    
+                            {
+                                field: "petition",
+                                headerName: "Petition",
+                                width: 150,
+                                resizable: false,
+                                renderCell: (params) => (
+                                    <Button
+                                        variant="contained"
+                                        size="small"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleOpenSplitScreen(params.row, 
+                                            {label: 'Petition', table_name: 'cid_pt_case_petition'}, 
+                                            options?.table
+                                            );
+                                        }}
+                                        className="newStyleButton"
+                                    >
+                                        Petition
+                                    </Button>
+                                )
+                            },
+                            {
+                                field: "trial_monitoring",
+                                headerName: "Trial Monitoring",
+                                width: 230,
+                                resizable: false,
+                                renderCell: (params) => (
+                                    <Button
+                                        variant="contained"
+                                        size="small"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleOpenSplitScreen(params.row, 
+                                            {label: 'Trial Monitoring', table_name: 'cid_pt_case_trial_monitoring'}, 
+                                            options?.table
+                                            );
+                                        }}
+                                        className="newStyleButton"
+                                    >
+                                        Trial Monitoring
                                     </Button>
                                 )
                             }
@@ -3354,21 +3465,37 @@ if ((!currentTableName || currentTableName === "") && (!activeSidebar?.table || 
                                     }
                                 </Box>
 
-                                {
-                                    selectedSplitScreenRows.length > 0 &&
-                                    <Box>
-                                        <Button
-                                            variant="contained"
-                                            className="blueButton"
-                                            size="large"
-                                            sx={{ height: "38px" }}
-                                            onClick={()=>handleOverAllAccused( {label: 'Notices', table_name: 'cid_ui_case_notices'} )}
-                                        >
-                                            Create Notices
-                                        </Button>
-                                    </Box>
-                                }
-                            </Box>
+                                {selectedSplitScreenRows.length > 0 && (
+                                <>
+                                <Button
+                                    variant="contained"
+                                    className="blueButton"
+                                    size="large"
+                                    sx={{ height: '38px' }}
+                                    onClick={handleMenuClick}
+                                >
+                                    Create
+                                </Button>
+                                <Menu
+                                    anchorEl={anchorEl}
+                                    open={open}
+                                    onClose={handleMenuClose}
+                                >
+                                    {menuItems.map((item) => (
+                                    <MenuItem
+                                        key={item.table_name}
+                                        onClick={() => {
+                                        handleOverAllAccused(item);
+                                        handleMenuClose();
+                                        }}
+                                    >
+                                        {`${item.label}`}
+                                    </MenuItem>
+                                    ))}
+                                </Menu>
+                                </>
+                                )}                            
+                                </Box>
 
                         <Box sx={{ display: 'flex', gap: 2, width: '100%' }}>
                             
