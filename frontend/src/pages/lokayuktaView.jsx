@@ -839,10 +839,9 @@ const LokayuktaView = () => {
                         })),
                          ...(splitScreenArray.includes((options?.table || "").toLowerCase()) ? [
                             { label: "Notices", table_name: "cid_ui_case_notices", field: "notices", width: 100 },
-                            { label: "Recording of Statement", table_name: "cid_ui_case_recording_of_statements", field: "recording_of_statement", width: 240 },
                             { label: "Court Matters", table_name: "cid_pt_case_petition", field: "court_matters", width: 150 },
                             { label: "Petition", table_name: "cid_pt_case_petition", field: "petition", width: 120 },
-                            { label: "Trial Monitoring", table_name: "cid_pt_case_trial_monitoring", field: "trial_monitoring", width: 220 },
+                            { label: "Trial Monitoring", table_name: "cid_pt_case_trial_monitoring", field: "trial_monitoring", width: 170 },
                         ]
                             .filter(item => contentTables.includes(item.table_name))
                             .map(item => ({
@@ -863,7 +862,30 @@ const LokayuktaView = () => {
                                         {item.label}
                                     </Button>
                                 )
-                            })) : [])
+                            })) : []),
+                            {
+                                field: "recording_of_statement",
+                                headerName: "Recording of Statement",
+                                width: 200,
+                                resizable: false,
+                                renderCell: (params) => (
+                                    <Button
+                                        variant="contained"
+                                        size="small"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleOpenSplitScreen(params.row, {
+                                                label: "Recording of Statement",
+                                                table_name: "cid_ui_case_recording_of_statements"
+                                            }, options?.table);
+                                        }}
+                                        className="newStyleButton"
+                                    >
+                                        Recording of Statement
+                                    </Button>
+                                )
+                            }
+
                     ]
 
                     const formatDate = (value) => {
