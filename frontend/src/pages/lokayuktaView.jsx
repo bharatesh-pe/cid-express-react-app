@@ -572,6 +572,7 @@ const LokayuktaView = () => {
         { label: 'Court matters', table_name: 'cid_pt_case_petition' },
         { label: 'Petition', table_name: 'cid_pt_case_petition' },
         { label: 'Trial Monitoring', table_name: 'cid_pt_case_trial_monitoring' },
+        { label: 'Recording of Statement', table_name: 'cid_ui_case_recording_of_statements' },
     ];
 
     let parsedContentArray = [];
@@ -839,10 +840,10 @@ const LokayuktaView = () => {
                         })),
                          ...(splitScreenArray.includes((options?.table || "").toLowerCase()) ? [
                             { label: "Notices", table_name: "cid_ui_case_notices", field: "notices", width: 100 },
-                            { label: "Recording of Statement", table_name: "cid_ui_case_recording_of_statements", field: "recording_of_statement", width: 240 },
+                            { label: "Petition", table_name: "cid_pt_case_petition", field: "petition", width: 100 },
                             { label: "Court Matters", table_name: "cid_pt_case_petition", field: "court_matters", width: 150 },
-                            { label: "Petition", table_name: "cid_pt_case_petition", field: "petition", width: 120 },
-                            { label: "Trial Monitoring", table_name: "cid_pt_case_trial_monitoring", field: "trial_monitoring", width: 220 },
+                            { label: "Trial Monitoring", table_name: "cid_pt_case_trial_monitoring", field: "trial_monitoring", width: 170 },
+                            { label: "Recording of Statement", table_name: "cid_ui_case_recording_of_statements", field: "recording_of_statement", width: 230 },
                         ]
                             .filter(item => contentTables.includes(item.table_name))
                             .map(item => ({
@@ -863,7 +864,7 @@ const LokayuktaView = () => {
                                         {item.label}
                                     </Button>
                                 )
-                            })) : [])
+                            })) : []),
                     ]
 
                     const formatDate = (value) => {
