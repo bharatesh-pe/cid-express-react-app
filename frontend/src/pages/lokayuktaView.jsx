@@ -843,10 +843,10 @@ const LokayuktaView = () => {
                         })),
                          ...(splitScreenArray.includes((options?.table || "").toLowerCase()) ? [
                             { label: "Notices", table_name: "cid_ui_case_notices", field: "notices", width: 100 },
-                            { label: "Petition", table_name: "cid_pt_case_petition", field: "petition", width: 100 },
-                            { label: "Court Matters", table_name: "cid_pt_case_petition", field: "court_matters", width: 150 },
-                            { label: "Trial Monitoring", table_name: "cid_pt_case_trial_monitoring", field: "trial_monitoring", width: 170 },
-                            { label: "Recording of Statement", table_name: "cid_ui_case_recording_of_statements", field: "recording_of_statement", width: 230 },
+                            { label: "Petition", table_name: "cid_pt_case_petition", field: "petition", width: 110 },
+                            { label: "Court Matters", table_name: "cid_pt_case_petition", field: "court_matters", width: 160 },
+                            { label: "Trial Monitoring", table_name: "cid_pt_case_trial_monitoring", field: "trial_monitoring", width: 180 },
+                            { label: "Recording of Statement", table_name: "cid_ui_case_recording_of_statements", field: "recording_of_statement", width: 240 },
                         ]
                             .filter(item => {
                                 if (module === "ui_case" && item.label === "Petition") return false;
