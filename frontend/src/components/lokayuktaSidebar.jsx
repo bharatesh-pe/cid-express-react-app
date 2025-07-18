@@ -23,7 +23,7 @@ import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import api from "../services/api";
 import CloseIcon from '@mui/icons-material/Close';
 
-const LokayuktaSidebar = ({ui_case_id, pt_case_id, contentArray, onClick, activeSidebar, templateName, fromCDR, showMagazineView}) => {
+const LokayuktaSidebar = ({ui_case_id, pt_case_id, contentArray, onClick, activeSidebar, templateName, fromCDR, showMagazineView,tableCounts, setTableCounts}) => {
 
     const navigate = useNavigate();
     const location = useLocation();
@@ -36,7 +36,7 @@ const LokayuktaSidebar = ({ui_case_id, pt_case_id, contentArray, onClick, active
     const [selectedInvestigationIndex, setSelectedInvestigationIndex] = useState(fromCDR ? 0 : null);
 
     const [notificationCount, setNotificationCount] = useState(localStorage.getItem("unreadNotificationCount") || 0);
-    const [tableCounts, setTableCounts] = useState({});
+    // const [tableCounts, setTableCounts] = useState({});
 
     const handleLogout = async () => {
         const token = localStorage.getItem("auth_token");
