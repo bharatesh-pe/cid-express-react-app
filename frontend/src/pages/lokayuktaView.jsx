@@ -567,6 +567,7 @@ const LokayuktaView = () => {
     const handleMenuClose = () => {
         setAnchorEl(null);
     };
+
     const defaultMenuItems = [
         { label: 'Notices', table_name: 'cid_ui_case_notices' },
         { label: 'Court matters', table_name: 'cid_pt_case_petition' },
@@ -593,9 +594,11 @@ const LokayuktaView = () => {
         .filter(item => typeof item.table === 'string')
         .map(item => item.table);
 
-    const menuItems = defaultMenuItems.filter(item =>
-        contentTables.includes(item.table_name)
-    );
+    const menuItems = defaultMenuItems.filter(item => {
+        if (module === "ui_case" && item.label === "Petition") return false;
+        if (module === "pt_case" && item.label === "Court matters") return false;
+        return contentTables.includes(item.table_name);
+    });
 
 
 
@@ -845,7 +848,11 @@ const LokayuktaView = () => {
                             { label: "Trial Monitoring", table_name: "cid_pt_case_trial_monitoring", field: "trial_monitoring", width: 170 },
                             { label: "Recording of Statement", table_name: "cid_ui_case_recording_of_statements", field: "recording_of_statement", width: 230 },
                         ]
-                            .filter(item => contentTables.includes(item.table_name))
+                            .filter(item => {
+                                if (module === "ui_case" && item.label === "Petition") return false;
+                                if (module === "pt_case" && item.label === "Court Matters") return false;
+                                return contentTables.includes(item.table_name);
+                            })
                             .map(item => ({
                                 field: item.field,
                                 headerName: item.label,
