@@ -572,6 +572,7 @@ const LokayuktaView = () => {
         { label: 'Court matters', table_name: 'cid_pt_case_petition' },
         { label: 'Petition', table_name: 'cid_pt_case_petition' },
         { label: 'Trial Monitoring', table_name: 'cid_pt_case_trial_monitoring' },
+        { label: 'Recording of Statement', table_name: 'cid_ui_case_recording_of_statements' },
     ];
 
     let parsedContentArray = [];
@@ -842,6 +843,7 @@ const LokayuktaView = () => {
                             { label: "Petition", table_name: "cid_pt_case_petition", field: "petition", width: 100 },
                             { label: "Court Matters", table_name: "cid_pt_case_petition", field: "court_matters", width: 150 },
                             { label: "Trial Monitoring", table_name: "cid_pt_case_trial_monitoring", field: "trial_monitoring", width: 170 },
+                            { label: "Recording of Statement", table_name: "cid_ui_case_recording_of_statements", field: "recording_of_statement", width: 230 },
                         ]
                             .filter(item => contentTables.includes(item.table_name))
                             .map(item => ({
@@ -863,29 +865,6 @@ const LokayuktaView = () => {
                                     </Button>
                                 )
                             })) : []),
-                            {
-                                field: "recording_of_statement",
-                                headerName: "Recording of Statement",
-                                width: 230,
-                                resizable: false,
-                                renderCell: (params) => (
-                                    <Button
-                                        variant="contained"
-                                        size="small"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleOpenSplitScreen(params.row, {
-                                                label: "Recording of Statement",
-                                                table_name: "cid_ui_case_recording_of_statements"
-                                            }, options?.table);
-                                        }}
-                                        className="newStyleButton"
-                                    >
-                                        Recording of Statement
-                                    </Button>
-                                )
-                            }
-
                     ]
 
                     const formatDate = (value) => {
