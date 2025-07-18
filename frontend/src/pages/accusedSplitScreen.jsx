@@ -35,7 +35,7 @@ const AccusedSplitScreen = ({tableObj, selectedAccused, closeForm, ui_case_id, p
 
     console.log(mainTableName,"mainTableName");    
 
-    const gettingFieldName = mainTableName === "cid_ui_case_accused" ? "field_accused_name" : "field_witness_name";
+    const gettingFieldName = mainTableName === "cid_ui_case_accused" ? "field_accused_name" : "field_name";
 
     const [loading, setLoading] = useState(false);
 
@@ -70,6 +70,7 @@ const AccusedSplitScreen = ({tableObj, selectedAccused, closeForm, ui_case_id, p
     const [editOnlyForm, setEditOnlyForm] = useState(null);
 
     const [rowData, setRowData] = useState({});
+
     
     const editedForm = useRef(false);
 
@@ -1121,7 +1122,11 @@ const AccusedSplitScreen = ({tableObj, selectedAccused, closeForm, ui_case_id, p
                             onError={formError}
                             closeForm={closeAddForm}
                             noPadding={true}
-                            selectedRow={rowData}
+                            selectedRow={{
+                                ...rowData,
+                                ui_case_id: ui_case_id,
+                                pt_case_id: pt_case_id
+                            }}
                             editedForm={editedFormFlag}
                         />
                     </DialogContent>
