@@ -100,23 +100,39 @@ export default function DateField({ field, formData, errors, onChange, onFocus, 
                     name={field.name}
                     value={dateFieldValue}
                     onChange={(e) => {
-                        if (!e) return onChange(null);
+                    if (!e) return onChange(null);
 
-                        const formatted = dayjs(e).format("YYYY-MM-DD");
-                        if (disabledDates?.includes(formatted)) {
-                        toast.warning("This date is already selected", {
-                            position: "top-right",
-                            autoClose: 3000,
-                            hideProgressBar: false,
-                            className: 'toast-warning'
-                        });
+                    const formatted = dayjs(e).format("YYYY-MM-DD");
 
-                        onChange(null);
-                        return;
-                        }
-
+                    if (
+                        readOnly ||
+                        (selectedDate && formatted === selectedDate.format("YYYY-MM-DD"))
+                    ) {
                         onChange(e.$d);
+                        return;
+                    }
+
+                    if (disabledDates?.includes(formatted)) {
+                        toast.warning("This date is already selected", {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        className: "toast-warning",
+                        });
+                        return;
+                    }
+
+                    onChange(e.$d);
                     }}
+                    slotProps={{
+                        textField: {
+                            inputProps: {
+                            readOnly: true,
+                            onKeyDown: (e) => e.preventDefault(),
+                            },
+                        },
+                    }}
+
                     // onFocus={onFocus}
                     focused={isFocused || false}
                     required={field.required === true}
@@ -125,9 +141,16 @@ export default function DateField({ field, formData, errors, onChange, onFocus, 
                     minDate={field?.minValue ? dayjs(field.minValue) : minDate} // Pass minDate as dayjs object
                     maxDate={field?.maxValue ? dayjs(field.maxValue) : maxDate} // Pass maxDate as dayjs object (end of today)
                     shouldDisableDate={(date) => {
-                        const formatted = date?.format("YYYY-MM-DD");
-                        return disabledDates?.includes(formatted);
+                            const formatted = date?.format("YYYY-MM-DD");
+                            if (
+                                readOnly ||
+                                (selectedDate && formatted === selectedDate.format("YYYY-MM-DD"))
+                            ) {
+                                return false;
+                            }
+                            return disabledDates?.includes(formatted);
                     }}
+
                     format="DD-MM-YYYY"
                     sx={{
                         width: '100%',
