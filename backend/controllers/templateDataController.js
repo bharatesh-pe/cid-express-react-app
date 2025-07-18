@@ -9174,7 +9174,7 @@ exports.getAccusedWitness = async (req, res) => {
 			attributes = ["id", "field_accused_name"];
 		}
 		else if(table_name === "cid_pt_case_witness"){
-			attributes = ["id", "field_name"];
+			attributes = ["id", "field_witness_name"];
 		}
 
 		const Usersdata = await Model.findAll({
@@ -9186,7 +9186,7 @@ exports.getAccusedWitness = async (req, res) => {
 			if (table_name === "cid_ui_case_accused") {
 				return { id: item.id, name: item.field_accused_name };
 			} else if (table_name === "cid_pt_case_witness") {
-				return { id: item.id, name: item.field_name };
+				return { id: item.id, name: item.field_witness_name };
 			}
 			return item;
 		});
