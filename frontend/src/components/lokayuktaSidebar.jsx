@@ -339,7 +339,38 @@ const LokayuktaSidebar = ({ui_case_id, pt_case_id, contentArray, onClick, active
                                                             </svg>
                                                         </span>
                                                     )}
-                                                    <ListItemText primary={registerItem.name ? registerItem.name : "FIR"} />
+                                                    {/* <ListItemText primary={registerItem.name ? registerItem.name : "FIR"} /> */}
+                                                    <ListItemText
+                                                        primary={
+                                                            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                                                            <Box
+                                                                onClick={() => {
+                                                                if (onClick) onClick(registerItem);
+                                                                }}
+                                                                sx={{
+                                                                whiteSpace: 'nowrap',
+                                                                overflow: 'hidden',
+                                                                textOverflow: 'ellipsis',
+                                                                fontWeight: 500,
+                                                                fontSize: '14px',
+                                                                color: '#333',
+                                                                cursor: 'pointer'
+                                                                }}
+                                                            >
+                                                                {registerItem.name ?? "FIR"}
+                                                            </Box>
+
+                                                        <Tooltip title="Overview Docket" arrow placement="top">
+                                                        <MenuBookIcon
+                                                            sx={{ color: "#333", fontSize: 22, cursor: 'pointer' }}
+                                                            onClick={() => showMagazineView(true)}
+                                                        />
+                                                        </Tooltip>
+
+                                                            </Box>
+                                                        }
+                                                        />
+
                                                     </ListItem>
                                                 </Tooltip>
                                             ) : (

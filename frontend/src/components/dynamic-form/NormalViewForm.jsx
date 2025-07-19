@@ -61,7 +61,7 @@ import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 
 const NormalViewForm = ({ 
     formConfig, initialData, onSubmit, onError, stepperData, closeForm, table_name, template_name, readOnly, editData, onUpdate, template_id, table_row_id, headerDetails, selectedRow, noPadding, disableEditButton, disableSaveNew, overAllReadonly, investigationViewTable, editedForm
-    , showAssignIo, investigationAction, reloadApproval, showCaseActionBtn, reloadForm , showCaseLog, reloadFormConfig , onSkip , skip , editName ,  oldCase , onViewOldCase, showMagazineView, caseDiary, caseDiaryArray, caseDairy_pt_case_id, caseDairy_ui_case_id, disabledDates
+    , showAssignIo, investigationAction, reloadApproval, showCaseActionBtn, reloadForm , showCaseLog, reloadFormConfig , onSkip , skip , editName ,  oldCase , onViewOldCase, showMagazineView, caseDiary, caseDiaryArray, caseDairy_pt_case_id, caseDairy_ui_case_id, disabledDates, mappingCase, onMappingCase
  }) => {
 
 //   let storageFormData = localStorage.getItem(template_name + '-formData') ? JSON.parse(localStorage.getItem(template_name + '-formData')) : {};
@@ -2925,8 +2925,22 @@ const NormalViewForm = ({
 
           <Box sx={{ display: 'flex', alignItems: 'center', }}>
 
+            {mappingCase && (
+                <Button
+                    variant="outlined"
+                    onClick={() => {
+                        if (onMappingCase) {
+                            onMappingCase();
+                        }
+                    }}
+                    sx={{marginLeft: "10px", marginRight: "4px", height: '40px'}}
+                >
+                    Mapping Case
+                </Button>
+             )}
 
-            {
+
+            {/* {
                 showMagazineView && 
                 <Button
                 variant="outlined"
@@ -2937,7 +2951,7 @@ const NormalViewForm = ({
                 >
                     Case Docket
                 </Button>
-            }
+            } */}
             
             {oldCase &&  table_name === 'cid_under_investigation' && (
             <Button
