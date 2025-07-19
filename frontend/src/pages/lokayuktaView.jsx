@@ -633,6 +633,20 @@ const LokayuktaView = () => {
             selectedId = pt_case_id;
         }
 
+        if (!selectedId || selectedId === null) {
+            toast.warning("No data found.", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-warning",
+            });
+        return;
+    }
+
         setSelectedRowId(selectedId);
 
         const viewTemplatePayload = {
