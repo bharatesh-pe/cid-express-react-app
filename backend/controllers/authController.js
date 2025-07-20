@@ -2633,6 +2633,131 @@ const datewisereport = async (req, res) => {
 }
 
 
+//like dumpOldCmsDataFromExcel, this function processes data from an Excel file and updates the database accordingly.
+const updatePoliceStationExcel = async (req, res) => {
+    try {
+        const workbook = xlsx.readFile(path.join(__dirname, '../data/CID_PS_data.xlsx'));
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const data = xlsx.utils.sheet_to_json(sheet, { header: 1 });
+
+        if (!data || data.length === 0) {
+            return res.status(400).json({ success: false, message: "No data found in the Excel sheet" });
+        }
+
+        const headers = data[0];
+
+        //the just we need to take the headed Name and PublicKey and check if the PublicKey exists in the cid_police_station table if not insert it.
+        const fieldNameIndex = headers.indexOf("Name");
+        const publickeyIndex = headers.indexOf("PublicKey");
+        const policeStations = [];
+        data.slice(1).forEach(row => {
+            const name = row[fieldNameIndex];
+            const publickey = row[publickeyIndex];
+
+            if (name && publickey) {
+                policeStations.push({ name, publickey });
+            }
+        });
+        const transaction = await sequelize.transaction();
+        var existingPSCount = 0 ;
+        var newPSCount = 0 ;
+        for (const item of policeStations) {
+            const existingStation = await sequelize.query(
+                `SELECT id FROM cid_police_station WHERE "publickey" = :publickey`,
+                {
+                    replacements: { publickey: item.publickey },
+                    type: sequelize.QueryTypes.SELECT,
+                    transaction
+                }
+            );
+            if (existingStation.length > 0) {
+                existingPSCount++;
+            }
+            if (existingStation.length === 0) {
+                newPSCount++;
+                await sequelize.query(
+                    `INSERT INTO cid_police_station ("name", "publickey", "created_at", "updated_at") VALUES (:name, :publickey, NOW(), NOW())`,
+                    {
+                        replacements: { name: item.name, publickey: item.publickey },
+                        type: sequelize.QueryTypes.INSERT,
+                        transaction
+                    }
+                );
+            }
+        }
+        await transaction.commit();
+        return res.status(200).json({ success: true, message: "Police stations updatedsuccessfully. the no of existiong PS :" + existingPSCount + " and the no of new PS :" + newPSCount });
+    } catch (error) {
+        console.error("Error processing police station data:", error);
+        return res.status(500).json({ success: false, message: "Internal Server Error", error: error.message });
+    }
+}
+
+
+//like updatePoliceStationFromExcel, i need to do it for court data , table name is cid_court.
+const updateCourtFromExcel = async (req, res) => {
+    try {
+        const workbook = xlsx.readFile(path.join(__dirname, '../data/CID_Court_data.xlsx'));
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const data = xlsx.utils.sheet_to_json(sheet, { header: 1 });
+
+        if (!data || data.length === 0) {
+            return res.status(400).json({ success: false, message: "No data found in the Excel sheet" });
+        }
+
+        const headers = data[0];
+
+        //the just we need to take the headed Name and PublicKey and check if the PublicKey exists in the cid_court table if not insert it.
+        const fieldNameIndex = headers.indexOf("Name");
+        const publickeyIndex = headers.indexOf("PublicKey");
+        const courts = [];
+        data.slice(1).forEach(row => {
+            const name = row[fieldNameIndex];
+            const publickey = row[publickeyIndex];
+
+            if (name && publickey) {
+                courts.push({ name, publickey });
+            }
+        });
+        const transaction = await sequelize.transaction();
+        var existingCourtCount = 0 ;
+        var newCourtCount = 0 ;
+        for (const item of courts) {
+            const existingCourt = await sequelize.query(
+                `SELECT id FROM cid_court WHERE "publickey" = :publickey`,
+                {
+                    replacements: { publickey: item.publickey },
+                    type: sequelize.QueryTypes.SELECT,
+                    transaction
+                }
+            );
+            if (existingCourt.length > 0) {
+                existingCourtCount++;
+            }
+            if (existingCourt.length === 0) {
+                newCourtCount++;
+                await sequelize.query(
+                    `INSERT INTO cid_court ("name", "publickey", "created_at", "updated_at") VALUES (:name, :publickey, NOW(), NOW())`,
+                    {
+                        replacements: { name: item.name, publickey: item.publickey },
+                        type: sequelize.QueryTypes.INSERT,
+                        transaction
+                    }
+                );
+            }
+        }
+        await transaction.commit();
+        return res.status(200).json({ success: true, message: "Courts updated successfully. the no of existiong Courts :" + existingCourtCount + " and the no of new Courts :" + newCourtCount });
+    } catch (error) {
+        console.error("Error processing court data:", error);
+        return res.status(500).json({ success: false, message: "Internal Server Error", error: error.message });
+    }
+};
+     
+
+
   
 
 module.exports = {
@@ -2649,7 +2774,9 @@ module.exports = {
   mapUIandPT,
   updatePoliceStationFromExcel,
   dumpOldCmsDataFromExcel,
-  store_cnr_table_data
+  store_cnr_table_data,
+  updatePoliceStationExcel,
+  updateCourtFromExcel
 };
 
 
