@@ -567,11 +567,13 @@ const LokayuktaView = () => {
     const handleMenuClose = () => {
         setAnchorEl(null);
     };
+
     const defaultMenuItems = [
         { label: 'Notices', table_name: 'cid_ui_case_notices' },
         { label: 'Court matters', table_name: 'cid_pt_case_petition' },
         { label: 'Petition', table_name: 'cid_pt_case_petition' },
         { label: 'Trial Monitoring', table_name: 'cid_pt_case_trial_monitoring' },
+        { label: 'Recording of Statement', table_name: 'cid_ui_case_recording_of_statements' },
     ];
 
     let parsedContentArray = [];
@@ -592,9 +594,11 @@ const LokayuktaView = () => {
         .filter(item => typeof item.table === 'string')
         .map(item => item.table);
 
-    const menuItems = defaultMenuItems.filter(item =>
-        contentTables.includes(item.table_name)
-    );
+    const menuItems = defaultMenuItems.filter(item => {
+        if (module === "ui_case" && item.label === "Petition") return false;
+        if (module === "pt_case" && item.label === "Court matters") return false;
+        return contentTables.includes(item.table_name);
+    });
 
 
 
@@ -839,12 +843,16 @@ const LokayuktaView = () => {
                         })),
                          ...(splitScreenArray.includes((options?.table || "").toLowerCase()) ? [
                             { label: "Notices", table_name: "cid_ui_case_notices", field: "notices", width: 100 },
+                            { label: "Petition", table_name: "cid_pt_case_petition", field: "petition", width: 110 },
+                            { label: "Court Matters", table_name: "cid_pt_case_petition", field: "court_matters", width: 160 },
+                            { label: "Trial Monitoring", table_name: "cid_pt_case_trial_monitoring", field: "trial_monitoring", width: 180 },
                             { label: "Recording of Statement", table_name: "cid_ui_case_recording_of_statements", field: "recording_of_statement", width: 240 },
-                            { label: "Court Matters", table_name: "cid_pt_case_petition", field: "court_matters", width: 150 },
-                            { label: "Petition", table_name: "cid_pt_case_petition", field: "petition", width: 120 },
-                            { label: "Trial Monitoring", table_name: "cid_pt_case_trial_monitoring", field: "trial_monitoring", width: 220 },
                         ]
-                            .filter(item => contentTables.includes(item.table_name))
+                            .filter(item => {
+                                if (module === "ui_case" && item.label === "Petition") return false;
+                                if (module === "pt_case" && item.label === "Court Matters") return false;
+                                return contentTables.includes(item.table_name);
+                            })
                             .map(item => ({
                                 field: item.field,
                                 headerName: item.label,
@@ -863,7 +871,7 @@ const LokayuktaView = () => {
                                         {item.label}
                                     </Button>
                                 )
-                            })) : [])
+                            })) : []),
                     ]
 
                     const formatDate = (value) => {
@@ -1077,7 +1085,10 @@ const LokayuktaView = () => {
                             draggable: true,
                             progress: undefined,
                             className: "toast-success",
-                            onOpen: () => {getTableData(options)}
+                            onOpen: () => {
+                                  fetchCounts();
+                                  getTableData(options)
+                                }
                         });
                     } else {
                         const errorMessage = deleteTemplateDataResponse.message ? deleteTemplateDataResponse.message : "Failed to delete the template. Please try again.";
@@ -1578,6 +1589,50 @@ const LokayuktaView = () => {
             }
         }
     }
+    const [tableCounts, setTableCounts] = useState({});
+
+const ui_case_id = module === "pt_case" ? rowData?.ui_case_id : rowData?.id;
+const pt_case_id = module === "pt_case" ? rowData?.id : rowData?.pt_case_id;
+
+let normalizedSidebarItems = [];
+try {
+    if (typeof contentArray === "string") {
+        normalizedSidebarItems = JSON.parse(contentArray);
+    } else if (Array.isArray(contentArray)) {
+        normalizedSidebarItems = contentArray;
+    } else {
+        normalizedSidebarItems = Object.values(contentArray || {});
+    }
+} catch (e) {
+    console.error("Failed to parse contentArray:", e);
+}
+
+const fetchCounts = async () => {
+    if (!ui_case_id && !pt_case_id) return;
+
+    const tableNamesForCount = normalizedSidebarItems.map(item => item.table).filter(Boolean);
+
+    try {
+        const serverURL = process.env.REACT_APP_SERVER_URL;
+        const response = await fetch(`${serverURL}/templateData/getTableCountsByCaseId`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ table_names: tableNamesForCount, ui_case_id, pt_case_id }),
+        });
+
+        const data = await response.json();
+        if (data.success) {
+            setTableCounts(data.data);
+        } else {
+            setTableCounts({});
+        }
+    } catch (err) {
+        console.error("Error fetching table counts:", err);
+        setTableCounts({});
+    }
+};
+
+
 
     const handleDirectCaseSave = async (data, formOpen) => {
         const formData = new FormData();
@@ -1654,6 +1709,7 @@ const LokayuktaView = () => {
                     progress: undefined,
                     className: "toast-success",
                     onOpen: () => {
+                        fetchCounts();
                         if (activeSidebar?.table === "cid_eq_case_enquiry_order_copy") {
                             navigate("/case/enquiry");
                         }else if (currentTableName === 'cid_ui_case_old_cms_data') {
@@ -2689,7 +2745,10 @@ if ((!currentTableName || currentTableName === "") && (!activeSidebar?.table || 
     return (
         <Stack direction="row" justifyContent="space-between">
 
-            <LokayuktaSidebar showMagazineView={showMagazineView} ui_case_id={module === "pt_case" ? rowData?.ui_case_id :  rowData?.id}  pt_case_id={module === "pt_case" ? rowData?.id :  rowData?.pt_case_id} contentArray={sidebarContentArray} onClick={sidebarActive} activeSidebar={activeSidebar} templateName={template_name} fromCDR={fromCDR} />
+            <LokayuktaSidebar showMagazineView={showMagazineView} ui_case_id={module === "pt_case" ? rowData?.ui_case_id :  rowData?.id}  pt_case_id={module === "pt_case" ? rowData?.id :  rowData?.pt_case_id} contentArray={sidebarContentArray} onClick={sidebarActive} activeSidebar={activeSidebar} templateName={template_name} fromCDR={fromCDR} 
+            tableCounts={tableCounts}
+            setTableCounts={setTableCounts} 
+                />
 
             <Box flex={4} sx={{ overflow: "hidden" }}>
 
@@ -2714,7 +2773,7 @@ if ((!currentTableName || currentTableName === "") && (!activeSidebar?.table || 
                         selectedRowData={rowData}
                         backNavigation={backToForm}
                         showMagazineView={showMagazineView}
-
+                        fetchCounts={fetchCounts}
                     />
                 ) : activeSidebar?.caseDairy === true ? (
 
@@ -2778,7 +2837,7 @@ if ((!currentTableName || currentTableName === "") && (!activeSidebar?.table || 
                         selectedRowData={rowData}
                         backNavigation={backToForm}
                         showMagazineView={showMagazineView}
-
+                        fetchCounts={fetchCounts}
                     />
                 ) : activeSidebar?.table === "cid_ui_case_property_form" ? (
 
@@ -2791,7 +2850,7 @@ if ((!currentTableName || currentTableName === "") && (!activeSidebar?.table || 
                         selectedRowData={rowData}
                         backNavigation={backToForm}
                         showMagazineView={showMagazineView}
-
+                        fetchCounts={fetchCounts}
                     />
                 ) : activeSidebar?.table === "cid_ui_case_mahajars" ? (
 
@@ -2804,7 +2863,7 @@ if ((!currentTableName || currentTableName === "") && (!activeSidebar?.table || 
                         selectedRowData={rowData}
                         backNavigation={backToForm}
                         showMagazineView={showMagazineView}
-
+                        fetchCounts={fetchCounts}
                     />    
                 ) : activeSidebar?.table === "cid_ui_case_cdr_ipdr" ? (
 
@@ -2818,7 +2877,7 @@ if ((!currentTableName || currentTableName === "") && (!activeSidebar?.table || 
                         backNavigation={backToForm}
                         module={module}
                         showMagazineView={showMagazineView}
-
+                        fetchCounts={fetchCounts}
                     />
                     
                 ) : activeSidebar?.table === "cid_ui_case_41a_notices" ? (

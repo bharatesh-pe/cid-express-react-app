@@ -39,7 +39,7 @@ import { saveAs } from 'file-saver';
 import ImportExportIcon from '@mui/icons-material/ImportExport';
 import dayjs from "dayjs";
 
-const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRowData, backNavigation, showMagazineView }) => {
+const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRowData, backNavigation, showMagazineView,fetchCounts }) => {
     const location = useLocation();
     const navigate = useNavigate();
     const { pageCount, systemStatus } = location.state || {};
@@ -857,6 +857,9 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
                                     ),
                             }
                         );
+                        if (fetchCounts) {
+                            fetchCounts();
+                        }
                     } else {
                         const errorMessage = deleteTemplateDataResponse.message
                             ? deleteTemplateDataResponse.message
@@ -1667,6 +1670,9 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
 
                 setOtherFormOpen(false);
 
+                if (fetchCounts) {
+                    fetchCounts();
+                }
                 if (selectedOtherTemplate?.field) {
                     const combinedData = {
                         id: selectedRowData.id,

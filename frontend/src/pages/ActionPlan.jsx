@@ -35,7 +35,7 @@ import DateField from "../components/form/Date";
 import WestIcon from '@mui/icons-material/West';
 import { CircularProgress } from "@mui/material";
 
-const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowData, backNavigation, showMagazineView}) => {
+const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowData, backNavigation, showMagazineView, fetchCounts}) => {
 
     console.log("ActionPlan component rendered with options:", options);
     const location = useLocation();
@@ -974,6 +974,9 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                         ),
                     }
                 );
+                if (fetchCounts) {
+                    fetchCounts();
+                }
                 } else {
                 const errorMessage = deleteTemplateDataResponse.message
                     ? deleteTemplateDataResponse.message
@@ -2002,6 +2005,9 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
       
             setOtherFormOpen(false);
       
+            if (fetchCounts) {
+                fetchCounts();
+            }
             if (selectedOtherTemplate?.field) {
               const combinedData = {
                 id: selectedRowData.id,
@@ -2143,6 +2149,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                     className: "toast-success",
                 });
     
+
                if(saveNewAction){
                   await handleOtherTemplateActions(selectedOtherTemplate, selectedRow);   
                   showOptionTemplate('cid_ui_case_action_plan');

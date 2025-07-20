@@ -40,7 +40,7 @@ import dayjs from "dayjs";
 import React from "react";
 import AddIcon from "@mui/icons-material/Add";
 
-const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData, backNavigation, showMagazineView }) => {
+const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData, backNavigation, showMagazineView ,fetchCounts}) => {
     const location = useLocation();
     const navigate = useNavigate();
     const { pageCount, systemStatus } = location.state || {};
@@ -1013,6 +1013,9 @@ const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData
                                     ),
                             }
                         );
+                        if (fetchCounts) {
+                            fetchCounts();
+                        }
                     } else {
                         const errorMessage = deleteTemplateDataResponse.message
                             ? deleteTemplateDataResponse.message
@@ -1628,6 +1631,9 @@ const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData
                 setOtherFormOpen(false);
                 setPendingMahazarData(null);
                 handleOtherTemplateActions(selectedOtherTemplate, selectedRowData);
+                if (fetchCounts) {
+                    fetchCounts();
+                }
             } else {
                 toast.error(res?.message || "Failed to save Mahazar/Property Form.", {
                     position: "top-right",
@@ -1970,6 +1976,9 @@ const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData
                         setPendingMahazarData(null);
                         setSkipPropertyForm(false);
                         handleOtherTemplateActions(selectedOtherTemplate, selectedRowData);
+                        if (fetchCounts) {
+                            fetchCounts();
+                        }
                     } else {
                         toast.error(mahazarRes?.message || "Failed to save Mahazar.", {
                             position: "top-right",

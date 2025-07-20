@@ -35,7 +35,7 @@ import { Tabs, Tab } from '@mui/material';
 import { CircularProgress } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 
-const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedRowData, backNavigation, showMagazineView }) => {
+const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedRowData, backNavigation, showMagazineView ,fetchCounts}) => {
 
   useEffect(() => {
     const fetchData = async () => {
@@ -1028,6 +1028,9 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
                   ),
               }
             );
+            if (fetchCounts) {
+                fetchCounts();
+            }
           } else {
             const errorMessage = deleteTemplateDataResponse.message
               ? deleteTemplateDataResponse.message
@@ -1952,6 +1955,9 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
           className: "toast-success",
         });
 
+        if (fetchCounts) {
+            fetchCounts();
+        }
         if (saveNewAction) {
           await handleOtherTemplateActions(selectedOtherTemplate, selectedRow);
           showOptionTemplate(selectedOtherTemplate.table);

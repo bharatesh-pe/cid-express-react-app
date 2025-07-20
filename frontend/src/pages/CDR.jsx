@@ -36,7 +36,7 @@ import Autocomplete from "@mui/material/Autocomplete";
 import { Add } from "@mui/icons-material";
 import dayjs from "dayjs";
 
-const CDR = ({ templateName, headerDetails, rowId, options, selectedRowData, backNavigation, module, showMagazineView }) => {
+const CDR = ({ templateName, headerDetails, rowId, options, selectedRowData, backNavigation, module, showMagazineView , fetchCounts}) => {
     const location = useLocation();
     const navigate = useNavigate();
     const { pageCount, systemStatus } = location.state || {};
@@ -877,6 +877,9 @@ const CDR = ({ templateName, headerDetails, rowId, options, selectedRowData, bac
                                     ),
                             }
                         );
+                        if (fetchCounts) {
+                            fetchCounts();
+                        }
                     } else {
                         const errorMessage = deleteTemplateDataResponse.message
                             ? deleteTemplateDataResponse.message
@@ -1754,6 +1757,10 @@ const CDR = ({ templateName, headerDetails, rowId, options, selectedRowData, bac
                     progress: undefined,
                     className: "toast-success",
                 });
+
+                if (fetchCounts) {
+                    fetchCounts();
+                }
 
                 if (saveNewAction) {
                     await handleOtherTemplateActions(selectedOtherTemplate, selectedRow);
