@@ -2701,13 +2701,30 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                             </Typography>
 
                             {/* {selectedRowData?.["field_cid_crime_no./enquiry_no"] && ( */}
+                            {headerDetails && (
+                                <Tooltip title={headerDetails}>
                                 <Chip
-                                    label={headerDetails}
+                                    label={
+                                    <Typography
+                                        sx={{
+                                        fontSize: '13px',
+                                        maxWidth: 230,
+                                        whiteSpace: 'nowrap',
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                        fontWeight: 500, marginTop: '2px'
+                                        }}
+                                    >
+                                        {headerDetails}
+                                    </Typography>
+                                    }
                                     color="primary"
                                     variant="outlined"
                                     size="small"
-                                    sx={{ fontWeight: 500, mt: '2px' }}
+                                    sx={{ fontWeight: 500, marginTop: '2px' }}
                                 />
+                                </Tooltip>
+                            )}
                             {/* )} */}
 
                             {/* <Box className="totalRecordCaseStyle">
@@ -2759,7 +2776,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                                             }
                                         }}
                                         sx={{
-                                            width: '350px',
+                                            width: { xs: '100%', sm: '250px' },
                                             borderRadius: '6px',
                                             '& .MuiInputBase-input::placeholder': {
                                                 color: '#475467',
@@ -2787,7 +2804,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                                 </Box>
 
 
-                                {!viewModeOnly && !showSubmitAPButton && templateActionAddFlag.current === true && (
+                                {/* {!viewModeOnly && !showSubmitAPButton && templateActionAddFlag.current === true && ( */}
                                     <Button
                                         sx={{height: "38px",}}
                                         className="blueButton"
@@ -2805,17 +2822,17 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                                     >
                                         Add New
                                     </Button>
-                                )}
-                                {!showSubmitAPButton && (
+                                {/* )} */}
+                                {/* {!showSubmitAPButton && ( */}
                                     <Button
                                         variant="contained"
                                         color="success"
                                         onClick={() => handleSubmitAp({ id: selectedRowData?.id })}
                                         disabled={otherTemplatesTotalRecord === 0}
                                     >
-                                        {JSON.parse(localStorage.getItem("role_title")).toLowerCase() === "investigation officer" ? "Submit for Approval" : "Approve"}
+                                        {JSON.parse(localStorage.getItem("role_title")).toLowerCase() === "investigation officer" ? "Submit for Approval" : "Submit for Approval"}
                                     </Button>
-                                )}
+                                {/* )} */}
                                 {/* {
                                     showMagazineView && 
                                     <Button

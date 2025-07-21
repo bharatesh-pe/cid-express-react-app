@@ -2913,15 +2913,30 @@ const NormalViewForm = ({
               {template_name ? template_name : 'Form'}
             </Typography>
             {headerDetails && (
+                <Tooltip title={headerDetails}>
                 <Chip
-                    label={headerDetails}
+                    label={
+                    <Typography
+                        sx={{
+                        fontSize: '13px',
+                        maxWidth: 230,
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        fontWeight: 500, marginTop: '2px'
+                        }}
+                    >
+                        {headerDetails}
+                    </Typography>
+                    }
                     color="primary"
                     variant="outlined"
                     size="small"
                     sx={{ fontWeight: 500, marginTop: '2px' }}
                 />
+                </Tooltip>
             )}
-          </Box>
+            </Box>
 
           <Box sx={{ display: 'flex', alignItems: 'center', }}>
 
