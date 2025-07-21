@@ -5339,7 +5339,12 @@ exports.downloadExcelData = async (req, res) => {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet("Data");
 
-    worksheet.columns = schema.map((field) => ({
+    const excludedTypes = ["table", "checkbox", "radio", "file", "profilepicture", "tabs", "divider"];
+
+    const filteredSchema = schema.filter(field => !excludedTypes.includes(field.type));
+
+
+    worksheet.columns = filteredSchema.map((field) => ({
       header: field.name,
       key: field.name,
       width: 20,

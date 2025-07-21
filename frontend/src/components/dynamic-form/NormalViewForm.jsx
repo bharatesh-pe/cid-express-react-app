@@ -2950,7 +2950,7 @@ const NormalViewForm = ({
                     }}
                     sx={{marginLeft: "10px", marginRight: "4px", height: '40px'}}
                 >
-                    Mapping Case
+                    {table_name === "cid_under_investigation" ? "PT" : "UI"}
                 </Button>
              )}
 
