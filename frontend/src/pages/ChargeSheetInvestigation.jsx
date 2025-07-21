@@ -15,6 +15,7 @@ import pptIcon from "../Images/pptIcon.svg";
 import jpgIcon from "../Images/jpgIcon.svg";
 import pngIcon from "../Images/pngIcon.svg";
 import FileInput from "../components/form/FileInput";
+import { Tooltip } from "@mui/material";
 
 
 const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, options, rowData, module, backNavigation, overAllTemplateActions, cs_fir_cases_data, showMagazineView }) => {
@@ -653,13 +654,28 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
                             Final Report
                         </Typography>
                         {headerDetails && (
+                            <Tooltip title={headerDetails}>
                             <Chip
-                                label={headerDetails}
+                                label={
+                                <Typography
+                                    sx={{
+                                    fontSize: '13px',
+                                    maxWidth: 230,
+                                    whiteSpace: 'nowrap',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    fontWeight: 500, marginTop: '2px'
+                                    }}
+                                >
+                                    {headerDetails}
+                                </Typography>
+                                }
                                 color="primary"
                                 variant="outlined"
                                 size="small"
                                 sx={{ fontWeight: 500, marginTop: '2px' }}
                             />
+                            </Tooltip>
                         )}
                     </Typography>
                     {/* {
