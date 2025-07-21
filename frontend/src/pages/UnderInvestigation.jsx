@@ -1383,16 +1383,16 @@ const fslTableRef = useRef();
                     const parsed = JSON.parse(details);
                     if (Array.isArray(parsed) && parsed.length > 0) {
                         return {
-                            field_used_as_evidence: parsed[0]["Used as Evidence"] || "N/A",
-                            field_reason: parsed[0]["Reason"] || "N/A"
+                            field_used_as_evidence: parsed[0]["Used as Evidence"] || "",
+                            field_reason: parsed[0]["Reason"] || ""
                         };
                     }
                 } catch (err) {
                     console.error("Failed to parse field_property_details", err);
                 }
                 return {
-                    field_used_as_evidence: "N/A",
-                    field_reason: "N/A"
+                    field_used_as_evidence: "",
+                    field_reason: ""
                 };
             };
 
