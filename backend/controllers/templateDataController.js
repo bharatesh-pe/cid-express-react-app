@@ -11173,6 +11173,20 @@ exports.getTemplateAlongWithData = async (req, res) => {
         whereClause[key] = value;
         const data = await DynamicModel.findOne({ where: whereClause });
 
+        const plainData = data ? data.toJSON() : null;
+
+        const attachments = await ProfileAttachment.findAll({
+            where: {
+                template_id: template.template_id,
+                table_row_id: data?.id,
+            },
+            order: [["created_at", "DESC"]],
+        });
+
+        if (plainData && attachments.length) {
+            plainData.attachments = attachments.map((att) => att.toJSON());
+        }
+
         return userSendResponse(res, 200, true, "Template and data fetched successfully.", {
             template: {
                 template_id: template.template_id,
@@ -11184,7 +11198,7 @@ exports.getTemplateAlongWithData = async (req, res) => {
                 no_of_sections: template.no_of_sections,
                 fields,
             },
-            data: data ? data.toJSON() : null,
+            data: plainData,
         });
    } catch (error) {
     console.error("Error in getTemplateWithData:", error);
