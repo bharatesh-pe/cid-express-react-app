@@ -5440,13 +5440,64 @@ exports.bulkInsertData = async (req, res) => {
 
         await Model.sync();
 
-        const insertRows = rowData.map(row => {
-            const obj = {};
+        const insertRows = [];
+
+        for (const row of rowData) {
+            const processedRow = {};
+
             for (const col of columnData) {
-                obj[col] = row[col];
+                const fieldDef = schema.find(f => f.name === col);
+
+                if (!fieldDef) {
+                    continue; 
+                }
+
+                const { type, options, api } = fieldDef;
+                let value = row[col];
+
+                if (["dropdown", "autocomplete", "multidropdown"].includes(type)) {
+                    let mappedCode = null;
+
+                    if (Array.isArray(options)) {
+                        if (type === "multidropdown" && Array.isArray(value)) {
+                            mappedCode = value.map(v => {
+                                const found = options.find(opt => opt.name === v || opt.code === v);
+                                return found ? found.code : null;
+                            }).filter(v => v !== null);
+                        } else {
+                            const found = options.find(opt => opt.name === value || opt.code === value);
+                            mappedCode = found ? found.code : null;
+                        }
+                    } else if (api) {
+                        try {
+                            const apiUrl = `${api}`;
+                            const apiResponse = await axios.post(apiUrl, { table_name });
+                            const apiOptions = apiResponse?.data?.data || [];
+
+                            if (type === "multidropdown" && Array.isArray(value)) {
+                                mappedCode = value.map(v => {
+                                    const found = apiOptions.find(opt => opt.name === v || opt.code === v);
+                                    return found ? found.code : null;
+                                }).filter(v => v !== null);
+                            } else {
+                                const found = apiOptions.find(opt => opt.name === value || opt.code === value);
+                                mappedCode = found ? found.code : null;
+                            }
+                        } catch (err) {
+                            console.error(`API fetch failed for field "${col}":`, err.message);
+                            mappedCode = null;
+                        }
+                    }
+
+                    value = mappedCode;
+                }
+
+                processedRow[col] = value;
             }
-            return obj;
-        });
+
+            insertRows.push(processedRow);
+        }
+
 
         const t = await sequelize.transaction();
         try {
