@@ -2804,7 +2804,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                                 </Box>
 
 
-                                {/* {!viewModeOnly && !showSubmitAPButton && templateActionAddFlag.current === true && ( */}
+                                {!viewModeOnly && !showSubmitAPButton && templateActionAddFlag.current === true && (
                                     <Button
                                         sx={{height: "38px",}}
                                         className="blueButton"
@@ -2822,17 +2822,17 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                                     >
                                         Add New
                                     </Button>
-                                {/* )} */}
-                                {/* {!showSubmitAPButton && ( */}
+                                )}
+                                {!showSubmitAPButton && (
                                     <Button
                                         variant="contained"
                                         color="success"
                                         onClick={() => handleSubmitAp({ id: selectedRowData?.id })}
                                         disabled={otherTemplatesTotalRecord === 0}
                                     >
-                                        {JSON.parse(localStorage.getItem("role_title")).toLowerCase() === "investigation officer" ? "Submit for Approval" : "Submit for Approval"}
+                                        {JSON.parse(localStorage.getItem("role_title")).toLowerCase() === "investigation officer" ? "Submit for Approval" : "Approve"}
                                     </Button>
-                                {/* )} */}
+                                )}
                                 {/* {
                                     showMagazineView && 
                                     <Button
