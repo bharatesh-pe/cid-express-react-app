@@ -15,6 +15,7 @@ import pptIcon from "../Images/pptIcon.svg";
 import jpgIcon from "../Images/jpgIcon.svg";
 import pngIcon from "../Images/pngIcon.svg";
 import FileInput from "../components/form/FileInput";
+import { Tooltip } from "@mui/material";
 
 
 const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, options, rowData, module, backNavigation, overAllTemplateActions, cs_fir_cases_data, showMagazineView }) => {
