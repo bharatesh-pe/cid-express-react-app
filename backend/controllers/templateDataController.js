@@ -1320,16 +1320,26 @@ exports.updateEditTemplateData = async (req, res, next) => {
         });
       }
 
-      const fileUpdates = {};
+     const fileUpdates = {};
+
       if (req.files && req.files.length > 0) {
         const folderAttachments = folder_attachment_ids ? JSON.parse(folder_attachment_ids) : [];
 
         for (const file of req.files) {
           const { originalname, size, key, fieldname, filename } = file;
+
+          const match = fieldname.match(/^(.*?)__([0-9]+)$/);
+          if (!match) continue;
+
+          const actualFieldName = match[1];
+          const fileRowId = match[2];
+
+          if (fileRowId !== singleId.toString()) continue;
+
           const fileExtension = path.extname(originalname);
 
           const matchingFolder = folderAttachments.find(
-            (attachment) => attachment.filename === originalname && attachment.field_name === fieldname
+            (attachment) => attachment.filename === originalname && attachment.field_name === actualFieldName
           );
           const folderId = matchingFolder ? matchingFolder.folder_id : null;
           const s3Key = `../data/cases/${filename}`;
@@ -1341,20 +1351,20 @@ exports.updateEditTemplateData = async (req, res, next) => {
             attachment_extension: fileExtension,
             attachment_size: size,
             s3_key: s3Key,
-            field_name: fieldname,
+            field_name: actualFieldName,
             folder_id: folderId,
           });
 
           const existingRecord = await Model.findOne({
             where: { id: singleId },
-            attributes: [fieldname],
+            attributes: [actualFieldName],
           });
 
-          let currentFilenames = existingRecord?.[fieldname] || "";
+          let currentFilenames = existingRecord?.[actualFieldName] || "";
           currentFilenames = currentFilenames ? `${currentFilenames},${originalname}` : originalname;
 
-          fileUpdates[fieldname] = fileUpdates[fieldname]
-            ? `${fileUpdates[fieldname]},${originalname}`
+          fileUpdates[actualFieldName] = fileUpdates[actualFieldName]
+            ? `${fileUpdates[actualFieldName]},${originalname}`
             : currentFilenames;
         }
 
@@ -1362,6 +1372,7 @@ exports.updateEditTemplateData = async (req, res, next) => {
           await Model.update({ [fieldname]: filenames }, { where: { id: singleId } });
         }
       }
+
     }
 
     return userSendResponse(res, 200, true, `Record updated successfully.`, null);

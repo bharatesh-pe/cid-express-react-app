@@ -1494,7 +1494,7 @@ if (tableName === "cid_ui_case_forensic_science_laboratory") {
 
                         if (tableName === "cid_ui_case_progress_report") {
                             tableHeader = tableHeader.filter(
-                                (col) => col.field !== "field_due_date" && col.field !== "field_pr_status" && col.field !== "field_approval_done_by"
+                                (col) => col.field !== "field_due_date" && col.field !== "field_pr_status" && col.field !== "field_approval_done_by" && col.field !== "field_remarks" 
                             );
                             tableHeader = enhanceTableHeader(tableHeader, viewTemplateResponse?.['data']?.['fields'] || []);
                         }
@@ -1507,7 +1507,7 @@ if (tableName === "cid_ui_case_forensic_science_laboratory") {
                                     col.field === "field_status_of_accused_in_charge_sheet" ||
                                     col.field === "field_government_servent" ||
                                     col.field === "field_pso_&_19_pc_act_order" ||
-                                    col.field === "field_used_as_evidence" // <-- add this if you want it in accused table
+                                    col.field === "field_used_as_evidence"
                             );
                             tableHeader = enhanceTableHeader(tableHeader, viewTemplateResponse?.['data']?.['fields'] || []);
                         }
@@ -2448,7 +2448,7 @@ function toISODateString(val) {
             const value = rowData[key];
 
             if (value instanceof File) {
-              formData.append(key, value);
+              formData.append(`${key}__${rowId}`, value);
               fileFields.push(key);
             } else if (key.toLowerCase().includes("date")) {
               if (isValidDateValue(value)) {
@@ -2501,25 +2501,25 @@ function toISODateString(val) {
     console.log("Batch update ids:", ids);
     console.log("Batch update dataArr:", dataArr);
 
-    var droppedAccusedWithoutWitness = false;
+    // var droppedAccusedWithoutWitness = false;
     
-    dataArr.map((element)=>{
-        if(element['field_status_of_accused_in_charge_sheet'] === "Dropped" && (!element['field_he_is_being_treated_as_witness'] || element['field_he_is_being_treated_as_witness'] === "")){
-            droppedAccusedWithoutWitness = true;
-        }
-    });
+    // dataArr.map((element)=>{
+    //     if(element['field_status_of_accused_in_charge_sheet'] === "Dropped" && (!element['field_he_is_being_treated_as_witness'] || element['field_he_is_being_treated_as_witness'] === "")){
+    //         droppedAccusedWithoutWitness = true;
+    //     }
+    // });
 
-    if(droppedAccusedWithoutWitness){
+    // if(droppedAccusedWithoutWitness){
 
-        Swal.fire({
-            title: 'Please Update Witness Field',
-            text: 'This person is being treated as a witness. Please update the accused data accordingly.',
-            icon: 'warning',
-            confirmButtonText: 'OK'
-        });
+    //     Swal.fire({
+    //         title: 'Please Update Witness Field',
+    //         text: 'This person is being treated as a witness. Please update the accused data accordingly.',
+    //         icon: 'warning',
+    //         confirmButtonText: 'OK'
+    //     });
 
-        return;
-    }
+    //     return;
+    // }
 
     if (ids.length === 0) {
       toast.error("No valid rows to update.", { className: "toast-error" });
