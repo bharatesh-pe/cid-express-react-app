@@ -806,7 +806,7 @@ exports.create_master_data = async (req, res) => {
             const existingDepartment = await Department.findOne({
             where: {
                 department_name: {
-                [Op.iLike]: `%${data.department_name}%`,
+                [Op.iLike]: data.department_name,
                 },
             },
             });
@@ -821,7 +821,7 @@ exports.create_master_data = async (req, res) => {
             const existingDesignation = await Designation.findOne({
             where: {
                 designation_name: {
-                [Op.iLike]: `%${data.designation_name}%`,
+                [Op.iLike]: data.designation_name,
                 },
             },
             });
@@ -897,7 +897,7 @@ exports.create_master_data = async (req, res) => {
             const existingDivision = await Division.findOne({
             where: {
                 division_name: {
-                [Op.iLike]: `%${data.division_name}%`,
+                [Op.iLike]: data.division_name,
                 },
             },
             });
@@ -917,7 +917,7 @@ exports.create_master_data = async (req, res) => {
           const existingApprovalItem = await ApprovalItem.findOne({
               where: {
                   name: {
-                      [Op.iLike]: `%${data.name}%`,
+                      [Op.iLike]: data.name,
                   },
               },
           });
@@ -1078,7 +1078,7 @@ exports.create_master_data = async (req, res) => {
             const existingAct = await Act.findOne({
             where: {
                 act_name: {
-                [Op.iLike]: `%${data.act_name}%`,
+                [Op.iLike]: data.act_name,
                 },
             },
             });
@@ -1091,7 +1091,7 @@ exports.create_master_data = async (req, res) => {
             const existingSection = await Section.findOne({
                 where: {
                     section_name: {
-                    [Op.iLike]: `%${data.section_name}%`, // Case-insensitive partial match
+                    [Op.iLike]: data.section_name, // Case-insensitive partial match
                     },
                     act_id: data.act_id,
                 },
