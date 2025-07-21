@@ -19,9 +19,9 @@ const Home = () => {
         { title: 'Muddemal', link: 'https://muddemal.patterneffects.in/#/', image: rowdySheet  },
         { title: 'MOB', link: 'https://mob.patterneffects.in/#/', image: rowdySheet  },
         { title: 'BCP Chat', link: '', image: rowdySheet  },
-        { title: 'NDPS APPLICATION', link: '', image: rowdySheet  },
+        { title: 'NDPS Analytics', link: 'https://app.powerbi.com/reportEmbed?reportId=f6ae9972-1499-45c9-8264-3850069e9c0d&autoAuth=true&ctid=94dbcc7c-6e32-4329-a59a-3fb79b6fb70e', image: rowdySheet  },
         { title: 'Tapal Tracker', link: '', image: rowdySheet  },
-        { title: 'Crime Analytics App', link: '', image: rowdySheet  },
+        { title: 'Crime Analytics', link: 'https://app.powerbi.com/reportEmbed?reportId=94b58ac0-6182-4f66-9988-be926fddef34&autoAuth=true&ctid=94dbcc7c-6e32-4329-a59a-3fb79b6fb70e', image: rowdySheet  },
     ];
 
     const fire_and_emergency_department_cards = [
@@ -96,7 +96,7 @@ const Home = () => {
             <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black/70 z-10" />
 
             <div className="relative z-20 text-white">
-                <nav className="bg-white shadow-sm border-b border-gray-200">
+                <nav className="bg-white shadow-sm border-b border-gray-200 hidden">
                     <div className="max-w-6xl mx-auto px-6 py-4 flex items-center gap-2">
                         <img src={siimsLogo} className="w-[40px] h-[40px]" alt="logo" />
                         <h1 className="text-lg font-semibold text-gray-800 uppercase">
