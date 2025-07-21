@@ -11173,6 +11173,20 @@ exports.getTemplateAlongWithData = async (req, res) => {
         whereClause[key] = value;
         const data = await DynamicModel.findOne({ where: whereClause });
 
+        const plainData = data ? data.toJSON() : null;
+
+        const attachments = await ProfileAttachment.findAll({
+            where: {
+                template_id: template.template_id,
+                table_row_id: data?.id,
+            },
+            order: [["created_at", "DESC"]],
+        });
+
+        if (plainData && attachments.length) {
+            plainData.attachments = attachments.map((att) => att.toJSON());
+        }
+
         return userSendResponse(res, 200, true, "Template and data fetched successfully.", {
             template: {
                 template_id: template.template_id,
@@ -11184,7 +11198,7 @@ exports.getTemplateAlongWithData = async (req, res) => {
                 no_of_sections: template.no_of_sections,
                 fields,
             },
-            data: data ? data.toJSON() : null,
+            data: plainData,
         });
    } catch (error) {
     console.error("Error in getTemplateWithData:", error);
@@ -12459,6 +12473,30 @@ exports.checkFinalSheet = async (req, res) => {
       }
     }
 
+    let droppedRecord = false;
+
+    const droppedRecords = await sequelize.query(
+      `SELECT field_he_is_being_treated_as_witness, field_status_of_accused_in_charge_sheet 
+      FROM cid_ui_case_accused 
+      WHERE ui_case_id = :ui_case_id`,
+      {
+        replacements: { ui_case_id },
+        type: Sequelize.QueryTypes.SELECT,
+      }
+    );
+
+    if (droppedRecords) {
+      for (const rec of droppedRecords) {
+        const status = (rec.field_status_of_accused_in_charge_sheet || '').toLowerCase();
+        const treatedAsWitness = (rec.field_he_is_being_treated_as_witness || '').trim();
+
+        if (status === 'dropped' && !treatedAsWitness) {
+          droppedRecord = true;
+          break;
+        }
+      }
+    }
+
     let progressReportStatusOk = false;
     const progressRecords = await sequelize.query(
       `SELECT field_status FROM cid_ui_case_progress_report WHERE ui_case_id = :ui_case_id`,
@@ -12522,6 +12560,7 @@ exports.checkFinalSheet = async (req, res) => {
       accusedStatusOk,
       progressReportStatusOk,
       fslStatusOk,
+      droppedRecord
     });
  } catch (error) {
     console.error("Error in checkCaseStatusByUiCaseId:", error);
@@ -12661,6 +12700,30 @@ exports.checkCaseStatusCombined = async (req, res) => {
             data.accusedEmpty = true;
         }
 
+        let droppedRecord = false;
+
+        const droppedRecords = await sequelize.query(
+          `SELECT field_he_is_being_treated_as_witness, field_status_of_accused_in_charge_sheet 
+          FROM cid_ui_case_accused 
+          WHERE ui_case_id = :ui_case_id`,
+          {
+            replacements: { ui_case_id },
+            type: Sequelize.QueryTypes.SELECT,
+          }
+        );
+
+        if (droppedRecords) {
+          for (const rec of droppedRecords) {
+            const status = (rec.field_status_of_accused_in_charge_sheet || '').toLowerCase();
+            const treatedAsWitness = (rec.field_he_is_being_treated_as_witness || '').trim();
+
+            if (status === 'dropped' && !treatedAsWitness) {
+              droppedRecord = true;
+              break;
+            }
+          }
+        }
+
         let progressReportEmpty = false;
         const progressRecordsEmpty = await sequelize.query(
             `SELECT field_status FROM cid_ui_case_progress_report WHERE ui_case_id = :ui_case_id`,
@@ -12791,6 +12854,7 @@ exports.checkCaseStatusCombined = async (req, res) => {
             accusedStatusOk,
             progressReportStatusOk,
             fslStatusOk,
+            droppedRecord
         });
         } catch (error) {
             console.error("Error in checkCaseStatusCombined:", error);

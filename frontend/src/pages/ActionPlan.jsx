@@ -2701,13 +2701,30 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                             </Typography>
 
                             {/* {selectedRowData?.["field_cid_crime_no./enquiry_no"] && ( */}
+                            {headerDetails && (
+                                <Tooltip title={headerDetails}>
                                 <Chip
-                                    label={headerDetails}
+                                    label={
+                                    <Typography
+                                        sx={{
+                                        fontSize: '13px',
+                                        maxWidth: 230,
+                                        whiteSpace: 'nowrap',
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                        fontWeight: 500, marginTop: '2px'
+                                        }}
+                                    >
+                                        {headerDetails}
+                                    </Typography>
+                                    }
                                     color="primary"
                                     variant="outlined"
                                     size="small"
-                                    sx={{ fontWeight: 500, mt: '2px' }}
+                                    sx={{ fontWeight: 500, marginTop: '2px' }}
                                 />
+                                </Tooltip>
+                            )}
                             {/* )} */}
 
                             {/* <Box className="totalRecordCaseStyle">
@@ -2759,7 +2776,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                                             }
                                         }}
                                         sx={{
-                                            width: '350px',
+                                            width: { xs: '100%', sm: '250px' },
                                             borderRadius: '6px',
                                             '& .MuiInputBase-input::placeholder': {
                                                 color: '#475467',
