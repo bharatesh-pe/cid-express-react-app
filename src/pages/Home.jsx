@@ -39,7 +39,7 @@ const Home = () => {
 
     const cid_cards = [
         { title: 'CMS (Case Management System)', link: 'http://onlinecms.net/', image: cidLogo },
-        { title: 'CNR (Auto Scrapping)', link: 'http://93.127.194.179/', image: cidLogo }
+        { title: 'CNR ', link: 'http://93.127.194.179/', image: cidLogo }
     ];
 
     const renderSection = (title, cards) => (
