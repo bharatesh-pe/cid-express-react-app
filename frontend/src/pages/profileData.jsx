@@ -93,7 +93,9 @@ const ProfileData = () => {
 
     const [totalPage, setTotalPage] = useState(0);
     const [totalRecord, setTotalRecord] = useState(0);
-    
+        
+    const [saveNew, setSaveNew] = useState(null);
+     
     const handlePagination = (page) => {
         setPaginationCount(page)
     }
@@ -1032,6 +1034,7 @@ const ProfileData = () => {
                 if (viewTemplateResponse.data.no_of_sections && viewTemplateResponse.data.no_of_sections > 0) {
                     setstepperData(viewTemplateResponse.data.sections ? viewTemplateResponse.data.sections : []);
                 }
+                setSaveNew(null);
 
             } else {
                 const errorMessage = viewTemplateResponse.message ? viewTemplateResponse.message : "Failed to delete the template. Please try again.";
@@ -1065,7 +1068,7 @@ const ProfileData = () => {
 
     }
 
-    const onSaveTemplateData = async (data) => {
+    const onSaveTemplateData = async (data, saveNew) => {
 
         if (!table_name || table_name === '') {
             toast.warning('Please Check The Template', {
@@ -1138,6 +1141,7 @@ const ProfileData = () => {
         });
 
         formData.append("data", JSON.stringify(normalData));
+        setSaveNew(saveNew);
         setLoading(true);
 
         try {
@@ -1156,7 +1160,15 @@ const ProfileData = () => {
                     draggable: true,
                     progress: undefined,
                     className: "toast-success",
-                    onOpen: () => loadTableData(paginationCount)
+                    onOpen: () => {
+                        if (saveNew === true) {
+                        getTemplate(table_name);
+                        setFormOpen(false);
+                        return;
+                        }else {
+                        loadTableData(paginationCount);
+                        }
+                    },
                 });
 
             } else {
@@ -1918,7 +1930,11 @@ const ProfileData = () => {
                     initialData={initialData}
                     onSubmit={onSaveTemplateData}
                     onError={onSaveTemplateError}
-                    closeForm={setFormOpen} />
+                    closeForm={() => {
+                        setFormOpen(false);
+                        setSaveNew(null);
+                    }}
+                />
             }
 
             {showOptionModal &&
