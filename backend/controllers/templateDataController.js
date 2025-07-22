@@ -7784,10 +7784,58 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
             await Model.sync();
     
             insertedData = await Model.create(validData, { transaction: t });
+
             if (!insertedData) {
                 await t.rollback();
                 return userSendResponse(res, 400, false, "Failed to insert data.", null);
             }
+
+            if (table_name === "cid_pending_trial" && insertedData.ui_case_id) {
+              const underInvestigationTemplate = await Template.findOne({
+                where: { table_name: "cid_under_investigation" },
+              });
+
+              if (underInvestigationTemplate) {
+                const underInvestigationTableName = underInvestigationTemplate.table_name;
+
+                const checkRow = await db.sequelize.query(
+                  `SELECT * FROM ${underInvestigationTableName} WHERE id = :ui_case_id`,
+                  {
+                    replacements: { ui_case_id: insertedData.ui_case_id },
+                    type: db.Sequelize.QueryTypes.SELECT,
+                  }
+                );
+
+                if (checkRow.length === 0) {
+                  console.warn("Row not found for UI Case ID:", insertedData.ui_case_id);
+                } else {
+                  console.log("Before Update - pt_case_id:", checkRow[0].pt_case_id);
+
+                  await db.sequelize.query(
+                    `UPDATE ${underInvestigationTableName} SET pt_case_id = :pt_case_id WHERE id = :ui_case_id`,
+                    {
+                      replacements: {
+                        pt_case_id: insertedData.id,
+                        ui_case_id: insertedData.ui_case_id,
+                      },
+                      type: db.Sequelize.QueryTypes.UPDATE,
+                    }
+                  );
+
+                  const updatedRow = await db.sequelize.query(
+                    `SELECT * FROM ${underInvestigationTableName} WHERE id = :ui_case_id`,
+                    {
+                      replacements: { ui_case_id: insertedData.ui_case_id },
+                      type: db.Sequelize.QueryTypes.SELECT,
+                    }
+                  );
+                }
+
+              } else {
+                console.error("Template entry for 'cid_under_investigation' not found.");
+              }
+            }
+
             
             insertedId = insertedData.id || null;
             insertedType = insertedData.sys_status || null;
