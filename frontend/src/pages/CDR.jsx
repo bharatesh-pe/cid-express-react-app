@@ -2976,13 +2976,30 @@ const CDR = ({ templateName, headerDetails, rowId, options, selectedRowData, bac
                                 </Typography>
 
                                 {/* {selectedRowData?.["field_cid_crime_no./enquiry_no"] && ( */}
+                                {headerDetails && (
+                                    <Tooltip title={headerDetails}>
                                     <Chip
-                                        label={headerDetails}
+                                        label={
+                                        <Typography
+                                            sx={{
+                                            fontSize: '13px',
+                                            maxWidth: 230,
+                                            whiteSpace: 'nowrap',
+                                            overflow: 'hidden',
+                                            textOverflow: 'ellipsis',
+                                            fontWeight: 500, marginTop: '2px'
+                                            }}
+                                        >
+                                            {headerDetails}
+                                        </Typography>
+                                        }
                                         color="primary"
                                         variant="outlined"
                                         size="small"
-                                        sx={{ fontWeight: 500, mt: '2px' }}
+                                        sx={{ fontWeight: 500, marginTop: '2px' }}
                                     />
+                                    </Tooltip>
+                                )}
                                 {/* )} */}
 
                                 {/* <Box className="totalRecordCaseStyle">

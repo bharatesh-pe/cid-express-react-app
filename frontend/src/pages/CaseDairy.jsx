@@ -849,13 +849,28 @@ const CaseDairy = ({headerDetails, backToForm, showMagazineView, rowData, module
                         Case Diary
                     </Typography>
                     {headerDetails && (
+                        <Tooltip title={headerDetails}>
                         <Chip
-                            label={headerDetails}
+                            label={
+                            <Typography
+                                sx={{
+                                fontSize: '13px',
+                                maxWidth: 230,
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                fontWeight: 500, marginTop: '2px'
+                                }}
+                            >
+                                {headerDetails}
+                            </Typography>
+                            }
                             color="primary"
                             variant="outlined"
                             size="small"
                             sx={{ fontWeight: 500, marginTop: '2px' }}
                         />
+                        </Tooltip>
                     )}
                 </Typography>
 

@@ -61,7 +61,7 @@ import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 
 const NormalViewForm = ({ 
     formConfig, initialData, onSubmit, onError, stepperData, closeForm, table_name, template_name, readOnly, editData, onUpdate, template_id, table_row_id, headerDetails, selectedRow, noPadding, disableEditButton, disableSaveNew, overAllReadonly, investigationViewTable, editedForm
-    , showAssignIo, investigationAction, reloadApproval, showCaseActionBtn, reloadForm , showCaseLog, reloadFormConfig , onSkip , skip , editName ,  oldCase , onViewOldCase, showMagazineView, caseDiary, caseDiaryArray, caseDairy_pt_case_id, caseDairy_ui_case_id, disabledDates
+    , showAssignIo, investigationAction, reloadApproval, showCaseActionBtn, reloadForm , showCaseLog, reloadFormConfig , onSkip , skip , editName ,  oldCase , onViewOldCase, showMagazineView, caseDiary, caseDiaryArray, caseDairy_pt_case_id, caseDairy_ui_case_id, disabledDates, mappingCase, onMappingCase
  }) => {
 
 //   let storageFormData = localStorage.getItem(template_name + '-formData') ? JSON.parse(localStorage.getItem(template_name + '-formData')) : {};
@@ -2916,20 +2916,49 @@ const NormalViewForm = ({
               {template_name ? template_name : 'Form'}
             </Typography>
             {headerDetails && (
+                <Tooltip title={headerDetails}>
                 <Chip
-                    label={headerDetails}
+                    label={
+                    <Typography
+                        sx={{
+                        fontSize: '13px',
+                        maxWidth: 230,
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        fontWeight: 500, marginTop: '2px'
+                        }}
+                    >
+                        {headerDetails}
+                    </Typography>
+                    }
                     color="primary"
                     variant="outlined"
                     size="small"
                     sx={{ fontWeight: 500, marginTop: '2px' }}
                 />
+                </Tooltip>
             )}
-          </Box>
+            </Box>
 
           <Box sx={{ display: 'flex', alignItems: 'center', }}>
 
+            {mappingCase && (
+                <Button
+                    variant="outlined"
+                    onClick={() => {
+                        if (onMappingCase) {
+                            onMappingCase();
+                        }
+                    }}
+                    sx={{marginLeft: "10px", marginRight: "4px", height: '40px'}}
+                >
+                    {table_name === "cid_under_investigation" ? "PT" : "UI"}
+                </Button>
+             )}
 
-            {
+
+            {/* {
                 showMagazineView && 
                 <Button
                 variant="outlined"
@@ -2940,7 +2969,7 @@ const NormalViewForm = ({
                 >
                     Case Docket
                 </Button>
-            }
+            } */}
             
             {oldCase &&  table_name === 'cid_under_investigation' && (
             <Button

@@ -608,6 +608,104 @@ const LokayuktaView = () => {
         }
     },[selectedTableTabs]);
 
+      const mappingCases = async () => {
+        let resolvedTableName = table_name;
+        if (module === "pt_case" || module === "pt_trail_case") {
+            resolvedTableName = "cid_under_investigation";
+        } else if (module === "ui_case") {
+            resolvedTableName = "cid_pending_trial";
+        }
+
+        if (!resolvedTableName) {
+            toast.warning("Please Check Table Name", { /* ... */ });
+            return;
+        }
+
+        let ui_case_id = "";
+        let pt_case_id = "";
+        let selectedId = "";
+
+        if (module === "pt_case" || module === "pt_trail_case") {
+            ui_case_id = rowData?.ui_case_id;
+            selectedId = ui_case_id;
+        } else if (module === "ui_case") {
+            pt_case_id = rowData?.pt_case_id;
+            selectedId = pt_case_id;
+        }
+
+        if (!selectedId || selectedId === null) {
+            toast.warning("No data found.", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-warning",
+            });
+        return;
+    }
+
+        setSelectedRowId(selectedId);
+
+        const viewTemplatePayload = {
+            table_name: resolvedTableName,
+            id: selectedId
+        };
+
+        setLoading(true);
+        try {
+            const viewTemplateData = await api.post("/templateData/viewTemplateData", viewTemplatePayload);
+            setLoading(false);
+
+            if (viewTemplateData?.success) {
+                const viewTemplateResponse = await api.post("/templates/viewTemplate", { table_name: resolvedTableName });
+                if (viewTemplateResponse?.success) {
+                    setSelectedTemplateId(viewTemplateResponse.data.template_id);
+                    setSelectedTemplateName(viewTemplateResponse.data.template_name);
+                    setSelectedTableName(resolvedTableName);
+                    setFormFields(viewTemplateResponse.data.fields || []);
+                    setFormStepperData(viewTemplateResponse.data.sections || []);
+                    setInitialFormData(viewTemplateData.data || {});
+                    setReadonlyForm(true);
+                    setEditOnlyForm(false);
+                    setFormOpen(true);
+                    setRowValueId(rowData);
+                } else {
+                    toast.error(viewTemplateResponse.message || "Failed to fetch template.", { position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error", });
+                }
+            } else {
+                toast.error(viewTemplateData.message || "Failed to fetch data.", { position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error", });
+            }
+        } catch (error) {
+            setLoading(false);
+            toast.error(error?.response?.data?.message || "Please Try Again!", { position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error", });
+        }
+    };
+
+
     const handleViewOldCase = () => {
         const oldCaseTable = {
             table: "cid_ui_case_old_cms_data",
@@ -3099,6 +3197,8 @@ if ((!currentTableName || currentTableName === "") && (!activeSidebar?.table || 
                             editName={true}
                             oldCase = {true}
                             onViewOldCase={handleViewOldCase} 
+                            mappingCase = {true}
+                            onMappingCase = {mappingCases}
                             initialData={initialRowData}
                             formConfig={templateFields}
                             stepperData={stepperConfig}
@@ -3283,13 +3383,28 @@ if ((!currentTableName || currentTableName === "") && (!activeSidebar?.table || 
                                         : (activeSidebar?.name || "Form")}
                                 </Typography>
                                 {headerDetails && (
+                                    <Tooltip title={headerDetails}>
                                     <Chip
-                                        label={headerDetails}
+                                        label={
+                                        <Typography
+                                            sx={{
+                                            fontSize: '13px',
+                                            maxWidth: 230,
+                                            whiteSpace: 'nowrap',
+                                            overflow: 'hidden',
+                                            textOverflow: 'ellipsis',
+                                            fontWeight: 500, marginTop: '2px'
+                                            }}
+                                        >
+                                            {headerDetails}
+                                        </Typography>
+                                        }
                                         color="primary"
                                         variant="outlined"
                                         size="small"
                                         sx={{ fontWeight: 500, marginTop: '2px' }}
                                     />
+                                    </Tooltip>
                                 )}
                             </Typography>
 
