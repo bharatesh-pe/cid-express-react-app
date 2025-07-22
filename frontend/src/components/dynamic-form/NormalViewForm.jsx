@@ -3222,7 +3222,7 @@ const NormalViewForm = ({
                                                                 fontSize={14}
                                                                 noWrap
                                                                 sx={{
-                                                                width: '175px',
+                                                                width: '125px',
                                                                 overflow: 'hidden',
                                                                 textOverflow: 'ellipsis',
                                                                 whiteSpace: 'nowrap',
@@ -3252,7 +3252,7 @@ const NormalViewForm = ({
                                                                         '& .MuiOutlinedInput-notchedOutline': { border: 'none' },
                                                                         '& .MuiInputBase-root': { border: 'none' },
                                                                         backgroundColor: 'transparent',
-                                                                        minWidth: '60px'
+                                                                        minWidth: '110px'
                                                                     }
                                                                 }
                                                                 }}
