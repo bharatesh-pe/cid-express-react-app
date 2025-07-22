@@ -90,7 +90,7 @@ const NormalViewForm = ({
     const saveNewActionRef = useRef(false);
     const orderCopyFieldMandatory = useRef(false);
     const changingFormField = useRef(false);
-
+    const [uiCaseOptions, setUiCaseOptions] = useState([]);
 
     const [showActionModal, setShowActionModal] = useState(false);
     const [caseActionOptions, setCaseActionOptions] = useState([]);
