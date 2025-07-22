@@ -4248,6 +4248,7 @@ exports.paginateTemplateData = async (req, res) => {
         totalPages,
         sort_by: validSortBy,
         order,
+        template : fieldsArray,
       },
     };
 

@@ -471,6 +471,8 @@ const ProfileData = () => {
 
                     const totalPages = meta?.totalPages || 1;
                     const totalItems = meta?.totalItems || 0;
+
+                    const templateConfig = meta?.template || []
                     
                     if (totalPages !== null && totalPages !== undefined) {
                         setTotalPage(totalPages);
@@ -523,7 +525,7 @@ const ProfileData = () => {
                                 .filter((key) => !excludedKeys.includes(key))
                                 .map((key) => {
                                     var updatedKeyName = key.replace(/^field_/, "").replace(/_/g, " ").toLowerCase().replace(/^\w|\s\w/g, (c) => c.toUpperCase())
-                                    const fieldData = (selectedFields || []).find((data) => data.name === key);
+                                    const fieldData = (templateConfig || []).find((data) => data.name === key);
                                     console.log("updatedKeyName",updatedKeyName)
                                     return {
                                         field: key,
@@ -652,28 +654,52 @@ const ProfileData = () => {
 
                     var updatedTableData = getTemplateResponse.data['data'].map((field, index) => {
 
-                        const formatDate = (fieldValue) => {
-                            if (!fieldValue || typeof fieldValue !== "string") return fieldValue;
+                        const formatTime = (value) => {
+                            const parsed = Date.parse(value);
+                            if (isNaN(parsed)) return value;
+                            
+                            const date = new Date(parsed);
+                            let hours = date.getHours();
+                            const ampm = hours >= 12 ? 'PM' : 'AM';
+                            
+                            hours = hours % 12;
+                            hours = hours ? hours : 12;
+                            
+                            return `${hours.toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}:${date.getSeconds().toString().padStart(2, '0')} ${ampm}`;
+                        };
 
-                            var dateValue = new Date(fieldValue);
+                        const formatDateTime = (value) => {
+                            const parsed = Date.parse(value);
+                            if (isNaN(parsed)) return value;
+                            
+                            const date = new Date(parsed);
+                            let hours = date.getHours();
+                            const ampm = hours >= 12 ? 'PM' : 'AM';
+                            
+                            hours = hours % 12;
+                            hours = hours ? hours : 12;
+                            
+                            return `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()} ${hours.toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}:${date.getSeconds().toString().padStart(2, '0')} ${ampm}`;
+                        };
 
-                            if (isNaN(dateValue.getTime()) || !fieldValue.includes("-") && !fieldValue.includes("/")) {
-                                return fieldValue;
-                            }
-
-                            if (isNaN(dateValue.getTime())) return fieldValue;
-
-                            var dayValue = String(dateValue.getDate()).padStart(2, "0");
-                            var monthValue = String(dateValue.getMonth() + 1).padStart(2, "0");
-                            var yearValue = dateValue.getFullYear();
-                            return `${dayValue}/${monthValue}/${yearValue}`;
+                        const formatDate = (value) => {
+                            const parsed = Date.parse(value);
+                            if (isNaN(parsed)) return value;
+                            return new Date(parsed).toLocaleDateString("en-GB");
                         };
 
                         const updatedField = {};
 
                         Object.keys(field).forEach((key) => {
-                            if (field[key] && key !== 'id' && !isNaN(new Date(field[key]).getTime())) {
+
+                            const fieldData = (templateConfig || []).find((data) => data.name === key);
+
+                            if (fieldData?.type === "time"){
+                                updatedField[key] = formatTime(field[key]);
+                            }else if(fieldData?.type === "date"){
                                 updatedField[key] = formatDate(field[key]);
+                            }else if (fieldData?.type === "datetime") {
+                                updatedField[key] = formatDateTime(field[key]);
                             } else {
                                 updatedField[key] = field[key];
                             }
