@@ -90,7 +90,7 @@ const NormalViewForm = ({
     const saveNewActionRef = useRef(false);
     const orderCopyFieldMandatory = useRef(false);
     const changingFormField = useRef(false);
-
+    const [uiCaseOptions, setUiCaseOptions] = useState([]);
 
     const [showActionModal, setShowActionModal] = useState(false);
     const [caseActionOptions, setCaseActionOptions] = useState([]);
@@ -795,8 +795,32 @@ const NormalViewForm = ({
 
   const handleAutocomplete = (field, selectedValue) => {
 
-    let updatedFormData = { ...formData, [field.name]: selectedValue };
+    const selectedFullObject =
+          field.name === "field_ui_case" && typeof selectedValue === "number"
+            ? uiCaseOptions.find((opt) => opt.code === selectedValue)
+            : selectedValue;
+
+      let updatedFormData = {
+        ...formData,
+        [field.name]: selectedFullObject?.code || selectedValue,
+      };
+
+      setSelectedField(field);
+
+    if (
+      field.name === "field_ui_case" &&
+      field.table === "cid_under_investigation" &&
+      selectedFullObject &&
+      table_name === "cid_pending_trial"
+    ) {
+      updatedFormData["field_ps_crime_number"] = selectedFullObject.crime_number || "";
+      updatedFormData["field_cid_crime_no./enquiry_no"] = selectedFullObject.cid_enquiry_number || "";
+      updatedFormData["field_name_of_the_police_station"] = selectedFullObject.police_station?.id || "";
+    }
+
+    // let updatedFormData = { ...formData, [field.name]: selectedValue };
     setSelectedField(field);
+    
 
     if (field.table) {
       var updatedFormConfig = newFormConfig.map((data) => {
@@ -1596,6 +1620,29 @@ const NormalViewForm = ({
 
                     var apiPayload = {};
 
+                    if (field.name === "field_ui_case") {
+                        const response = await api.post("cidMaster/fetchUICaseDetails", {
+                            allowedDepartmentIds : localStorage.getItem("allowedDepartmentIds") ,
+                            allowedDivisionIds : localStorage.getItem("allowedDivisionIds") ,
+                            allowedUserIds :  localStorage.getItem("allowedUserIds") 
+                        });
+                        const updatedOptions = response.data.map((data) => ({
+                            ...data,
+                            name: data.name,
+                            code: data.code,
+                        }));
+                        setUiCaseOptions(updatedOptions);
+                        setNewFormConfig((prevFormConfig) => {
+                            return prevFormConfig.map((data) => {
+                                if (data.name === field.name) {
+                                    return { ...data, options: updatedOptions };
+                                }
+                                return data;
+                            });
+                        });
+                        return { id: field.id, options: updatedOptions };
+                    }
+                    
                     if(field.api === "/templateData/getTemplateData"){
                         apiPayload = {
                             table_name: field.table
