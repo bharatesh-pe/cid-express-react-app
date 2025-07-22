@@ -523,7 +523,7 @@ const DynamicForm = ({
             }
         }
 
-        if(field.type === "table" && Boolean(field.required)){
+        if(field.type === "table"){
             let error = false;
 
             let tableData = formData?.[field?.name];
@@ -541,13 +541,16 @@ const DynamicForm = ({
                     for (const headerObj of field.tableHeaders) {
                         const key = headerObj?.header;
 
-                        const value = row?.[key];
+                        if(headerObj?.fieldType?.required){
+                            const value = row?.[key];
 
-                        if (value === undefined || value === null || (typeof value === "string" && value.trim() === "") || (Array.isArray(value) && value.length === 0)) {
-                            error = true;
-                            break;
+                            if (value === undefined || value === null || (typeof value === "string" && value.trim() === "") || (Array.isArray(value) && value.length === 0)) {
+                                error = true;
+                                break;
+                            }
                         }
                     }
+
                     if (error) break;
                 }
             }

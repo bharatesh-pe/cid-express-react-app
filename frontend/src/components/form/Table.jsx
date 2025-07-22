@@ -315,17 +315,6 @@ const TableField = ({ field, onChange, errors, readOnly, formData, onFocus, isFo
                     <span className="anekKannada" style={{ marginTop: '6px' }}>
                         {field.kannada ? '/ ' + field.kannada + ' ' : ''}
                     </span>
-                    {field.required && (
-                        <span
-                            style={{
-                                padding: '0px 0px 0px 5px', 
-                                verticalAlign: 'middle'
-                            }} 
-                            className='MuiFormLabel-asterisk MuiInputLabel-asterisk css-1ljffdk-MuiFormLabel-asterisk'
-                        >
-                            {'*'}
-                        </span>
-                    )}
                     {field.info && (
                         <Tooltip title={field.info ? field.info : ''} arrow placement="top">
                             <InfoIcon className='infoIcon' sx={{
@@ -355,6 +344,17 @@ const TableField = ({ field, onChange, errors, readOnly, formData, onFocus, isFo
                                     <Tooltip title={header.header} arrow placement="top">
                                         <span style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'inline-block', maxWidth: '100%' }}>
                                             {header.header}
+                                            {header?.fieldType?.required && (
+                                                <span
+                                                    style={{
+                                                        padding: '0px 0px 0px 5px', 
+                                                        verticalAlign: 'middle'
+                                                    }} 
+                                                    className='MuiFormLabel-asterisk MuiInputLabel-asterisk css-1ljffdk-MuiFormLabel-asterisk'
+                                                >
+                                                    {'*'}
+                                                </span>
+                                            )}
                                         </span>
                                     </Tooltip>
                                 </TableCell>
@@ -406,7 +406,7 @@ const TableField = ({ field, onChange, errors, readOnly, formData, onFocus, isFo
                                                     rows={header?.fieldType?.type === 'text_area' && focusedCell.row === rowIndex && focusedCell.col === colIndex ? 6 : 1}
                                                     onFocus={() => setFocusedCell({ row: rowIndex, col: colIndex })}
                                                     onBlur={() => setFocusedCell({ row: null, col: null })}
-                                                    error={Boolean(errors?.[field?.name]) && !row[header.header]}
+                                                    error={header?.fieldType?.required && Boolean(errors?.[field?.name]) && !row[header.header]}
                                                 />
                                             )
                                             ||
@@ -424,7 +424,7 @@ const TableField = ({ field, onChange, errors, readOnly, formData, onFocus, isFo
                                                         }
                                                     }}
                                                     inputProps={{ inputMode: 'numeric' }}
-                                                    error={Boolean(errors?.[field?.name]) && !row[header.header]}
+                                                    error={header?.fieldType?.required && Boolean(errors?.[field?.name]) && !row[header.header]}
                                                 />
                                             ) 
                                             ||
@@ -436,12 +436,12 @@ const TableField = ({ field, onChange, errors, readOnly, formData, onFocus, isFo
                                                     value={row[header.header] || ''}
                                                     disabled={readOnly}
                                                     onChange={(e) => handleCellChange(rowIndex, header.header, e.target.value)}
-                                                    error={Boolean(errors?.[field?.name]) && !row[header.header]}
+                                                    error={header?.fieldType?.required && Boolean(errors?.[field?.name]) && !row[header.header]}
                                                 />
                                             )
                                             ||
                                             header?.fieldType?.type === 'single_select' && (
-                                                <FormControl fullWidth size="small" error={Boolean(errors?.[field?.name]) && !row[header.header]}>
+                                                <FormControl fullWidth size="small" error={header?.fieldType?.required && Boolean(errors?.[field?.name]) && !row[header.header]}>
                                                     <Select
                                                         value={row[header.header] || ''}
                                                         disabled={readOnly}
@@ -458,7 +458,7 @@ const TableField = ({ field, onChange, errors, readOnly, formData, onFocus, isFo
                                             )
                                             ||
                                             header?.fieldType?.type === 'multi_select' && (
-                                                <FormControl fullWidth size="small" error={Boolean(errors?.[field?.name]) && (!row[header.header] || row[header.header].length === 0)}>
+                                                <FormControl fullWidth size="small" error={(header?.fieldType?.required && Boolean(errors?.[field?.name])) && (!row[header.header] || row[header.header].length === 0)}>
                                                     <Autocomplete
                                                         multiple
                                                         disableCloseOnSelect

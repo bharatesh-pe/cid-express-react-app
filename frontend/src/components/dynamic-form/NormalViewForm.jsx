@@ -547,7 +547,7 @@ const NormalViewForm = ({
                 }
             }
 
-            if(field.type === "table" && Boolean(field.required)){
+            if(field.type === "table"){
                 if (isBefore2015) return null;
                 let error = false;
 
@@ -566,12 +566,15 @@ const NormalViewForm = ({
                         for (const headerObj of field.tableHeaders) {
                             const key = headerObj?.header;
 
-                            const value = row?.[key];
-
-                            if (value === undefined || value === null || (typeof value === "string" && value.trim() === "") || (Array.isArray(value) && value.length === 0)) {
-                                error = true;
-                                break;
+                            if(headerObj?.fieldType?.required){
+                                const value = row?.[key];
+    
+                                if (value === undefined || value === null || (typeof value === "string" && value.trim() === "") || (Array.isArray(value) && value.length === 0)) {
+                                    error = true;
+                                    break;
+                                }
                             }
+
                         }
                         if (error) break;
                     }
