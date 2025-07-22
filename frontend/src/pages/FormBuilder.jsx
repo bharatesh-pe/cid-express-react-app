@@ -151,7 +151,26 @@ const Formbuilder = () => {
                 const excludedTypes = ['file', 'profilepicture', 'table', 'tabs'];
 
                 var updatedFields = Createdfields.map((element)=>{
-                    
+
+                    if (element.type === "file") {
+                        const hasDocx = element.supportedFormat.some(fmt => fmt.ext === ".docx");
+
+                        if (!hasDocx) {
+                            element.supportedFormat.push({
+                                name: "Docx files",
+                                ext: ".docx"
+                            });
+                        }
+                    }
+
+                    if (element.type === "table" && element.hasOwnProperty("table_display_content")) {
+                        delete element.table_display_content;
+                    }
+
+                    if (element.type === "table" && element.hasOwnProperty("required")) {
+                        delete element.required;
+                    }
+
                     if(element.type === "tabs"){
                         return{
                             ...element,
