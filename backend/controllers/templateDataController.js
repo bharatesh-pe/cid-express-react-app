@@ -1320,16 +1320,26 @@ exports.updateEditTemplateData = async (req, res, next) => {
         });
       }
 
-      const fileUpdates = {};
+     const fileUpdates = {};
+
       if (req.files && req.files.length > 0) {
         const folderAttachments = folder_attachment_ids ? JSON.parse(folder_attachment_ids) : [];
 
         for (const file of req.files) {
           const { originalname, size, key, fieldname, filename } = file;
+
+          const match = fieldname.match(/^(.*?)__([0-9]+)$/);
+          if (!match) continue;
+
+          const actualFieldName = match[1];
+          const fileRowId = match[2];
+
+          if (fileRowId !== singleId.toString()) continue;
+
           const fileExtension = path.extname(originalname);
 
           const matchingFolder = folderAttachments.find(
-            (attachment) => attachment.filename === originalname && attachment.field_name === fieldname
+            (attachment) => attachment.filename === originalname && attachment.field_name === actualFieldName
           );
           const folderId = matchingFolder ? matchingFolder.folder_id : null;
           const s3Key = `../data/cases/${filename}`;
@@ -1341,20 +1351,20 @@ exports.updateEditTemplateData = async (req, res, next) => {
             attachment_extension: fileExtension,
             attachment_size: size,
             s3_key: s3Key,
-            field_name: fieldname,
+            field_name: actualFieldName,
             folder_id: folderId,
           });
 
           const existingRecord = await Model.findOne({
             where: { id: singleId },
-            attributes: [fieldname],
+            attributes: [actualFieldName],
           });
 
-          let currentFilenames = existingRecord?.[fieldname] || "";
+          let currentFilenames = existingRecord?.[actualFieldName] || "";
           currentFilenames = currentFilenames ? `${currentFilenames},${originalname}` : originalname;
 
-          fileUpdates[fieldname] = fileUpdates[fieldname]
-            ? `${fileUpdates[fieldname]},${originalname}`
+          fileUpdates[actualFieldName] = fileUpdates[actualFieldName]
+            ? `${fileUpdates[actualFieldName]},${originalname}`
             : currentFilenames;
         }
 
@@ -1362,6 +1372,7 @@ exports.updateEditTemplateData = async (req, res, next) => {
           await Model.update({ [fieldname]: filenames }, { where: { id: singleId } });
         }
       }
+
     }
 
     return userSendResponse(res, 200, true, `Record updated successfully.`, null);
@@ -5328,7 +5339,12 @@ exports.downloadExcelData = async (req, res) => {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet("Data");
 
-    worksheet.columns = schema.map((field) => ({
+    const excludedTypes = ["table", "checkbox", "radio", "file", "profilepicture", "tabs", "divider"];
+
+    const filteredSchema = schema.filter(field => !excludedTypes.includes(field.type));
+
+
+    worksheet.columns = filteredSchema.map((field) => ({
       header: field.name,
       key: field.name,
       width: 20,
@@ -5424,13 +5440,64 @@ exports.bulkInsertData = async (req, res) => {
 
         await Model.sync();
 
-        const insertRows = rowData.map(row => {
-            const obj = {};
+        const insertRows = [];
+
+        for (const row of rowData) {
+            const processedRow = {};
+
             for (const col of columnData) {
-                obj[col] = row[col];
+                const fieldDef = schema.find(f => f.name === col);
+
+                if (!fieldDef) {
+                    continue; 
+                }
+
+                const { type, options, api } = fieldDef;
+                let value = row[col];
+
+                if (["dropdown", "autocomplete", "multidropdown"].includes(type)) {
+                    let mappedCode = null;
+
+                    if (Array.isArray(options)) {
+                        if (type === "multidropdown" && Array.isArray(value)) {
+                            mappedCode = value.map(v => {
+                                const found = options.find(opt => opt.name === v || opt.code === v);
+                                return found ? found.code : null;
+                            }).filter(v => v !== null);
+                        } else {
+                            const found = options.find(opt => opt.name === value || opt.code === value);
+                            mappedCode = found ? found.code : null;
+                        }
+                    } else if (api) {
+                        try {
+                            const apiUrl = `${api}`;
+                            const apiResponse = await axios.post(apiUrl, { table_name });
+                            const apiOptions = apiResponse?.data?.data || [];
+
+                            if (type === "multidropdown" && Array.isArray(value)) {
+                                mappedCode = value.map(v => {
+                                    const found = apiOptions.find(opt => opt.name === v || opt.code === v);
+                                    return found ? found.code : null;
+                                }).filter(v => v !== null);
+                            } else {
+                                const found = apiOptions.find(opt => opt.name === value || opt.code === value);
+                                mappedCode = found ? found.code : null;
+                            }
+                        } catch (err) {
+                            console.error(`API fetch failed for field "${col}":`, err.message);
+                            mappedCode = null;
+                        }
+                    }
+
+                    value = mappedCode;
+                }
+
+                processedRow[col] = value;
             }
-            return obj;
-        });
+
+            insertRows.push(processedRow);
+        }
+
 
         const t = await sequelize.transaction();
         try {
