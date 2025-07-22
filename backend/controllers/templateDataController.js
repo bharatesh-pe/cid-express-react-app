@@ -7785,10 +7785,58 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
             await Model.sync();
     
             insertedData = await Model.create(validData, { transaction: t });
+
             if (!insertedData) {
                 await t.rollback();
                 return userSendResponse(res, 400, false, "Failed to insert data.", null);
             }
+
+            if (table_name === "cid_pending_trial" && insertedData.ui_case_id) {
+              const underInvestigationTemplate = await Template.findOne({
+                where: { table_name: "cid_under_investigation" },
+              });
+
+              if (underInvestigationTemplate) {
+                const underInvestigationTableName = underInvestigationTemplate.table_name;
+
+                const checkRow = await db.sequelize.query(
+                  `SELECT * FROM ${underInvestigationTableName} WHERE id = :ui_case_id`,
+                  {
+                    replacements: { ui_case_id: insertedData.ui_case_id },
+                    type: db.Sequelize.QueryTypes.SELECT,
+                  }
+                );
+
+                if (checkRow.length === 0) {
+                  console.warn("Row not found for UI Case ID:", insertedData.ui_case_id);
+                } else {
+                  console.log("Before Update - pt_case_id:", checkRow[0].pt_case_id);
+
+                  await db.sequelize.query(
+                    `UPDATE ${underInvestigationTableName} SET pt_case_id = :pt_case_id WHERE id = :ui_case_id`,
+                    {
+                      replacements: {
+                        pt_case_id: insertedData.id,
+                        ui_case_id: insertedData.ui_case_id,
+                      },
+                      type: db.Sequelize.QueryTypes.UPDATE,
+                    }
+                  );
+
+                  const updatedRow = await db.sequelize.query(
+                    `SELECT * FROM ${underInvestigationTableName} WHERE id = :ui_case_id`,
+                    {
+                      replacements: { ui_case_id: insertedData.ui_case_id },
+                      type: db.Sequelize.QueryTypes.SELECT,
+                    }
+                  );
+                }
+
+              } else {
+                console.error("Template entry for 'cid_under_investigation' not found.");
+              }
+            }
+
             
             insertedId = insertedData.id || null;
             insertedType = insertedData.sys_status || null;
@@ -9608,7 +9656,7 @@ exports.getMergeParentData = async (req, res) =>
         const fieldConfigs = {};
 
         for (const field of fieldsArray) {
-            const {
+              var {
                 name: columnName,
                 data_type,
                 max_length,
@@ -9620,59 +9668,120 @@ exports.getMergeParentData = async (req, res) =>
                 options,
                 type,
                 table_display_content,
-            } = field;
+              } = field;
 
-            if (!table_display_content) continue; // Filter out fields not marked for display
+              if (!table_display_content) continue; // Filter out fields not marked for display
 
-            // Store the complete field configuration for reference
-            fieldConfigs[columnName] = field;
+              // Store the complete field configuration for reference
+              fieldConfigs[columnName] = field;
 
-            const sequelizeType =
+              const sequelizeType =
                 data_type?.toUpperCase() === "VARCHAR" && max_length
-                ? Sequelize.DataTypes.STRING(max_length)
-                : Sequelize.DataTypes[data_type?.toUpperCase()] ||
+                  ? Sequelize.DataTypes.STRING(max_length)
+                  : Sequelize.DataTypes[data_type?.toUpperCase()] ||
                     Sequelize.DataTypes.STRING;
 
-            fields[columnName] = {
+              fields[columnName] = {
                 type: sequelizeType,
                 allowNull: !not_null,
                 defaultValue: default_value || null,
                 displayContent: table_display_content,
-            };
+              };
 
-            if (type === "radio" && Array.isArray(options)) {
+              if(attributes && attributes.length > 0) 
+              {
+                if(table && forign_key && attributes) {
+                    attributes.push(forign_key); // Add the primary key to the attributes array
+                }
+                options = [];
+                if(table ==="users") {
+                    IOData = await Users.findAll({
+                        where: {dev_status: true},
+                        include: [
+                            {
+                                model: Role,
+                                as: "role",
+                                attributes: ["role_id", "role_title"],
+                                where: {
+                                    role_id: {
+                                        [Op.notIn]: excluded_role_ids,
+                                    },
+                                },
+                            },
+                            {
+                                model: KGID,
+                                as: "kgidDetails",
+                                attributes: [ "name"],
+                            },
+                        ],
+                        attributes: ["user_id"],
+                        raw: true,
+                        nest: true,
+                    });
+                    if(IOData.length > 0) {
+                        IOData.forEach((result) => {
+                            var code = result["user_id"];
+                            var name = result["kgidDetails"]["name"] || '';
+                            options.push({ code, name });
+                        });
+                    }
+                }
+                else
+                {
+                    if(table === "kgid")
+                    {
+                        attributes = [];
+                        attributes.push("name");
+                    }
+                    //get the table primary key value of the table
+                    var query = `SELECT ${attributes}  FROM ${table}`;
+                    const [results, metadata] = await sequelize.query(query);
+                    if(results.length > 0) {
+                        results.forEach((result) => {
+                                if(result[forign_key]) {
+                                    var code = result[forign_key];
+                                    var name  = '';
+                                    attributes.forEach((attribute) => {
+                                        if(attribute !== forign_key) {
+                                            name = result[attribute];
+                                        }
+                                    });
+                                    options.push({ code, name });
+                                }
+                            });
+                    }
+                }
+              }
+
+              if (type === "radio" && Array.isArray(options)) {
                 radioFieldMappings[columnName] = options.reduce((acc, option) => {
-                acc[option.code] = option.name;
-                return acc;
+                  acc[option.code] = option.name;
+                  return acc;
                 }, {});
-            }
+              }
 
-            if (type === "checkbox" && Array.isArray(options)) {
+              if (type === "checkbox" && Array.isArray(options)) {
                 checkboxFieldMappings[columnName] = options.reduce((acc, option) => {
-                acc[option.code] = option.name;
-                return acc;
+                  acc[option.code] = option.name;
+                  return acc;
                 }, {});
-            }
+              }
 
-            if (
-                (type === "dropdown" ||
-                type === "multidropdown" ||
-                type === "autocomplete") &&
-                Array.isArray(options)
-            ) {
+              if ( (type === "dropdown" || type === "multidropdown" || type === "autocomplete") && Array.isArray(options)) {
                 dropdownFieldMappings[columnName] = options.reduce((acc, option) => {
-                acc[option.code] = option.name;
-                return acc;
+                  acc[option.code] = option.name;
+                  return acc;
                 }, {});
-            }
+              }
 
-            if (table && forign_key && attributes) {
+
+              if (table && forign_key && attributes) {
                 associations.push({
-                relatedTable: table,
-                foreignKey: columnName,
-                targetAttribute: attributes,
+                  relatedTable: table,
+                  foreignKey: columnName,
+                  targetAttribute: attributes,
                 });
-            }
+              }
         }
 
         const DynamicTable = sequelize.define(table_name, fields, {
@@ -10370,7 +10479,7 @@ exports.getMergeChildData = async (req, res) =>
         const fieldConfigs = {};
 
         for (const field of fieldsArray) {
-            const {
+              var {
                 name: columnName,
                 data_type,
                 max_length,
@@ -10382,59 +10491,119 @@ exports.getMergeChildData = async (req, res) =>
                 options,
                 type,
                 table_display_content,
-            } = field;
+              } = field;
 
-            if (!table_display_content) continue; // Filter out fields not marked for display
+              if (!table_display_content) continue; // Filter out fields not marked for display
 
-            // Store the complete field configuration for reference
-            fieldConfigs[columnName] = field;
+              // Store the complete field configuration for reference
+              fieldConfigs[columnName] = field;
 
-            const sequelizeType =
+              const sequelizeType =
                 data_type?.toUpperCase() === "VARCHAR" && max_length
-                ? Sequelize.DataTypes.STRING(max_length)
-                : Sequelize.DataTypes[data_type?.toUpperCase()] ||
+                  ? Sequelize.DataTypes.STRING(max_length)
+                  : Sequelize.DataTypes[data_type?.toUpperCase()] ||
                     Sequelize.DataTypes.STRING;
 
-            fields[columnName] = {
+              fields[columnName] = {
                 type: sequelizeType,
                 allowNull: !not_null,
                 defaultValue: default_value || null,
                 displayContent: table_display_content,
-            };
+              };
 
-            if (type === "radio" && Array.isArray(options)) {
+              if(attributes && attributes.length > 0) 
+              {
+                if(table && forign_key && attributes) {
+                    attributes.push(forign_key); // Add the primary key to the attributes array
+                }
+                options = [];
+                if(table ==="users") {
+                    IOData = await Users.findAll({
+                        where: {dev_status: true},
+                        include: [
+                            {
+                                model: Role,
+                                as: "role",
+                                attributes: ["role_id", "role_title"],
+                                where: {
+                                    role_id: {
+                                        [Op.notIn]: excluded_role_ids,
+                                    },
+                                },
+                            },
+                            {
+                                model: KGID,
+                                as: "kgidDetails",
+                                attributes: [ "name"],
+                            },
+                        ],
+                        attributes: ["user_id"],
+                        raw: true,
+                        nest: true,
+                    });
+                    if(IOData.length > 0) {
+                        IOData.forEach((result) => {
+                            var code = result["user_id"];
+                            var name = result["kgidDetails"]["name"] || '';
+                            options.push({ code, name });
+                        });
+                    }
+                }
+                else
+                {
+                    if(table === "kgid")
+                    {
+                        attributes = [];
+                        attributes.push("name");
+                    }
+                    //get the table primary key value of the table
+                    var query = `SELECT ${attributes}  FROM ${table}`;
+                    const [results, metadata] = await sequelize.query(query);
+                    if(results.length > 0) {
+                        results.forEach((result) => {
+                                if(result[forign_key]) {
+                                    var code = result[forign_key];
+                                    var name  = '';
+                                    attributes.forEach((attribute) => {
+                                        if(attribute !== forign_key) {
+                                            name = result[attribute];
+                                        }
+                                    });
+                                    options.push({ code, name });
+                                }
+                            });
+                    }
+                }
+              }
+
+              if (type === "radio" && Array.isArray(options)) {
                 radioFieldMappings[columnName] = options.reduce((acc, option) => {
-                acc[option.code] = option.name;
-                return acc;
+                  acc[option.code] = option.name;
+                  return acc;
                 }, {});
-            }
+              }
 
-            if (type === "checkbox" && Array.isArray(options)) {
+              if (type === "checkbox" && Array.isArray(options)) {
                 checkboxFieldMappings[columnName] = options.reduce((acc, option) => {
-                acc[option.code] = option.name;
-                return acc;
+                  acc[option.code] = option.name;
+                  return acc;
                 }, {});
-            }
+              }
 
-            if (
-                (type === "dropdown" ||
-                type === "multidropdown" ||
-                type === "autocomplete") &&
-                Array.isArray(options)
-            ) {
+              if ( (type === "dropdown" || type === "multidropdown" || type === "autocomplete") && Array.isArray(options)) {
                 dropdownFieldMappings[columnName] = options.reduce((acc, option) => {
-                acc[option.code] = option.name;
-                return acc;
+                  acc[option.code] = option.name;
+                  return acc;
                 }, {});
-            }
+              }
 
-            if (table && forign_key && attributes) {
+              if (table && forign_key && attributes) {
                 associations.push({
-                relatedTable: table,
-                foreignKey: columnName,
-                targetAttribute: attributes,
+                  relatedTable: table,
+                  foreignKey: columnName,
+                  targetAttribute: attributes,
                 });
-            }
+              }
         }
 
         const DynamicTable = sequelize.define(table_name, fields, {

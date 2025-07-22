@@ -4587,7 +4587,10 @@ const loadChildMergedCasesData = async (page, caseId) => {
       setTableData(processedData);
 
       const excludedKeys = [
-        "created_at", "updated_at", "deleted_at", "attachments", "task_unread_count", "id", "field_cid_crime_no./enquiry_no", "field_io_name" ,"field_io_name_id"
+        "created_at", "updated_at", "deleted_at", "attachments", "task_unread_count", "id",
+                    "ui_case_id", "pt_case_id", "sys_status", "field_cid_crime_no./enquiry_no","field_io_name" , "field_io_name_id", 
+                    "field_name_of_the_police_station", "field_division", "field_case/enquiry_keyword", "field_date_of_taking_over_by_cid", "field_extension_date",
+                    "field_extension_remark","field_extension_updated_by","childCount"
       ];
 
       const generateReadableHeader = (key) =>
@@ -4638,62 +4641,105 @@ const loadChildMergedCasesData = async (page, caseId) => {
               />
             </Box>
           ),
-        }
-        ,
-      {
-          field: "approval_child",
-          headerName: "Approval",
-          width: 50,
+        },
+        {
+            field: "approval_child",
+            headerName: "Approval",
+            width: 50,
+            resizable: true,
+            cellClassName: 'justify-content-start',
+            renderHeader: (params) => (
+                <Tooltip title="Approval"><VerifiedIcon sx={{ color: "", fill: "#1f1dac" }} /></Tooltip>
+            ),                            
+            renderCell: (params) => (
+                <Button
+                    variant="contained"
+                    color="transparent"
+                    size="small"
+                    sx={{
+                        padding: 0,
+                        fontSize: '0.75rem',
+                        textTransform: 'none',
+                        boxShadow: 'none',
+                        '&:hover':{
+                            boxShadow: 'none',
+                        }
+                    }}
+                >
+                    <Tooltip title="Approval"><VerifiedUserIcon color="success" onClick={() => {
+                      setIsChildMergedLoading(true);
+                      handleActionShow(params?.row, true);
+                    }}
+                    sx={{fontSize:'26px'}} /></Tooltip>
+                </Button>
+            )
+        },
+        {
+            field: "field_cid_crime_no./enquiry_no",
+            headerName: "Cid Crime No./Enquiry No",
+            width: 130,
+            resizable: true,
+            cellClassName: 'justify-content-start',
+            renderHeader: (params) => (
+                tableHeaderRender(params, "field_cid_crime_no./enquiry_no")
+            ),
+            renderCell: renderCellFunc("field_cid_crime_no./enquiry_no", 0),
+        },
+        {
+          field: "field_io_name",
+          headerName: "Assign To IO",
+          width: 150,
           resizable: true,
           cellClassName: 'justify-content-start',
           renderHeader: (params) => (
-              <Tooltip title="Approval"><VerifiedIcon sx={{ color: "", fill: "#1f1dac" }} /></Tooltip>
-          ),                            
-          renderCell: (params) => (
-              <Button
-                  variant="contained"
-                  color="transparent"
-                  size="small"
-                  sx={{
-                      padding: 0,
-                      fontSize: '0.75rem',
-                      textTransform: 'none',
-                      boxShadow: 'none',
-                      '&:hover':{
-                          boxShadow: 'none',
-                      }
-                  }}
-              >
-                  <Tooltip title="Approval"><VerifiedUserIcon color="success" onClick={() => {
-                    setIsChildMergedLoading(true);
-                    handleActionShow(params?.row, true);
-                  }}
-                  sx={{fontSize:'26px'}} /></Tooltip>
-              </Button>
-          )
-      },
-      {
-          field: "field_cid_crime_no./enquiry_no",
-          headerName: "Cid Crime No./Enquiry No",
-          width: 200,
-          resizable: true,
-          cellClassName: 'justify-content-start',
-          renderHeader: (params) => (
-              tableHeaderRender(params, "field_cid_crime_no./enquiry_no")
+              tableHeaderRender(params, "field_io_name")
           ),
-          renderCell: renderCellFunc("field_cid_crime_no./enquiry_no", 0),
-      },
-      {
-        field: "field_io_name",
-        headerName: "Assign To IO",
-        width: 200,
-        resizable: true,
-        cellClassName: 'justify-content-start',
-        renderHeader: (params) => (
-            tableHeaderRender(params, "field_io_name")
-        ),
-        renderCell: renderCellFunc("field_io_name", 0),
-    },
+          renderCell: renderCellFunc("field_io_name", ),
+        },
+        {
+            field: "field_name_of_the_police_station",
+            headerName: "Police Station",
+            width: 200,
+            resizable: true,
+            cellClassName: 'justify-content-start',
+            renderHeader: (params) => (
+                tableHeaderRender(params, "field_name_of_the_police_station")
+            ),
+            renderCell: renderCellFunc("field_name_of_the_police_station", ),
+        },
+        {
+            field: "field_division",
+            headerName: "Divisions",
+            width: 200,
+            resizable: true,
+            cellClassName: 'justify-content-start',
+            renderHeader: (params) => (
+                tableHeaderRender(params, "field_division")
+            ),
+            renderCell: renderCellFunc("field_division", ),
+        },
+        {
+            field: "field_case/enquiry_keyword",
+            headerName: "Keyword",
+            width: 200,
+            resizable: true,
+            cellClassName: 'justify-content-start',
+            renderHeader: (params) => (
+                tableHeaderRender(params, "field_case/enquiry_keyword")
+            ),
+            renderCell: renderCellFunc("field_case/enquiry_keyword", ),
+        },
+        {
+            field: "field_date_of_taking_over_by_cid",
+            headerName: "CID Take over date",
+            width: 200,
+            resizable: true,
+            cellClassName: 'justify-content-start',
+            renderHeader: (params) => (
+                tableHeaderRender(params, "field_date_of_taking_over_by_cid")
+            ),
+            renderCell: renderCellFunc("field_date_of_taking_over_by_cid", ),
+        },
         ...Object.keys(data[0])
           .filter((key) => !excludedKeys.includes(key))
           .map((key) => ({
@@ -4774,7 +4820,9 @@ const loadChildMergedCasesData = async (page, caseId) => {
                 const excludedKeys = [
                     "created_at", "updated_at", "id", "deleted_at", "attachments",
                     "Starred", "ReadStatus", "linked_profile_info",
-                    "ui_case_id", "pt_case_id", "sys_status", "task_unread_count" , "field_cid_crime_no./enquiry_no", "field_io_name","field_io_name_id"
+                    "ui_case_id", "pt_case_id", "sys_status", "task_unread_count" , "field_cid_crime_no./enquiry_no","field_io_name" , "field_io_name_id", 
+                    "field_name_of_the_police_station", "field_division", "field_case/enquiry_keyword", "field_date_of_taking_over_by_cid", "field_extension_date",
+                    "field_extension_remark","field_extension_updated_by","childCount"
                 ];
 
                 const generateReadableHeader = (key) =>
@@ -4852,7 +4900,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                     {
                         field: "field_cid_crime_no./enquiry_no",
                         headerName: "Cid Crime No./Enquiry No",
-                        width: 200,
+                        width: 130,
                         resizable: true,
                         cellClassName: 'justify-content-start',
                         renderHeader: (params) => (
@@ -4863,15 +4911,15 @@ const loadChildMergedCasesData = async (page, caseId) => {
                     {
                       field: "field_io_name",
                       headerName: "Assign To IO",
-                      width: 200,
+                      width: 150,
                       resizable: true,
                       cellClassName: 'justify-content-start',
                       renderHeader: (params) => (
                           tableHeaderRender(params, "field_io_name")
                       ),
-                      renderCell: renderCellFunc("field_io_name", 0),
-                  },
-                    ...(sysStatus === "merge_cases"
+                      renderCell: renderCellFunc("field_io_name", ),
+                    },
+                      ...(sysStatus === "merge_cases"
                       ? [
                           {
                             field: "child_case",
@@ -4910,7 +4958,51 @@ const loadChildMergedCasesData = async (page, caseId) => {
                           },
                         ]
                       : []),
-                    ...Object.keys(data[0])
+                      {
+                          field: "field_name_of_the_police_station",
+                          headerName: "Police Station",
+                          width: 200,
+                          resizable: true,
+                          cellClassName: 'justify-content-start',
+                          renderHeader: (params) => (
+                              tableHeaderRender(params, "field_name_of_the_police_station")
+                          ),
+                          renderCell: renderCellFunc("field_name_of_the_police_station", ),
+                      },
+                      {
+                          field: "field_division",
+                          headerName: "Divisions",
+                          width: 200,
+                          resizable: true,
+                          cellClassName: 'justify-content-start',
+                          renderHeader: (params) => (
+                              tableHeaderRender(params, "field_division")
+                          ),
+                          renderCell: renderCellFunc("field_division", ),
+                      },
+                      {
+                          field: "field_case/enquiry_keyword",
+                          headerName: "Keyword",
+                          width: 200,
+                          resizable: true,
+                          cellClassName: 'justify-content-start',
+                          renderHeader: (params) => (
+                              tableHeaderRender(params, "field_case/enquiry_keyword")
+                          ),
+                          renderCell: renderCellFunc("field_case/enquiry_keyword", ),
+                      },
+                      {
+                          field: "field_date_of_taking_over_by_cid",
+                          headerName: "CID Take over date",
+                          width: 200,
+                          resizable: true,
+                          cellClassName: 'justify-content-start',
+                          renderHeader: (params) => (
+                              tableHeaderRender(params, "field_date_of_taking_over_by_cid")
+                          ),
+                          renderCell: renderCellFunc("field_date_of_taking_over_by_cid", ),
+                      },
+                      ...Object.keys(data[0])
                         .filter((key) => !excludedKeys.includes(key))
                         .map((key) => ({
                             field: key,

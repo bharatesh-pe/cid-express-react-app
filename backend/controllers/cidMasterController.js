@@ -860,7 +860,11 @@ const fetchUICaseDetails = async (req, res) => {
                         cps.field_name_of_the_police_station AS police_station_name
                     FROM cid_under_investigation cui
                     LEFT JOIN cid_police_station cps
-                        ON CAST(cui.field_name_of_the_police_station AS INTEGER) = cps.id
+                    ON CASE 
+                            WHEN cui.field_name_of_the_police_station ~ '^[0-9]+$' 
+                            THEN CAST(cui.field_name_of_the_police_station AS INTEGER)
+                            ELSE NULL
+                        END = cps.id
                     ${whereSQL}
                 `, {
                     replacements,
