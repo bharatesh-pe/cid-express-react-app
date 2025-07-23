@@ -31,7 +31,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from "@mui/icons-material/Add";
 import CloseIcon from '@mui/icons-material/Close';
 
-const AccusedSplitScreen = ({tableObj, selectedAccused, closeForm, ui_case_id, pt_case_id, module, mainTableName, directAddNew}) =>{
+const AccusedSplitScreen = ({tableObj, selectedAccused, closeForm, ui_case_id, pt_case_id, module, mainTableName, directAddNew, fetchCounts}) =>{
 
     console.log(mainTableName,"mainTableName");    
 
@@ -829,6 +829,9 @@ const AccusedSplitScreen = ({tableObj, selectedAccused, closeForm, ui_case_id, p
                         getTableData(tableObj, formOpen);
                     }
                 });
+                if (fetchCounts) {
+                    fetchCounts();
+                }
 
                 setFormOpen(false);
 
