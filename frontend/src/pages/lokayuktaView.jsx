@@ -614,6 +614,7 @@ const LokayuktaView = () => {
 
       const mappingCases = async () => {
         let resolvedTableName = table_name;
+
         if (module === "pt_case" || module === "pt_trail_case") {
             resolvedTableName = "cid_under_investigation";
         } else if (module === "ui_case") {
@@ -621,9 +622,11 @@ const LokayuktaView = () => {
         }
 
         if (!resolvedTableName) {
-            toast.warning("Please Check Table Name", { /* ... */ });
+            console.warn("Missing resolvedTableName in mappingCases");
+            toast.warning("Please Check Table Name");
             return;
         }
+
 
         let ui_case_id = "";
         let pt_case_id = "";
@@ -1867,7 +1870,10 @@ const fetchCounts = async () => {
 
     const formUpdate = async (data, formOpen) => {
         console.log("formSubmit", data, formOpen);
-    if ((!currentTableName || currentTableName === "") && (!secondTableName || secondTableName === "") && (!activeSidebar?.table || activeSidebar.table === "")) {
+
+        console.log("selectedTableName", selectedTableName)
+
+    if ((!currentTableName || currentTableName === "") && (!secondTableName || secondTableName === "") && (!selectedTableName || selectedTableName === "") && (!activeSidebar?.table || activeSidebar.table === "")) {
         toast.warning("Please Check The Template", {
             position: "top-right",
             autoClose: 3000,
@@ -2116,9 +2122,15 @@ const fetchCounts = async () => {
         normalData["ui_case_id"] = ui_case_id;
         normalData["pt_case_id"] = pt_case_id;
 
-        formData.append("table_name", activeSidebar.table || currentTableName || secondTableName);
+        const tableName = activeSidebar.table || currentTableName || secondTableName || selectedTableName;
+ 
+        formData.append("table_name", tableName);
         formData.append("data", JSON.stringify(normalData));
-        formData.append("id",rowValueId.id);
+        if (tableName === selectedTableName) {
+            formData.append("id", selectedRowId);
+        } else {
+            formData.append("id", rowValueId?.id);
+        }
         formData.append("transaction_id", `pt_${Date.now()}_${Math.floor(Math.random() * 10000)}`);
         formData.append("user_designation_id", localStorage.getItem("designation_id") || null);
         formData.append("others_data", JSON.stringify({}));
@@ -2145,7 +2157,9 @@ const fetchCounts = async () => {
                             getTableData({table:"cid_ui_case_old_cms_data"});
                         }else if (secondTableName === 'cid_pt_case_cnr') {
                             getTableData({table:"cid_pt_case_cnr"});
-                        } else {
+                        }else if(selectedTableName){
+                            getTableData(selectedTableName)
+                        }else {
                             getTableData(activeSidebar);
                         }
                     }
