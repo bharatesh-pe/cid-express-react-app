@@ -71,6 +71,7 @@ const LokayuktaView = () => {
     ]);
 
     const [currentTableName, setCurrentTableName] = useState(null);
+    const [secondTableName, setSecondTableName] = useState(null);
 
     const [splitScreenNavTabs, setsplitScreenNavTabs] = useState([]);
 
@@ -336,6 +337,7 @@ const LokayuktaView = () => {
             navigate(backNavigation, {state : stateObj});
         }
         setCurrentTableName(null); 
+        setSecondTableName(null);
     }
 
     const sidebarActive = async (item, ignored)=>{
@@ -408,10 +410,12 @@ const LokayuktaView = () => {
             setFormEditFlag(false);
             setFormReadFlag(true);
             setCurrentTableName(null);
+            setSecondTableName(null);
             return;
         }else{
             setTableViewFlag(true);
             setCurrentTableName(null);
+            setSecondTableName(null);
             getTableData(item);
         }
     }
@@ -712,10 +716,24 @@ const LokayuktaView = () => {
             is_approval: false,
         };
         setCurrentTableName("cid_ui_case_old_cms_data"); 
+        setSecondTableName("")
         setTableViewFlag(true);
 
         getTableData(oldCaseTable);
     };
+
+    const handleViewCNR = () => {
+        const oldCaseTable = {
+            table: "cid_pt_case_cnr",
+            is_approval: false,
+        };
+        setCurrentTableName(""); 
+        setSecondTableName("cid_pt_case_cnr")
+        setTableViewFlag(true);
+
+        getTableData(oldCaseTable);
+    };
+
 
     const getTableData = async (options, reOpen, noFilters) => {
 
@@ -1247,7 +1265,7 @@ const LokayuktaView = () => {
 
     const showAddNewForm = async ()=>{
         
-        if (!currentTableName && (!activeSidebar?.table || activeSidebar?.table === "")) {
+        if (!currentTableName && !secondTableName  && (!activeSidebar?.table || activeSidebar?.table === "")) {
             toast.error("Please Check The Template !", {
                 position: "top-right",
                 autoClose: 3000,
@@ -1262,7 +1280,7 @@ const LokayuktaView = () => {
         }
 
         const viewTableData = {
-            table_name: currentTableName || activeSidebar?.table,
+            table_name: currentTableName || secondTableName || activeSidebar?.table,
         };
 
         setLoading(true);
@@ -1327,7 +1345,7 @@ const LokayuktaView = () => {
     
     const formSubmit = async (data, formOpen)=>{
 
-        if ((!currentTableName || currentTableName === "") && (!activeSidebar?.table || activeSidebar.table === "")) {
+        if ((!currentTableName || currentTableName === "") && (!secondTableName || secondTableName === "") && (!activeSidebar?.table || activeSidebar.table === "")) {
             toast.warning("Please Check The Template", {
                 position: "top-right",
                 autoClose: 3000,
@@ -1784,7 +1802,7 @@ const fetchCounts = async () => {
         normalData["pt_case_id"] = pt_case_id;
 
         var othersData = {};
-        formData.append("table_name", activeSidebar.table || currentTableName);
+        formData.append("table_name", activeSidebar.table || currentTableName || secondTableName);
         formData.append("data", JSON.stringify(normalData));
         formData.append("transaction_id", `pt_${Date.now()}_${Math.floor(Math.random() * 10000)}`);
         formData.append("user_designation_id", localStorage.getItem('designation_id') || null);
@@ -1812,6 +1830,8 @@ const fetchCounts = async () => {
                             navigate("/case/enquiry");
                         }else if (currentTableName === 'cid_ui_case_old_cms_data') {
                             getTableData({table:"cid_ui_case_old_cms_data"}, formOpen);
+                        }else if (secondTableName === 'cid_pt_case_cnr'){
+                            getTableData({table:"cid_pt_case_cnr"}, formOpen);
                         }else {
                             getTableData(activeSidebar, formOpen);
                         }
@@ -1847,7 +1867,7 @@ const fetchCounts = async () => {
 
     const formUpdate = async (data, formOpen) => {
         console.log("formSubmit", data, formOpen);
-if ((!currentTableName || currentTableName === "") && (!activeSidebar?.table || activeSidebar.table === "")) {
+    if ((!currentTableName || currentTableName === "") && (!secondTableName || secondTableName === "") && (!activeSidebar?.table || activeSidebar.table === "")) {
         toast.warning("Please Check The Template", {
             position: "top-right",
             autoClose: 3000,
@@ -2096,7 +2116,7 @@ if ((!currentTableName || currentTableName === "") && (!activeSidebar?.table || 
         normalData["ui_case_id"] = ui_case_id;
         normalData["pt_case_id"] = pt_case_id;
 
-        formData.append("table_name", activeSidebar.table || currentTableName);
+        formData.append("table_name", activeSidebar.table || currentTableName || secondTableName);
         formData.append("data", JSON.stringify(normalData));
         formData.append("id",rowValueId.id);
         formData.append("transaction_id", `pt_${Date.now()}_${Math.floor(Math.random() * 10000)}`);
@@ -2123,6 +2143,8 @@ if ((!currentTableName || currentTableName === "") && (!activeSidebar?.table || 
                             navigate("/case/enquiry");
                         }else if (currentTableName === 'cid_ui_case_old_cms_data') {
                             getTableData({table:"cid_ui_case_old_cms_data"});
+                        }else if (secondTableName === 'cid_pt_case_cnr') {
+                            getTableData({table:"cid_pt_case_cnr"});
                         } else {
                             getTableData(activeSidebar);
                         }
@@ -3198,6 +3220,8 @@ if ((!currentTableName || currentTableName === "") && (!activeSidebar?.table || 
                             editData={formEditFlag}
                             editName={true}
                             oldCase = {true}
+                            CNR = {true}
+                            onViewCNR ={handleViewCNR}
                             onViewOldCase={handleViewOldCase} 
                             mappingCase = {true}
                             onMappingCase = {mappingCases}
@@ -3382,7 +3406,10 @@ if ((!currentTableName || currentTableName === "") && (!activeSidebar?.table || 
                                 <Typography sx={{ fontSize: '19px', fontWeight: '500', color: '#171A1C' }} className='Roboto'>
                                     {currentTableName === "cid_ui_case_old_cms_data"
                                         ? "Old CMS Data"
+                                        : secondTableName === "cid_pt_case_cnr"
+                                        ? "CNR"
                                         : (activeSidebar?.name || "Form")}
+
                                 </Typography>
                                 {headerDetails && (
                                     <Tooltip title={headerDetails}>
