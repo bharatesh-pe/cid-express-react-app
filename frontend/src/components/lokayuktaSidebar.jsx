@@ -23,7 +23,7 @@ import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import api from "../services/api";
 import CloseIcon from '@mui/icons-material/Close';
 
-const LokayuktaSidebar = ({ui_case_id, pt_case_id, contentArray, onClick, activeSidebar, templateName, fromCDR, showMagazineView,tableCounts, setTableCounts}) => {
+const LokayuktaSidebar = ({ui_case_id, pt_case_id, contentArray, onClick, activeSidebar, templateName, fromCDR, showMagazineView,tableCounts, setTableCounts, module, sysStatus}) => {
 
     const navigate = useNavigate();
     const location = useLocation();
@@ -199,7 +199,7 @@ const LokayuktaSidebar = ({ui_case_id, pt_case_id, contentArray, onClick, active
                 const response = await fetch(`${serverURL}/templateData/getTableCountsByCaseId`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ table_names, ui_case_id, pt_case_id })
+                    body: JSON.stringify({ table_names, ui_case_id, pt_case_id, module, sysStatus })
                 });
                 const data = await response.json();
                 if (data.success) setTableCounts(data.data);

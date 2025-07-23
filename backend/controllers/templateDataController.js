@@ -13119,7 +13119,7 @@ exports.checkCaseStatusCombined = async (req, res) => {
 
 exports.getTableCountsByCaseId = async (req, res) => {
     try {
-      const { table_names = [], ui_case_id, pt_case_id } = req.body;
+      const { table_names = [], ui_case_id, pt_case_id, module, sysStatus } = req.body;
   
       if (!Array.isArray(table_names) || table_names.length === 0) {
         return userSendResponse(res, 400, false, "table_names must be a non-empty array.", null);
@@ -13170,6 +13170,24 @@ exports.getTableCountsByCaseId = async (req, res) => {
           } else if (pt_case_id) {
             whereClause = { pt_case_id };
           }
+
+
+          if (table_name === "cid_ui_case_accused") {
+          const pending = "Pending";
+          const hasField = schema.some(f => f.name === "field_status_of_accused_in_charge_sheet");
+
+          if (hasField) {
+            if (module === "ui_case" && sysStatus === "178_cases") {
+              whereClause.field_status_of_accused_in_charge_sheet = {
+                [Sequelize.Op.iLike]: `%${pending}%`,
+              };
+            } else if (module === "pt_case") {
+              whereClause.field_status_of_accused_in_charge_sheet = {
+                [Sequelize.Op.notILike]: `%${pending}%`,
+              };
+            }
+          }
+        }
   
           const count = await Model.count({ where: whereClause });
           result[table_name] = count;

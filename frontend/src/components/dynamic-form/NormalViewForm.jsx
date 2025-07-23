@@ -62,6 +62,7 @@ import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 const NormalViewForm = ({ 
     formConfig, initialData, onSubmit, onError, stepperData, closeForm, table_name, template_name, readOnly, editData, onUpdate, template_id, table_row_id, headerDetails, selectedRow, noPadding, disableEditButton, disableSaveNew, overAllReadonly, investigationViewTable, editedForm
     , showAssignIo, investigationAction, reloadApproval, showCaseActionBtn, reloadForm , showCaseLog, reloadFormConfig , onSkip , skip , editName ,  oldCase , onViewOldCase, showMagazineView, caseDiary, caseDiaryArray, caseDairy_pt_case_id, caseDairy_ui_case_id, disabledDates, mappingCase, onMappingCase
+    ,CNR,onViewCNR
  }) => {
 
 //   let storageFormData = localStorage.getItem(template_name + '-formData') ? JSON.parse(localStorage.getItem(template_name + '-formData')) : {};
@@ -798,30 +799,31 @@ const NormalViewForm = ({
 
   const handleAutocomplete = (field, selectedValue) => {
 
-    const selectedFullObject =
-          field.name === "field_ui_case" && typeof selectedValue === "number"
-            ? uiCaseOptions.find((opt) => opt.code === selectedValue)
-            : selectedValue;
+    // const selectedFullObject =
+    //       field.name === "field_ui_case" && typeof selectedValue === "number"
+    //         ? uiCaseOptions.find((opt) => opt.code === selectedValue)
+    //         : selectedValue;
 
-      let updatedFormData = {
-        ...formData,
-        [field.name]: selectedFullObject?.code || selectedValue,
-      };
+    //         console.log("selectedFullObjectselectedFullObject",selectedFullObject)
+    //   let updatedFormData = {
+    //     ...formData,
+    //     [field.name]: selectedFullObject?.code || selectedValue,
+    //   };
 
-      setSelectedField(field);
+    //   setSelectedField(field);
 
-    if (
-      field.name === "field_ui_case" &&
-      field.table === "cid_under_investigation" &&
-      selectedFullObject &&
-      table_name === "cid_pending_trial"
-    ) {
-      updatedFormData["field_ps_crime_number"] = selectedFullObject.crime_number || "";
-      updatedFormData["field_cid_crime_no./enquiry_no"] = selectedFullObject.cid_enquiry_number || "";
-      updatedFormData["field_name_of_the_police_station"] = selectedFullObject.police_station?.id || "";
-    }
+    // if (
+    //   field.name === "field_ui_case" &&
+    //   field.table === "cid_under_investigation" &&
+    //   selectedFullObject &&
+    //   table_name === "cid_pending_trial"
+    // ) {
+    //   updatedFormData["field_ps_crime_number"] = selectedFullObject.crime_number || "";
+    //   updatedFormData["field_cid_crime_no./enquiry_no"] = selectedFullObject.cid_enquiry_number || "";
+    //   updatedFormData["field_name_of_the_police_station"] = selectedFullObject.police_station?.id || "";
+    // }
 
-    // let updatedFormData = { ...formData, [field.name]: selectedValue };
+    let updatedFormData = { ...formData, [field.name]: selectedValue };
     setSelectedField(field);
     
 
@@ -3017,7 +3019,20 @@ const NormalViewForm = ({
                     Case Docket
                 </Button>
             } */}
-            
+            {CNR &&  (table_name === 'cid_under_investigation' || table_name === 'cid_pending_trial') && (
+                <Button
+                    variant="outlined"
+                    onClick={() => {
+                        if (onViewCNR) {
+                            onViewCNR();
+                        }
+                    }}
+                    sx={{marginLeft: "10px", marginRight: "4px", height: '40px'}}
+                >
+                    CNR
+                </Button>
+            )}
+
             {oldCase &&  table_name === 'cid_under_investigation' && (
             <Button
                 variant="outlined"
@@ -3334,9 +3349,8 @@ const NormalViewForm = ({
 
 
                 var readOnlyData = readOnlyTemplate
-                
                 if(table_name === "cid_pending_trial" ){
-                  if(field.name === "field_ps_crime_number" || field.name === "field_cid_crime_no./enquiry_no" || field.name === "field_name_of_the_police_station" ){
+                  if(field.name === "field_ps_crime_number" || field.name === "field_cid_crime_no./enquiry_no" || field.name === "field_name_of_the_police_station" || field.name === "field_ui_case"){
                       readOnlyData = true;
                   }
 
