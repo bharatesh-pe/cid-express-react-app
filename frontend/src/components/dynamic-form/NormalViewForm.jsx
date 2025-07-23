@@ -1468,6 +1468,7 @@ const NormalViewForm = ({
   }
 
   const CloseFormModal = async () => {
+    console.log("is this closing for")
     if (closeForm) {
 
         if(changingFormField.current === true){
