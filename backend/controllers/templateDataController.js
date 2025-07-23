@@ -4248,6 +4248,7 @@ exports.paginateTemplateData = async (req, res) => {
         totalPages,
         sort_by: validSortBy,
         order,
+        template : fieldsArray,
       },
     };
 
@@ -8277,10 +8278,10 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
                                     type: Sequelize.DataTypes.STRING,
                                     allowNull: true,
                                     },
-                                    publickey: {
-                                        type: Sequelize.DataTypes.STRING,
-                                        allowNull: true,
-                                    },
+                                    // publickey: {
+                                    //     type: Sequelize.DataTypes.STRING,
+                                    //     allowNull: true,
+                                    // },
                                 };
                            
                                 for (const field of PFschema) {
