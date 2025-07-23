@@ -1777,6 +1777,7 @@ exports.getTemplateData = async (req, res, next) => {
     case_io_id = "",
     checkRandomColumn = false,
     checkTabs = false,
+    tableTab = null,
   } = req.body;
   const {  ui_case_id, pt_case_id , module , tab } = req.body;
   const { filter = {}, from_date = null, to_date = null } = req.body;
@@ -1821,6 +1822,12 @@ exports.getTemplateData = async (req, res, next) => {
     const associations = [];
     // Store field configurations by name for easy lookup
     const fieldConfigs = {};
+
+    const tableTabs = schema.filter((field)=>{
+        if(field?.tableTabs === true){
+            return field
+        }
+    });
 
     for (const field of relevantSchema) {
       const {
@@ -2196,6 +2203,13 @@ exports.getTemplateData = async (req, res, next) => {
      //   ],
      //   include,
      // });
+
+    if(tableTabs?.length > 0 && tableTab && tableTab !== 'all'){
+        if(tableTabs[0]?.name){
+            whereClause[tableTabs[0]?.name] = tableTab;
+        }
+    }
+
     const { rows: records, count: totalItems } = await Model.findAndCountAll({
       where: whereClause,
       limit,

@@ -397,6 +397,7 @@ const LokayuktaView = () => {
         setSelectedSplitScreenRows([]);
         setActiveSidebar(item);
         setFormOpen(false);
+        setSelectedTableTabs('all');
         if(item?.viewAction){
             setTableViewFlag(false);
             setTemplateId(template_id);
@@ -743,6 +744,7 @@ const LokayuktaView = () => {
             tab: sysStatus,
             checkRandomColumn : "field_approval_done_by",
             checkTabs : true,
+            tableTab : selectedTableTabs
         };
 
         setLoading(true);
