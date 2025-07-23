@@ -3899,6 +3899,12 @@ const ExtensionFormWrapper = ({
                                 var PreDefinedData = {}
 
                                 if(getTemplateResponse.data){
+
+                                    if (getTemplateResponse.data.id !== undefined) {
+                                        PreDefinedData["id"] = getTemplateResponse.data.id;
+                                        PreDefinedData["field_ui_case"] = PreDefinedData["id"]
+                                        PreDefinedData["field_ps_crime_number"] = getTemplateResponse.data.field_crime_number_of_ps;
+                                    }
                                     viewTemplateResponse.data['fields'].map((element)=>{
                                         if(element.name && getTemplateResponse.data[element.name] !== null && getTemplateResponse.data[element.name] !== undefined){
                                             PreDefinedData[element.name] = getTemplateResponse.data[element.name];
