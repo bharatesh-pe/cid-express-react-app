@@ -2038,8 +2038,32 @@ exports.getTemplateData = async (req, res, next) => {
     if (module && tab && table_name === 'cid_ui_case_accused' && fields.hasOwnProperty("field_status_of_accused_in_charge_sheet")) {
         if (module === "ui_case" && tab === "178_cases") {
             whereClause.field_status_of_accused_in_charge_sheet = { [Op.iLike]: `%${pending}%` };
-        } else if (module === "pt_case") {
-            whereClause.field_status_of_accused_in_charge_sheet = { [Op.notILike]: `%${pending}%` };
+        }
+        else if (module === "pt_case") {
+
+          whereClause = {
+            [Op.and]: [
+              {
+                [Op.or]: [
+                  { ui_case_id: req.body.ui_case_id || null },
+                  { pt_case_id: req.body.pt_case_id || null }
+                ]
+              },
+              {
+                [Op.or]: [
+                  {
+                    sys_status: "pt_case"
+                  },
+                  {
+                    sys_status: "ui_case",
+                    field_status_of_accused_in_charge_sheet: {
+                      [Op.notILike]: `%${pending}%`
+                    }
+                  }
+                ]
+              }
+            ]
+          };
         }
     }
 
@@ -13172,23 +13196,46 @@ exports.getTableCountsByCaseId = async (req, res) => {
           }
 
 
-          if (table_name === "cid_ui_case_accused") {
           const pending = "Pending";
-          const hasField = schema.some(f => f.name === "field_status_of_accused_in_charge_sheet");
 
-          if (hasField) {
-            if (module === "ui_case" && sysStatus === "178_cases") {
-              whereClause.field_status_of_accused_in_charge_sheet = {
-                [Sequelize.Op.iLike]: `%${pending}%`,
-              };
-            } else if (module === "pt_case") {
-              whereClause.field_status_of_accused_in_charge_sheet = {
-                [Sequelize.Op.notILike]: `%${pending}%`,
-              };
+          if (table_name === "cid_ui_case_accused") {
+            const hasField = schema.some(f => f.name === "field_status_of_accused_in_charge_sheet");
+
+            if (hasField) {
+              if (module === "ui_case" && sysStatus === "178_cases") {
+                whereClause.field_status_of_accused_in_charge_sheet = {
+                  [Sequelize.Op.iLike]: `%${pending}%`,
+                };
+              } 
+              
+              else if (module === "pt_case") {
+                whereClause = {
+                  [Sequelize.Op.and]: [
+                    {
+                      [Sequelize.Op.or]: [
+                        { ui_case_id: req.body.ui_case_id || null },
+                        { pt_case_id: req.body.pt_case_id || null }
+                      ]
+                    },
+                    {
+                      [Sequelize.Op.or]: [
+                        {
+                          sys_status: "pt_case"
+                        },
+                        {
+                          sys_status: "ui_case",
+                          field_status_of_accused_in_charge_sheet: {
+                            [Sequelize.Op.notILike]: `%${pending}%`
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                };
+              }
             }
           }
-        }
-  
+
           const count = await Model.count({ where: whereClause });
           result[table_name] = count;
         } catch (err) {
