@@ -1715,7 +1715,7 @@ const fetchCounts = async () => {
         const response = await fetch(`${serverURL}/templateData/getTableCountsByCaseId`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ table_names: tableNamesForCount, ui_case_id, pt_case_id }),
+            body: JSON.stringify({ table_names: tableNamesForCount, ui_case_id, pt_case_id, module, sysStatus }),
         });
 
         const data = await response.json();
@@ -2846,6 +2846,8 @@ if ((!currentTableName || currentTableName === "") && (!activeSidebar?.table || 
             <LokayuktaSidebar showMagazineView={showMagazineView} ui_case_id={module === "pt_case" ? rowData?.ui_case_id :  rowData?.id}  pt_case_id={module === "pt_case" ? rowData?.id :  rowData?.pt_case_id} contentArray={sidebarContentArray} onClick={sidebarActive} activeSidebar={activeSidebar} templateName={template_name} fromCDR={fromCDR} 
             tableCounts={tableCounts}
             setTableCounts={setTableCounts} 
+            module={module} 
+            sysStatus={sysStatus}
                 />
 
             <Box flex={4} sx={{ overflow: "hidden" }}>
