@@ -316,9 +316,13 @@ const LokayuktaView = () => {
 
     },[initialRowData, tableViewFlag]);
 
-    const backToForm = ()=>{
 
-        if(backNavigation){
+    const backToForm = ()=>{
+        if ( currentTableName === "cid_ui_case_old_cms_data" || secondTableName === "cid_pt_case_cnr") {
+            if (activeSidebar) {
+                sidebarActive(activeSidebar, true);
+            }
+        } else if(backNavigation){
 
             var stateObj = {
                 pageCount: paginationCount,
