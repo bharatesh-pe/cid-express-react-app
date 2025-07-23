@@ -3752,6 +3752,7 @@ if ((!currentTableName || currentTableName === "") && (!activeSidebar?.table || 
                     module={module}
                     mainTableName={activeSidebar?.table}
                     directAddNew={directAddNewRef.current}
+                    fetchCounts={fetchCounts}
                 />
             }
 
