@@ -799,30 +799,31 @@ const NormalViewForm = ({
 
   const handleAutocomplete = (field, selectedValue) => {
 
-    const selectedFullObject =
-          field.name === "field_ui_case" && typeof selectedValue === "number"
-            ? uiCaseOptions.find((opt) => opt.code === selectedValue)
-            : selectedValue;
+    // const selectedFullObject =
+    //       field.name === "field_ui_case" && typeof selectedValue === "number"
+    //         ? uiCaseOptions.find((opt) => opt.code === selectedValue)
+    //         : selectedValue;
 
-      let updatedFormData = {
-        ...formData,
-        [field.name]: selectedFullObject?.code || selectedValue,
-      };
+    //         console.log("selectedFullObjectselectedFullObject",selectedFullObject)
+    //   let updatedFormData = {
+    //     ...formData,
+    //     [field.name]: selectedFullObject?.code || selectedValue,
+    //   };
 
-      setSelectedField(field);
+    //   setSelectedField(field);
 
-    if (
-      field.name === "field_ui_case" &&
-      field.table === "cid_under_investigation" &&
-      selectedFullObject &&
-      table_name === "cid_pending_trial"
-    ) {
-      updatedFormData["field_ps_crime_number"] = selectedFullObject.crime_number || "";
-      updatedFormData["field_cid_crime_no./enquiry_no"] = selectedFullObject.cid_enquiry_number || "";
-      updatedFormData["field_name_of_the_police_station"] = selectedFullObject.police_station?.id || "";
-    }
+    // if (
+    //   field.name === "field_ui_case" &&
+    //   field.table === "cid_under_investigation" &&
+    //   selectedFullObject &&
+    //   table_name === "cid_pending_trial"
+    // ) {
+    //   updatedFormData["field_ps_crime_number"] = selectedFullObject.crime_number || "";
+    //   updatedFormData["field_cid_crime_no./enquiry_no"] = selectedFullObject.cid_enquiry_number || "";
+    //   updatedFormData["field_name_of_the_police_station"] = selectedFullObject.police_station?.id || "";
+    // }
 
-    // let updatedFormData = { ...formData, [field.name]: selectedValue };
+    let updatedFormData = { ...formData, [field.name]: selectedValue };
     setSelectedField(field);
     
 
@@ -3348,9 +3349,8 @@ const NormalViewForm = ({
 
 
                 var readOnlyData = readOnlyTemplate
-                
                 if(table_name === "cid_pending_trial" ){
-                  if(field.name === "field_ps_crime_number" || field.name === "field_cid_crime_no./enquiry_no" || field.name === "field_name_of_the_police_station" ){
+                  if(field.name === "field_ps_crime_number" || field.name === "field_cid_crime_no./enquiry_no" || field.name === "field_name_of_the_police_station" || field.name === "field_ui_case"){
                       readOnlyData = true;
                   }
 
