@@ -2119,16 +2119,36 @@ exports.getTemplateData = async (req, res, next) => {
         }
       }
 
-      // Dropdown/radio/checkbox search
-      if (
-        fieldConfig.dropdownMap &&
-        Object.values(fieldConfig.dropdownMap).length
-      ) {
-        const match = Object.entries(fieldConfig.dropdownMap).find(
-        ([, name]) => name.toLowerCase().includes(search.toLowerCase())
-        );
-        if (match) searchConditions.push({ [search_field]: match[0] });
-      }
+
+
+        if (
+          fieldConfig &&
+          fieldConfig.type === "dropdown" &&
+          Array.isArray(fieldConfig.options)
+        ) {
+          // Find option code that matches the search text
+          const matchingOption = fieldConfig.options.find((option) =>
+            option.name.toLowerCase().includes(search.toLowerCase())
+          );
+
+          if (matchingOption) {
+            // if(search_field === "field_division")
+                searchConditions.push({ [search_field]: String(matchingOption.code) });
+            // else
+            //     searchConditions.push({ [search_field]: matchingOption.code });
+          }
+        }
+
+      // // Dropdown/radio/checkbox search
+      // if (
+      //   fieldConfig.dropdownMap &&
+      //   Object.values(fieldConfig.dropdownMap).length
+      // ) {
+      //   const match = Object.entries(fieldConfig.dropdownMap).find(
+      //   ([, name]) => name.toLowerCase().includes(search.toLowerCase())
+      //   );
+      //   if (match) searchConditions.push({ [search_field]: match[0] });
+      // }
       if (
         fieldConfig.radioMap &&
         Object.values(fieldConfig.radioMap).length
@@ -2184,10 +2204,24 @@ exports.getTemplateData = async (req, res, next) => {
             }
 
 
-            if ( fieldConfig.dropdownMap && Object.values(fieldConfig.dropdownMap).length) {
-                const match = Object.entries(fieldConfig.dropdownMap).find( ([, name]) => name.toLowerCase().includes(search.toLowerCase()));
-                if (match) searchConditions.push({ [field]: match[0] });
-            }
+            // if ( fieldConfig.dropdownMap && Object.values(fieldConfig.dropdownMap).length) {
+            //     const match = Object.entries(fieldConfig.dropdownMap).find( ([, name]) => name.toLowerCase().includes(search.toLowerCase()));
+            //     if (match) searchConditions.push({ [field]: match[0] });
+            // }
+
+            if ( fieldConfig && fieldConfig.type === "dropdown" && Array.isArray(fieldConfig.options)) {
+
+                     const matchingOption = fieldConfig.options.find((option) =>
+                option.name.toLowerCase().includes(search.toLowerCase())
+              );
+              if (matchingOption) {
+                // if(search_field === "field_division")
+                searchConditions.push({ [search_field]: String(matchingOption.code) });
+                // else 
+                //     searchConditions.push({ [search_field]: matchingOption.code });
+              }
+          }
+
             if ( fieldConfig.radioMap && Object.values(fieldConfig.radioMap).length ) {
                 const match = Object.entries(fieldConfig.radioMap).find( ([, name]) => name.toLowerCase().includes(search.toLowerCase()));
                 if (match) searchConditions.push({ [field]: match[0] });
@@ -7587,23 +7621,28 @@ exports.appendToLastLineOfPDF = async (req, res) => {
 
     await Model.update({ field_pr_status: "Yes" }, { where: { id: selected_row_id } });
 
-    const tableName1 = "cid_eq_case_progress_report";
-    const Model1 = sequelize.define(
-      tableName1,
-      {
-        id: { type: Sequelize.DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
-        field_pr_status: { type: Sequelize.DataTypes.STRING, allowNull: true },
-        field_ui_case_id: { type: Sequelize.DataTypes.INTEGER, allowNull: false },
-      },
-      {
-        freezeTableName: true,
-        timestamps: true,
-        createdAt: "created_at",
-        updatedAt: "updated_at",
-      }
-    );
+    try {
+      const tableName1 = "cid_eq_case_progress_report";
+      const Model1 = sequelize.define(
+        tableName1,
+        {
+          id: { type: Sequelize.DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+          field_pr_status: { type: Sequelize.DataTypes.STRING, allowNull: true },
+          field_ui_case_id: { type: Sequelize.DataTypes.INTEGER, allowNull: false },
+        },
+        {
+          freezeTableName: true,
+          timestamps: true,
+          createdAt: "created_at",
+          updatedAt: "updated_at",
+        }
+      );
 
-    await Model1.update({ field_pr_status: "Yes" }, { where: { id: selected_row_id } });
+      await Model1.update({ field_pr_status: "Yes" }, { where: { id: selected_row_id } });
+
+    } catch (err) {
+      console.warn("cid_eq_case_progress_report update skipped:", err.message);
+    }
 
     return res.status(200).json({ success: true, message: 'PDF updated successfully.' });
   } catch (error) {
