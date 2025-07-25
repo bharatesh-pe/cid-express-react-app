@@ -1839,6 +1839,9 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                     }else{
                         loadTableData(paginationCount);
                     }
+                    if (isImmediateSupervisior && fetchCounts) {
+                        fetchCounts();
+                    }
                 },
             });
             } else {
