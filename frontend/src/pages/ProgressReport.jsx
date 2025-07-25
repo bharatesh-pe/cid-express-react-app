@@ -431,7 +431,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
 
         const currentDate = meta?.currentDate;
         const dayOfMonth = new Date(currentDate).getDate();
-        const isSubmitAllowed = dayOfMonth >= 1 && dayOfMonth <= 5;
+        const isSubmitAllowed = dayOfMonth >= 24 && dayOfMonth <= 30;
         setIsSubmitAllowed(isSubmitAllowed);
 
         const totalPages = meta?.meta?.totalPages;

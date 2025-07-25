@@ -986,6 +986,16 @@ exports.updateTemplateData = async (req, res, next) => {
                                 old_value: oldDisplayValue !== null ? String(oldDisplayValue) : null,
                                 updated_value: newDisplayValue !== null ? String(newDisplayValue) : null,
                             }, { transaction: t });
+
+                            await CaseHistory.create({
+                                template_id: tableData.template_id,
+                                table_row_id: parseInt(singleId),
+                                user_id: userId,
+                                actor_name: userName,
+                                action: `Field '${key}' changed from '${oldDisplayValue}' to '${newDisplayValue} in' '${formattedTableName(table_name)}'`,
+                                transaction: t
+                            });
+
                         }
                     }
                 }
@@ -2769,7 +2779,48 @@ exports.updateFieldsWithApproval = async (req, res) => {
         }
 
         // Fetch the updated record inside the transaction before commit
-        updatedRecord = await Model.findOne({ where: { id }, transaction: t });
+        updatedRecord = await Model.findOne({ where: { id }, transaction: t })
+
+        if (tableData?.template_id) {
+            const fieldLabelMap = {};
+            if (Array.isArray(tableData.fields)) {
+                for (const f of tableData.fields) {
+                    fieldLabelMap[f.column_name] = f.label || f.column_name;
+                }
+            }
+
+            const keys = Object.keys(fields);
+            const changedLabels = keys.map((key) => {
+                return fieldLabelMap[key] || formatTableName(key);
+            });
+
+            const excludedLabels = ['Approval Done By'];
+            const filteredLabels = changedLabels.filter(label => !excludedLabels.includes(label));
+            const labelListString = filteredLabels.join(', ');
+            const cleanTableName = formatTableName(table_name);
+
+            const userData = await Users.findOne({
+                include: [{
+                    model: KGID,
+                    as: "kgidDetails",
+                    attributes: ["kgid", "name", "mobile"]
+                }],
+                where: { user_id: userId },
+            });
+
+            const userName = userData?.kgidDetails?.name || 'Unknown User';
+
+            const actionText = `<span style="color: #003366; font-weight: bold;">${cleanTableName}</span> - ${labelListString} field${changedLabels.length > 1 ? 's' : ''} updated. Done by <span style="color: #d00000; font-weight: bold;">${userName}</span>`;
+
+            await CaseHistory.create({
+                template_id: tableData.template_id,
+                table_row_id: id,
+                user_id: userId,
+                actor_name: userName,
+                action: actionText,
+                transaction: t,
+            });
+        }
 
         await t.commit();
 
@@ -7863,6 +7914,25 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
     
             insertedData = await Model.create(validData, { transaction: t });
 
+            if (insertedData && tableData?.template_id) {
+              const isUICase = !!insertedData.ui_case_id;
+              const caseId = isUICase ? insertedData.ui_case_id : insertedData.id;
+              const formattedTableName = formatTableName(table_name);
+              const actionText = isUICase
+                ? `<span style="color: #003366; font-weight: bold;">${formattedTableName}</span> - New record created (RecordID: ${insertedData.id})`
+                : `<span style="color: #003366; font-weight: bold;">${formattedTableName}</span> - New record created`;
+
+              await CaseHistory.create({
+                template_id: tableData.template_id,
+                table_row_id: caseId,
+                user_id: userId,
+                actor_name: userName,
+                action: actionText,
+                transaction: t,
+              });
+            }
+
+
             if (!insertedData) {
                 await t.rollback();
                 return userSendResponse(res, 400, false, "Failed to insert data.", null);
@@ -8159,6 +8229,17 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
 			await secondModel.sync();
 
 			const secondInsertedData = await secondModel.create(secondValidData, { transaction: t });
+
+      if (secondInsertedData && secondTableData?.template_id) {
+          await CaseHistory.create({
+              template_id: secondTableData.template_id,
+              table_row_id: secondInsertedData.id,
+              user_id: userId,
+              actor_name: userName,
+              action: `New record created in ${second_table_name}`,
+              transaction: t,
+          });
+      }
 
 			if (!secondInsertedData) {
 				await t.rollback();
@@ -8614,6 +8695,7 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
 
 		}
 
+
 		await t.commit();
 		return userSendResponse(res, 200, true, `Record Created Successfully`, null);
 
@@ -8875,14 +8957,21 @@ exports.updateDataWithApprovalToTemplates = async (req, res, next) => {
                     //     actor_name: actorName,
                     //     activity: `Updated`,
                     // });
+                    const isUICase = !!parsedData.ui_case_id;
+                    const caseId = isUICase ? parsedData.ui_case_id : singleId;
+                    const formattedTableName = formatTableName(tableData.table_name);
+                    const actionText = isUICase
+                      ? `<span style="color: #003366; font-weight: bold;">${formattedTableName}</span> - Updated (RecordID: ${singleId})`
+                      : `<span style="color: #003366; font-weight: bold;">${formattedTableName}</span> - Updated`;
+
                     await CaseHistory.create({
-                        template_id: tableData.template_id,
-                        table_row_id: id,
-                        user_id: userId,
-                        actor_name: userName,
-                        action: `Updated`,
-                        transaction: t
-                    });
+                      template_id: tableData.template_id,
+                      table_row_id: caseId,
+                      user_id: userId,
+                      actor_name: userName,
+                      action: actionText,
+                    }, { transaction: t });
+
                 }
 
                 const fileUpdates = {};
@@ -13317,3 +13406,11 @@ exports.getTableCountsByCaseId = async (req, res) => {
             return userSendResponse(res, 500, false, "Failed to get help videos.", error.message);
         }
     };
+
+
+function formatTableName(rawFieldName) {
+    return rawFieldName
+        .replace(/^(field_|cid_ui_case_|cid_pt_case_|cid_eq_case_|cid_)/, '')
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, c => c.toUpperCase());
+}
