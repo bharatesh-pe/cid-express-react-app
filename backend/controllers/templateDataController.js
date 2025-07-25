@@ -263,6 +263,24 @@ exports.insertTemplateData = async (req, res, next) => {
       }
     }
 
+    if (insertedData && tableData?.template_id) {
+      const isUICase = !!insertedData.ui_case_id;
+      const caseId = isUICase ? insertedData.ui_case_id : insertedData.id;
+
+      const formattedTableName = formatTableName(table_name);
+      const actionText = isUICase
+        ? `<span style="color: #003366; font-weight: bold;">${formattedTableName}</span> - New record created (RecordID: ${insertedData.id})`
+        : `<span style="color: #003366; font-weight: bold;">${formattedTableName}</span> - New record created`;
+
+      await CaseHistory.create({
+        template_id: tableData.template_id,
+        table_row_id: caseId,
+        user_id: actorId,
+        actor_name: userName,
+        action: actionText,
+      });
+    }
+
     return userSendResponse(res, 200, true, `Record Created Successfully`, null);
   } catch (error) {
     console.error("Error inserting data:", error.stack);
@@ -12327,9 +12345,29 @@ exports.saveActionPlan = async (req, res) => {
             await Model.sync();
 
             const insertedData = await Model.create(validData, { transaction: t });
+            
             if (!insertedData) {
                 await t.rollback();
                 return userSendResponse(res, 400, false, "Failed to insert data.", null);
+            }
+
+            if (insertedData && tableData?.template_id) {
+              const isUICase = !!insertedData.ui_case_id;
+              const caseId = isUICase ? insertedData.ui_case_id : insertedData.id;
+              const formattedTableName = formatTableName(table_name);
+
+              const actionText = isUICase
+                ? `<span style="color: #003366; font-weight: bold;">${formattedTableName}</span> - New record created (RecordID: ${insertedData.id})`
+                : `<span style="color: #003366; font-weight: bold;">${formattedTableName}</span> - New record created`;
+
+              await CaseHistory.create({
+                template_id: tableData.template_id,
+                table_row_id: caseId,
+                user_id: userId,
+                actor_name: userName,
+                action: actionText,
+                transaction: t,
+              });
             }
 
         }

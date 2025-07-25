@@ -2085,6 +2085,10 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
       }
     });
 
+    if (data.hasOwnProperty("ui_case_id")) {
+        normalData.ui_case_id = data.ui_case_id;
+    }
+
     if (selectedOtherTemplate.table === "cid_ui_case_progress_report") {
       normalData["field_pr_status"] = "No";
     }
