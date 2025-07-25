@@ -2314,6 +2314,13 @@ const NormalViewForm = ({
         setSearchTerm(searchValue);
     };
 
+    const handleCloseCaseHistoryModal = () => {
+        setCaseHistoryModal(false);
+        setSearchValue("");
+        setSearchTerm("");
+        setPage(1);
+    };
+
     const handleClear = () => {
         setSearchValue("");
         setSearchTerm("");
@@ -3973,7 +3980,7 @@ const NormalViewForm = ({
         {caseHistoryModal && (
         <Dialog
             open={caseHistoryModal}
-            onClose={() => setCaseHistoryModal(false)}
+            onClose={handleCloseCaseHistoryModal}
             aria-labelledby="alert-dialog-title"
             aria-describedby="alert-dialog-description"
             maxWidth="md"
@@ -4029,7 +4036,7 @@ const NormalViewForm = ({
 
                 <IconButton
                 aria-label="close"
-                onClick={() => setCaseHistoryModal(false)}
+                onClick={handleCloseCaseHistoryModal}
                 sx={{ color: (theme) => theme.palette.grey[500] }}
                 >
                 <CloseIcon />
@@ -4038,7 +4045,7 @@ const NormalViewForm = ({
             </DialogTitle>
 
             {searchValue && !hideClearFilter && (
-            <Box px={3}>
+            <Box px={2}>
                 <Typography
                 onClick={handleClear}
                 sx={{

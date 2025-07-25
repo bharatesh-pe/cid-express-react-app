@@ -2810,7 +2810,7 @@ exports.updateFieldsWithApproval = async (req, res) => {
 
             const userName = userData?.kgidDetails?.name || 'Unknown User';
 
-            const actionText = `<span style="color: #003366; font-weight: bold;">${cleanTableName}</span> - ${labelListString} field${changedLabels.length > 1 ? 's' : ''} updated. Done by <span style="color: #d00000; font-weight: bold;">${userName}</span>`;
+            const actionText = `<span style="color: #003366; font-weight: bold;">${cleanTableName}</span> - ${labelListString} field${changedLabels.length > 1 ? 's' : ''} updated. Approved by <span style="color: #d00000; font-weight: bold;">${userName}</span>`;
 
             await CaseHistory.create({
                 template_id: tableData.template_id,
