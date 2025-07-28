@@ -1126,7 +1126,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
     }
     try {
       const response = await api.post("/templateData/getMonthWiseByCaseId", {
-        ui_case_id,
+        ui_case_id:ui_case_id.id,
         page,
         limit: PageSize,
       });

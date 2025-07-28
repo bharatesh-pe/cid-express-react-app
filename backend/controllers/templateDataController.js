@@ -12886,7 +12886,7 @@ exports.submitPropertyFormFSL = async (req, res) => {
 		});
 		const userName = userData?.kgidDetails?.name || null;
 
-		// Validate action plan template
+		// Validate Property Form template
 		const apTemplate = await Template.findOne({ where: { table_name: "cid_ui_case_property_form" } });
 		if (!apTemplate) {
 			return userSendResponse(res, 400, false, "Property Form template not found.", null);
@@ -12985,19 +12985,32 @@ exports.submitPropertyFormFSL = async (req, res) => {
 			return newItem;
 		});
 
-		// Insert selected rows into Progress Report
+		// Insert selected rows into FSL
 		await PropertyFormModel.bulkCreate(propertyFormDataToInsert, { transaction: t });
 
+    const caseId = ui_case_id || null;
+    const formattedTableName = formatTableName("cid_ui_case_forensic_science_laboratory");
+    const actionText = `<span style="color: #003366; font-weight: bold;">${formattedTableName}</span> - New record created from Property Form`;
+
+    await CaseHistory.create({
+      template_id: prTemplate.template_id,
+      table_row_id: caseId,
+      user_id: userId,
+      actor_name: userName,
+      action: actionText,
+      transaction: t,
+    });
+
 		await t.commit();
-		return userSendResponse(res, 200, true, "Action Plan submitted to Progress Report successfully.");
+		return userSendResponse(res, 200, true, "Property form submitted to FSL successfully.");
 	} catch (error) {
-    console.error("Error submitting Action Plan:", error);
+    console.error("Error submitting Property form:", error);
     if (t) await t.rollback();
 
     const isDuplicate = error.name === "SequelizeUniqueConstraintError";
     const message = isDuplicate
       ? "Duplicate entry detected."
-      : "Failed to submit Action Plan." || error.message || "Internal Server Error.";
+      : "Failed to submit Property form." || error.message || "Internal Server Error.";
 
     return userSendResponse(
       res,
