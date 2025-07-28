@@ -1025,6 +1025,9 @@ exports.updateTemplateData = async (req, res, next) => {
 
                 // Log changes in ProfileHistory (Only for changed fields)
                 if (userId) {
+                  let combinedAction = '';
+                  const combinedFields = ['field_need_to_do_by', 'field_done_by'];
+                  const combinedNewValues = {};
                     for (const key in updatedFields) {
                         const oldValue = originalData.hasOwnProperty(key) ? originalData[key] : null;
                         const newValue = updatedFields[key];
@@ -1032,6 +1035,16 @@ exports.updateTemplateData = async (req, res, next) => {
                         const newDisplayValue = await getDisplayValueForField(key, newValue, schema);
 
                         if (oldValue !== newValue) {
+
+                            const isUICase = !!parsedData.ui_case_id;
+                            const caseId = isUICase ? parsedData.ui_case_id : parseInt(singleId);
+                            const formattedTableName = formatTableName(table_name);
+                            
+                            // Clean field label (remove underscores and 'field_' prefix)
+                            const cleanedField = key.replace(/^field_/, '').replace(/_/g, ' ');
+                            const fieldAction = `Field '${cleanedField}' changed from '${oldDisplayValue}' to '${newDisplayValue}' in '${formattedTableName}'`;
+
+
                             await ProfileHistory.create({
                                 template_id: tableData.template_id,
                                 table_row_id: parseInt(singleId),
@@ -1041,26 +1054,63 @@ exports.updateTemplateData = async (req, res, next) => {
                                 updated_value: newDisplayValue !== null ? String(newDisplayValue) : null,
                             }, { transaction: t });
 
-                            await CaseHistory.create({
+                             if (combinedFields.includes(key)) {
+                              combinedAction += (combinedAction ? ' | ' : '') + fieldAction;
+                              combinedNewValues[key] = newDisplayValue;
+                            } else {
+                              await CaseHistory.create({
                                 template_id: tableData.template_id,
-                                table_row_id: parseInt(singleId),
+                                table_row_id: caseId,
                                 user_id: userId,
                                 actor_name: userName,
-                                action: `Field '${key}' changed from '${oldDisplayValue}' to '${newDisplayValue} in' '${formattedTableName(table_name)}'`,
+                                action: fieldAction,
                                 transaction: t
-                            });
-
+                              });
+                            }
                         }
+                    }
+                    if (combinedAction) {
+                      const isUICase = !!parsedData.ui_case_id;
+                      const caseId = isUICase ? parsedData.ui_case_id : parseInt(singleId);
+                      const formattedTableName = formatTableName(table_name);
+                      const styledTableName = `<span style="color: #003366; font-weight: bold;">${formattedTableName}</span>`;
+                      const doneBy = combinedNewValues['field_done_by'] || '';
+                      const needToDoBy = combinedNewValues['field_need_to_do_by'] || '';
+                      let summaryLine = '';
+
+                      if (doneBy && needToDoBy) {
+                        const styledDoneBy = `<span style="color: red; font-weight: bold;">${doneBy}</span>`;
+                        const styledNeedToDoBy = `<span style="color: red; font-weight: bold;">${needToDoBy}</span>`;
+                        summaryLine = `${styledTableName} - ${styledDoneBy} has submitted. Now need to do by ${styledNeedToDoBy}`;
+                      }
+
+                      await CaseHistory.create({
+                        template_id: tableData.template_id,
+                        table_row_id: caseId,
+                        user_id: userId,
+                        actor_name: userName,
+                        action: (summaryLine ? `\n${summaryLine}` : ''),
+                        transaction: t,
+                      });
                     }
                 }
 
+                const isUICase = !!parsedData.ui_case_id;
+                const caseId = isUICase ? parsedData.ui_case_id : singleId;
+                const formattedTableName = formatTableName(table_name);
+
+                const actionText = isUICase
+                  ? `<span style="color: #003366; font-weight: bold;">${formattedTableName}</span> - Record updated (RecordID: ${singleId})`
+                  : `<span style="color: #003366; font-weight: bold;">${formattedTableName}</span> - Record updated`;
+
                 await CaseHistory.create({
-                    template_id: tableData.template_id,
-                    table_row_id: singleId,
-                    user_id: actorId,
-                    actor_name: userName,
-                    action: `Updated`,
+                  template_id: tableData.template_id,
+                  table_row_id: caseId,
+                  user_id: actorId,
+                  actor_name: userName,
+                  action: actionText,
                 }, { transaction: t });
+
             }
 
             // Handle file attachments if any
@@ -3676,7 +3726,7 @@ exports.viewMagazineTemplateData = async (req, res) => {
 exports.deleteTemplateData = async (req, res, next) => {
   let dirPath = "";
   try {
-    const { table_name, where, transaction_id } = req.body;
+    const { table_name, where, transaction_id , ui_case_id, pt_case_id} = req.body;
     const userId = req.user?.user_id || null;
     // const userId = res.locals.user_id || null;
     // const adminUserId = res.locals.admin_user_id || null;
@@ -3852,12 +3902,38 @@ exports.deleteTemplateData = async (req, res, next) => {
           },
       });
 
-      await CaseHistory.destroy({
-            where: {
-                template_id: tableData.template_id,
-                table_row_id: data.id,
-            },
-        });
+      // await CaseHistory.destroy({
+      //       where: {
+      //           template_id: tableData.template_id,
+      //           table_row_id: data.id,
+      //       },
+      //   });
+
+            const userId = req.user?.user_id || null;
+      const userData = await Users.findOne({
+        include: [{
+          model: KGID,
+          as: "kgidDetails",
+          attributes: ["kgid", "name", "mobile"]
+        }],
+        where: { user_id: userId },
+      });
+  
+      const userName = userData?.kgidDetails?.name || null;
+  
+      const caseId = ui_case_id || pt_case_id || data.id;
+
+      const formattedTableName = formatTableName(table_name);
+      const actionText = `<span style="color: #003366; font-weight: bold;">${formattedTableName}</span> - Record deleted (RecordID: ${data.id})`;
+
+      await CaseHistory.create({
+        template_id: tableData.template_id,
+        table_row_id: caseId,
+        user_id: userId,
+        actor_name: userName,
+        action: actionText,
+        transaction: transaction_id
+      });
 
       return userSendResponse(
         res,

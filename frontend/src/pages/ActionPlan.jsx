@@ -560,7 +560,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                                                     sx={{ cursor: "pointer", color: "red", fontSize: 20 }}
                                                     onClick={(event) => {
                                                         event.stopPropagation();
-                                                        handleOthersDeleteTemplateData(params.row, options.table);
+                                                        handleOthersDeleteTemplateData(params.row, options.table,selectedRow.id);
                                                     }}
                                                 />
                                             )}
@@ -927,7 +927,8 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
         );
     };
 
-    const handleOthersDeleteTemplateData = (rowData, table_name) => {
+    const handleOthersDeleteTemplateData = (rowData, table_name,ui_case_id) => {
+        console.log("rowdataaa", rowData)
         Swal.fire({
             title: "Are you sure?",
             text: "Do you want to delete this profile ?",
@@ -940,6 +941,8 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
             const deleteTemplateData = {
                 table_name: table_name,
                 where: { id: rowData.id },
+                ui_case_id: ui_case_id,
+                transaction_id : "TXN_" + Date.now() + "_" + Math.floor(Math.random() * 1000000),
             };
             setLoading(true);
 
