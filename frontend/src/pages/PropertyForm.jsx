@@ -1571,6 +1571,9 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
                             }
                         },
                     });
+                    if (fetchCounts) {
+                        fetchCounts();
+                    }
                     // No need to clear selectedIds
                 } else {
                     toast.error(response.message || 'Something went wrong.', {
