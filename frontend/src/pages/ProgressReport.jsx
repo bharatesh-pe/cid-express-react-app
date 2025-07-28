@@ -431,8 +431,25 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
 
         const currentDate = meta?.currentDate;
         const dayOfMonth = new Date(currentDate).getDate();
-        const isSubmitAllowed = dayOfMonth >= 24 && dayOfMonth <= 30;
-        setIsSubmitAllowed(isSubmitAllowed);
+        // const isSubmitAllowed = dayOfMonth >= 24 && dayOfMonth <= 30;
+        // setIsSubmitAllowed(isSubmitAllowed);
+
+        
+      const isDateInRange = dayOfMonth >= 24 && dayOfMonth <= 30;
+
+      const submissionResponse = await api.post("/templateData/getMonthWiseByCaseId", {
+        ui_case_id: rowId,
+        page: 1,
+        limit: 1,
+      });
+
+      let hasCurrentMonthSubmission = false;
+      if (submissionResponse?.success) {
+        hasCurrentMonthSubmission = checkSubmissionExistsForCurrentMonth(submissionResponse.data || []);
+      }
+
+      setIsSubmitAllowed(isDateInRange && !hasCurrentMonthSubmission);
+
 
         const totalPages = meta?.meta?.totalPages;
         const totalItems = meta?.meta?.totalItems;
@@ -1119,6 +1136,15 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
     }
   };
 
+  const checkSubmissionExistsForCurrentMonth = (data) => {
+  const now = new Date();
+  return data.some(item => {
+    const date = new Date(item.submission_date);
+    return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+  });
+};
+
+
   const getMonthWiseFile = async (ui_case_id, page = 1) => {
     if (!ui_case_id) {
       console.error("Invalid ui_case_id for file retrieval:", ui_case_id);
@@ -1132,6 +1158,8 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
       });
 
       if (response && response.success) {
+        // const submissionExists = checkSubmissionExistsForCurrentMonth(response.data || []);
+        // setIsSubmitAllowed(!submissionExists);
         setMonthwiseData(response.data || []);
         setMonthwiseTotalRecord(response.totalRecords || 0);
         setMonthwiseTotalPage(Math.ceil((response.totalRecords || 0) / PageSize));
