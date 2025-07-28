@@ -431,7 +431,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
 
         const currentDate = meta?.currentDate;
         const dayOfMonth = new Date(currentDate).getDate();
-        const isSubmitAllowed = dayOfMonth >= 1 && dayOfMonth <= 5;
+        const isSubmitAllowed = dayOfMonth >= 24 && dayOfMonth <= 30;
         setIsSubmitAllowed(isSubmitAllowed);
 
         const totalPages = meta?.meta?.totalPages;
@@ -2084,6 +2084,10 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
         }
       }
     });
+
+    if (data.hasOwnProperty("ui_case_id")) {
+        normalData.ui_case_id = data.ui_case_id;
+    }
 
     if (selectedOtherTemplate.table === "cid_ui_case_progress_report") {
       normalData["field_pr_status"] = "No";

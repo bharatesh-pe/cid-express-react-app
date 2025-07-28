@@ -6,6 +6,10 @@ import Accordion from '@mui/material/Accordion';
 import AccordionSummary from '@mui/material/AccordionSummary';
 import AccordionDetails from '@mui/material/AccordionDetails';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import SearchIcon from "@mui/icons-material/Search";
+import {InputAdornment} from "@mui/material";
+import TextFieldInput from "@mui/material/TextField";
+import FilterListIcon from "@mui/icons-material/FilterList";
 
 // import formConfig from './formConfig.json';
 import { Button, Grid, Box, Typography, IconButton, Chip, FormControl, Autocomplete, DialogActions, TextField, Tooltip } from '@mui/material';
@@ -103,11 +107,23 @@ const NormalViewForm = ({
     const [caseHistoryModal, setCaseHistoryModal] = useState(false);
     const [caseHistoryData, setCaseHistoryData] = useState([]);
     const [caseHistoryHeaderData, setCasehistoryHeaderData] = useState([
-        { field: "sl_no", headerName: "Sl. No." },
-        { field: "action", headerName: "Action", flex: 1 },
+        { field: "sl_no", headerName: "SL No" , width: 70 },
+        { field: "action", headerName: "Action",flex: 2,
+            renderCell: (params) => (
+                <span dangerouslySetInnerHTML={{ __html: params.value }} />
+            ),
+        },        
         { field: "actor_name", headerName: "User", flex: 1 },
         { field: "date", headerName: "Date & Time", flex: 1 },
     ]);
+    const [paginationCount, setPaginationCount] = useState(1);
+    const [totalPage, setTotalPage] = useState(0);
+    const [totalRecord, setTotalRecord] = useState(0);
+    const [searchValue, setSearchValue] = useState("");
+    const [searchTerm, setSearchTerm] = useState("");
+    const [page, setPage] = useState(1);
+    const [hideClearFilter, setHideClearFilter] = useState(false);
+
 
     // based on department get division options state
 
@@ -2228,72 +2244,89 @@ const NormalViewForm = ({
         }
     }
 
-    const CaseLogs = async () => {
-        if ( !template_id || template_id === "" || !table_row_id || table_row_id === "" ) {
-            return false;
+    useEffect(() => {
+        if (caseHistoryModal && template_id && table_row_id) {
+        CaseLogs();
         }
+    }, [page, searchTerm, caseHistoryModal]);
 
-        var payload = {
-            template_id: template_id,
-            table_row_id: table_row_id,
+    const CaseLogs = async () => {
+        setLoading(true);
+        const payload = {
+        template_id,
+        table_row_id,
+        page,
+        limit: 10,
+        search: searchTerm,
         };
 
-        setLoading(true);
-
         try {
-            const getHistoryResponse = await api.post( "/profileHistories/getCaseHistory",payload);
-            setLoading(false);
+        const response = await api.post("/profileHistories/getCaseHistory", payload);
+        setLoading(false);
 
-            if (getHistoryResponse && getHistoryResponse.success) {
-                if ( getHistoryResponse["data"] && getHistoryResponse["data"].length > 0 ) {
-                    var updatedData = getHistoryResponse["data"].map((data, index) => {
-                        // var fullname = "";
+        if (response?.success) {
+            const { logs, total_pages, total } = response.data;
 
-                        const readableDate = new Date(data.updated_at).toLocaleString("en-US", {
-                            year: "numeric",
-                            month: "long",
-                            day: "2-digit",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                            second: "2-digit",
-                            hour12: true, // Optional: shows time in AM/PM format
-                        });
+            const updatedData = logs.map((data, index) => {
+            const readableDate = new Date(data.updated_at).toLocaleString("en-US", {
+                year: "numeric",
+                month: "long",
+                day: "2-digit",
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit",
+                hour12: true,
+            });
 
-                        return {
-                            ...data,
-                            id: data.log_id,
-                            sl_no: index + 1,
-                            actor_name: data.actor_name,
-                            date: readableDate,
-                        };
-                    });
+            return {
+                ...data,
+                id: data.log_id,
+                sl_no: (page - 1) * 10 + index + 1,
+                action: data.action,
+                actor_name: data.actor_name,
+                date: readableDate,
+            };
+            });
 
-                    setCaseHistoryData(updatedData);
-                    setCaseHistoryModal(true);
-                } else {
-                    setCaseHistoryData([]);
-                    setCaseHistoryModal(true);
-                }
-            } else {
-                setCaseHistoryData([]);
-                setCaseHistoryModal(true);
-            }
+            setCaseHistoryData(updatedData);
+            setPaginationCount(total_pages);
+            setTotalPage(total_pages);
+            setTotalRecord(total);
+        } else {
+            setCaseHistoryData([]);
+        }
         } catch (error) {
-            setLoading(false);
-            if (error && error.response && error.response["data"]) {
-                toast.error(error.response["data"].message || "Please Try Again!", {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-error",
-                });
-            }
+        setLoading(false);
+        toast.error(error?.response?.data?.message || "Please Try Again!", {
+            position: "top-right",
+            autoClose: 3000,
+            className: "toast-error",
+        });
         }
     };
+
+    const handlePagination = (newPage) => {
+        setPage(newPage);
+    };
+
+    const handleSearch = () => {
+        setPage(1);
+        setSearchTerm(searchValue);
+    };
+
+    const handleCloseCaseHistoryModal = () => {
+        setCaseHistoryModal(false);
+        setSearchValue("");
+        setSearchTerm("");
+        setPage(1);
+    };
+
+    const handleClear = () => {
+        setSearchValue("");
+        setSearchTerm("");
+        setPage(1);
+    };
+
     useEffect(() => {
   if (showActionModal && caseActionSelectedValue && caseActionOptions.length > 0) {
     // Only fetch if actionCases is empty (avoid refetch on every render)
@@ -3066,7 +3099,7 @@ const NormalViewForm = ({
                 <Button
                     variant="outlined"
                     sx={{marginLeft: "10px", marginRight: "10px", height: '40px'}}
-                    onClick = {() => {CaseLogs()}}
+                    onClick={() => setCaseHistoryModal(true)}
                 >
                     Case Log
                 </Button>
@@ -3943,43 +3976,107 @@ const NormalViewForm = ({
           </DialogContent>
         </Dialog>
       }
-
+    
         {caseHistoryModal && (
-            <Dialog
-                open={caseHistoryModal}
-                onClose={() => setCaseHistoryModal(false)}
-                aria-labelledby="alert-dialog-title"
-                aria-describedby="alert-dialog-description"
-                maxWidth="md"
-                fullWidth
-                className="approvalModal"
+        <Dialog
+            open={caseHistoryModal}
+            onClose={handleCloseCaseHistoryModal}
+            aria-labelledby="alert-dialog-title"
+            aria-describedby="alert-dialog-description"
+            maxWidth="md"
+            fullWidth
+            className="approvalModal"
+        >
+            <DialogTitle
+            id="alert-dialog-title"
+            sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                paddingBottom: 0,
+            }}
             >
-                <DialogTitle
-                    id="alert-dialog-title"
-                    sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        paddingBottom: 0
-                    }}
+            <Typography variant="h6">Case History</Typography>
+
+            <Box display="flex" alignItems="center" gap={2}>
+                <TextFieldInput
+                InputProps={{
+                    startAdornment: (
+                    <InputAdornment position="start">
+                        <SearchIcon sx={{ color: "#475467" }} />
+                    </InputAdornment>
+                    ),
+                }}
+                onInput={(e) => setSearchValue(e.target.value)}
+                value={searchValue}
+                id="tableSearch"
+                size="small"
+                placeholder="Search"
+                variant="outlined"
+                className="profileSearchClass"
+                onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleSearch();
+                    }
+                }}
+                sx={{
+                    width: "250px",
+                    borderRadius: "6px",
+                    outline: "none",
+                    "& .MuiInputBase-input::placeholder": {
+                    color: "#475467",
+                    opacity: "1",
+                    fontSize: "14px",
+                    fontWeight: "400",
+                    fontFamily: "Roboto",
+                    },
+                }}
+                />
+
+                <IconButton
+                aria-label="close"
+                onClick={handleCloseCaseHistoryModal}
+                sx={{ color: (theme) => theme.palette.grey[500] }}
                 >
-                    <Box>Case History</Box>
-                    <IconButton
-                        aria-label="close"
-                        onClick={() => setCaseHistoryModal(false)}
-                        sx={{ color: (theme) => theme.palette.grey[500] }}
-                    >
-                        <CloseIcon />
-                    </IconButton>
-                </DialogTitle>
-                <DialogContent>
-                    <DialogContentText id="alert-dialog-description">
-                        <Box py={2}>
-                            <TableView rows={caseHistoryData} columns={caseHistoryHeaderData} />
-                        </Box>
-                    </DialogContentText>
-                </DialogContent>
-            </Dialog>
+                <CloseIcon />
+                </IconButton>
+            </Box>
+            </DialogTitle>
+
+            {searchValue && !hideClearFilter && (
+            <Box px={2}>
+                <Typography
+                onClick={handleClear}
+                sx={{
+                    fontSize: "13px",
+                    fontWeight: "500",
+                    textDecoration: "underline",
+                    cursor: "pointer",
+                    textAlign: "right",
+                }}
+                mt={1}
+                >
+                View All / Clear Search
+                </Typography>
+            </Box>
+            )}
+
+            <DialogContent>
+            <DialogContentText id="alert-dialog-description">
+                <Box py={2}>
+                <TableView
+                    rows={caseHistoryData}
+                    columns={caseHistoryHeaderData}
+                    totalPage={totalPage}
+                    totalRecord={totalRecord}
+                    paginationCount={page}
+                    handlePagination={handlePagination}
+                />
+                </Box>
+            </DialogContentText>
+            </DialogContent>
+        </Dialog>
         )}
 
         {caseDiaryHistoryLog && (

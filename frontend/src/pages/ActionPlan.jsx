@@ -1839,6 +1839,9 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                     }else{
                         loadTableData(paginationCount);
                     }
+                    if (isImmediateSupervisior && fetchCounts) {
+                        fetchCounts();
+                    }
                 },
             });
             } else {
@@ -2275,6 +2278,11 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
             }
           }
         });
+
+        if (data.hasOwnProperty("ui_case_id")) {
+            normalData.ui_case_id = data.ui_case_id;
+        }
+
     
         if(selectedOtherTemplate.table === "cid_ui_case_progress_report"){
             normalData["field_pr_status"] = "No";
