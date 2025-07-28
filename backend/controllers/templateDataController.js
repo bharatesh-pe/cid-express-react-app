@@ -12687,6 +12687,18 @@ exports.submitActionPlanPR = async (req, res) => {
                 console.error('Error inserting case alert:', error);
             }
 
+            const formattedTableName = formatTableName(actionPlanTable);
+            const caseId = req.body.ui_case_id || req.body.pt_case_id || null;
+            const actionText = `<span style="color: #003366; font-weight: bold;">${formattedTableName}</span> - IO submitted for approval`;
+
+            await CaseHistory.create({
+              template_id: apTemplate.template_id,
+              table_row_id: caseId,
+              user_id: userId,
+              actor_name: userName,
+              action: actionText,
+              transaction: t,
+            });
         }
         else
         {
@@ -12781,6 +12793,23 @@ exports.submitActionPlanPR = async (req, res) => {
             //     action: `Status Updated`,
             //     transaction: t
             // });
+
+            const caseId =
+              req.body.ui_case_id ||
+              req.body.pt_case_id ||
+              null;            
+            const formattedTableName = formatTableName(prTableName);
+            const actionText = `<span style="color: #003366; font-weight: bold;">${formattedTableName}</span> - New record created from Action Plan`;
+
+            await CaseHistory.create({
+              template_id: prTemplate.template_id,
+              table_row_id: caseId,
+              user_id: userId,
+              actor_name: userName,
+              action: actionText,
+              transaction: t,
+            });
+
 
             try {
                 // First, update existing matching alerts to "completed"
