@@ -12689,7 +12689,7 @@ exports.submitActionPlanPR = async (req, res) => {
 
             const formattedTableName = formatTableName(actionPlanTable);
             const caseId = req.body.ui_case_id || req.body.pt_case_id || null;
-            const actionText = `<span style="color: #003366; font-weight: bold;">${formattedTableName}</span> - Submitted for approval From SP`;
+            const actionText = `<span style="color: #003366; font-weight: bold;">${formattedTableName}</span> - Submitted for approval`;
 
             await CaseHistory.create({
               template_id: apTemplate.template_id,

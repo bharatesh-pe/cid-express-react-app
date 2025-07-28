@@ -2841,7 +2841,8 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                                         onClick={() => handleSubmitAp({ id: selectedRowData?.id })}
                                         disabled={otherTemplatesTotalRecord === 0}
                                     >
-                                        {JSON.parse(localStorage.getItem("role_title")).toLowerCase() === "investigation officer" ? "Submit for Approval" : "Approve"}
+                                        {isImmediateSupervisior ? "Approve" : "Submit for Approval"}
+                                        {/* {JSON.parse(localStorage.getItem("role_title")).toLowerCase() === "investigation officer" ? "Submit for Approval" : "Approve"} */}
                                     </Button>
                                 )}
                                 {/* {
