@@ -1192,6 +1192,9 @@ const LokayuktaView = () => {
                 const deleteTemplateData = {
                     table_name: options?.table,
                     where: { id: data.id },
+                    transaction_id: `delete_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
+                    ui_case_id : rowData?.id,
+                    pt_case_id : rowData?.pt_case_id,
                 };
 
                 setLoading(true);

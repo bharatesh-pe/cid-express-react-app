@@ -431,7 +431,7 @@ const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData
                                                     sx={{ cursor: "pointer", color: "red", fontSize: 20 }}
                                                     onClick={(event) => {
                                                         event.stopPropagation();
-                                                        handleOthersDeleteTemplateData(params.row, options.table);
+                                                        handleOthersDeleteTemplateData(params.row, options.table,selectedRow.id);
                                                     }}
                                                 />
                                             )}
@@ -966,7 +966,7 @@ const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData
         );
     };
 
-    const handleOthersDeleteTemplateData = (rowData, table_name) => {
+    const handleOthersDeleteTemplateData = (rowData, table_name,ui_case_id) => {
         Swal.fire({
             title: "Are you sure?",
             text: "Do you want to delete this profile ?",
@@ -979,6 +979,8 @@ const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData
                 const deleteTemplateData = {
                     table_name: table_name,
                     where: { id: rowData.id },
+                    transaction_id : "TXN_" + Date.now() + "_" + Math.floor(Math.random() * 1000000),
+                    ui_case_id : ui_case_id,
                 };
                 setLoading(true);
 

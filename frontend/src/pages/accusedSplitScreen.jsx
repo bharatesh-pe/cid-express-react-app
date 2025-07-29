@@ -42,6 +42,7 @@ const AccusedSplitScreen = ({tableObj, selectedAccused, closeForm, ui_case_id, p
     const [tableColumnData, setTableColumnData] = useState([
         { field: 'sl_no', headerName: 'Sl. No.' },
     ]);
+    const [roleTabFieldName, setRoleTabFieldName] = useState(null);
 
     const [accusedHeaderName, setAccusedHeaderName] = useState(
         () => (selectedAccused || []).map(item => item?.[gettingFieldName]).join(', ')
@@ -598,6 +599,7 @@ const AccusedSplitScreen = ({tableObj, selectedAccused, closeForm, ui_case_id, p
                     tabFields.map((element)=>{
                         if(element?.options){
                             if(element?.options.some(options => options.code === "Accused" || options.code === "Witness")){
+                                setRoleTabFieldName(element.name); 
                                 accusedWitnessTabs = element?.name;
                             }
                         }
@@ -770,6 +772,17 @@ const AccusedSplitScreen = ({tableObj, selectedAccused, closeForm, ui_case_id, p
 
         const formData = new FormData();
         let normalData = {};
+
+        if (roleTabFieldName) {
+            const selectedRole = data[roleTabFieldName];
+
+            if (selectedRole === "Accused" && "field_witness_name" in data) {
+                delete data["field_witness_name"];
+            } else if (selectedRole === "Witness" && "field_accused_name" in data) {
+                delete data["field_accused_name"];
+            }
+        }
+
 
         formFields.forEach((field) => {
             if (data[field.name]) {

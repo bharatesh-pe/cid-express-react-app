@@ -459,7 +459,7 @@ const CDR = ({ templateName, headerDetails, rowId, options, selectedRowData, bac
                                                     sx={{ cursor: "pointer", color: "red", fontSize: 20 }}
                                                     onClick={(event) => {
                                                         event.stopPropagation();
-                                                        handleOthersDeleteTemplateData(params.row, options.table);
+                                                        handleOthersDeleteTemplateData(params.row, options.table,selectedRow.id);
                                                     }}
                                                 />
                                             )}
@@ -830,7 +830,7 @@ const CDR = ({ templateName, headerDetails, rowId, options, selectedRowData, bac
         );
     };
 
-    const handleOthersDeleteTemplateData = (rowData, table_name) => {
+    const handleOthersDeleteTemplateData = (rowData, table_name, ui_case_id) => {
         Swal.fire({
             title: "Are you sure?",
             text: "Do you want to delete this profile ?",
@@ -843,6 +843,8 @@ const CDR = ({ templateName, headerDetails, rowId, options, selectedRowData, bac
                 const deleteTemplateData = {
                     table_name: table_name,
                     where: { id: rowData.id },
+                    transaction_id : "TXN_" + Date.now() + "_" + Math.floor(Math.random() * 1000000),
+                    ui_case_id:ui_case_id
                 };
                 setLoading(true);
 
@@ -1606,7 +1608,8 @@ const CDR = ({ templateName, headerDetails, rowId, options, selectedRowData, bac
                         const updateStatusForm = new FormData();
                         updateStatusForm.append("table_name", "cid_ui_case_cdr_ipdr");
                         updateStatusForm.append("id", row.id);
-                        updateStatusForm.append("data", JSON.stringify({ field_done_by: 'IO', field_need_to_do_by: 'SP' }));
+                        updateStatusForm.append("data", JSON.stringify({ field_done_by: 'IO', field_need_to_do_by: 'SP', ui_case_id: selectedRowData?.id }));
+                        updateStatusForm.append("transaction_id", `submitap_${Date.now()}_${Math.floor(Math.random() * 10000)}`);
                         await api.post("/templateData/updateTemplateData", updateStatusForm);
                     }
                 }
@@ -2029,6 +2032,7 @@ const CDR = ({ templateName, headerDetails, rowId, options, selectedRowData, bac
         setLoading(true);
         formData.append("id", data.id);
         formData.append("data", JSON.stringify(normalData));
+        formData.append("transaction_id", `update_${Date.now()}_${Math.floor(Math.random() * 10000)}`);
 
         try {
             const saveTemplateData = await api.post(
@@ -2148,7 +2152,8 @@ const CDR = ({ templateName, headerDetails, rowId, options, selectedRowData, bac
                         const updateStatusForm = new FormData();
                         updateStatusForm.append("table_name", "cid_ui_case_cdr_ipdr");
                         updateStatusForm.append("id", row.id);
-                        updateStatusForm.append("data", JSON.stringify({ field_done_by: 'SP', field_need_to_do_by: 'SPCCD CDR' }));
+                        updateStatusForm.append("data", JSON.stringify({ field_done_by: 'SP', field_need_to_do_by: 'SPCCD CDR', ui_case_id: selectedRowData?.id }));
+                        updateStatusForm.append("transaction_id", `approve_${Date.now()}_${Math.floor(Math.random() * 10000)}`);
                         await api.post("/templateData/updateTemplateData", updateStatusForm);
                     }
                 }
@@ -2236,7 +2241,8 @@ const CDR = ({ templateName, headerDetails, rowId, options, selectedRowData, bac
                         const updateStatusForm = new FormData();
                         updateStatusForm.append("table_name", "cid_ui_case_cdr_ipdr");
                         updateStatusForm.append("id", row.id);
-                        updateStatusForm.append("data", JSON.stringify({ field_done_by: 'SPCCD CDR', field_need_to_do_by: 'CDR' }));
+                        updateStatusForm.append("data", JSON.stringify({ field_done_by: 'SPCCD CDR', field_need_to_do_by: 'CDR', ui_case_id: selectedRowData?.id }));
+                        updateStatusForm.append("transaction_id", `cdr_${Date.now()}_${Math.floor(Math.random() * 10000)}`);
                         await api.post("/templateData/updateTemplateData", updateStatusForm);
                     }
                 }
@@ -2326,7 +2332,8 @@ const CDR = ({ templateName, headerDetails, rowId, options, selectedRowData, bac
                         const updateStatusForm = new FormData();
                         updateStatusForm.append("table_name", "cid_ui_case_cdr_ipdr");
                         updateStatusForm.append("id", row.id);
-                        updateStatusForm.append("data", JSON.stringify({ field_done_by: 'SPCCD CDR', field_need_to_do_by: 'IO' }));
+                        updateStatusForm.append("data", JSON.stringify({ field_done_by: 'SPCCD CDR', field_need_to_do_by: 'IO', ui_case_id: selectedRowData?.id }));
+                        updateStatusForm.append("transaction_id", `return_${Date.now()}_${Math.floor(Math.random() * 10000)}`);
                         await api.post("/templateData/updateTemplateData", updateStatusForm);
                     }
                 }
@@ -2418,7 +2425,8 @@ const CDR = ({ templateName, headerDetails, rowId, options, selectedRowData, bac
                         const updateStatusForm = new FormData();
                         updateStatusForm.append("table_name", "cid_ui_case_cdr_ipdr");
                         updateStatusForm.append("id", row.id);
-                        updateStatusForm.append("data", JSON.stringify({ field_done_by: 'SPCCD CDR', field_need_to_do_by: 'Rejected' }));
+                        updateStatusForm.append("data", JSON.stringify({ field_done_by: 'SPCCD CDR', field_need_to_do_by: 'Rejected' , ui_case_id: selectedRowData?.id}));
+                        updateStatusForm.append("transaction_id", `reject_${Date.now()}_${Math.floor(Math.random() * 10000)}`);
                         await api.post("/templateData/updateTemplateData", updateStatusForm);
                     }
                 }
@@ -2480,6 +2488,7 @@ const CDR = ({ templateName, headerDetails, rowId, options, selectedRowData, bac
                     const dataObj = { field_done_by: 'CDR', field_need_to_do_by: 'Completed' };
                     if (cdrUpdateStatus) {
                         dataObj.field_status_update = cdrUpdateStatus;
+                        dataObj.ui_case_id = cdrUpdateId;
                     }
                     updateStatusForm.append("data", JSON.stringify(dataObj));
 

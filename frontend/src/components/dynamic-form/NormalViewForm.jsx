@@ -1194,6 +1194,83 @@ const NormalViewForm = ({
             }
         }
 
+        if ( selectedField && selectedField?.name && selectedField?.table === "cid_district" && newFormConfig.some((field) => field.table === "cid_police_station")) {
+            const policeStationField = newFormConfig.find((field) => field.table === "cid_police_station");
+
+            if (policeStationField && policeStationField?.name) {
+                const getPoliceStationsBasedOnDistrict = async () => {
+                    try {
+                const districtIdValue = formData[selectedField.name];
+
+                if (!districtIdValue) {
+                    console.warn("District ID is empty or undefined. Aborting request.");
+                    return;
+                }
+
+                const districtPayload = {
+                    district_id: districtIdValue,
+                };
+
+                console.log("Sending districtPayload to backend:", districtPayload);
+
+                const response = await api.post("cidMaster/getPoliceStationsBasedOnDistrict", districtPayload);
+                const data = response?.data;
+
+                console.log("Received response:", data);
+
+                if (!Array.isArray(data) || data.length === 0) {
+                    console.warn("No police stations found or invalid response format.");
+
+                    setNewFormConfig((prevFormConfig) =>
+                        prevFormConfig.map((configData) => {
+                            if (configData?.name === policeStationField?.name) {
+                                return { ...configData, options: [] };
+                            }
+                            return configData;
+                        })
+                    );
+                    return;
+                }
+
+                const updatedOptions = data.map((psData) => ({
+                    name: psData["field_name_of_the_police_station"],
+                    code: psData["id"],
+                }));
+
+
+                console.log("Updated police station options:", updatedOptions);
+
+                setNewFormConfig((prevFormConfig) =>
+                    prevFormConfig.map((configData) => {
+                        if (configData?.name === policeStationField?.name) {
+                            return { ...configData, options: updatedOptions };
+                        }
+                        return configData;
+                    })
+                );
+
+                setFormData((prevData) => ({
+                    ...prevData,
+                    [policeStationField.name]: ""
+                }));
+            } catch (error) {
+                console.error("Error while fetching police stations:", error);
+
+                setNewFormConfig((prevFormConfig) =>
+                    prevFormConfig.map((configData) => {
+                        if (configData?.name === policeStationField?.name) {
+                            return { ...configData, options: [] };
+                        }
+                        return configData;
+                    })
+                );
+            }
+        };
+
+        getPoliceStationsBasedOnDistrict();
+    }
+        }
+
     }, [selectedField]);
 
        useEffect(() => {
@@ -1854,6 +1931,76 @@ const NormalViewForm = ({
                 setDepartmentDivisionField([]);
             }
 
+            const findDistrictPoliceStationField = newFormConfig.filter((element) => {
+                if (element?.table && (element?.table === "cid_district" || element?.table === "cid_police_station")) {
+                    return element;
+                }
+            });
+
+            if (findDistrictPoliceStationField?.length > 1) {
+                const districtField = findDistrictPoliceStationField.find((field) => field.table === "cid_district");
+                const policeStationField = findDistrictPoliceStationField.find((field) => field.table === "cid_police_station");
+
+                if (districtField && districtField?.column_name && initialData[districtField.column_name]) {
+                    const getPoliceStationsBasedOnDistrict = async () => {
+                        try {
+                            const districtPayload = {
+                                district_id: initialData[districtField.column_name]
+                            };
+
+                            const response = await api.post("cidMaster/getPoliceStationsBasedOnDistrict", districtPayload);
+                            const data = response?.data;
+
+                            if (!data || data.length === 0) {
+                                setNewFormConfig((prevFormConfig) => {
+                                    return prevFormConfig.map((field) => {
+                                        if (field?.table === "cid_police_station") {
+                                            return { ...field, options: [] };
+                                        }
+                                        return field;
+                                    });
+                                });
+                                return;
+                            }
+
+                            const updatedOptions = data.map((psData) => ({
+                                name: psData["field_name_of_the_police_station"],
+                                code: psData["id"],
+                            }));
+
+                            setNewFormConfig((prevFormConfig) => {
+                                return prevFormConfig.map((field) => {
+                                    if (field?.table === "cid_police_station") {
+                                        return { ...field, options: updatedOptions };
+                                    }
+                                    return field;
+                                });
+                            });
+                        } catch (error) {
+                            console.error("Error fetching police stations:", error);
+                            setNewFormConfig((prevFormConfig) => {
+                                return prevFormConfig.map((field) => {
+                                    if (field?.table === "cid_police_station") {
+                                        return { ...field, options: [] };
+                                    }
+                                    return field;
+                                });
+                            });
+                        }
+                    };
+
+                    getPoliceStationsBasedOnDistrict();
+                } else {
+                    setNewFormConfig((prevFormConfig) => {
+                        return prevFormConfig.map((field) => {
+                            if (field?.table === "cid_police_station") {
+                                return { ...field, options: [] };
+                            }
+                            return field;
+                        });
+                    });
+                }
+            }
         } catch (error) {
             console.error("Error fetching template data:", error);
         }
