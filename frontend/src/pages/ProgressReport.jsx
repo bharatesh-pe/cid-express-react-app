@@ -678,7 +678,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
         // setIsSubmitAllowed(isSubmitAllowed);
 
         
-      const isDateInRange = dayOfMonth >= 24 && dayOfMonth <= 30;
+      const isDateInRange = dayOfMonth >= 1 && dayOfMonth <= 5;
 
       const submissionResponse = await api.post("/templateData/getMonthWiseByCaseId", {
         ui_case_id: rowId,
