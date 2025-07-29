@@ -5700,6 +5700,12 @@ exports.bulkInsertData = async (req, res) => {
             const processedRow = {};
 
             for (const col of columnData) {
+                  let value = row[col];
+
+                  if (col === "ui_case_id" || col === "pt_case_id") {
+                      processedRow[col] = value;
+                      continue;
+                  }
                 const fieldDef = schema.find(f => f.name === col);
 
                 if (!fieldDef) {
@@ -5707,7 +5713,6 @@ exports.bulkInsertData = async (req, res) => {
                 }
 
                 const { type, options, api } = fieldDef;
-                let value = row[col];
 
                 if (["dropdown", "autocomplete", "multidropdown"].includes(type)) {
                     let mappedCode = null;
