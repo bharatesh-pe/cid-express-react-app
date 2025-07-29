@@ -3772,23 +3772,46 @@ const fetchCounts = async () => {
                                 onChange={handleFileChange}
                             />
                         </Box>
+{selectedFile && (
+    <Box
+        sx={{
+            display: 'flex',
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between', // Pushes items to edges
+            gap: 2,
+            mt: 2,
+            flexWrap: 'wrap', // Ensures responsiveness
+        }}
+    >
+        <Typography
+            sx={{
+                color: 'blue',
+                wordBreak: 'break-word',
+                fontSize: '14px',
+                flexGrow: 1, // Allows the text to take remaining space
+                minWidth: 0, // Prevents overflow issues
+                maxWidth: '70%', // Keeps it from overlapping
+            }}
+        >
+            Selected File: {selectedFile.name}
+        </Typography>
 
-                        {selectedFile && (
-                            <Box sx={{display: 'flex', justifyContent: 'space-between'}}>
-                                <Typography mt={2} color="blue">
-                                    Selected File: {selectedFile.name}
-                                </Typography>
-                                <Button
-                                    variant="contained"
-                                    color="success"
-                                    sx={{ mt: 2, textTransform: 'uppercase', fontWeight: 500 }}
-                                    startIcon={<UploadFileIcon />}
-                                    onClick={checkUploadedFile}
-                                >
-                                    Upload
-                                </Button>
-                            </Box>
-                        )}
+        <Button
+            variant="contained"
+            color="success"
+            sx={{
+                textTransform: 'uppercase',
+                fontWeight: 500,
+                whiteSpace: 'nowrap',
+            }}
+            startIcon={<UploadFileIcon />}
+            onClick={checkUploadedFile}
+        >
+            Upload
+        </Button>
+    </Box>
+)}
                     </DialogContent>
                 </Dialog>
             }
