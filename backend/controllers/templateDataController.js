@@ -7884,7 +7884,7 @@ exports.getMonthWiseByCaseId = async (req, res) => {
 
 
 exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
-	const { table_name  , data, others_data, transaction_id, user_designation_id , folder_attachment_ids , second_table_name, second_data , second_folder_attachment_ids, others_folder_attachment_ids } = req.body;
+	const { table_name  , data, child_tables, others_data, transaction_id, user_designation_id , folder_attachment_ids , second_table_name, second_data , second_folder_attachment_ids, others_folder_attachment_ids } = req.body;
 
 	if (user_designation_id === undefined || user_designation_id === null) {
 		return userSendResponse(res, 400, false, "user_designation_id is required.", null);
@@ -7994,6 +7994,7 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
                 }
             }
 
+
             if (table_name === "cid_pending_trial") {
                 if (parsedData.field_ui_case && !parsedData.ui_case_id) {
                     parsedData.ui_case_id = parsedData.field_ui_case;
@@ -8001,14 +8002,18 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
             }
 
             const validData = {};
-            for (const field of schema) {
-                const { name, not_null, default_value } = field;
-                if (parsedData.hasOwnProperty(name)) {
-                    validData[name] = parsedData[name];
-                } else if (not_null && default_value === undefined) {
-                    return userSendResponse(res, 400, false, `Field ${name} cannot be null.`, null);
-                } else if (default_value !== undefined) {
-                    validData[name] = default_value;
+            const parentTableFieldNames = schema.map(field => field.name);
+
+            for (const field of parentTableFieldNames) {
+                if (parsedData.hasOwnProperty(field)) {
+                    validData[field] = parsedData[field];
+                } else {
+                    const schemaField = schema.find(f => f.name === field);
+                    if (schemaField.not_null && schemaField.default_value === undefined) {
+                        return userSendResponse(res, 400, false, `Field ${field} cannot be null.`, null);
+                    } else if (schemaField.default_value !== undefined) {
+                        validData[field] = schemaField.default_value;
+                    }
                 }
             }
     
@@ -8053,6 +8058,90 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
             await Model.sync();
     
             insertedData = await Model.create(validData, { transaction: t });
+
+            const allChildren = {};
+            let parsedChildTables = child_tables;
+
+            if (insertedData && child_tables) {
+              if (typeof child_tables === "string") {
+                try {
+                  parsedChildTables = JSON.parse(child_tables);
+                  console.log("Parsed child_tables object:", parsedChildTables);
+                } catch (error) {
+                  console.error("Failed to parse child_tables JSON string:", error);
+                  parsedChildTables = {};
+                }
+              }
+
+              for (const child_table_name in parsedChildTables) {
+                const child_data = parsedChildTables[child_table_name];
+                if (!child_data || !Array.isArray(child_data) || child_data.length === 0) {
+                  console.log("Skipping child table:", child_table_name, "- no data or invalid");
+                  continue;
+                }
+
+                console.log("Inserting into child_table:", child_table_name, "child_data:", child_data);
+
+                const parentTemplate = await Template.findOne({ where: { table_name } });
+                const schemaChild = JSON.parse(parentTemplate.fields);
+
+                const matchingSchemaField = schemaChild.find(
+                  field => field.formType === "Table" && `${table_name}_${field.name}` === child_table_name
+                );
+
+                if (!matchingSchemaField || !matchingSchemaField.tableHeaders) {
+                  console.log("Skipping schema structure for:", child_table_name);
+                  continue;
+                }
+
+                const childSchema = matchingSchemaField.tableHeaders.map(header => ({
+                  name: header.header,
+                  formType: header.fieldType?.type || "short_text"
+                }));
+
+                const childModelFields = {};
+                childSchema.forEach(f => {
+                  let sequelizeType = Sequelize.DataTypes.TEXT;
+                  if (f.formType === "short_text") sequelizeType = Sequelize.DataTypes.STRING(255);
+                  else if (["dropdown", "radio"].includes(f.formType)) sequelizeType = Sequelize.DataTypes.STRING(100);
+                  childModelFields[f.name] = {
+                    type: sequelizeType,
+                    allowNull: true,
+                    field: f.name.toLowerCase()
+                  };
+                });
+
+                childModelFields[`${table_name}_id`] = {
+                  type: Sequelize.DataTypes.INTEGER,
+                  allowNull: false,
+                  references: { model: table_name, key: "id" },
+                  onDelete: "CASCADE",
+                };
+
+                const ChildModel = sequelize.define(child_table_name, childModelFields, {
+                  freezeTableName: true,
+                  timestamps: true,
+                  underscored: true,
+                });
+
+                await ChildModel.sync();
+
+                const dataToInsert = child_data.map(row => ({
+                  ...row,
+                  [`${table_name}_id`]: insertedData.id,
+                }));
+
+                console.log("bulkCreate into:", child_table_name, "with rows:", dataToInsert);
+
+                await ChildModel.bulkCreate(dataToInsert, { transaction: t });
+
+                const insertedChildren = await ChildModel.findAll({
+                  where: { [`${table_name}_id`]: insertedData.id },
+                });
+                console.log("Inserted children rows:", insertedChildren);
+                allChildren[child_table_name] = insertedChildren;
+              }
+            }
 
             if (insertedData && tableData?.template_id) {
               const isUICase = !!insertedData.ui_case_id;
@@ -8838,6 +8927,7 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
 
 		await t.commit();
 		return userSendResponse(res, 200, true, `Record Created Successfully`, null);
+    
 
 	} catch (error) {
     console.error("Error saving data to templates:", error);
@@ -8854,7 +8944,7 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
 
 exports.updateDataWithApprovalToTemplates = async (req, res, next) => {
     // const { template_id, id, model_name, attachments, others_data, others_table_name, others_data_id, approval_status, sys_status } = req.body;
-	const { table_name , id , data, others_data, transaction_id, user_designation_id , folder_attachment_ids  } = req.body;
+	const { table_name , id , data, child_tables,others_data, transaction_id, user_designation_id , folder_attachment_ids  } = req.body;
 
 	if (user_designation_id === undefined || user_designation_id === null) {
 		return userSendResponse(res, 400, false, "user_designation_id is required.", null);
@@ -9183,6 +9273,113 @@ exports.updateDataWithApprovalToTemplates = async (req, res, next) => {
                     }
                 }
             }
+            if (child_tables) {
+              let parsedChildTables = child_tables;
+              if (typeof child_tables === "string") {
+                  try {
+                      parsedChildTables = JSON.parse(child_tables);
+                  } catch (error) {
+                      console.error("Failed to parse child_tables JSON string:", error);
+                      parsedChildTables = {};
+                  }
+              }
+
+              for (const child_table_name in parsedChildTables) {
+                  const child_data = parsedChildTables[child_table_name];
+                  if (!child_data || !Array.isArray(child_data) || child_data.length === 0) {
+                      console.log("Skipping child table:", child_table_name, "- no data or invalid");
+                      continue;
+                  }
+
+                  // Fetch parent table schema to find child schema inside it
+                  const parentTemplate = await Template.findOne({ where: { table_name } });
+                  if (!parentTemplate) continue;
+
+                  const schemaChild = typeof parentTemplate.fields === "string" ? JSON.parse(parentTemplate.fields) : parentTemplate.fields;
+                  const matchingSchemaField = schemaChild.find(
+                      field => field.formType === "Table" && `${table_name}_${field.name}` === child_table_name
+                  );
+
+                  if (!matchingSchemaField || !matchingSchemaField.tableHeaders) {
+                      console.log("Skipping schema structure for:", child_table_name);
+                      continue;
+                  }
+
+                  // Map headers to Sequelize fields
+                  const childSchema = matchingSchemaField.tableHeaders.map(header => ({
+                      name: header.header,
+                      formType: header.fieldType?.type || "short_text"
+                  }));
+
+                  const childModelFields = {};
+                  childSchema.forEach(f => {
+                      let sequelizeType = Sequelize.DataTypes.TEXT;
+                      if (f.formType === "short_text") sequelizeType = Sequelize.DataTypes.STRING(255);
+                      else if (["dropdown", "radio"].includes(f.formType)) sequelizeType = Sequelize.DataTypes.STRING(100);
+                      childModelFields[f.name] = {
+                          type: sequelizeType,
+                          allowNull: true,
+                          field: f.name.toLowerCase()
+                      };
+                  });
+
+                  // Add FK reference to parent table
+                  childModelFields[`${table_name}_id`] = {
+                      type: Sequelize.DataTypes.INTEGER,
+                      allowNull: false,
+                      references: { model: table_name, key: "id" },
+                      onDelete: "CASCADE",
+                  };
+
+                  // Add primary key if needed
+                  if (!childModelFields.id) {
+                      childModelFields.id = {
+                          type: Sequelize.DataTypes.INTEGER,
+                          primaryKey: true,
+                          autoIncrement: true,
+                      };
+                  }
+
+                  const ChildModel = sequelize.define(child_table_name, childModelFields, {
+                      freezeTableName: true,
+                      timestamps: true,
+                      underscored: true,
+                  });
+
+                  await ChildModel.sync({ transaction: t });
+
+                  // IDs of child records in the update payload
+                  const incomingChildIds = child_data.filter(d => d.id).map(d => d.id);
+
+                  // Delete child records not present in incoming data (optional, if you want sync)
+                  await ChildModel.destroy({
+                      where: {
+                          [`${table_name}_id`]: { [Sequelize.Op.in]: ids },
+                          id: { [Sequelize.Op.notIn]: incomingChildIds.length ? incomingChildIds : [0] }
+                      },
+                      transaction: t
+                  });
+
+                  // Process each child row: update if exists, else create
+          for (const row of child_data) {
+            row[`${table_name}_id`] = ids.length === 1 ? ids[0] : null;
+            console.log("Child update row:", row);
+
+            if (row.id) {
+              const childRecord = await ChildModel.findByPk(row.id, { transaction: t });
+              if (childRecord) {
+                await childRecord.update(row, { transaction: t });
+              } else {
+                console.log("Child record with id not found:", row.id);
+              }
+            } else {
+              await ChildModel.create(row, { transaction: t });
+            }
+          }
+
+              }
+            }
+
         }
 
 		let otherParsedData  = {};

@@ -199,6 +199,7 @@ const LokayuktaView = () => {
     const [formFields, setFormFields] = useState([]);
     const [initalFormData, setInitialFormData] = useState({});
     const [formStepperData, setFormStepperData] = useState([]);
+    const [childTables, setChildTables] = useState([]);
 
     // for approval data
 
@@ -523,6 +524,7 @@ const LokayuktaView = () => {
                     setFormFields(viewTemplateResponse.data.fields || []);
                     setFormStepperData(viewTemplateResponse.data.sections || []);
                     setInitialFormData(viewTemplateData.data || {});
+                    setChildTables(viewTemplateResponse?.["data"]?.["child_tables"] || []);
                     setReadonlyForm(true);
                     setEditOnlyForm(editData || false);
                     setFormOpen(true);
@@ -1314,6 +1316,8 @@ const LokayuktaView = () => {
                 
                 setFormFields(viewTemplateResponse?.["data"]?.["fields"] || []);
                 setInitialFormData({});
+                setChildTables(viewTemplateResponse?.["data"]?.["child_tables"] || []);
+
                 if (viewTemplateResponse?.["data"]?.no_of_sections && viewTemplateResponse?.["data"]?.no_of_sections > 0) {
                     setFormStepperData(viewTemplateResponse?.["data"]?.sections ? viewTemplateResponse?.["data"]?.sections: []);
                 }else{
@@ -1783,6 +1787,27 @@ const fetchCounts = async () => {
                 }
             }
         });
+
+        let childTableDataMap = {};
+
+        if (childTables && Array.isArray(childTables)) {
+            childTables.forEach(child => {
+                const childFieldName = child.field_name;
+                if (data[childFieldName]) {
+                    let parsed;
+                    try {
+                        parsed = typeof data[childFieldName] === "string" ? JSON.parse(data[childFieldName]) : data[childFieldName];
+                    } catch (err) {
+                        parsed = [];
+                    }
+
+                    if (Array.isArray(parsed)) {
+                        childTableDataMap[child.child_table_name] = parsed;
+                    }
+                }
+            });
+        }
+
         if (activeSidebar?.table === "cid_eq_case_enquiry_order_copy") {
             normalData["sys_status"] = data?.field_status || "eq_case";
             if (data?.field_status && rowData?.id) {
@@ -1816,6 +1841,7 @@ const fetchCounts = async () => {
         var othersData = {};
         formData.append("table_name", activeSidebar.table || currentTableName || secondTableName);
         formData.append("data", JSON.stringify(normalData));
+        formData.append("child_tables", JSON.stringify(childTableDataMap));
         formData.append("transaction_id", `pt_${Date.now()}_${Math.floor(Math.random() * 10000)}`);
         formData.append("user_designation_id", localStorage.getItem('designation_id') || null);
         formData.append("others_data", JSON.stringify(othersData));
@@ -2100,6 +2126,26 @@ const fetchCounts = async () => {
             }
         });
 
+        let childTableDataMap = {};
+
+if (childTables && Array.isArray(childTables)) {
+    childTables.forEach(child => {
+        const childFieldName = child.field_name;
+        if (data[childFieldName]) {
+            let parsed;
+            try {
+                parsed = typeof data[childFieldName] === "string" ? JSON.parse(data[childFieldName]) : data[childFieldName];
+            } catch (err) {
+                parsed = [];
+            }
+
+            if (Array.isArray(parsed)) {
+                childTableDataMap[child.child_table_name] = parsed;
+            }
+        }
+    });
+}
+
         if (activeSidebar?.table === "cid_eq_case_enquiry_order_copy") {
             normalData["sys_status"] = data?.field_status || "eq_case";
             if (data?.field_status && rowData?.id) {
@@ -2141,6 +2187,7 @@ const fetchCounts = async () => {
             formData.append("id", rowValueId?.id);
         }
         formData.append("transaction_id", `pt_${Date.now()}_${Math.floor(Math.random() * 10000)}`);
+        formData.append("child_tables", JSON.stringify(childTableDataMap));
         formData.append("user_designation_id", localStorage.getItem("designation_id") || null);
         formData.append("others_data", JSON.stringify({}));
 
@@ -3772,46 +3819,46 @@ const fetchCounts = async () => {
                                 onChange={handleFileChange}
                             />
                         </Box>
-{selectedFile && (
-    <Box
-        sx={{
-            display: 'flex',
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between', // Pushes items to edges
-            gap: 2,
-            mt: 2,
-            flexWrap: 'wrap', // Ensures responsiveness
-        }}
-    >
-        <Typography
-            sx={{
-                color: 'blue',
-                wordBreak: 'break-word',
-                fontSize: '14px',
-                flexGrow: 1, // Allows the text to take remaining space
-                minWidth: 0, // Prevents overflow issues
-                maxWidth: '70%', // Keeps it from overlapping
-            }}
-        >
-            Selected File: {selectedFile.name}
-        </Typography>
+                            {selectedFile && (
+                                <Box
+                                    sx={{
+                                        display: 'flex',
+                                        flexDirection: 'row',
+                                        alignItems: 'center',
+                                        justifyContent: 'space-between', 
+                                        gap: 2,
+                                        mt: 2,
+                                        flexWrap: 'wrap',
+                                    }}
+                                >
+                                    <Typography
+                                        sx={{
+                                            color: 'blue',
+                                            wordBreak: 'break-word',
+                                            fontSize: '14px',
+                                            flexGrow: 1,
+                                            minWidth: 0,
+                                            maxWidth: '70%',
+                                        }}
+                                    >
+                                        Selected File: {selectedFile.name}
+                                    </Typography>
 
-        <Button
-            variant="contained"
-            color="success"
-            sx={{
-                textTransform: 'uppercase',
-                fontWeight: 500,
-                whiteSpace: 'nowrap',
-            }}
-            startIcon={<UploadFileIcon />}
-            onClick={checkUploadedFile}
-        >
-            Upload
-        </Button>
-    </Box>
-)}
+                                    <Button
+                                        variant="contained"
+                                        color="success"
+                                        sx={{
+                                            textTransform: 'uppercase',
+                                            fontWeight: 500,
+                                            whiteSpace: 'nowrap',
+                                        }}
+                                        startIcon={<UploadFileIcon />}
+                                        onClick={checkUploadedFile}
+                                    >
+                                        Upload
+                                    </Button>
+                                </Box>
+                            )}
                     </DialogContent>
                 </Dialog>
             }

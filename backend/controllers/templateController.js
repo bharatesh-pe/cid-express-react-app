@@ -94,9 +94,10 @@ exports.createTemplate = async (req, res, next) => {
     let fieldDefinitions = {};
     let indexFields = [];
     let associations = [];
+    let childTables = [];
 
     // Process each field
-    fields.forEach((field) => {
+      for (const field of fields) {
       let {
         name: fieldName,
         data_type,
@@ -112,6 +113,16 @@ exports.createTemplate = async (req, res, next) => {
         forign_key,
         attributes,
       } = field;
+
+
+      if (field.type === "table" || field.formType === "Table") {
+        childTables.push({ field, parentTableName: table_name });
+        fieldDefinitions[field.name + "_json"] = {
+          type: Sequelize.DataTypes.JSONB, // Use JSONB if Postgres; otherwise DataTypes.TEXT or STRING
+          allowNull: true,
+        };
+      }
+
 
       // Handle dependent fields (check only if "table" exists)
       if (table) {
@@ -172,8 +183,7 @@ exports.createTemplate = async (req, res, next) => {
           attributes,
         });
       }
-    });
-
+    }
     // Handle soft delete if paranoid is true
     if (paranoid) {
       fieldDefinitions.deleted_at = {
@@ -229,6 +239,68 @@ exports.createTemplate = async (req, res, next) => {
 
     // Sync the model with the database
     await model.sync({ force: true });
+    sequelize.models[table_name] = model;
+
+
+    for (const { field, parentTableName } of childTables) {
+      const childTableName = `${parentTableName}_${field.name}`;
+      const childFields = {};
+      const tableHeaders = field.tableHeaders || [];
+
+      for (const headerObj of tableHeaders) {
+        const header = headerObj.header;
+        const type = headerObj.fieldType?.type || "short_text";
+        let sequelizeType =
+          type === "short_text"
+            ? Sequelize.DataTypes.STRING(255)
+            : Sequelize.DataTypes.TEXT;
+
+        childFields[header] = {
+          type: sequelizeType,
+          allowNull: true,
+        };
+      }
+
+      childFields[`${parentTableName}_id`] = {
+        type: Sequelize.DataTypes.INTEGER,
+        allowNull: false,
+        references: {
+          model: parentTableName,
+          key: 'id',
+        },
+        onDelete: 'CASCADE',
+      };
+
+      childFields.created_at = {
+        type: Sequelize.DataTypes.DATE,
+        allowNull: true,
+      };
+
+      childFields.updated_at = {
+        type: Sequelize.DataTypes.DATE,
+        allowNull: true,
+      };
+
+      const childModel = sequelize.define(childTableName, childFields, {
+        freezeTableName: true,
+        timestamps: true,
+        underscored: true,
+      });
+
+      await childModel.sync({ force: true });
+
+      sequelize.models[childTableName] = childModel;
+
+      model.hasMany(childModel, {
+        foreignKey: `${parentTableName}_id`,
+        as: field.name + "_children", 
+      });
+
+      childModel.belongsTo(model, {
+        foreignKey: `${parentTableName}_id`,
+        as: parentTableName,
+      });
+    }
 
     // Create indexes
     for (let field of indexFields) {
@@ -534,6 +606,82 @@ exports.updateTemplate = async (req, res, next) => {
       );
     }
 
+    const childTables = fields.filter(
+  (field) => field.type === "table" || field.formType === "Table"
+);
+
+for (const field of childTables) {
+  const childTableName = `${table_name}_${field.name}`;
+  const childFields = {};
+  const tableHeaders = field.tableHeaders || [];
+
+  for (const headerObj of tableHeaders) {
+    const header = headerObj.header;
+    const type = headerObj.fieldType?.type || "short_text";
+    let sequelizeType =
+      type === "short_text"
+        ? Sequelize.DataTypes.STRING(255)
+        : Sequelize.DataTypes.TEXT;
+
+    childFields[header] = {
+      type: sequelizeType,
+      allowNull: true,
+    };
+  }
+
+  // Add FK to parent table
+  childFields[`${table_name}_id`] = {
+    type: Sequelize.DataTypes.INTEGER,
+    allowNull: false,
+    references: {
+      model: table_name,
+      key: 'id',
+    },
+    onDelete: 'CASCADE',
+  };
+
+  childFields.created_at = {
+    type: Sequelize.DataTypes.DATE,
+    allowNull: true,
+  };
+  childFields.updated_at = {
+    type: Sequelize.DataTypes.DATE,
+    allowNull: true,
+  };
+
+  // Define or get child model if exists
+  let childModel;
+  if (sequelize.models[childTableName]) {
+    childModel = sequelize.models[childTableName];
+    // Add any missing columns via alter sync
+    await childModel.sync({ alter: true });
+  } else {
+    childModel = sequelize.define(childTableName, childFields, {
+      freezeTableName: true,
+      timestamps: true,
+      underscored: true,
+    });
+    await childModel.sync({ alter: true });
+    sequelize.models[childTableName] = childModel;
+  }
+
+  // Setup associations if not defined yet
+  if (!model.associations[`${field.name}_children`]) {
+    model.hasMany(childModel, {
+      foreignKey: `${table_name}_id`,
+      as: `${field.name}_children`,
+    });
+  }
+  if (!childModel.associations[`${table_name}_parent`]) {
+    childModel.belongsTo(model, {
+      foreignKey: `${table_name}_id`,
+      as: `${table_name}_parent`,
+    });
+  }
+}
+
+
+
     // Handle associations for dependent fields
     // associations.forEach(({ fieldName, tableName, foreignKey, attributes }) => {
     // 	const referenceModel = sequelize.models[tableName];
@@ -663,6 +811,25 @@ exports.deleteTemplate = async (req, res, next) => {
       }
     );
 
+    const childTables = await sequelize.query(`
+      SELECT DISTINCT kcu.table_name
+      FROM information_schema.referential_constraints AS rc
+      JOIN information_schema.key_column_usage AS kcu
+        ON rc.constraint_name = kcu.constraint_name
+      WHERE rc.unique_constraint_name IN (
+        SELECT constraint_name
+        FROM information_schema.table_constraints
+        WHERE table_name = :tableName
+      )
+    `, {
+      replacements: { tableName: table_name },
+      type: sequelize.QueryTypes.SELECT
+    });
+    for (const child of childTables) {
+      await sequelize.query(`DROP TABLE IF EXISTS "${child.table_name}" CASCADE`);
+    }
+
+
     // Hard delete: drop the table from the database
     await sequelize.query(`DROP TABLE IF EXISTS "${table_name}" CASCADE`);
 
@@ -725,6 +892,19 @@ exports.viewTemplate = async (req, res, next) => {
       enable_edit = false;
     }
 
+    const parsedFields = JSON.parse(template.fields);
+
+// Extract child table info
+const childTables = parsedFields
+  .filter(f => f.type === "table" || f.formType === "Table")
+  .map(f => {
+    return {
+      field_name: f.name,
+      child_table_name: `${table_name}_${f.name}`,
+      tableHeaders: f.tableHeaders || [],
+    };
+  });
+
     return adminSendResponse(
       res,
       200,
@@ -745,6 +925,7 @@ exports.viewTemplate = async (req, res, next) => {
         fields: JSON.parse(template.fields),
         paranoid: template.paranoid,
         enable_edit: enable_edit,
+        child_tables: childTables,
       }
     );
   } catch (error) {
