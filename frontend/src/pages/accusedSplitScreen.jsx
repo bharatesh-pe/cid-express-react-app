@@ -595,34 +595,41 @@ const AccusedSplitScreen = ({tableObj, selectedAccused, closeForm, ui_case_id, p
 
                 var accusedWitnessTabs = false;
 
-                if(tabFields?.length > 0){
-                    tabFields.map((element)=>{
-                        if(element?.options){
-                            if(element?.options.some(options => options.code === "Accused" || options.code === "Witness")){
-                                setRoleTabFieldName(element.name); 
-                                accusedWitnessTabs = element?.name;
-                            }
+                let matchedElement = null;
+
+                if (tabFields?.length > 0) {
+                    tabFields.forEach((element) => {
+                        console.log("element", element);
+                        console.log("tabfields", tabFields);
+
+                        if (element?.options?.some(opt => opt.code === "Accused" || opt.code === "Witness")) {
+                            setRoleTabFieldName(element.name);
+                            accusedWitnessTabs = element.name;
+                            matchedElement = element;
                         }
                     });
                 }
 
-                if(accusedWitnessTabs !== false && accusedWitnessTabs !== ""){
-                    initialFormConfig[accusedWitnessTabs] = mainTableName === "cid_ui_case_accused" ? "Accused" : "Witness"
+                if (accusedWitnessTabs && matchedElement) {
+                    const matchedOption = matchedElement.options.find(opt =>
+                        opt.code.trim().toLowerCase() === (mainTableName === "cid_ui_case_accused" ? "accused" : "witness")
+                    );
 
-                    updatedFields = updatedFields.map((item)=>{
+                    if (matchedOption) {
+                        initialFormConfig[accusedWitnessTabs] = matchedOption.code;
+                    }
 
-                        if(item.name === accusedWitnessTabs){                            
-                            return{
+                    updatedFields = updatedFields.map((item) => {
+                        if (item.name === accusedWitnessTabs) {
+                            return {
                                 ...item,
-                                disabled : true
-                            }
+                                disabled: true
+                            };
                         }
-                        return{
-                            ...item,
-                        }
+                        return item;
                     });
                 }
-                
+
                 setSelectedTemplateId(viewTemplateResponse?.["data"]?.template_id);
                 setSelectedTableName(viewTemplateResponse?.["data"]?.table_name);
                 setSelectedTemplateName(viewTemplateResponse?.["data"]?.template_name);
