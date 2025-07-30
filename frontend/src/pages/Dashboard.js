@@ -1259,6 +1259,8 @@ const Dashboard = () => {
                                                 localStorage.setItem("getDataBasesOnUsers",JSON.stringify(responseData.getDataBasesOnUsers));
                                             }else{
                                                 localStorage.setItem("allowedUserIds",JSON.stringify(responseData.allowedUserIds));
+                                                localStorage.setItem("allowedDepartmentIds",JSON.stringify(responseData.allowedDepartmentIds));
+                                                localStorage.setItem("allowedDivisionIds",JSON.stringify(responseData.allowedDivisionIds));
                                                 localStorage.setItem("getDataBasesOnUsers",JSON.stringify(responseData.getDataBasesOnUsers));
                                             }
 
