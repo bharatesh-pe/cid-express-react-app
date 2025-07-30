@@ -902,7 +902,7 @@ const set_user_hierarchy = async (req, res) => {
         const userRoleName = findUserRole.role.role_title;
 
         var data = {}
-        if( (userRoleName.trim()).toLowerCase().includes("admin")|| (userRoleName.trim()).toLowerCase().includes("investigation officer")){
+        if( (userRoleName.trim()).toLowerCase().includes("admin")){
             const userDepartment = await DesignationDepartment.findAll({
                 where: { designation_id },
             });
@@ -949,6 +949,32 @@ const set_user_hierarchy = async (req, res) => {
             }
         }
         else{
+
+            const userDepartment = await DesignationDepartment.findAll({
+                where: { designation_id },
+            });
+            if (!userDepartment) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Department not found for the given designation_id",
+                });
+            }
+    
+            const userDivision = await DesignationDivision.findAll({
+                where: { designation_id },
+            });
+
+             if (!userDivision) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Division not found for the given designation_id",
+                });
+            }
+    
+            const departmentIds = userDepartment.map((ud) => ud.department_id);
+            const divisionIds = userDivision.map((ud) => ud.division_id);
+    
+
             const userDesignations = await UserDesignation.findAll({
                 where: { user_id : user_id },
                 attributes: ["designation_id"],
@@ -985,6 +1011,8 @@ const set_user_hierarchy = async (req, res) => {
             var allowedUserIds = Array.from(new Set([String(user_id), ...subordinateUserIds]));
             data ={
                 allowedUserIds : allowedUserIds,
+                allowedDepartmentIds : departmentIds,
+                allowedDivisionIds : divisionIds,
                 getDataBasesOnUsers: true,
             }
         }
@@ -1330,6 +1358,11 @@ const fetch_dash_count = async (req, res) => {
                     ];
                 } else {
                     caseWhereClause["created_by_id"] = { [Op.in]: normalizedUserIds };
+                }
+            }
+            if (allowedDivisionIds.length > 0) {
+                if (["ui_case", "pt_case", "eq_case"].includes(template_module)) {
+                    whereClause["field_division"] = { [Op.in]: normalizedDivisionIds };
                 }
             }
         }
