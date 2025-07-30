@@ -3832,6 +3832,30 @@ exports.deleteTemplateData = async (req, res, next) => {
       return userSendResponse(res, 200, false, "Data not found.", null);
     }
 
+    for (const field of fields) {
+      if (field.type === 'table' || field.formType === 'Table') {
+        const childTableName = `${table_name}_${field.name}`
+          .toLowerCase()
+          .replace(/[^a-z0-9_]+/g, "_");
+
+        const ChildModel = sequelize.models[childTableName] || sequelize.define(childTableName, {
+          [`${table_name}_id`]: Sequelize.DataTypes.INTEGER,
+          created_at: Sequelize.DataTypes.DATE,
+          updated_at: Sequelize.DataTypes.DATE,
+        }, {
+          freezeTableName: true,
+          timestamps: true,
+          underscored: true
+        });
+
+        await ChildModel.destroy({
+          where: {
+            [`${table_name}_id`]: data.id
+          }
+        });
+      }
+    }
+
     if (hasDeletedAt) {
       // If 'deleted_at' exists, check if the data is soft deleted
       if (data.deleted_at) {
