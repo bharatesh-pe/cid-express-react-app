@@ -4602,6 +4602,11 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
             whereClause["created_by_id"] = { [Op.in]: normalizedUserIds };
             }
         }
+        if (allowedDivisionIds.length > 0) {
+            if (["ui_case", "pt_case", "eq_case"].includes(template_module)) {
+                whereClause["field_division"] = { [Op.in]: normalizedDivisionIds };
+            }
+        }
     }
 
 
@@ -10063,7 +10068,12 @@ exports.getMergeParentData = async (req, res) =>
                     { field_io_name: { [Op.in]: normalizedUserIds } },
                 ];
                 } else {
-                whereClause["created_by_id"] = { [Op.in]: normalizedUserIds };
+                    whereClause["created_by_id"] = { [Op.in]: normalizedUserIds };
+                }
+            }
+            if (allowedDivisionIds.length > 0) {
+                if (["ui_case", "pt_case", "eq_case"].includes(template_module)) {
+                    whereClause["field_division"] = { [Op.in]: normalizedDivisionIds };
                 }
             }
         }
@@ -10918,6 +10928,11 @@ exports.getMergeChildData = async (req, res) =>
                 ];
                 } else {
                 whereClause["created_by_id"] = { [Op.in]: normalizedUserIds };
+                }
+            }
+            if (allowedDivisionIds.length > 0) {
+                if (["ui_case", "pt_case", "eq_case"].includes(template_module)) {
+                    whereClause["field_division"] = { [Op.in]: normalizedDivisionIds };
                 }
             }
         }
