@@ -902,7 +902,7 @@ const set_user_hierarchy = async (req, res) => {
         const userRoleName = findUserRole.role.role_title;
 
         var data = {}
-        if( (userRoleName.trim()).toLowerCase().includes("admin")){
+        if( (userRoleName.trim()).toLowerCase().includes("admin")|| (userRoleName.trim()).toLowerCase().includes("investigation officer")){
             const userDepartment = await DesignationDepartment.findAll({
                 where: { designation_id },
             });
