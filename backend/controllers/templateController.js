@@ -440,6 +440,42 @@ exports.updateTemplate = async (req, res, next) => {
         null
       );
     }
+    const pkCheckQuery = `
+      SELECT a.attname, i.indisprimary
+      FROM pg_index i
+      JOIN pg_attribute a ON a.attrelid = i.indrelid
+                        AND a.attnum = ANY(i.indkey)
+      WHERE i.indrelid = '${table_name}'::regclass
+        AND a.attname = 'id';
+    `;
+
+    const [pkResult] = await sequelize.query(pkCheckQuery);
+    const hasId = pkResult.length > 0;
+    const isIdPrimaryKey = hasId && pkResult[0].indisprimary === true;
+
+    if (!isIdPrimaryKey) {
+      const [colResult] = await sequelize.query(`
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_name = '${table_name}'
+          AND column_name = 'id';
+      `);
+      const idExists = colResult.length > 0;
+
+      if (idExists) {
+        await sequelize.query(`
+          ALTER TABLE "${table_name}"
+          ADD PRIMARY KEY ("id");
+        `);
+        console.log(`Primary key added to "${table_name}".`);
+      } else {
+        await sequelize.query(`
+          ALTER TABLE "${table_name}"
+          ADD COLUMN "id" SERIAL PRIMARY KEY;
+        `);
+        console.log(`'id' column with primary key created in "${table_name}".`);
+      }
+    }
 
     const fieldDefinitions = {};
     const indexFields = [];
@@ -479,6 +515,14 @@ exports.updateTemplate = async (req, res, next) => {
         defaultValue: default_value || null,
         ...(unique && { unique: true })
       };
+
+      if (!fieldDefinitions["id"]) {
+        fieldDefinitions["id"] = {
+          type: Sequelize.DataTypes.INTEGER,
+          autoIncrement: true,
+          primaryKey: true
+        };
+      }
 
       if (index) indexFields.push(fieldName);
       if (is_dependent) {
@@ -588,6 +632,7 @@ exports.updateTemplate = async (req, res, next) => {
 
       fullFields.created_at = { type: Sequelize.DataTypes.DATE, allowNull: true };
       fullFields.updated_at = { type: Sequelize.DataTypes.DATE, allowNull: true };
+
 
       fullFields[parentKey] = {
         type: Sequelize.DataTypes.INTEGER,

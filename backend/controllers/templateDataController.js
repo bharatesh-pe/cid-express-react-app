@@ -294,7 +294,7 @@ exports.insertTemplateData = async (req, res, next) => {
 exports.insertTwoTemplateData = async (req, res, next) => {
   let dirPath = "";
   try {
-    const { table_name, data, folder_attachment_ids, transaction_id, second_table_name, second_data, second_folder_attachment_ids } = req.body;
+    const { table_name, data, child_tables,folder_attachment_ids, transaction_id, second_table_name,second_child_tables, second_data, second_folder_attachment_ids } = req.body;
     const userId = req.user?.user_id || null;
     const adminUserId = res.locals.admin_user_id || null;
     const actorId = userId || adminUserId;
@@ -708,6 +708,141 @@ exports.insertTwoTemplateData = async (req, res, next) => {
       });
     }
 
+    function sanitizeKey(str) {
+      return str
+        .toLowerCase()
+        .trim()
+        .replace(/[^\w]/g, "_")
+        .replace(/_+/g, "_")
+        .replace(/^_+|_+$/g, "");
+    }
+    const allChildren = {};
+
+    if (child_tables && insertedData?.id) {
+      let parsedChildTables = child_tables;
+      if (typeof child_tables === "string") {
+        try {
+          parsedChildTables = JSON.parse(child_tables);
+          console.log("Parsed child_tables object:", parsedChildTables);
+        } catch {
+          parsedChildTables = {};
+        }
+      }
+
+      for (const rawChildTableName in parsedChildTables) {
+        const childTableName = sanitizeKey(rawChildTableName);
+        const childRows = parsedChildTables[rawChildTableName];
+        if (!Array.isArray(childRows) || childRows.length === 0) continue;
+
+        const firstRow = childRows[0];
+        const attributes = {};
+
+        for (const key in firstRow) {
+          attributes[sanitizeKey(key)] = { type: Sequelize.DataTypes.TEXT, allowNull: true };
+        }
+
+        const foreignKeyColumn = sanitizeKey(`${table_name}_id`);
+
+        attributes[foreignKeyColumn] = {
+          type: Sequelize.DataTypes.INTEGER,
+          allowNull: false,
+          references: { model: table_name, key: "id" },
+          onDelete: "CASCADE",
+          field: foreignKeyColumn,
+        };
+
+        const ChildModel = sequelize.define(childTableName, attributes, {
+          freezeTableName: true,
+          timestamps: true,
+          createdAt: "created_at",
+          updatedAt: "updated_at",
+        });
+
+        await ChildModel.sync();
+
+        const childRecords = childRows.map(row => {
+          const sanitizedRow = {};
+          for (const key in row) {
+            sanitizedRow[sanitizeKey(key)] = row[key];
+          }
+          sanitizedRow[foreignKeyColumn] = insertedData.id;
+          return sanitizedRow;
+        });
+
+        console.log(`Inserting ${childRecords.length} child records into ${childTableName}`);
+        await ChildModel.bulkCreate(childRecords);
+
+        const insertedChildren = await ChildModel.findAll({
+          where: { [foreignKeyColumn]: insertedData.id },
+        });
+        console.log(`Inserted children rows for ${childTableName}:`, insertedChildren);
+        allChildren[rawChildTableName] = insertedChildren;
+      }
+    }
+
+    if (second_child_tables && insertedSecondData?.id) {
+      let parsedSecondChildTables = second_child_tables;
+      if (typeof second_child_tables === "string") {
+        try {
+          parsedSecondChildTables = JSON.parse(second_child_tables);
+          console.log("Parsed second_child_tables object:", parsedSecondChildTables);
+        } catch {
+          parsedSecondChildTables = {};
+        }
+      }
+
+      for (const rawChildTableName in parsedSecondChildTables) {
+        const childTableName = sanitizeKey(rawChildTableName);
+        const childRows = parsedSecondChildTables[rawChildTableName];
+        if (!Array.isArray(childRows) || childRows.length === 0) continue;
+
+        const firstRow = childRows[0];
+        const attributes = {};
+
+        for (const key in firstRow) {
+          attributes[sanitizeKey(key)] = { type: Sequelize.DataTypes.TEXT, allowNull: true };
+        }
+
+        const foreignKeyColumn = sanitizeKey(`${second_table_name}_id`);
+
+        attributes[foreignKeyColumn] = {
+          type: Sequelize.DataTypes.INTEGER,
+          allowNull: false,
+          references: { model: second_table_name, key: "id" },
+          onDelete: "CASCADE",
+          field: foreignKeyColumn,
+        };
+
+        const ChildModel = sequelize.define(childTableName, attributes, {
+          freezeTableName: true,
+          timestamps: true,
+          createdAt: "created_at",
+          updatedAt: "updated_at",
+        });
+
+        await ChildModel.sync();
+
+        const childRecords = childRows.map(row => {
+          const sanitizedRow = {};
+          for (const key in row) {
+            sanitizedRow[sanitizeKey(key)] = row[key];
+          }
+          sanitizedRow[foreignKeyColumn] = insertedSecondData.id;
+          // Removed created_by and created_by_id from data insertion
+          return sanitizedRow;
+        });
+
+        console.log(`Inserting ${childRecords.length} second-child records into ${childTableName}`);
+        await ChildModel.bulkCreate(childRecords);
+
+        // Fetch and log inserted second-child rows
+        const insertedChildren = await ChildModel.findAll({
+          where: { [foreignKeyColumn]: insertedSecondData.id },
+        });
+        console.log(`Inserted second-child rows for ${childTableName}:`, insertedChildren);
+        allChildren[rawChildTableName] = insertedChildren;
+      }
+    }
 
     return userSendResponse(res, 200, true, `Record Created Successfully`, null);
     } catch (error) {
