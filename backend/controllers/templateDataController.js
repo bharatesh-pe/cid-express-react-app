@@ -59,7 +59,7 @@ const typeMapping = {
 exports.insertTemplateData = async (req, res, next) => {
   let dirPath = "";
   try {
-    const { table_name, data, folder_attachment_ids, transaction_id } =
+    const { table_name, data, child_tables, folder_attachment_ids, transaction_id } =
       req.body;
     const userId = req.user?.user_id || null;
     const adminUserId = res.locals.admin_user_id || null;
@@ -279,6 +279,77 @@ exports.insertTemplateData = async (req, res, next) => {
         actor_name: userName,
         action: actionText,
       });
+    }
+    function sanitizeKey(str) {
+      return str
+        .toLowerCase()
+        .trim()
+        .replace(/[^\w]/g, "_")
+        .replace(/_+/g, "_")
+        .replace(/^_+|_+$/g, "");
+    }
+    const allChildren = {};
+
+    if (child_tables && insertedData?.id) {
+      let parsedChildTables = child_tables;
+      if (typeof child_tables === "string") {
+        try {
+          parsedChildTables = JSON.parse(child_tables);
+          console.log("Parsed child_tables object:", parsedChildTables);
+        } catch {
+          parsedChildTables = {};
+        }
+      }
+
+      for (const rawChildTableName in parsedChildTables) {
+        const childTableName = sanitizeKey(rawChildTableName);
+        const childRows = parsedChildTables[rawChildTableName];
+        if (!Array.isArray(childRows) || childRows.length === 0) continue;
+
+        const firstRow = childRows[0];
+        const attributes = {};
+
+        for (const key in firstRow) {
+          attributes[sanitizeKey(key)] = { type: Sequelize.DataTypes.TEXT, allowNull: true };
+        }
+
+        const foreignKeyColumn = sanitizeKey(`${table_name}_id`);
+
+        attributes[foreignKeyColumn] = {
+          type: Sequelize.DataTypes.INTEGER,
+          allowNull: false,
+          references: { model: table_name, key: "id" },
+          onDelete: "CASCADE",
+          field: foreignKeyColumn,
+        };
+
+        const ChildModel = sequelize.define(childTableName, attributes, {
+          freezeTableName: true,
+          timestamps: true,
+          createdAt: "created_at",
+          updatedAt: "updated_at",
+        });
+
+        await ChildModel.sync();
+
+        const childRecords = childRows.map(row => {
+          const sanitizedRow = {};
+          for (const key in row) {
+            sanitizedRow[sanitizeKey(key)] = row[key];
+          }
+          sanitizedRow[foreignKeyColumn] = insertedData.id;
+          return sanitizedRow;
+        });
+
+        console.log(`Inserting ${childRecords.length} child records into ${childTableName}`);
+        await ChildModel.bulkCreate(childRecords);
+
+        const insertedChildren = await ChildModel.findAll({
+          where: { [foreignKeyColumn]: insertedData.id },
+        });
+        console.log(`Inserted children rows for ${childTableName}:`, insertedChildren);
+        allChildren[rawChildTableName] = insertedChildren;
+      }
     }
 
     return userSendResponse(res, 200, true, `Record Created Successfully`, null);

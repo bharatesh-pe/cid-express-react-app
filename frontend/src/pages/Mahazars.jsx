@@ -2304,6 +2304,7 @@ const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData
                 const { data: mahazarData, saveNewAction } = pendingMahazarData;
                 const mahazarNormalData = {};
                 let mahazarFolderAttachments = [];
+                let mahazarChildTableDataMap = {};
                 optionFormTemplateData.forEach((field) => {
                     const val = mahazarData[field.name];
                     if (val !== undefined && val !== null && val !== "") {
@@ -2323,6 +2324,34 @@ const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData
                         }
                     }
                 });
+                if (childTables?.length > 0) {
+                    childTables.forEach(child => {
+                        const childFieldName = child.field_name;
+                        if (mahazarData[childFieldName]) {
+                            let parsed;
+                            try {
+                                parsed = typeof mahazarData[childFieldName] === "string"
+                                    ? JSON.parse(mahazarData[childFieldName])
+                                    : mahazarData[childFieldName];
+                            } catch (err) {
+                                parsed = [];
+                            }
+
+                            if (Array.isArray(parsed)) {
+                                const normalizedRows = parsed.map(row => {
+                                    let newRow = {};
+                                    for (const key in row) {
+                                        const sanitizedKey = sanitizeKey(key);
+                                        newRow[sanitizedKey] = row[key];
+                                    }
+                                    return newRow;
+                                });
+
+                                mahazarChildTableDataMap[child.child_table_name] = normalizedRows;
+                            }
+                        }
+                    });
+                }
                 mahazarNormalData.sys_status = "ui_case";
                 mahazarNormalData.field_submit_status = "";
                 mahazarNormalData["ui_case_id"] = selectedRowData.id;
@@ -2338,6 +2367,7 @@ const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData
                 const formData = new FormData();
                 formData.append("table_name", selectedOtherTemplate.table);
                 formData.append("data", JSON.stringify(mahazarNormalData));
+                formData.append("child_tables", JSON.stringify(mahazarChildTableDataMap));
                 formData.append("transaction_id", randomApprovalId);
                 formData.append("user_designation_id", localStorage.getItem('designation_id') || null);
                 if (mahazarFolderAttachments.length > 0) {
