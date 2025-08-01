@@ -119,6 +119,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
     const [selectKey, setSelectKey] = useState(null);
     const [randomApprovalId, setRandomApprovalId] = useState(0);
     const hoverTableOptionsRef = useRef([]);
+    const [childTables, setChildTables] = useState([]);
 
     const [actionPlanData, setActionPlanData] = useState([])
     const loadValueField = async (rowData, editData, table_name) => {
@@ -1061,6 +1062,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                 setOtherFormOpen(true);
                 setOtherRowId(rowData.id);
                 setOtherTemplateId(viewTemplateResponse["data"].template_id);
+                setChildTables(viewTemplateResponse?.["data"]?.["child_tables"] || []);
                 if (
                 viewTemplateResponse.data.no_of_sections &&
                 viewTemplateResponse.data.no_of_sections > 0
@@ -1765,6 +1767,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
             setviewReadonly(false);
             setEditTemplateData(false);
             setOptionFormTemplateData(getCaseIdFields ? getCaseIdFields : []);
+            setChildTables(viewTemplateResponse?.["data"]?.["child_tables"] || []);
             if (
                 viewTemplateResponse.data.no_of_sections &&
                 viewTemplateResponse.data.no_of_sections > 0
@@ -2204,6 +2207,14 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
         }
     };
 
+    function sanitizeKey(str) {
+        return str
+            .toLowerCase()
+            .replace(/[^\w]/g, "_")
+            .replace(/_+/g, "_")
+            .replace(/^_+|_+$/g, "");
+        }
+
     const otherAPPRTemplateSaveFunc = async (data, saveNewAction) => {
     
         if ((!selectedOtherTemplate.table || selectedOtherTemplate.table === "")) {
@@ -2249,6 +2260,38 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
             }
           }
         });
+
+        let childTableDataMap = {};
+
+        if (childTables && Array.isArray(childTables)) {
+            childTables.forEach(child => {
+                const childFieldName = child.field_name;
+
+                if (data[childFieldName]) {
+                    let parsed;
+                    try {
+                        parsed = typeof data[childFieldName] === "string"
+                            ? JSON.parse(data[childFieldName])
+                            : data[childFieldName];
+                    } catch (err) {
+                        parsed = [];
+                    }
+
+                    if (Array.isArray(parsed)) {
+                        const normalizedRows = parsed.map(row => {
+                            let newRow = {};
+                            for (const key in row) {
+                                const sanitizedKey = sanitizeKey(key);
+                                newRow[sanitizedKey] = row[key];
+                            }
+                            return newRow;
+                        });
+
+                        childTableDataMap[child.child_table_name] = normalizedRows;
+                    }
+                }
+            });
+        }
       
         
         normalData.sys_status = isImmediateSupervisior ? "IO" : "ui_case";
@@ -2256,6 +2299,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
         normalData["ui_case_id"] = selectedRowData.id;
         formData.append("table_name", selectedOtherTemplate.table);
         formData.append("data", JSON.stringify(normalData));
+        formData.append("child_tables", JSON.stringify(childTableDataMap));
         formData.append("transaction_id", randomApprovalId);
         formData.append("user_designation_id", localStorage.getItem('designation_id') || null);
         formData.append("immediate_supervisior_id", ImmediateSupervisiorId || null);
@@ -2307,171 +2351,6 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
           });
         }finally {
             setLoading(false);
-        }
-    };
-    
-    const otherTemplateSaveFunc = async (data, saveNewAction) => {
-    
-        if ((!selectedOtherTemplate.table || selectedOtherTemplate.table === "")) {
-            toast.warning("Please Check The Template", {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-warning",
-            });
-            return;
-        }
-    
-        if (Object.keys(data).length === 0) {
-            toast.warning("Data Is Empty Please Check Once", {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-warning",
-            });
-            return;
-        }
-    
-    
-        const formData = new FormData();
-    
-        var normalData = {}; // Non-file upload fields
-    
-        optionFormTemplateData.forEach((field) => {
-          if (data[field.name]) {
-            if (field.type === "file" || field.type === "profilepicture") {
-              // Append file fields to formData
-              if (field.type === "file") {
-                if (Array.isArray(data[field.name])) {
-                  const hasFileInstance = data[field.name].some(
-                    (file) => file.filename instanceof File
-                  );
-                  var filteredArray = data[field.name].filter(
-                    (file) => file.filename instanceof File
-                  );
-                  if (hasFileInstance) {
-                    data[field.name].forEach((file) => {
-                      if (file.filename instanceof File) {
-                        formData.append(field.name, file.filename);
-                      }
-                    });
-    
-                    filteredArray = filteredArray.map((obj) => {
-                      return {
-                        ...obj,
-                        filename: obj.filename["name"],
-                      };
-                    });
-    
-                    formData.append(
-                      "folder_attachment_ids",
-                      JSON.stringify(filteredArray)
-                    );
-                  }
-                }
-              } else {
-                formData.append(field.name, data[field.name]);
-              }
-            } else {
-              // Add non-file fields to normalData
-              normalData[field.name] = Array.isArray(data[field.name]) ? data[field.name].join(",") : data[field.name]
-            }
-          }
-        });
-        normalData.sys_status = "ui_case";
-        normalData["ui_case_id"] = selectedRowData.id;
-    
-        var othersData = {};
-    
-    
-        formData.append("table_name", selectedOtherTemplate.table);
-        formData.append("data", JSON.stringify(normalData));
-        formData.append("others_data", JSON.stringify(othersData));
-        formData.append("transaction_id", randomApprovalId);
-        formData.append("user_designation_id", localStorage.getItem('designation_id') ? localStorage.getItem('designation_id') : null);
-    
-        setLoading(true);
-    
-        try {
-            const overallSaveData = await api.post("/templateData/saveDataWithApprovalToTemplates",formData);
-    
-            setLoading(false);
-    
-            if (overallSaveData && overallSaveData.success) {
-    
-                toast.success(overallSaveData.message ? overallSaveData.message : "Case Updated Successfully", {
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    className: "toast-success",
-                });
-    
-
-               if(saveNewAction){
-                  await handleOtherTemplateActions(selectedOtherTemplate, selectedRow);   
-                  showOptionTemplate('cid_ui_case_action_plan');
-                }else{
-                  handleOtherTemplateActions(selectedOtherTemplate, selectedRow);
-                }
-    
-                setOtherFormOpen(false);
-    
-                if(selectedOtherTemplate?.field){
-                    var combinedData = {
-                        id: selectedRowData.id,
-                        [selectKey.name]: selectedOtherFields.code,
-                    };
-            
-                    // update func
-                    onUpdateTemplateData(combinedData);
-    
-                    setSelectKey(null);
-                    setSelectedRow(null);
-                    setSelectedOtherFields(null);
-                    setselectedOtherTemplate(null);
-                }else{
-                    return;
-                }
-    
-            } else {
-                const errorMessage = overallSaveData.message ? overallSaveData.message : "Failed to change the status. Please try again.";
-                toast.error(errorMessage, {
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    className: "toast-error",
-                });
-            }
-        } catch (error) {
-            setLoading(false);
-            if (error && error.response && error.response["data"]) {
-                toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !",{
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    className: "toast-error",
-                });
-            }
         }
     };
 
@@ -2545,6 +2424,38 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
           }
         });
 
+        let childTableDataMap = {};
+
+        if (childTables && Array.isArray(childTables)) {
+            childTables.forEach(child => {
+                const childFieldName = child.field_name;
+
+                if (data[childFieldName]) {
+                    let parsed;
+                    try {
+                        parsed = typeof data[childFieldName] === "string"
+                            ? JSON.parse(data[childFieldName])
+                            : data[childFieldName];
+                    } catch (err) {
+                        parsed = [];
+                    }
+
+                    if (Array.isArray(parsed)) {
+                        const normalizedRows = parsed.map(row => {
+                            let newRow = {};
+                            for (const key in row) {
+                                const sanitizedKey = sanitizeKey(key);
+                                newRow[sanitizedKey] = row[key];
+                            }
+                            return newRow;
+                        });
+
+                        childTableDataMap[child.child_table_name] = normalizedRows;
+                    }
+                }
+            });
+        }
+
         if (data.hasOwnProperty("ui_case_id")) {
             normalData.ui_case_id = data.ui_case_id;
         }
@@ -2557,6 +2468,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
         formData.append("table_name", selectedOtherTemplate.table);
         formData.append("id", data.id);
         formData.append("data", JSON.stringify(normalData));
+        formData.append("child_tables", JSON.stringify(childTableDataMap));
         formData.append("transaction_id", randomApprovalId);
         formData.append( "user_designation_id", localStorage.getItem("designation_id") || null);
       
