@@ -10,7 +10,9 @@ import { KeyboardArrowDown, KeyboardArrowUp } from "@mui/icons-material";
 import SettingsSuggestIcon from '@mui/icons-material/SettingsSuggest';
 
 
-export default function TableView({rows, columns, checkboxSelection,getRowId, backBtn, nextBtn, handleNext, handleBack,handleRowClick, hoverTable, hoverTableOptions, hoverActionFuncHandle, totalPage, paginationCount, handlePagination, totalRecord,getRowClassName, tableName, highLightedRow }) {
+export default function TableView({rows, columns, checkboxSelection,getRowId, backBtn, nextBtn, handleNext, handleBack,handleRowClick, hoverTable, hoverTableOptions, hoverActionFuncHandle, totalPage, paginationCount, handlePagination, totalRecord,getRowClassName, tableName, highLightedRow, 
+    dynamicRowHeight = false, shouldPadRows = false
+}) {
 
     const [anchorEl, setAnchorEl] = React.useState(null);
     const [selectedRow, setSelectedRow] = React.useState(null);
@@ -69,13 +71,18 @@ export default function TableView({rows, columns, checkboxSelection,getRowId, ba
         }
     };
 
-    const getRowClassNameInternal = (params) => {
-        
-        if (highLightedRow && typeof highLightedRow === "function" && highLightedRow(params.row)) {
-            return 'red-row';
+    const getRowClassNameInternal = (params, shouldPadRows) => {
+        const classes = [];
+
+        if (shouldPadRows) {
+            classes.push('padded-row');
         }
 
-        return getRowClassName;
+        if (highLightedRow && typeof highLightedRow === "function" && highLightedRow(params.row)) {
+            classes.push('red-row');
+        }
+
+        return classes.join(' ');
     };
 
     const pageSize = 10;
@@ -93,6 +100,7 @@ export default function TableView({rows, columns, checkboxSelection,getRowId, ba
         columns={updatedColumns}
         getRowId={getRowId} 
         rowHeight={45}
+        getRowHeight={dynamicRowHeight ? () => 'auto' : undefined}
         className={`FigmaTableView ${tableName && (tableName === "cid_ui_case_accused" || tableName === "cid_pt_case_witness") ? 'excelViewTable' : ''}`}
         disableColumnMenu
         disableColumnSorting
@@ -104,7 +112,7 @@ export default function TableView({rows, columns, checkboxSelection,getRowId, ba
         sx={{ border: 0 }}
         stickyHeader
         onRowClick={(params) => handleRowClick && handleRowClick(params.row)}
-        getRowClassName={getRowClassNameInternal}
+        getRowClassName={(params) => getRowClassNameInternal(params, shouldPadRows)}
         />
     </Paper>
 
