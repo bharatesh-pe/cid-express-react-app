@@ -1722,3 +1722,41 @@ div::first-letter {
         color: #333 !important;
         z-index: 1;
     }
+
+    .padded-row .MuiDataGrid-cell {
+    padding-top: 10px !important;
+    padding-bottom: 8px !important;
+    }
+
+    /* .wrap-cell {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: normal;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    font-size: 14px;
+    line-height: 1.5;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    max-height: calc(1.5em * 3 + 15px);
+    } */
+
+
+    .clamped-cell {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: normal;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    font-size: 14px;
+    line-height: 1.5;
+    cursor: default;
+    }
