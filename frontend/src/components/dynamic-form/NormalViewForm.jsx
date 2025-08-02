@@ -911,9 +911,24 @@ const NormalViewForm = ({
         }
     }
 
-    setFormData(updatedFormData);
+    if (table_name === "cid_pt_case_petition") {
+        if (field.name === "field_nature_of_petition") {
+            const updatedFormConfig = newFormConfig.map((fld) => {
+                if (fld.name === "field_stay_status") {
+                    if (selectedValue === "Stay") {
+                        return { ...fld, hide_from_ux: false, required: true };
+                    } else {
+                        return { ...fld, hide_from_ux: true, required: false };
+                    }
+                }
+                return fld;
+            });
+            setNewFormConfig(updatedFormConfig);
+        }
+    }
 
-  }
+    setFormData(updatedFormData);
+}
 
   const handleCheckBoxChange = (fieldName, fieldCode, selectedValue) => {
     setFormData(prevData => {
@@ -3318,12 +3333,12 @@ const NormalViewForm = ({
                     sx={{ background: '#0167F8', fontSize: '14px', fontWeight: '500', color: '#FFFFFF', padding: '8px 16px',lineHeight: '1.5', marginRight: '8px', textTransform: 'none',height: '40px !important' }}
                     className="Roboto blueButton"
                   >
-                    {table_name === "cid_ui_case_mahajars" ? "Next" : "Save"}
+                    {table_name === "cid_ui_case_mahazars" ? "Next" : "Save"}
                   </Button>
             
                     {
                         !disableSaveNew && table_name !== "cid_eq_case_closure_report" && table_name !== "cid_ui_case_extension_form" && table_name !== "cid_eq_case_enquiry_order_copy" &&
-                        table_name !== "cid_eq_case_extension_form" && table_name !== "cid_ui_case_mahajars" && table_name !== "cid_ui_case_property_form" &&
+                        table_name !== "cid_eq_case_extension_form" && table_name !== "cid_ui_case_mahazars" && table_name !== "cid_ui_case_property_form" &&
                         <Button
                             variant="contained" color="success"
                             sx={{

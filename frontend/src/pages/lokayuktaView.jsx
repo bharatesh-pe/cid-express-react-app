@@ -3075,7 +3075,7 @@ const fetchCounts = async () => {
                         showMagazineView={showMagazineView}
                         fetchCounts={fetchCounts}
                     />
-                ) : activeSidebar?.table === "cid_ui_case_mahajars" ? (
+                ) : activeSidebar?.table === "cid_ui_case_mahazars" ? (
 
 
                      <Mahazars

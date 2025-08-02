@@ -608,9 +608,9 @@ exports.insertTwoTemplateData = async (req, res, next) => {
       await SecondModel.sync();
       insertedSecondData = await SecondModel.create(secondValidData);
 
-      // Now, if first table is 'cid_ui_case_mahajars' and has 'field_property_form_id', set it to second table id
+      // Now, if first table is 'cid_ui_case_mahazars' and has 'field_property_form_id', set it to second table id
       if (
-        table_name === "cid_ui_case_mahajars" &&
+        table_name === "cid_ui_case_mahazars" &&
         schema.some(f => f.name === "field_property_form_id") &&
         insertedSecondData?.id
       ) {
@@ -12285,10 +12285,19 @@ exports.getTemplateDataWithAccused = async (req, res, next) => {
         } else if (accusedLevelType === "INTEGER") {
             accusedIdsForQuery = accused_ids.map(id => Number(id));
         }
-
         let whereClause = {
-            [templateField]: { [Op.in]: accusedIdsForQuery }
+            [Op.or]: accusedIdsForQuery.map((id) => ({
+                [templateField]: {
+                    [Op.or]: [
+                        { [Op.eq]: `${id}` },
+                        { [Op.like]: `${id},%` },
+                        { [Op.like]: `%,${id}` },
+                        { [Op.like]: `%,${id},%` },
+                    ]
+                }
+            }))
         };
+
 
         if (filter && typeof filter === "object") {
             Object.entries(filter).forEach(([key, value]) => {

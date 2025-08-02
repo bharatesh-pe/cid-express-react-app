@@ -550,21 +550,42 @@ exports.updateTemplate = async (req, res, next) => {
       deletedAt: "deleted_at",
     });
 
-    for (const [fieldName, columnDef] of Object.entries(fieldDefinitions)) {
-      const columnExists = await sequelize.query(`
-        SELECT column_name 
-        FROM information_schema.columns 
-        WHERE table_name = '${table_name}' 
-        AND column_name = '${fieldName}'
-      `);
+    // for (const [fieldName, columnDef] of Object.entries(fieldDefinitions)) {
+    //   const columnExists = await sequelize.query(`
+    //     SELECT column_name 
+    //     FROM information_schema.columns 
+    //     WHERE table_name = '${table_name}' 
+    //     AND column_name = '${fieldName}'
+    //   `);
 
-      if (columnExists[0].length === 0) {
-        await sequelize.query(`
-          ALTER TABLE "${table_name}" 
-          ADD COLUMN "${fieldName}" ${columnDef.type.toString()}
-        `);
+    //   if (columnExists[0].length === 0) {
+    //     await sequelize.query(`
+    //       ALTER TABLE "${table_name}" 
+    //       ADD COLUMN "${fieldName}" ${columnDef.type.toString()}
+    //     `);
+    //   }
+    // }
+
+    // Add new section:
+      const existingColumnQuery = await sequelize.query(`
+        SELECT column_name FROM information_schema.columns 
+        WHERE table_name = '${table_name}'
+      `);
+      const existingColumnNames = new Set(
+        existingColumnQuery[0].map(col => col.column_name)
+      );
+
+      const alterTablePromises = [];
+      for (const [fieldName, columnDef] of Object.entries(fieldDefinitions)) {
+        if (!existingColumnNames.has(fieldName)) {
+          const sql = `
+            ALTER TABLE "${table_name}" 
+            ADD COLUMN "${fieldName}" ${columnDef.type.toString()}
+          `;
+          alterTablePromises.push(sequelize.query(sql));
+        }
       }
-    }
+      await Promise.all(alterTablePromises); 
 
     for (const field of indexFields) {
       await sequelize.query(
