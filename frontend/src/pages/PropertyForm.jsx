@@ -78,6 +78,7 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
     const [othersToDate, setOthersToDate] = useState(null);
     const [othersFiltersDropdown, setOthersFiltersDropdown] = useState([]);
     const [othersFilterData, setOthersFilterData] = useState({});
+    const [childTables, setChildTables] = useState([]);
     const handleOtherPagination = (page) => {
         setOtherTemplatesPaginationCount(page)
     }
@@ -933,6 +934,7 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
                         setOtherFormOpen(true);
                         setOtherRowId(rowData.id);
                         setOtherTemplateId(viewTemplateResponse["data"].template_id);
+                        setChildTables(viewTemplateResponse?.["data"]?.["child_tables"] || []);
                         if (
                             viewTemplateResponse.data.no_of_sections &&
                             viewTemplateResponse.data.no_of_sections > 0
@@ -1628,6 +1630,7 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
                 setOtherFormOpen(true);
                 setOtherInitialTemplateData(initialData);
                 setviewReadonly(false);
+                setChildTables(viewTemplateResponse?.["data"]?.["child_tables"] || []);
                 setEditTemplateData(false);
                 setOptionFormTemplateData(getCaseIdFields ? getCaseIdFields : []);
                 if (
@@ -1851,6 +1854,14 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
     };
 
 
+    function sanitizeKey(str) {
+        return str
+            .toLowerCase()
+            .replace(/[^\w]/g, "_")
+            .replace(/_+/g, "_")
+            .replace(/^_+|_+$/g, "");
+        }
+
     const otherAPPRTemplateSaveFunc = async (data, saveNewAction) => {
 
         if ((!selectedOtherTemplate.table || selectedOtherTemplate.table === "")) {
@@ -1898,11 +1909,44 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
         });
 
 
+        let childTableDataMap = {};
+
+        if (childTables && Array.isArray(childTables)) {
+            childTables.forEach(child => {
+                const childFieldName = child.field_name;
+
+                if (data[childFieldName]) {
+                    let parsed;
+                    try {
+                        parsed = typeof data[childFieldName] === "string"
+                            ? JSON.parse(data[childFieldName])
+                            : data[childFieldName];
+                    } catch (err) {
+                        parsed = [];
+                    }
+
+                    if (Array.isArray(parsed)) {
+                        const normalizedRows = parsed.map(row => {
+                            let newRow = {};
+                            for (const key in row) {
+                                const sanitizedKey = sanitizeKey(key);
+                                newRow[sanitizedKey] = row[key];
+                            }
+                            return newRow;
+                        });
+
+                        childTableDataMap[child.child_table_name] = normalizedRows;
+                    }
+                }
+            });
+        }
+
         normalData.sys_status = "PF"
         normalData.field_submit_status = "";
         normalData["ui_case_id"] = selectedRowData.id;
         formData.append("table_name", selectedOtherTemplate.table);
         formData.append("data", JSON.stringify(normalData));
+        formData.append("child_tables", JSON.stringify(childTableDataMap));
         formData.append("transaction_id", randomApprovalId);
         formData.append("user_designation_id", localStorage.getItem('designation_id') || null);
 
@@ -2025,6 +2069,38 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
             }
         });
 
+        let childTableDataMap = {};
+
+        if (childTables && Array.isArray(childTables)) {
+            childTables.forEach(child => {
+                const childFieldName = child.field_name;
+
+                if (data[childFieldName]) {
+                    let parsed;
+                    try {
+                        parsed = typeof data[childFieldName] === "string"
+                            ? JSON.parse(data[childFieldName])
+                            : data[childFieldName];
+                    } catch (err) {
+                        parsed = [];
+                    }
+
+                    if (Array.isArray(parsed)) {
+                        const normalizedRows = parsed.map(row => {
+                            let newRow = {};
+                            for (const key in row) {
+                                const sanitizedKey = sanitizeKey(key);
+                                newRow[sanitizedKey] = row[key];
+                            }
+                            return newRow;
+                        });
+
+                        childTableDataMap[child.child_table_name] = normalizedRows;
+                    }
+                }
+            });
+        }
+
         if (selectedOtherTemplate.table === "cid_ui_case_progress_report") {
             normalData["field_pr_status"] = "No";
         }
@@ -2032,6 +2108,7 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
         formData.append("table_name", selectedOtherTemplate.table);
         formData.append("id", data.id);
         formData.append("data", JSON.stringify(normalData));
+        formData.append("child_tables", JSON.stringify(childTableDataMap));
         formData.append("transaction_id", randomApprovalId);
         formData.append("user_designation_id", localStorage.getItem("designation_id") || null);
 

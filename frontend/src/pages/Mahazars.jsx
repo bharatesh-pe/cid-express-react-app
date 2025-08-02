@@ -134,7 +134,8 @@ const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData
     const [selectKey, setSelectKey] = useState(null);
     const [randomApprovalId, setRandomApprovalId] = useState(0);
     const hoverTableOptionsRef = useRef([]);
-
+    const [childTables, setChildTables] = useState([]);
+    const [secondChildTables, setSecondChildTables] = useState([]);
 
     useEffect(() => {
         handleOtherTemplateActions(selectedOtherTemplate, selectedRowData)
@@ -972,14 +973,16 @@ const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData
                                     ? viewTemplateResponse.data.sections
                                     : []
                             );
+                            setSecondChildTables(viewTemplateResponse?.["data"]?.["child_tables"] || []);
                             setPropertyFormInitialData(viewTemplateData.data ? viewTemplateData.data : {});
                             setPropertyFormOpen({
                                 open: true,
                                 readOnly: !editData,
                                 editData: editData
                             });
-                                            setOtherReadOnlyTemplateData(!editData);
-                setOtherEditTemplateData(editData);
+                                            
+                            setOtherReadOnlyTemplateData(!editData);
+                            setOtherEditTemplateData(editData);
 
                         } else {
                             toast.error(
@@ -1095,6 +1098,7 @@ const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData
                                     : []
                             );
                         }
+                        setChildTables(viewTemplateResponse?.["data"]?.["child_tables"] || []);
                     } else {
                         const errorMessage = viewTemplateResponse.message
                             ? viewTemplateResponse.message
@@ -1603,6 +1607,7 @@ const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData
                             : []
                     );
                 }
+                setChildTables(viewTemplateResponse?.["data"]?.["child_tables"] || []);
             } else {
                 const errorMessage = viewTemplateResponse.message
                     ? viewTemplateResponse.message
@@ -1758,6 +1763,7 @@ const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData
                 setPropertyFormStepperData(res.data.no_of_sections > 0 ? res.data.sections : []);
                 setPropertyFormInitialData({});
                 setPropertyFormOpen(true);
+                setSecondChildTables(res?.["data"]?.["child_tables"] || []);
             } else {
                 toast.error("Failed to load property form template.", {
                     position: "top-right",
@@ -1776,6 +1782,13 @@ const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData
         return;
     };
 
+    function sanitizeKey(str) {
+        return str
+            .toLowerCase()
+            .replace(/[^\w]/g, "_")
+            .replace(/_+/g, "_")
+            .replace(/^_+|_+$/g, "");
+        }
     const handlePropertyFormSubmit = async (propertyFormData) => {
         if (!pendingMahazarData) return;
         setPropertyFormOpen(false);
@@ -1783,6 +1796,8 @@ const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData
         const { data: mahazarData, saveNewAction } = pendingMahazarData;
         const mahazarNormalData = {};
         let mahazarFolderAttachments = [];
+        let mahazarChildTableDataMap = {};
+
         optionFormTemplateData.forEach((field) => {
             const val = mahazarData[field.name];
             if (val !== undefined && val !== null && val !== "") {
@@ -1802,12 +1817,45 @@ const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData
                 }
             }
         });
+
+        console.log("child tablesss", childTables);
+        if (childTables?.length > 0) {
+            childTables.forEach(child => {
+                const childFieldName = child.field_name;
+                if (mahazarData[childFieldName]) {
+                    let parsed;
+                    try {
+                        parsed = typeof mahazarData[childFieldName] === "string"
+                            ? JSON.parse(mahazarData[childFieldName])
+                            : mahazarData[childFieldName];
+                    } catch (err) {
+                        parsed = [];
+                    }
+
+                    if (Array.isArray(parsed)) {
+                        const normalizedRows = parsed.map(row => {
+                            let newRow = {};
+                            for (const key in row) {
+                                const sanitizedKey = sanitizeKey(key);
+                                newRow[sanitizedKey] = row[key];
+                            }
+                            return newRow;
+                        });
+
+                        mahazarChildTableDataMap[child.child_table_name] = normalizedRows;
+                    }
+                }
+            });
+        }
+
         mahazarNormalData.sys_status = "ui_case";
         mahazarNormalData.field_submit_status = "";
         mahazarNormalData["ui_case_id"] = selectedRowData.id;
 
         const propertyNormalData = {};
         let propertyFolderAttachments = [];
+        let propertyChildTableDataMap = {};
+
         propertyFormConfig.forEach((field) => {
             const val = propertyFormData[field.name];
             if (val !== undefined && val !== null && val !== "") {
@@ -1827,6 +1875,37 @@ const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData
                 }
             }
         });
+
+        if (secondChildTables && Array.isArray(secondChildTables)) {
+        secondChildTables.forEach(child => {
+            const childFieldName = child.field_name;
+
+            if (propertyFormData[childFieldName]) {
+            let parsed;
+            try {
+                parsed = typeof propertyFormData[childFieldName] === "string"
+                ? JSON.parse(propertyFormData[childFieldName])
+                : propertyFormData[childFieldName];
+            } catch (err) {
+                parsed = [];
+            }
+
+            if (Array.isArray(parsed)) {
+                const normalizedRows = parsed.map(row => {
+                let newRow = {};
+                for (const key in row) {
+                    const sanitizedKey = sanitizeKey(key);
+                    newRow[sanitizedKey] = row[key];
+                }
+                return newRow;
+                });
+
+                propertyChildTableDataMap[child.child_table_name] = normalizedRows;
+            }
+            }
+        });
+        }
+
         propertyNormalData.sys_status = "PF";
         propertyNormalData.field_submit_status = "";
         propertyNormalData["ui_case_id"] = selectedRowData.id;
@@ -1834,6 +1913,7 @@ const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData
         const formData = new FormData();
         formData.append("table_name", selectedOtherTemplate.table);
         formData.append("data", JSON.stringify(mahazarNormalData));
+        formData.append("child_tables", JSON.stringify(mahazarChildTableDataMap));
         formData.append("transaction_id", randomApprovalId);
         formData.append("user_designation_id", localStorage.getItem('designation_id') || null);
         if (mahazarFolderAttachments.length > 0) {
@@ -1849,6 +1929,7 @@ const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData
         }
         formData.append("second_table_name", "cid_ui_case_property_form");
         formData.append("second_data", JSON.stringify(propertyNormalData));
+        formData.append("second_child_tables", JSON.stringify(propertyChildTableDataMap));
         if (propertyFolderAttachments.length > 0) {
             formData.append("second_folder_attachment_ids", JSON.stringify(propertyFolderAttachments));
             propertyFormConfig.forEach((field) => {
@@ -1966,6 +2047,37 @@ const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData
                 }
             });
     
+            let childTableDataMap = {};
+
+            if (childTables && Array.isArray(childTables)) {
+                childTables.forEach(child => {
+                    const childFieldName = child.field_name;
+
+                    if (data[childFieldName]) {
+                        let parsed;
+                        try {
+                            parsed = typeof data[childFieldName] === "string"
+                                ? JSON.parse(data[childFieldName])
+                                : data[childFieldName];
+                        } catch (err) {
+                            parsed = [];
+                        }
+
+                        if (Array.isArray(parsed)) {
+                            const normalizedRows = parsed.map(row => {
+                                let newRow = {};
+                                for (const key in row) {
+                                    const sanitizedKey = sanitizeKey(key);
+                                    newRow[sanitizedKey] = row[key];
+                                }
+                                return newRow;
+                            });
+
+                            childTableDataMap[child.child_table_name] = normalizedRows;
+                        }
+                    }
+                });
+            }
             if (selectedOtherTemplate.table === "cid_ui_case_progress_report") {
                 normalData["field_pr_status"] = "No";
             }
@@ -1973,6 +2085,7 @@ const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData
             formData.append("table_name", selectedOtherTemplate.table);
             formData.append("id", data.id);
             formData.append("data", JSON.stringify(normalData));
+            formData.append("child_tables", JSON.stringify(childTableDataMap));
             formData.append("transaction_id", randomApprovalId);
             formData.append("user_designation_id", localStorage.getItem("designation_id") || null);
     
@@ -2085,9 +2198,42 @@ const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData
             }
         });
 
+        let childTableDataMap = {};
+
+            if (secondChildTables && Array.isArray(secondChildTables)) {
+                secondChildTables.forEach(child => {
+                    const childFieldName = child.field_name;
+
+                    if (data[childFieldName]) {
+                        let parsed;
+                        try {
+                            parsed = typeof data[childFieldName] === "string"
+                                ? JSON.parse(data[childFieldName])
+                                : data[childFieldName];
+                        } catch (err) {
+                            parsed = [];
+                        }
+
+                        if (Array.isArray(parsed)) {
+                            const normalizedRows = parsed.map(row => {
+                                let newRow = {};
+                                for (const key in row) {
+                                    const sanitizedKey = sanitizeKey(key);
+                                    newRow[sanitizedKey] = row[key];
+                                }
+                                return newRow;
+                            });
+
+                            childTableDataMap[child.child_table_name] = normalizedRows;
+                        }
+                    }
+                });
+            }
+
         formData.append("table_name", "cid_ui_case_property_form");
         formData.append("id", data.id);
         formData.append("data", JSON.stringify(normalData));
+        formData.append("child_tables", JSON.stringify(childTableDataMap));
         formData.append("transaction_id", randomApprovalId);
         formData.append("user_designation_id", localStorage.getItem("designation_id") || null);
 
@@ -2158,6 +2304,7 @@ const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData
                 const { data: mahazarData, saveNewAction } = pendingMahazarData;
                 const mahazarNormalData = {};
                 let mahazarFolderAttachments = [];
+                let mahazarChildTableDataMap = {};
                 optionFormTemplateData.forEach((field) => {
                     const val = mahazarData[field.name];
                     if (val !== undefined && val !== null && val !== "") {
@@ -2177,6 +2324,34 @@ const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData
                         }
                     }
                 });
+                if (childTables?.length > 0) {
+                    childTables.forEach(child => {
+                        const childFieldName = child.field_name;
+                        if (mahazarData[childFieldName]) {
+                            let parsed;
+                            try {
+                                parsed = typeof mahazarData[childFieldName] === "string"
+                                    ? JSON.parse(mahazarData[childFieldName])
+                                    : mahazarData[childFieldName];
+                            } catch (err) {
+                                parsed = [];
+                            }
+
+                            if (Array.isArray(parsed)) {
+                                const normalizedRows = parsed.map(row => {
+                                    let newRow = {};
+                                    for (const key in row) {
+                                        const sanitizedKey = sanitizeKey(key);
+                                        newRow[sanitizedKey] = row[key];
+                                    }
+                                    return newRow;
+                                });
+
+                                mahazarChildTableDataMap[child.child_table_name] = normalizedRows;
+                            }
+                        }
+                    });
+                }
                 mahazarNormalData.sys_status = "ui_case";
                 mahazarNormalData.field_submit_status = "";
                 mahazarNormalData["ui_case_id"] = selectedRowData.id;
@@ -2192,6 +2367,7 @@ const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData
                 const formData = new FormData();
                 formData.append("table_name", selectedOtherTemplate.table);
                 formData.append("data", JSON.stringify(mahazarNormalData));
+                formData.append("child_tables", JSON.stringify(mahazarChildTableDataMap));
                 formData.append("transaction_id", randomApprovalId);
                 formData.append("user_designation_id", localStorage.getItem('designation_id') || null);
                 if (mahazarFolderAttachments.length > 0) {

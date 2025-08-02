@@ -799,7 +799,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                                     }
 
                                     return (
-                                        <Box sx={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                                        <Box sx={{ display: "flex", alignItems: "center", gap: "4px", paddingTop : "4px" }}>
                                             {params.value}
                                             {canDelete && !isViewAction && !isActionPlan && (
                                                 <DeleteIcon
@@ -840,7 +840,8 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                                 return {
                                     field: key,
                                     headerName: updatedKeyName || "",
-                                    flex : 1,
+                                    width: 540,
+                                    // cellClassName: 'wrap-cell',
                                     resizable: true,
                                     renderHeader: () => (
                                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
@@ -882,9 +883,19 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                                                         cursor: "pointer",
                                                         fontWeight: 400,
                                                         fontSize: "14px",
+                                                        whiteSpace: "normal",
+                                                        wordBreak: "break-word",
+                                                        overflowWrap: "break-word",
+                                                        display: "block",
+                                                        marginBottom: "6px",
                                                     }}
                                                 >
-                                                    {params.value || "View"}
+                                                    <div
+                                                        className="clamped-cell"
+                                                        title={params.value || "-"}
+                                                        >
+                                                        {params.value || "-"}
+                                                    </div>
                                                 </span>
                                             );
                                         }
@@ -1161,7 +1172,13 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                         </span>                  
                     ) : (
                         <span
-                            style={highlightColor}
+                            style={{
+                                ...highlightColor,
+                                whiteSpace: "normal",
+                                wordBreak: "break-word",
+                                display: "block",
+                            }}
+
                             onClick={onClickHandler}
                             className={`tableValueTextView Roboto`}
                         >
@@ -3236,6 +3253,8 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                         paginationCount={otherTemplatesPaginationCount}
                         handlePagination={handleOtherPagination}
                         tableName={selectedOtherTemplate?.table}
+                        dynamicRowHeight={true}
+                        shouldPadRows={true}
                     />
                 </Box>
             </Box>

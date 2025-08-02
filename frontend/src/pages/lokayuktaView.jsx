@@ -1765,6 +1765,13 @@ const fetchCounts = async () => {
 };
 
 
+    function sanitizeKey(str) {
+        return str
+            .toLowerCase()
+            .replace(/[^\w]/g, "_")
+            .replace(/_+/g, "_")
+            .replace(/^_+|_+$/g, "");
+        }
 
     const handleDirectCaseSave = async (data, formOpen) => {
         const formData = new FormData();
@@ -1793,16 +1800,28 @@ const fetchCounts = async () => {
         if (childTables && Array.isArray(childTables)) {
             childTables.forEach(child => {
                 const childFieldName = child.field_name;
+
                 if (data[childFieldName]) {
                     let parsed;
                     try {
-                        parsed = typeof data[childFieldName] === "string" ? JSON.parse(data[childFieldName]) : data[childFieldName];
+                        parsed = typeof data[childFieldName] === "string"
+                            ? JSON.parse(data[childFieldName])
+                            : data[childFieldName];
                     } catch (err) {
                         parsed = [];
                     }
 
                     if (Array.isArray(parsed)) {
-                        childTableDataMap[child.child_table_name] = parsed;
+                        const normalizedRows = parsed.map(row => {
+                            let newRow = {};
+                            for (const key in row) {
+                                const sanitizedKey = sanitizeKey(key);
+                                newRow[sanitizedKey] = row[key];
+                            }
+                            return newRow;
+                        });
+
+                        childTableDataMap[child.child_table_name] = normalizedRows;
                     }
                 }
             });
@@ -2128,23 +2147,35 @@ const fetchCounts = async () => {
 
         let childTableDataMap = {};
 
-if (childTables && Array.isArray(childTables)) {
-    childTables.forEach(child => {
-        const childFieldName = child.field_name;
-        if (data[childFieldName]) {
-            let parsed;
-            try {
-                parsed = typeof data[childFieldName] === "string" ? JSON.parse(data[childFieldName]) : data[childFieldName];
-            } catch (err) {
-                parsed = [];
-            }
+        if (childTables && Array.isArray(childTables)) {
+            childTables.forEach(child => {
+                const childFieldName = child.field_name;
 
-            if (Array.isArray(parsed)) {
-                childTableDataMap[child.child_table_name] = parsed;
-            }
+                if (data[childFieldName]) {
+                    let parsed;
+                    try {
+                        parsed = typeof data[childFieldName] === "string"
+                            ? JSON.parse(data[childFieldName])
+                            : data[childFieldName];
+                    } catch (err) {
+                        parsed = [];
+                    }
+
+                    if (Array.isArray(parsed)) {
+                        const normalizedRows = parsed.map(row => {
+                            let newRow = {};
+                            for (const key in row) {
+                                const sanitizedKey = sanitizeKey(key);
+                                newRow[sanitizedKey] = row[key];
+                            }
+                            return newRow;
+                        });
+
+                        childTableDataMap[child.child_table_name] = normalizedRows;
+                    }
+                }
+            });
         }
-    });
-}
 
         if (activeSidebar?.table === "cid_eq_case_enquiry_order_copy") {
             normalData["sys_status"] = data?.field_status || "eq_case";
