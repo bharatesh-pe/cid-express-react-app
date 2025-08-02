@@ -2361,29 +2361,45 @@ exports.getTemplateData = async (req, res, next) => {
         }
         else if (module === "pt_case") {
 
-          whereClause = {
-            [Op.and]: [
-              {
-                [Op.or]: [
-                  { ui_case_id: req.body.ui_case_id || null },
-                  { pt_case_id: req.body.pt_case_id || null }
-                ]
-              },
-              {
-                [Op.or]: [
-                  {
-                    sys_status: "pt_case"
-                  },
-                  {
-                    sys_status: "ui_case",
-                    field_status_of_accused_in_charge_sheet: {
-                      [Op.notILike]: `%${pending}%`
+            if(req.body.ui_case_id && req.body.ui_case_id !== "" || req.body.ui_case_id !== null) {
+                whereClause = {
+                  [Op.and]: [
+                    {
+                      [Op.or]: [
+                        { ui_case_id: req.body.ui_case_id  },
+                        { pt_case_id: req.body.pt_case_id  }
+                      ]
+                    },
+                    {
+                      [Op.or]: [
+                        {
+                          sys_status: "pt_case"
+                        },
+                        {
+                          sys_status: "ui_case",
+                          field_status_of_accused_in_charge_sheet: {
+                            [Op.notILike]: `%${pending}%`
+                          }
+                        }
+                      ]
                     }
-                  }
-                ]
-              }
-            ]
-          };
+                  ]
+                };
+            }
+            else {
+                whereClause = {
+                    [Op.and]: [
+                            { pt_case_id: req.body.pt_case_id },
+                            { sys_status: "pt_case" },
+                            {
+                                sys_status: "ui_case",
+                                field_status_of_accused_in_charge_sheet: {
+                                    [Op.notILike]: `%${pending}%`
+                                }
+                            }
+                    ]
+                };
+            }
         }
     }
 
