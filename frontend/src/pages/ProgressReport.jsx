@@ -130,7 +130,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
   const hoverTableOptionsRef = useRef([]);
   const [submissionDateDialogOpen, setSubmissionDateDialogOpen] = useState(false);
   const [submissionDate, setSubmissionDate] = useState(null);
-
+  const [childTables, setChildTables] = useState([]);
   const handleMonthwisePagination = (page) => {
     getMonthWiseFile(selectedRow, page);
   };
@@ -1098,6 +1098,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
             setOtherFormOpen(true);
             setOtherRowId(rowData.id);
             setOtherTemplateId(viewTemplateResponse["data"].template_id);
+            setChildTables(viewTemplateResponse?.["data"]?.["child_tables"] || []);
             if (
               viewTemplateResponse.data.no_of_sections &&
               viewTemplateResponse.data.no_of_sections > 0
@@ -1744,6 +1745,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
         setviewReadonly(false);
         setEditTemplateData(false);
         setOptionFormTemplateData(getCaseIdFields ? getCaseIdFields : []);
+        setChildTables(viewTemplateResponse?.["data"]?.["child_tables"] || []);
         if (
           viewTemplateResponse.data.no_of_sections &&
           viewTemplateResponse.data.no_of_sections > 0
@@ -2115,6 +2117,13 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
     }
   };
 
+  function sanitizeKey(str) {
+        return str
+            .toLowerCase()
+            .replace(/[^\w]/g, "_")
+            .replace(/_+/g, "_")
+            .replace(/^_+|_+$/g, "");
+        }
   const otherTemplateSaveFunc = async (data, saveNewAction) => {
 
     if ((!selectedOtherTemplate.table || selectedOtherTemplate.table === "")) {
@@ -2192,6 +2201,38 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
       }
     });
 
+    let childTableDataMap = {};
+
+    if (childTables && Array.isArray(childTables)) {
+        childTables.forEach(child => {
+            const childFieldName = child.field_name;
+
+            if (data[childFieldName]) {
+                let parsed;
+                try {
+                    parsed = typeof data[childFieldName] === "string"
+                        ? JSON.parse(data[childFieldName])
+                        : data[childFieldName];
+                } catch (err) {
+                    parsed = [];
+                }
+
+                if (Array.isArray(parsed)) {
+                    const normalizedRows = parsed.map(row => {
+                        let newRow = {};
+                        for (const key in row) {
+                            const sanitizedKey = sanitizeKey(key);
+                            newRow[sanitizedKey] = row[key];
+                        }
+                        return newRow;
+                    });
+
+                    childTableDataMap[child.child_table_name] = normalizedRows;
+                }
+            }
+        });
+    }
+
     if (selectedOtherTemplate.table === "cid_ui_case_progress_report") {
       normalData["field_pr_status"] = "No";
     }
@@ -2203,6 +2244,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
 
     formData.append("table_name", showPtCaseModal ? ptCaseTableName : selectedOtherTemplate.table);
     formData.append("data", JSON.stringify(normalData));
+    formData.append("child_tables", JSON.stringify(childTableDataMap));
     formData.append("others_data", JSON.stringify(othersData));
     formData.append("transaction_id", randomApprovalId);
     formData.append("user_designation_id", localStorage.getItem('designation_id') ? localStorage.getItem('designation_id') : null);
@@ -2357,6 +2399,38 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
       }
     });
 
+    let childTableDataMap = {};
+
+    if (childTables && Array.isArray(childTables)) {
+        childTables.forEach(child => {
+            const childFieldName = child.field_name;
+
+            if (data[childFieldName]) {
+                let parsed;
+                try {
+                    parsed = typeof data[childFieldName] === "string"
+                        ? JSON.parse(data[childFieldName])
+                        : data[childFieldName];
+                } catch (err) {
+                    parsed = [];
+                }
+
+                if (Array.isArray(parsed)) {
+                    const normalizedRows = parsed.map(row => {
+                        let newRow = {};
+                        for (const key in row) {
+                            const sanitizedKey = sanitizeKey(key);
+                            newRow[sanitizedKey] = row[key];
+                        }
+                        return newRow;
+                    });
+
+                    childTableDataMap[child.child_table_name] = normalizedRows;
+                }
+            }
+        });
+    }
+
     if (data.hasOwnProperty("ui_case_id")) {
         normalData.ui_case_id = data.ui_case_id;
     }
@@ -2368,6 +2442,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
     formData.append("table_name", selectedOtherTemplate.table);
     formData.append("id", data.id);
     formData.append("data", JSON.stringify(normalData));
+    formData.append("child_tables", JSON.stringify(childTableDataMap));
     formData.append("transaction_id", randomApprovalId);
     formData.append("user_designation_id", localStorage.getItem("designation_id") || null);
 
