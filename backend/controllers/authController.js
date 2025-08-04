@@ -2610,7 +2610,7 @@ const store_cnr_table_data = async (req, res) => {
         });
     
         await CNRModel.sync();
-
+        const pt_case_id = [];
         //get the pt_case_id from cid_pending_trial table
         if (data.field_cnr_number) {
             const [results] = await sequelize.query(
@@ -2618,9 +2618,15 @@ const store_cnr_table_data = async (req, res) => {
             { replacements: { cnr: data.field_cnr_number } }
             );
     
-            data.pt_case_id = results.length > 0 ? results[0].id : null;
+            //data.pt_case_id = results.length > 0 ? results[0].id : null;
+            if( results.length > 0) {
+                pt_case_id = [];
+                for (const result of results) {
+                    data.pt_case_id.push(result.id);
+                }
+            }
         } else {
-            data.pt_case_id = null;
+            pt_case_id = null;
         }
 
         // Append fixed metadata
@@ -2628,11 +2634,32 @@ const store_cnr_table_data = async (req, res) => {
         data.created_by_id = 0;
         data.created_at = new Date();
         data.updated_at = new Date();
+        
+        // if(!pt_case_id || pt_case_id.length === 0) {
+        //     return res.status(400).json({ success: false, message: "No matching PT case found for the provided CNR number." });
+        // }
+       
+        if(pt_case_id && pt_case_id.length > 0) {
+            for(const ptCaseId of pt_case_id) {
+                // Insert data into the CNR table
+                await CNRModel.create({
+                    ...data,
+                    pt_case_id: ptCaseId, // Use the current PT case ID
+                });
+            }
+            return res.status(200).json({ success: true, message: "CNR data stored successfully." });
+        }
+        else
+        {
+            //Insert data into the CNR table with pt_case_id as null
+            await CNRModel.create({
+                ...data,
+                pt_case_id: null, // Use null for pt_case_id if no matching PT case
+            });
+            return res.status(200).json({ success: true, message: "CNR data stored successfully with no matching PT case." });
+        }
+        
     
-        // Insert record
-        await CNRModel.create(data);
-    
-        return res.status(200).json({ success: true, message: "CNR data stored successfully." });
     } catch (error) {
       console.error("CNR Save Error:", error);
       return res.status(500).json({ success: false, message: "Failed to save CNR data.", error: error.message });
