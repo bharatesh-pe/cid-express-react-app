@@ -2610,7 +2610,7 @@ const store_cnr_table_data = async (req, res) => {
         });
     
         await CNRModel.sync();
-        const pt_case_id = [];
+        var pt_case_id = [];
         //get the pt_case_id from cid_pending_trial table
         if (data.field_cnr_number) {
             const [results] = await sequelize.query(
@@ -2622,7 +2622,7 @@ const store_cnr_table_data = async (req, res) => {
             if( results.length > 0) {
                 pt_case_id = [];
                 for (const result of results) {
-                    data.pt_case_id.push(result.id);
+                    pt_case_id.push(result.id);
                 }
             }
         } else {
