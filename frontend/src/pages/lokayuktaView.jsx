@@ -350,7 +350,6 @@ const LokayuktaView = () => {
         if(!item){
             return false;
         }
-        console.log("editedForm",editedForm, "editedForm.current", editedForm.current, "ignored", ignored);
 
         if(editedForm.current && !ignored){
             const result = await Swal.fire({

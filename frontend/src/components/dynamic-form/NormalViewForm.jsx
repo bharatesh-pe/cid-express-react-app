@@ -454,16 +454,58 @@ const NormalViewForm = ({
         const checkInitialData = {};
         const checkFormData = {};
 
+        // newFormConfig.forEach((config) => {
+        //     const name = config.name;
+
+        //     if (initialData && initialData.hasOwnProperty(name)) {
+        //         checkInitialData[name] = Array.isArray(initialData[name]) ? initialData[name].join(',') : initialData[name];
+        //     }
+        //     if (formData.hasOwnProperty(name)) {
+        //         checkFormData[name] = Array.isArray(formData[name]) ? formData[name].join(',') : formData[name];
+        //     }
+        // });  
+
+
         newFormConfig.forEach((config) => {
             const name = config.name;
 
-            if (initialData && initialData.hasOwnProperty(name)) {
-                checkInitialData[name] = Array.isArray(initialData[name]) ? initialData[name].join(',') : initialData[name];
-            }
-            if (formData.hasOwnProperty(name)) {
-                checkFormData[name] = Array.isArray(formData[name]) ? formData[name].join(',') : formData[name];
-            }
-        });  
+            const initVal = initialData?.[name];
+            const formVal = formData?.[name];
+
+            const normalizeValue = (val) => {
+                if (typeof val === "string") {
+                    try {
+                        val = JSON.parse(val);
+                    } catch {
+                        return val.trim();
+                    }
+                }
+
+                if (val === null || val === undefined) return "";
+
+                if (Array.isArray(val)) {
+                    if (
+                        val.length === 0 ||
+                        (val.length === 1 && typeof val[0] === "object" && Object.keys(val[0] || {}).length === 0)
+                    ) {
+                        return "";
+                    }
+                    return val.map(normalizeValue).join(", ");
+                }
+
+                if (typeof val === "object") {
+                    if (Object.keys(val).length === 0) return "";
+                    return JSON.stringify(val);
+                }
+
+                return String(val).trim();
+            };
+
+            checkInitialData[name] = normalizeValue(initVal);
+            checkFormData[name] = normalizeValue(formVal);
+        });
+
+
 
         var changingFlag = false;
 
