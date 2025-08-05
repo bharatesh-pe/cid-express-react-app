@@ -8069,9 +8069,9 @@ exports.appendToLastLineOfPDF = async (req, res) => {
     const monthBoldFont = await monthPdf.embedFont(StandardFonts.HelveticaBold);
 
     // Insert general info if needed
-    if (shouldInsertGeneralInfoForPdfDoc(ui_case_id)) {
-      await insertGeneralInfo(pdfDoc, aoFields, pageWidth, pageHeight, regularFont, boldFont, 'pdfDoc');
-    }
+    // if (shouldInsertGeneralInfoForPdfDoc(ui_case_id)) {
+    //   await insertGeneralInfo(pdfDoc, aoFields, pageWidth, pageHeight, regularFont, boldFont, 'pdfDoc');
+    // }
     if (shouldInsertGeneralInfoForMonthPdf(ui_case_id, monthLabelRaw)) {
       await insertGeneralInfo(monthPdf, aoFields, pageWidth, pageHeight, monthRegularFont, monthBoldFont, 'monthPdf');
     }
