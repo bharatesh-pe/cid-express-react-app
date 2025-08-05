@@ -12957,107 +12957,107 @@ exports.saveActionPlan = async (req, res) => {
 
             const insertedData = await Model.create(validData, { transaction: t });
             
-            if (insertedData && child_tables) {
-              let parsedChildTables = child_tables;
+            // if (insertedData && child_tables) {
+            //   let parsedChildTables = child_tables;
 
-              if (typeof child_tables === "string") {
-                try {
-                  parsedChildTables = JSON.parse(child_tables);
-                } catch (err) {
-                  console.error("Invalid JSON for child_tables:", err);
-                  parsedChildTables = {};
-                }
-              }
+            //   if (typeof child_tables === "string") {
+            //     try {
+            //       parsedChildTables = JSON.parse(child_tables);
+            //     } catch (err) {
+            //       console.error("Invalid JSON for child_tables:", err);
+            //       parsedChildTables = {};
+            //     }
+            //   }
 
-              for (const child_table_name in parsedChildTables) {
-                const child_data = parsedChildTables[child_table_name];
+            //   for (const child_table_name in parsedChildTables) {
+            //     const child_data = parsedChildTables[child_table_name];
 
-                if (!child_data || !Array.isArray(child_data) || child_data.length === 0) {
-                  console.log("Skipping child table:", child_table_name, "- no data or invalid");
-                  continue;
-                }
+            //     if (!child_data || !Array.isArray(child_data) || child_data.length === 0) {
+            //       console.log("Skipping child table:", child_table_name, "- no data or invalid");
+            //       continue;
+            //     }
 
-                const matchingField = schema.find(
-                  field =>
-                    field.formType === "Table" &&
-                    `${table_name}_${field.name}`.toLowerCase() === child_table_name.toLowerCase()
-                );
+            //     const matchingField = schema.find(
+            //       field =>
+            //         field.formType === "Table" &&
+            //         `${table_name}_${field.name}`.toLowerCase() === child_table_name.toLowerCase()
+            //     );
 
-                if (!matchingField || !matchingField.tableHeaders) {
-                  console.log("Skipping child schema for:", child_table_name);
-                  continue;
-                }
+            //     if (!matchingField || !matchingField.tableHeaders) {
+            //       console.log("Skipping child schema for:", child_table_name);
+            //       continue;
+            //     }
 
-                console.log("Processing child table:", child_table_name);
+            //     console.log("Processing child table:", child_table_name);
 
-                const childSchema = matchingField.tableHeaders.map(header => {
-                  const cleanName = header.header
-                    .trim()
-                    .toLowerCase()
-                    .replace(/[^a-z0-9]+/gi, "_")
-                    .replace(/^_+|_+$/g, "");
+            //     const childSchema = matchingField.tableHeaders.map(header => {
+            //       const cleanName = header.header
+            //         .trim()
+            //         .toLowerCase()
+            //         .replace(/[^a-z0-9]+/gi, "_")
+            //         .replace(/^_+|_+$/g, "");
 
-                  console.log(`Sanitized header: "${header.header}" → "${cleanName}"`);
+            //       console.log(`Sanitized header: "${header.header}" → "${cleanName}"`);
 
-                  return {
-                    name: cleanName,
-                    formType: header.fieldType?.type || "short_text"
-                  };
-                });
+            //       return {
+            //         name: cleanName,
+            //         formType: header.fieldType?.type || "short_text"
+            //       };
+            //     });
 
-                const childModelFields = {};
-                childSchema.forEach(f => {
-                  let sequelizeType = Sequelize.DataTypes.TEXT;
-                  if (f.formType === "short_text") sequelizeType = Sequelize.DataTypes.STRING(255);
-                  else if (["dropdown", "radio"].includes(f.formType)) sequelizeType = Sequelize.DataTypes.STRING(100);
+            //     const childModelFields = {};
+            //     childSchema.forEach(f => {
+            //       let sequelizeType = Sequelize.DataTypes.TEXT;
+            //       if (f.formType === "short_text") sequelizeType = Sequelize.DataTypes.STRING(255);
+            //       else if (["dropdown", "radio"].includes(f.formType)) sequelizeType = Sequelize.DataTypes.STRING(100);
 
-                  childModelFields[f.name.toLowerCase()] = {
-                    type: sequelizeType,
-                    allowNull: true,
-                    field: f.name.toLowerCase()
-                  };
-                });
+            //       childModelFields[f.name.toLowerCase()] = {
+            //         type: sequelizeType,
+            //         allowNull: true,
+            //         field: f.name.toLowerCase()
+            //       };
+            //     });
 
-                childModelFields[`${table_name}_id`] = {
-                  type: Sequelize.DataTypes.INTEGER,
-                  allowNull: false,
-                  references: { model: table_name, key: "id" },
-                  onDelete: "CASCADE",
-                };
+            //     childModelFields[`${table_name}_id`] = {
+            //       type: Sequelize.DataTypes.INTEGER,
+            //       allowNull: false,
+            //       references: { model: table_name, key: "id" },
+            //       onDelete: "CASCADE",
+            //     };
 
-                console.log("Creating dynamic model for:", child_table_name);
-                const ChildModel = sequelize.define(child_table_name, childModelFields, {
-                  freezeTableName: true,
-                  timestamps: true,
-                  underscored: true,
-                });
+            //     console.log("Creating dynamic model for:", child_table_name);
+            //     const ChildModel = sequelize.define(child_table_name, childModelFields, {
+            //       freezeTableName: true,
+            //       timestamps: true,
+            //       underscored: true,
+            //     });
 
-                await ChildModel.sync();
-                console.log("Synced child model:", child_table_name);
+            //     await ChildModel.sync();
+            //     console.log("Synced child model:", child_table_name);
 
-                const dataToInsert = child_data.map(row => {
-                  const newRow = {};
-                  for (const key in row) {
-            const cleanKey = key
-              .trim()
-              .toLowerCase()
-              .replace(/[^a-z0-9]+/gi, "_")    // collapse multiple non-alphanumerics into one "_"
-              .replace(/^_+|_+$/g, "");        // trim leading/trailing underscores
+            //     const dataToInsert = child_data.map(row => {
+            //       const newRow = {};
+            //       for (const key in row) {
+            // const cleanKey = key
+            //   .trim()
+            //   .toLowerCase()
+            //   .replace(/[^a-z0-9]+/gi, "_")    // collapse multiple non-alphanumerics into one "_"
+            //   .replace(/^_+|_+$/g, "");        // trim leading/trailing underscores
                     
-                    console.log(`Sanitized key: "${key}" → "${cleanKey}"`);
+            //         console.log(`Sanitized key: "${key}" → "${cleanKey}"`);
 
-                    newRow[cleanKey] = row[key];
-                  }
+            //         newRow[cleanKey] = row[key];
+            //       }
 
-                  newRow[`${table_name}_id`] = insertedData.id;
-                  return newRow;
-                });
+            //       newRow[`${table_name}_id`] = insertedData.id;
+            //       return newRow;
+            //     });
 
-                console.log("Inserting data to child table:", child_table_name);
-                await ChildModel.bulkCreate(dataToInsert, { transaction: t });
-                console.log("Successfully inserted data into:", child_table_name);
-              }
-            }
+            //     console.log("Inserting data to child table:", child_table_name);
+            //     await ChildModel.bulkCreate(dataToInsert, { transaction: t });
+            //     console.log("Successfully inserted data into:", child_table_name);
+            //   }
+            // }
             if (!insertedData) {
                 await t.rollback();
                 return userSendResponse(res, 400, false, "Failed to insert data.", null);
