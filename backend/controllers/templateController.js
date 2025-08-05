@@ -254,7 +254,8 @@ exports.createTemplate = async (req, res, next) => {
           .trim()
           .toLowerCase()
           .replace(/[^a-z0-9]+/g, "_")
-          .replace(/^_+|_+$/g, "");
+          .replace(/^_+|_+$/g, "")
+          .slice(0, 63);
 
         const type = headerObj.fieldType?.type || "short_text";
         const sequelizeType =
@@ -366,7 +367,7 @@ exports.createTemplate = async (req, res, next) => {
       updated_by: "adminUser.full_name",
       paranoid,
     };
-    console.log("name checking ", saveData.fields);
+
     if (paranoid) {
       const fieldsJson = JSON.parse(saveData.fields); // Parse to modify the fields object
       fieldsJson.push({
@@ -600,7 +601,8 @@ exports.updateTemplate = async (req, res, next) => {
         .toLowerCase()
         .replace(/[^a-z0-9_]/gi, "_")
         .replace(/_+/g, "_")
-        .replace(/^_+|_+$/g, "");
+        .replace(/^_+|_+$/g, "")
+        .slice(0, 63);
     };
 
     const childTables = fields.filter(
@@ -641,7 +643,9 @@ exports.updateTemplate = async (req, res, next) => {
         const sanitized = sanitizeColumnName(raw);
         const fieldType = headerObj.fieldType?.type || "short_text";
 
-        if (!sanitized || existingColumns.has(sanitized)) continue;
+         if (!sanitized || existingColumns.has(sanitized)) {
+            continue;
+          }
 
         fullFields[sanitized] = {
           type: fieldType === "short_text"
@@ -673,6 +677,7 @@ exports.updateTemplate = async (req, res, next) => {
 
       try {
         await childModel.sync({ alter: true });
+      await migrateOldTableFieldData(model, childModel, field, table_name, childTableName);
         
       } catch (err) {
         console.error(`Failed to sync ${childTableName}:`, err);
@@ -757,6 +762,61 @@ exports.updateTemplate = async (req, res, next) => {
 };
 
 
+async function migrateOldTableFieldData(model, childModel, field, table_name, childTableName) {
+  const parentKey = `${table_name}_id`;
+  const parentRows = await model.findAll();
+
+  const sanitizeColumnName = (name) => {
+    return name
+      .toLowerCase()
+      .replace(/[^a-z0-9_]/gi, "_")
+      .replace(/_+/g, "_")
+      .replace(/^_+|_+$/g, "");
+  };
+
+  for (const parent of parentRows) {
+    const existingChildren = await childModel.count({
+      where: { [parentKey]: parent.id },
+    });
+
+    if (existingChildren > 0) {
+      console.log(`Skipping migration for parent ID ${parent.id} — child rows already exist.`);
+      continue;
+    }
+
+    const rawTableData = parent.get(field.name);
+    if (!rawTableData) continue;
+
+    let parsedRows;
+    try {
+      parsedRows = typeof rawTableData === "string"
+        ? JSON.parse(rawTableData)
+        : rawTableData;
+    } catch (err) {
+      console.warn(`Invalid JSON in ${field.name} for row ID ${parent.id}`);
+      continue;
+    }
+
+    if (!Array.isArray(parsedRows)) continue;
+
+    for (const row of parsedRows) {
+      const insertRow = {};
+
+      for (const header of field.tableHeaders || []) {
+        const sanitized = sanitizeColumnName(header.header);
+        insertRow[sanitized] = row[header.header] ?? null;
+      }
+
+      insertRow[parentKey] = parent.id;
+
+      try {
+        await childModel.create(insertRow);
+      } catch (err) {
+        console.error(`Error inserting row for parent ID ${parent.id}:`, err);
+      }
+    }
+  }
+}
 
 exports.deleteTemplate = async (req, res, next) => {
   let dirPath = "";

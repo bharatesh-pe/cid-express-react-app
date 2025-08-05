@@ -2997,6 +2997,7 @@ const fetchCounts = async () => {
                         backNavigation={backToForm}
                         showMagazineView={showMagazineView}
                         fetchCounts={fetchCounts}
+                        module={module}
                     />
                 ) : activeSidebar?.caseDairy === true ? (
 
@@ -3061,6 +3062,7 @@ const fetchCounts = async () => {
                         backNavigation={backToForm}
                         showMagazineView={showMagazineView}
                         fetchCounts={fetchCounts}
+                        module={module}
                     />
                 ) : activeSidebar?.table === "cid_ui_case_property_form" ? (
 
@@ -3074,6 +3076,7 @@ const fetchCounts = async () => {
                         backNavigation={backToForm}
                         showMagazineView={showMagazineView}
                         fetchCounts={fetchCounts}
+                        module={module}
                     />
                 ) : activeSidebar?.table === "cid_ui_case_mahazars" ? (
 
@@ -3087,6 +3090,7 @@ const fetchCounts = async () => {
                         backNavigation={backToForm}
                         showMagazineView={showMagazineView}
                         fetchCounts={fetchCounts}
+                        module={module}
                     />    
                 ) : activeSidebar?.table === "cid_ui_case_cdr_ipdr" ? (
 

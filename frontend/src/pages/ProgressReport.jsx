@@ -1396,7 +1396,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
     }
     try {
       const response = await api.post("/templateData/getMonthWiseByCaseId", {
-        ui_case_id:ui_case_id.id,
+        ui_case_id:ui_case_id.id || ui_case_id,
         page,
         limit: PageSize,
       });
@@ -2663,6 +2663,15 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
         limit: PageSize,
       });
 
+      if (!selectedIds || selectedIds.length === 0) {
+        toast.error("Please choose a record to append.", {
+          position: "top-right",
+          autoClose: 3000,
+          className: "toast-warning",
+        });
+        return;
+      }
+
       if (response?.success) {
         const hasCurrentMonthSubmission = isSubmissionForCurrentMonth(response.data || []);
         if (hasCurrentMonthSubmission) {
@@ -2690,14 +2699,14 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
       ui_case_id: rowId,
     };
 
-    if (!selectedIds || selectedIds.length === 0) {
-      toast.error("Please choose a record to append.", {
-        position: "top-right",
-        autoClose: 3000,
-        className: "toast-warning",
-      });
-      return;
-    }
+    // if (!selectedIds || selectedIds.length === 0) {
+    //   toast.error("Please choose a record to append.", {
+    //     position: "top-right",
+    //     autoClose: 3000,
+    //     className: "toast-warning",
+    //   });
+    //   return;
+    // }
 
     setLoading(true);
 
