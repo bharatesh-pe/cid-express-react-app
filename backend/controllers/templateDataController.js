@@ -8317,92 +8317,92 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
             const allChildren = {};
             let parsedChildTables = child_tables;
 
-            if (insertedData && child_tables) {
-              if (typeof child_tables === "string") {
-                try {
-                  parsedChildTables = JSON.parse(child_tables);
-                  console.log("Parsed child_tables object:", parsedChildTables);
-                } catch (error) {
-                  console.error("Failed to parse child_tables JSON string:", error);
-                  parsedChildTables = {};
-                }
-              }
+            // if (insertedData && child_tables) {
+            //   if (typeof child_tables === "string") {
+            //     try {
+            //       parsedChildTables = JSON.parse(child_tables);
+            //       console.log("Parsed child_tables object:", parsedChildTables);
+            //     } catch (error) {
+            //       console.error("Failed to parse child_tables JSON string:", error);
+            //       parsedChildTables = {};
+            //     }
+            //   }
 
-              for (const raw_child_table_name in parsedChildTables) {
-                const child_table_name = sanitizeKey(raw_child_table_name); // sanitize here
-                const child_data = parsedChildTables[raw_child_table_name];
+            //   for (const raw_child_table_name in parsedChildTables) {
+            //     const child_table_name = sanitizeKey(raw_child_table_name); // sanitize here
+            //     const child_data = parsedChildTables[raw_child_table_name];
 
-                if (!child_data || !Array.isArray(child_data) || child_data.length === 0) {
-                  console.log("Skipping child table:", raw_child_table_name, "- no data or invalid");
-                  continue;
-                }
+            //     if (!child_data || !Array.isArray(child_data) || child_data.length === 0) {
+            //       console.log("Skipping child table:", raw_child_table_name, "- no data or invalid");
+            //       continue;
+            //     }
 
-                console.log("Inserting into child_table:", child_table_name, "child_data:", child_data);
+            //     console.log("Inserting into child_table:", child_table_name, "child_data:", child_data);
 
-                const parentTemplate = await Template.findOne({ where: { table_name } });
-                const schemaChild = JSON.parse(parentTemplate.fields);
+            //     const parentTemplate = await Template.findOne({ where: { table_name } });
+            //     const schemaChild = JSON.parse(parentTemplate.fields);
 
-                const matchingSchemaField = schemaChild.find(
-                  field => field.formType === "Table" && sanitizeKey(`${table_name}_${field.name}`) === child_table_name
-                );
+            //     const matchingSchemaField = schemaChild.find(
+            //       field => field.formType === "Table" && sanitizeKey(`${table_name}_${field.name}`) === child_table_name
+            //     );
 
-                if (!matchingSchemaField || !matchingSchemaField.tableHeaders) {
-                  console.log("Skipping schema structure for:", child_table_name);
-                  continue;
-                }
+            //     if (!matchingSchemaField || !matchingSchemaField.tableHeaders) {
+            //       console.log("Skipping schema structure for:", child_table_name);
+            //       continue;
+            //     }
 
-                const childSchema = matchingSchemaField.tableHeaders.map(header => ({
-                  name: sanitizeKey(header.header),
-                  formType: header.fieldType?.type || "short_text"
-                }));
+            //     const childSchema = matchingSchemaField.tableHeaders.map(header => ({
+            //       name: sanitizeKey(header.header),
+            //       formType: header.fieldType?.type || "short_text"
+            //     }));
 
-                const childModelFields = {};
-                childSchema.forEach(f => {
-                  let sequelizeType = Sequelize.DataTypes.TEXT;
-                  if (f.formType === "short_text") sequelizeType = Sequelize.DataTypes.STRING(255);
-                  else if (["dropdown", "radio"].includes(f.formType)) sequelizeType = Sequelize.DataTypes.STRING(100);
-                  childModelFields[f.name] = {
-                    type: sequelizeType,
-                    allowNull: true,
-                    field: sanitizeKey(f.name)
-                  };
-                });
+            //     const childModelFields = {};
+            //     childSchema.forEach(f => {
+            //       let sequelizeType = Sequelize.DataTypes.TEXT;
+            //       if (f.formType === "short_text") sequelizeType = Sequelize.DataTypes.STRING(255);
+            //       else if (["dropdown", "radio"].includes(f.formType)) sequelizeType = Sequelize.DataTypes.STRING(100);
+            //       childModelFields[f.name] = {
+            //         type: sequelizeType,
+            //         allowNull: true,
+            //         field: sanitizeKey(f.name)
+            //       };
+            //     });
 
-                childModelFields[`${table_name}_id`] = {
-                  type: Sequelize.DataTypes.INTEGER,
-                  allowNull: false,
-                  references: { model: table_name, key: "id" },
-                  onDelete: "CASCADE",
-                };
+            //     childModelFields[`${table_name}_id`] = {
+            //       type: Sequelize.DataTypes.INTEGER,
+            //       allowNull: false,
+            //       references: { model: table_name, key: "id" },
+            //       onDelete: "CASCADE",
+            //     };
 
-                const ChildModel = sequelize.define(child_table_name, childModelFields, {
-                  freezeTableName: true,
-                  timestamps: true,
-                  underscored: true,
-                });
+            //     const ChildModel = sequelize.define(child_table_name, childModelFields, {
+            //       freezeTableName: true,
+            //       timestamps: true,
+            //       underscored: true,
+            //     });
 
-                await ChildModel.sync();
+            //     await ChildModel.sync();
 
-                const dataToInsert = child_data.map(row => {
-                  const rowData = {};
-                  for (const key in row) {
-                    rowData[sanitizeKey(key)] = row[key];
-                  }
-                  rowData[`${table_name}_id`] = insertedData.id;
-                  return rowData;
-                });
+            //     const dataToInsert = child_data.map(row => {
+            //       const rowData = {};
+            //       for (const key in row) {
+            //         rowData[sanitizeKey(key)] = row[key];
+            //       }
+            //       rowData[`${table_name}_id`] = insertedData.id;
+            //       return rowData;
+            //     });
 
-                console.log("bulkCreate into:", child_table_name, "with rows:", dataToInsert);
+            //     console.log("bulkCreate into:", child_table_name, "with rows:", dataToInsert);
 
-                await ChildModel.bulkCreate(dataToInsert, { transaction: t });
+            //     await ChildModel.bulkCreate(dataToInsert, { transaction: t });
 
-                const insertedChildren = await ChildModel.findAll({
-                  where: { [`${table_name}_id`]: insertedData.id },
-                });
-                console.log("Inserted children rows:", insertedChildren);
-                allChildren[raw_child_table_name] = insertedChildren;
-              }
-            }
+            //     const insertedChildren = await ChildModel.findAll({
+            //       where: { [`${table_name}_id`]: insertedData.id },
+            //     });
+            //     console.log("Inserted children rows:", insertedChildren);
+            //     allChildren[raw_child_table_name] = insertedChildren;
+            //   }
+            // }
 
             if (insertedData && tableData?.template_id) {
               const isUICase = !!insertedData.ui_case_id;
