@@ -954,14 +954,21 @@ const NormalViewForm = ({
     }
 
     if (table_name === "cid_pt_case_petition") {
-        if (field.name === "field_nature_of_petition") {
+        if (field.name === "field_stay_status") {
             const updatedFormConfig = newFormConfig.map((fld) => {
+                if (fld.name === "field_accused_name") {
+                    return {
+                        ...fld,
+                        required: selectedValue === "Partial" ? true : false,
+                    };
+                }
+
                 if (fld.name === "field_stay_status") {
-                    if (selectedValue === "Stay") {
-                        return { ...fld, hide_from_ux: false, required: true };
-                    } else {
-                        return { ...fld, hide_from_ux: true, required: false };
-                    }
+                    return {
+                        ...fld,
+                        hide_from_ux: selectedValue === "Stay" ? false : true,
+                        required: selectedValue === "Stay" ? true : false,
+                    };
                 }
                 return fld;
             });

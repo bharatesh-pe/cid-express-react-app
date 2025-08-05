@@ -74,6 +74,12 @@ const TabsComponents = ({ field = {}, formData = {}, errors = {}, onChange, onFo
                             onChange={(e) =>
                                 onChange(field.name, option.code, e.target.checked)
                             }
+                            onDoubleClick={(e) => {
+                                if (formData[field.name] === option.code) {
+                                    e.preventDefault();
+                                    onChange(field.name, null, false);
+                                }
+                            }}
                             onFocus={onFocus}
                             focused={isFocused || false}
                         />
