@@ -43,7 +43,7 @@ import dayjs from "dayjs";
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import CloseIcon from '@mui/icons-material/Close';
 
-const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRowData, backNavigation, showMagazineView,fetchCounts }) => {
+const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRowData, backNavigation, showMagazineView,fetchCounts,module }) => {
     const location = useLocation();
     const navigate = useNavigate();
     const { pageCount, systemStatus } = location.state || {};
@@ -472,12 +472,19 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
         var disabledDeleteFlag = false;
         setRandomApprovalId(randomId);
 
+        var ui_case_id = selectedRow?.id;
+        var pt_case_id = selectedRow?.pt_case_id;
+
+        if(module === "pt_case" || module === "pt_trail_case"){
+            ui_case_id = selectedRow?.ui_case_id
+            pt_case_id = selectedRow?.id
+        }
         console.log("checking selectedRow", selectedRow);
         var getTemplatePayload = {
             table_name: options.table,
-            ui_case_id: selectedRow.id,
+            ui_case_id: ui_case_id,
             case_io_id: selectedRow?.field_io_name || "",
-            pt_case_id: selectedRow?.pt_case_id || null,
+            pt_case_id: pt_case_id ,
             limit: 10,
             page: !searchFlag ? otherTemplatesPaginationCount : 1,
             search: !searchFlag ? otherSearchValue : "",
@@ -1943,7 +1950,11 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
 
         normalData.sys_status = "PF"
         normalData.field_submit_status = "";
-        normalData["ui_case_id"] = selectedRowData.id;
+        if(module === 'ui_case'){
+            normalData["ui_case_id"] = selectedRowData.id;
+        }else if(module === 'pt_case'){
+            normalData["pt_case_id"] = selectedRowData.id;
+        }
         formData.append("table_name", selectedOtherTemplate.table);
         formData.append("data", JSON.stringify(normalData));
         formData.append("child_tables", JSON.stringify(childTableDataMap));
