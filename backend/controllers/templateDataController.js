@@ -4058,7 +4058,8 @@ exports.deleteTemplateData = async (req, res, next) => {
       if (field.type === 'table' || field.formType === 'Table') {
         const childTableName = `${table_name}_${field.name}`
           .toLowerCase()
-          .replace(/[^a-z0-9_]+/g, "_");
+          .replace(/[^a-z0-9]+/gi, "_")
+          .replace(/^_+|_+$/g, "");
 
         const ChildModel = sequelize.models[childTableName] || sequelize.define(childTableName, {
           [`${table_name}_id`]: Sequelize.DataTypes.INTEGER,
