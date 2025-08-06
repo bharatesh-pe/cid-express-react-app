@@ -13,7 +13,9 @@ const {
   mapUIandPT,
   updatePoliceStationFromExcel,
   dumpOldCmsDataFromExcel,
-  store_cnr_table_data
+  store_cnr_table_data,
+  updatePoliceStationExcel,
+  updateCourtFromExcel
 } = require("../controllers/authController");
 const { validate_token } = require("../helper/validations");
 
@@ -34,5 +36,7 @@ router.post("/mapUIandPT" , mapUIandPT);
 router.post("/updatePoliceStationFromExcel" , updatePoliceStationFromExcel);
 router.post("/dumpOldCmsDataFromExcel", dumpOldCmsDataFromExcel);
 router.post("/store_cid_cnr_details", store_cnr_table_data);
+router.post("/updatePoliceStationExcel", updatePoliceStationExcel);
+router.post("/updateCourtFromExcel", updateCourtFromExcel);
 
 module.exports = router;

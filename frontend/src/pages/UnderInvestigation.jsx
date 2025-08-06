@@ -60,6 +60,7 @@ import "react-toastify/dist/ReactToastify.css";
 import InsertDriveFileIcon from "@mui/icons-material/InsertDriveFile";
 import pdfIcon from "../Images/pdfIcon.svg";
 import docIcon from "../Images/docIcon.svg";
+import docxIcon from "../Images/docxIcon.svg";
 import xlsIcon from "../Images/xlsIcon.svg";
 import pptIcon from "../Images/pptIcon.svg";
 import jpgIcon from "../Images/jpgIcon.svg";
@@ -1382,16 +1383,16 @@ const fslTableRef = useRef();
                     const parsed = JSON.parse(details);
                     if (Array.isArray(parsed) && parsed.length > 0) {
                         return {
-                            field_used_as_evidence: parsed[0]["Used as Evidence"] || "N/A",
-                            field_reason: parsed[0]["Reason"] || "N/A"
+                            field_used_as_evidence: parsed[0]["Used as Evidence"] || "",
+                            field_reason: parsed[0]["Reason"] || ""
                         };
                     }
                 } catch (err) {
                     console.error("Failed to parse field_property_details", err);
                 }
                 return {
-                    field_used_as_evidence: "N/A",
-                    field_reason: "N/A"
+                    field_used_as_evidence: "",
+                    field_reason: ""
                 };
             };
 
@@ -1493,7 +1494,7 @@ if (tableName === "cid_ui_case_forensic_science_laboratory") {
 
                         if (tableName === "cid_ui_case_progress_report") {
                             tableHeader = tableHeader.filter(
-                                (col) => col.field !== "field_due_date" && col.field !== "field_pr_status" && col.field !== "field_approval_done_by"
+                                (col) => col.field !== "field_due_date" && col.field !== "field_pr_status" && col.field !== "field_approval_done_by" && col.field !== "field_remarks" 
                             );
                             tableHeader = enhanceTableHeader(tableHeader, viewTemplateResponse?.['data']?.['fields'] || []);
                         }
@@ -1506,7 +1507,7 @@ if (tableName === "cid_ui_case_forensic_science_laboratory") {
                                     col.field === "field_status_of_accused_in_charge_sheet" ||
                                     col.field === "field_government_servent" ||
                                     col.field === "field_pso_&_19_pc_act_order" ||
-                                    col.field === "field_used_as_evidence" // <-- add this if you want it in accused table
+                                    col.field === "field_used_as_evidence"
                             );
                             tableHeader = enhanceTableHeader(tableHeader, viewTemplateResponse?.['data']?.['fields'] || []);
                         }
@@ -2447,7 +2448,7 @@ function toISODateString(val) {
             const value = rowData[key];
 
             if (value instanceof File) {
-              formData.append(key, value);
+              formData.append(`${key}__${rowId}`, value);
               fileFields.push(key);
             } else if (key.toLowerCase().includes("date")) {
               if (isValidDateValue(value)) {
@@ -2500,25 +2501,25 @@ function toISODateString(val) {
     console.log("Batch update ids:", ids);
     console.log("Batch update dataArr:", dataArr);
 
-    var droppedAccusedWithoutWitness = false;
+    // var droppedAccusedWithoutWitness = false;
     
-    dataArr.map((element)=>{
-        if(element['field_status_of_accused_in_charge_sheet'] === "Dropped" && (!element['field_he_is_being_treated_as_witness'] || element['field_he_is_being_treated_as_witness'] === "")){
-            droppedAccusedWithoutWitness = true;
-        }
-    });
+    // dataArr.map((element)=>{
+    //     if(element['field_status_of_accused_in_charge_sheet'] === "Dropped" && (!element['field_he_is_being_treated_as_witness'] || element['field_he_is_being_treated_as_witness'] === "")){
+    //         droppedAccusedWithoutWitness = true;
+    //     }
+    // });
 
-    if(droppedAccusedWithoutWitness){
+    // if(droppedAccusedWithoutWitness){
 
-        Swal.fire({
-            title: 'Please Update Witness Field',
-            text: 'This person is being treated as a witness. Please update the accused data accordingly.',
-            icon: 'warning',
-            confirmButtonText: 'OK'
-        });
+    //     Swal.fire({
+    //         title: 'Please Update Witness Field',
+    //         text: 'This person is being treated as a witness. Please update the accused data accordingly.',
+    //         icon: 'warning',
+    //         confirmButtonText: 'OK'
+    //     });
 
-        return;
-    }
+    //     return;
+    // }
 
     if (ids.length === 0) {
       toast.error("No valid rows to update.", { className: "toast-error" });
@@ -3898,6 +3899,12 @@ const ExtensionFormWrapper = ({
                                 var PreDefinedData = {}
 
                                 if(getTemplateResponse.data){
+
+                                    if (getTemplateResponse.data.id !== undefined) {
+                                        PreDefinedData["id"] = getTemplateResponse.data.id;
+                                        PreDefinedData["field_ui_case"] = PreDefinedData["id"]
+                                        PreDefinedData["field_ps_crime_number"] = getTemplateResponse.data.field_crime_number_of_ps;
+                                    }
                                     viewTemplateResponse.data['fields'].map((element)=>{
                                         if(element.name && getTemplateResponse.data[element.name] !== null && getTemplateResponse.data[element.name] !== undefined){
                                             PreDefinedData[element.name] = getTemplateResponse.data[element.name];
@@ -4586,7 +4593,10 @@ const loadChildMergedCasesData = async (page, caseId) => {
       setTableData(processedData);
 
       const excludedKeys = [
-        "created_at", "updated_at", "deleted_at", "attachments", "task_unread_count", "id", "field_cid_crime_no./enquiry_no", "field_io_name" ,"field_io_name_id"
+        "created_at", "updated_at", "deleted_at", "attachments", "task_unread_count", "id",
+                    "ui_case_id", "pt_case_id", "sys_status", "field_cid_crime_no./enquiry_no","field_io_name" , "field_io_name_id", 
+                    "field_name_of_the_police_station", "field_division", "field_case/enquiry_keyword", "field_date_of_taking_over_by_cid", "field_extension_date",
+                    "field_extension_remark","field_extension_updated_by","childCount"
       ];
 
       const generateReadableHeader = (key) =>
@@ -4637,62 +4647,105 @@ const loadChildMergedCasesData = async (page, caseId) => {
               />
             </Box>
           ),
-        }
-        ,
-      {
-          field: "approval_child",
-          headerName: "Approval",
-          width: 50,
+        },
+        {
+            field: "approval_child",
+            headerName: "Approval",
+            width: 50,
+            resizable: true,
+            cellClassName: 'justify-content-start',
+            renderHeader: (params) => (
+                <Tooltip title="Approval"><VerifiedIcon sx={{ color: "", fill: "#1f1dac" }} /></Tooltip>
+            ),                            
+            renderCell: (params) => (
+                <Button
+                    variant="contained"
+                    color="transparent"
+                    size="small"
+                    sx={{
+                        padding: 0,
+                        fontSize: '0.75rem',
+                        textTransform: 'none',
+                        boxShadow: 'none',
+                        '&:hover':{
+                            boxShadow: 'none',
+                        }
+                    }}
+                >
+                    <Tooltip title="Approval"><VerifiedUserIcon color="success" onClick={() => {
+                      setIsChildMergedLoading(true);
+                      handleActionShow(params?.row, true);
+                    }}
+                    sx={{fontSize:'26px'}} /></Tooltip>
+                </Button>
+            )
+        },
+        {
+            field: "field_cid_crime_no./enquiry_no",
+            headerName: "Cid Crime No./Enquiry No",
+            width: 130,
+            resizable: true,
+            cellClassName: 'justify-content-start',
+            renderHeader: (params) => (
+                tableHeaderRender(params, "field_cid_crime_no./enquiry_no")
+            ),
+            renderCell: renderCellFunc("field_cid_crime_no./enquiry_no", 0),
+        },
+        {
+          field: "field_io_name",
+          headerName: "Assign To IO",
+          width: 150,
           resizable: true,
           cellClassName: 'justify-content-start',
           renderHeader: (params) => (
-              <Tooltip title="Approval"><VerifiedIcon sx={{ color: "", fill: "#1f1dac" }} /></Tooltip>
-          ),                            
-          renderCell: (params) => (
-              <Button
-                  variant="contained"
-                  color="transparent"
-                  size="small"
-                  sx={{
-                      padding: 0,
-                      fontSize: '0.75rem',
-                      textTransform: 'none',
-                      boxShadow: 'none',
-                      '&:hover':{
-                          boxShadow: 'none',
-                      }
-                  }}
-              >
-                  <Tooltip title="Approval"><VerifiedUserIcon color="success" onClick={() => {
-                    setIsChildMergedLoading(true);
-                    handleActionShow(params?.row, true);
-                  }}
-                  sx={{fontSize:'26px'}} /></Tooltip>
-              </Button>
-          )
-      },
-      {
-          field: "field_cid_crime_no./enquiry_no",
-          headerName: "Cid Crime No./Enquiry No",
-          width: 200,
-          resizable: true,
-          cellClassName: 'justify-content-start',
-          renderHeader: (params) => (
-              tableHeaderRender(params, "field_cid_crime_no./enquiry_no")
+              tableHeaderRender(params, "field_io_name")
           ),
-          renderCell: renderCellFunc("field_cid_crime_no./enquiry_no", 0),
-      },
-      {
-        field: "field_io_name",
-        headerName: "Assign To IO",
-        width: 200,
-        resizable: true,
-        cellClassName: 'justify-content-start',
-        renderHeader: (params) => (
-            tableHeaderRender(params, "field_io_name")
-        ),
-        renderCell: renderCellFunc("field_io_name", 0),
-    },
+          renderCell: renderCellFunc("field_io_name", ),
+        },
+        {
+            field: "field_name_of_the_police_station",
+            headerName: "Police Station",
+            width: 200,
+            resizable: true,
+            cellClassName: 'justify-content-start',
+            renderHeader: (params) => (
+                tableHeaderRender(params, "field_name_of_the_police_station")
+            ),
+            renderCell: renderCellFunc("field_name_of_the_police_station", ),
+        },
+        {
+            field: "field_division",
+            headerName: "Divisions",
+            width: 200,
+            resizable: true,
+            cellClassName: 'justify-content-start',
+            renderHeader: (params) => (
+                tableHeaderRender(params, "field_division")
+            ),
+            renderCell: renderCellFunc("field_division", ),
+        },
+        {
+            field: "field_case/enquiry_keyword",
+            headerName: "Keyword",
+            width: 200,
+            resizable: true,
+            cellClassName: 'justify-content-start',
+            renderHeader: (params) => (
+                tableHeaderRender(params, "field_case/enquiry_keyword")
+            ),
+            renderCell: renderCellFunc("field_case/enquiry_keyword", ),
+        },
+        {
+            field: "field_date_of_taking_over_by_cid",
+            headerName: "CID Take over date",
+            width: 200,
+            resizable: true,
+            cellClassName: 'justify-content-start',
+            renderHeader: (params) => (
+                tableHeaderRender(params, "field_date_of_taking_over_by_cid")
+            ),
+            renderCell: renderCellFunc("field_date_of_taking_over_by_cid", ),
+        },
         ...Object.keys(data[0])
           .filter((key) => !excludedKeys.includes(key))
           .map((key) => ({
@@ -4773,7 +4826,9 @@ const loadChildMergedCasesData = async (page, caseId) => {
                 const excludedKeys = [
                     "created_at", "updated_at", "id", "deleted_at", "attachments",
                     "Starred", "ReadStatus", "linked_profile_info",
-                    "ui_case_id", "pt_case_id", "sys_status", "task_unread_count" , "field_cid_crime_no./enquiry_no", "field_io_name","field_io_name_id"
+                    "ui_case_id", "pt_case_id", "sys_status", "task_unread_count" , "field_cid_crime_no./enquiry_no","field_io_name" , "field_io_name_id", 
+                    "field_name_of_the_police_station", "field_division", "field_case/enquiry_keyword", "field_date_of_taking_over_by_cid", "field_extension_date",
+                    "field_extension_remark","field_extension_updated_by","childCount"
                 ];
 
                 const generateReadableHeader = (key) =>
@@ -4851,7 +4906,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                     {
                         field: "field_cid_crime_no./enquiry_no",
                         headerName: "Cid Crime No./Enquiry No",
-                        width: 200,
+                        width: 130,
                         resizable: true,
                         cellClassName: 'justify-content-start',
                         renderHeader: (params) => (
@@ -4862,15 +4917,15 @@ const loadChildMergedCasesData = async (page, caseId) => {
                     {
                       field: "field_io_name",
                       headerName: "Assign To IO",
-                      width: 200,
+                      width: 150,
                       resizable: true,
                       cellClassName: 'justify-content-start',
                       renderHeader: (params) => (
                           tableHeaderRender(params, "field_io_name")
                       ),
-                      renderCell: renderCellFunc("field_io_name", 0),
-                  },
-                    ...(sysStatus === "merge_cases"
+                      renderCell: renderCellFunc("field_io_name", ),
+                    },
+                      ...(sysStatus === "merge_cases"
                       ? [
                           {
                             field: "child_case",
@@ -4909,7 +4964,51 @@ const loadChildMergedCasesData = async (page, caseId) => {
                           },
                         ]
                       : []),
-                    ...Object.keys(data[0])
+                      {
+                          field: "field_name_of_the_police_station",
+                          headerName: "Police Station",
+                          width: 200,
+                          resizable: true,
+                          cellClassName: 'justify-content-start',
+                          renderHeader: (params) => (
+                              tableHeaderRender(params, "field_name_of_the_police_station")
+                          ),
+                          renderCell: renderCellFunc("field_name_of_the_police_station", ),
+                      },
+                      {
+                          field: "field_division",
+                          headerName: "Divisions",
+                          width: 200,
+                          resizable: true,
+                          cellClassName: 'justify-content-start',
+                          renderHeader: (params) => (
+                              tableHeaderRender(params, "field_division")
+                          ),
+                          renderCell: renderCellFunc("field_division", ),
+                      },
+                      {
+                          field: "field_case/enquiry_keyword",
+                          headerName: "Keyword",
+                          width: 200,
+                          resizable: true,
+                          cellClassName: 'justify-content-start',
+                          renderHeader: (params) => (
+                              tableHeaderRender(params, "field_case/enquiry_keyword")
+                          ),
+                          renderCell: renderCellFunc("field_case/enquiry_keyword", ),
+                      },
+                      {
+                          field: "field_date_of_taking_over_by_cid",
+                          headerName: "CID Take over date",
+                          width: 200,
+                          resizable: true,
+                          cellClassName: 'justify-content-start',
+                          renderHeader: (params) => (
+                              tableHeaderRender(params, "field_date_of_taking_over_by_cid")
+                          ),
+                          renderCell: renderCellFunc("field_date_of_taking_over_by_cid", ),
+                      },
+                      ...Object.keys(data[0])
                         .filter((key) => !excludedKeys.includes(key))
                         .map((key) => ({
                             field: key,
@@ -5916,6 +6015,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
         return <img src={xlsIcon} />;
       case "csv":
       case "docx":
+        return <img src={docxIcon} />;
       case "doc":
         return <img src={docIcon} />;
       case "ppt":
@@ -11190,6 +11290,13 @@ const handleExtensionApprovalWithUpdate = async () => {
               var PreDefinedData = {}
 
               if(getTemplateResponse.data){
+
+                if (getTemplateResponse.data.id !== undefined) {
+                    PreDefinedData["id"] = getTemplateResponse.data.id;
+                    PreDefinedData["field_ui_case"] = PreDefinedData["id"]
+                    PreDefinedData["field_ps_crime_number"] = getTemplateResponse.data.field_crime_number_of_ps;
+                }
+
                   viewTemplateResponse.data['fields'].map((element)=>{
                       if(element.name && getTemplateResponse.data[element.name] !== null && getTemplateResponse.data[element.name] !== undefined){
                           PreDefinedData[element.name] = getTemplateResponse.data[element.name];
@@ -15192,7 +15299,7 @@ return (
             </FormControl>
           </div>
                 <div style={{ marginTop: 24, maxWidth: 700 }}>
-                <h4 className="form-field-heading">Cases for Selected IO User</h4>
+                <h4 className="form-field-heading">Selected IO handling Case Details</h4>
                 <div style={{ maxHeight: 250, overflowY: "auto" }}>
                   <TableView
                   rows={ioUserCases.slice(
@@ -15547,7 +15654,7 @@ return (
             </FormControl>
           </div>
                 <div style={{ marginTop: 24, maxWidth: '100vw'  }}>
-                <h4 className="form-field-heading">Cases for Selected IO User</h4>
+                <h4 className="form-field-heading">Selected IO handling Case Details</h4>
                 <div style={{  }}>
                   <TableView
                   rows={ioUserCases.slice(

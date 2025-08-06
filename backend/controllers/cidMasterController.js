@@ -581,7 +581,7 @@ const getSpecificIoUsersCases = async (req, res) => {
         if (template_module === "ui_case") {
             table_name = "cid_under_investigation";
         } else if (template_module === "pt_case") {
-            table_name = "cid_pending_trail";
+            table_name = "cid_pending_trial";
         } else if (template_module === "eq_case") {
             table_name = "cid_enquiry";
         } else {
@@ -786,6 +786,48 @@ const getDivisionBasedOnDepartment = async (req, res) => {
     }
 };
 
+const getPoliceStationsBasedOnDistrict = async (req, res) => {
+    try {
+        const { district_id } = req.body;
+
+        if (!district_id || district_id === "") {
+            return res.status(400).json({ message: "District ID is required." });
+        }
+
+        const districtResult = await sequelize.query(
+            `SELECT field_district FROM cid_district WHERE id = :district_id`,
+            {
+                replacements: { district_id },
+                type: sequelize.QueryTypes.SELECT,
+            }
+        );
+
+        if (!districtResult || districtResult.length === 0) {
+            return adminSendResponse(res, 404, false, "District not found with the given ID", []);
+        }
+
+
+        const policeStations = await sequelize.query(
+            `SELECT id, field_name_of_the_police_station 
+             FROM cid_police_station 
+             WHERE field_district = :district_id 
+             ORDER BY field_name_of_the_police_station ASC`,
+            {
+                replacements: { district_id: String(district_id) },
+                type: sequelize.QueryTypes.SELECT,
+            }
+        );
+        
+        if (!policeStations || policeStations.length === 0) {
+            return adminSendResponse(res, 200, true, "Please create police stations and try again.", []);
+        }
+
+        return adminSendResponse(res, 200, true, "Police stations retrieved successfully", policeStations);
+    } catch (error) {
+        console.error("Error fetching police stations:", error.message);
+        return adminSendResponse(res, 500, false, "Failed to fetch police stations: " + error.message || "Internal Server Error");
+    }
+};
 
 function normalizeValues(values, expectedType) {
   return values
@@ -860,7 +902,11 @@ const fetchUICaseDetails = async (req, res) => {
                         cps.field_name_of_the_police_station AS police_station_name
                     FROM cid_under_investigation cui
                     LEFT JOIN cid_police_station cps
-                        ON CAST(cui.field_name_of_the_police_station AS INTEGER) = cps.id
+                    ON CASE 
+                            WHEN cui.field_name_of_the_police_station ~ '^[0-9]+$' 
+                            THEN CAST(cui.field_name_of_the_police_station AS INTEGER)
+                            ELSE NULL
+                        END = cps.id
                     ${whereSQL}
                 `, {
                     replacements,
@@ -908,4 +954,5 @@ module.exports = {
     getDivisionBasedOnDepartment,
     getSpecificIoUsersCases,
     fetchUICaseDetails,
+    getPoliceStationsBasedOnDistrict
 };

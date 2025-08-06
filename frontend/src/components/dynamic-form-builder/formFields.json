@@ -362,6 +362,10 @@
                 "ext": ".doc"
             },
             {
+                "name": "Docx files",
+                "ext": ".docx"
+            },
+            {
                 "name": "Excel sheets",
                 "ext": ".xls"
             },
@@ -467,7 +471,6 @@
         "info": "",
         "name": "",
         "tableHeaders": [],
-        "required": "",
         "disabled": "",
         "hide_from_ux": false,
         "type": "table",

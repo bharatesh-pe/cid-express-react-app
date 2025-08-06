@@ -6,6 +6,7 @@ import LokayuktaSidebar from "../components/lokayuktaSidebar";
 import { West } from "@mui/icons-material";
 import DeleteIcon from '@mui/icons-material/Delete';
 import TextFieldInput from "@mui/material/TextField";
+import { Menu, MenuItem } from '@mui/material';
 
 import NormalViewForm from "../components/dynamic-form/NormalViewForm";
 import TableView from "../components/table-view/TableView";
@@ -63,12 +64,14 @@ const LokayuktaView = () => {
         }
     },[]);
 
+    
     const [splitScreenArray, setSplitScreenArray] = useState([
         'cid_ui_case_accused',
         'cid_pt_case_witness',
     ]);
 
     const [currentTableName, setCurrentTableName] = useState(null);
+    const [secondTableName, setSecondTableName] = useState(null);
 
     const [splitScreenNavTabs, setsplitScreenNavTabs] = useState([]);
 
@@ -196,6 +199,7 @@ const LokayuktaView = () => {
     const [formFields, setFormFields] = useState([]);
     const [initalFormData, setInitialFormData] = useState({});
     const [formStepperData, setFormStepperData] = useState([]);
+    const [childTables, setChildTables] = useState([]);
 
     // for approval data
 
@@ -313,9 +317,13 @@ const LokayuktaView = () => {
 
     },[initialRowData, tableViewFlag]);
 
-    const backToForm = ()=>{
 
-        if(backNavigation){
+    const backToForm = ()=>{
+        if ( currentTableName === "cid_ui_case_old_cms_data" || secondTableName === "cid_pt_case_cnr") {
+            if (activeSidebar) {
+                sidebarActive(activeSidebar, true);
+            }
+        } else if(backNavigation){
 
             var stateObj = {
                 pageCount: paginationCount,
@@ -334,6 +342,7 @@ const LokayuktaView = () => {
             navigate(backNavigation, {state : stateObj});
         }
         setCurrentTableName(null); 
+        setSecondTableName(null);
     }
 
     const sidebarActive = async (item, ignored)=>{
@@ -395,6 +404,7 @@ const LokayuktaView = () => {
         setSelectedSplitScreenRows([]);
         setActiveSidebar(item);
         setFormOpen(false);
+        setSelectedTableTabs('all');
         if(item?.viewAction){
             setTableViewFlag(false);
             setTemplateId(template_id);
@@ -406,10 +416,12 @@ const LokayuktaView = () => {
             setFormEditFlag(false);
             setFormReadFlag(true);
             setCurrentTableName(null);
+            setSecondTableName(null);
             return;
         }else{
             setTableViewFlag(true);
             setCurrentTableName(null);
+            setSecondTableName(null);
             getTableData(item);
         }
     }
@@ -512,6 +524,7 @@ const LokayuktaView = () => {
                     setFormFields(viewTemplateResponse.data.fields || []);
                     setFormStepperData(viewTemplateResponse.data.sections || []);
                     setInitialFormData(viewTemplateData.data || {});
+                    setChildTables(viewTemplateResponse?.["data"]?.["child_tables"] || []);
                     setReadonlyForm(true);
                     setEditOnlyForm(editData || false);
                     setFormOpen(true);
@@ -555,11 +568,157 @@ const LokayuktaView = () => {
         }
     };
 
+    const [anchorEl, setAnchorEl] = useState(null);
+    const open = Boolean(anchorEl);
+
+    const handleMenuClick = (event) => {
+        setAnchorEl(event.currentTarget);
+    };
+
+    const handleMenuClose = () => {
+        setAnchorEl(null);
+    };
+
+    const defaultMenuItems = [
+        { label: 'Notices', table_name: 'cid_ui_case_notices' },
+        { label: 'Court matters', table_name: 'cid_pt_case_petition' },
+        { label: 'Petition', table_name: 'cid_pt_case_petition' },
+        { label: 'Trial Monitoring', table_name: 'cid_pt_case_trial_monitoring' },
+        { label: 'Recording of Statement', table_name: 'cid_ui_case_recording_of_statements' },
+    ];
+
+    let parsedContentArray = [];
+
+    try {
+        if (typeof contentArray === "string") {
+            parsedContentArray = JSON.parse(contentArray);
+        } else if (Array.isArray(contentArray)) {
+            parsedContentArray = contentArray;
+        } else {
+            parsedContentArray = Object.values(contentArray || {});
+        }
+    } catch (e) {
+        console.error("Failed to parse contentArray:", e);
+    }
+
+    const contentTables = parsedContentArray
+        .filter(item => typeof item.table === 'string')
+        .map(item => item.table);
+
+    const menuItems = defaultMenuItems.filter(item => {
+        if (module === "ui_case" && item.label === "Petition") return false;
+        if (module === "pt_case" && item.label === "Court matters") return false;
+        return contentTables.includes(item.table_name);
+    });
+
+
+
     useEffect(()=>{
         if(tableTabs.length > 0){
             getTableData(activeSidebar);
         }
     },[selectedTableTabs]);
+
+      const mappingCases = async () => {
+        let resolvedTableName = table_name;
+
+        if (module === "pt_case" || module === "pt_trail_case") {
+            resolvedTableName = "cid_under_investigation";
+        } else if (module === "ui_case") {
+            resolvedTableName = "cid_pending_trial";
+        }
+
+        if (!resolvedTableName) {
+            console.warn("Missing resolvedTableName in mappingCases");
+            toast.warning("Please Check Table Name");
+            return;
+        }
+
+
+        let ui_case_id = "";
+        let pt_case_id = "";
+        let selectedId = "";
+
+        if (module === "pt_case" || module === "pt_trail_case") {
+            ui_case_id = rowData?.ui_case_id;
+            selectedId = ui_case_id;
+        } else if (module === "ui_case") {
+            pt_case_id = rowData?.pt_case_id;
+            selectedId = pt_case_id;
+        }
+
+        if (!selectedId || selectedId === null) {
+            toast.warning("No data found.", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-warning",
+            });
+        return;
+    }
+
+        setSelectedRowId(selectedId);
+
+        const viewTemplatePayload = {
+            table_name: resolvedTableName,
+            id: selectedId
+        };
+
+        setLoading(true);
+        try {
+            const viewTemplateData = await api.post("/templateData/viewTemplateData", viewTemplatePayload);
+            setLoading(false);
+
+            if (viewTemplateData?.success) {
+                const viewTemplateResponse = await api.post("/templates/viewTemplate", { table_name: resolvedTableName });
+                if (viewTemplateResponse?.success) {
+                    setSelectedTemplateId(viewTemplateResponse.data.template_id);
+                    setSelectedTemplateName(viewTemplateResponse.data.template_name);
+                    setSelectedTableName(resolvedTableName);
+                    setFormFields(viewTemplateResponse.data.fields || []);
+                    setFormStepperData(viewTemplateResponse.data.sections || []);
+                    setInitialFormData(viewTemplateData.data || {});
+                    setReadonlyForm(true);
+                    setEditOnlyForm(false);
+                    setFormOpen(true);
+                    setRowValueId(rowData);
+                } else {
+                    toast.error(viewTemplateResponse.message || "Failed to fetch template.", { position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error", });
+                }
+            } else {
+                toast.error(viewTemplateData.message || "Failed to fetch data.", { position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error", });
+            }
+        } catch (error) {
+            setLoading(false);
+            toast.error(error?.response?.data?.message || "Please Try Again!", { position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error", });
+        }
+    };
+
 
     const handleViewOldCase = () => {
         const oldCaseTable = {
@@ -567,10 +726,24 @@ const LokayuktaView = () => {
             is_approval: false,
         };
         setCurrentTableName("cid_ui_case_old_cms_data"); 
+        setSecondTableName("")
         setTableViewFlag(true);
 
         getTableData(oldCaseTable);
     };
+
+    const handleViewCNR = () => {
+        const oldCaseTable = {
+            table: "cid_pt_case_cnr",
+            is_approval: false,
+        };
+        setCurrentTableName(""); 
+        setSecondTableName("cid_pt_case_cnr")
+        setTableViewFlag(true);
+
+        getTableData(oldCaseTable);
+    };
+
 
     const getTableData = async (options, reOpen, noFilters) => {
 
@@ -598,6 +771,7 @@ const LokayuktaView = () => {
             tab: sysStatus,
             checkRandomColumn : "field_approval_done_by",
             checkTabs : true,
+            tableTab : selectedTableTabs
         };
 
         setLoading(true);
@@ -794,11 +968,22 @@ const LokayuktaView = () => {
                             ),
                             renderCell: renderCellFunc(key, index),
                         })),
-                        ...(splitScreenArray.includes(options?.table?.toLowerCase()) ? [
-                            {
-                                field: "notices",
-                                headerName: "Notices",
-                                width: 100,
+                         ...(splitScreenArray.includes((options?.table || "").toLowerCase()) ? [
+                            { label: "Notices", table_name: "cid_ui_case_notices", field: "notices", width: 100 },
+                            { label: "Petition", table_name: "cid_pt_case_petition", field: "petition", width: 110 },
+                            { label: "Court Matters", table_name: "cid_pt_case_petition", field: "court_matters", width: 160 },
+                            { label: "Trial Monitoring", table_name: "cid_pt_case_trial_monitoring", field: "trial_monitoring", width: 180 },
+                            { label: "Recording of Statement", table_name: "cid_ui_case_recording_of_statements", field: "recording_of_statement", width: 240 },
+                        ]
+                            .filter(item => {
+                                if (module === "ui_case" && item.label === "Petition") return false;
+                                if (module === "pt_case" && item.label === "Court Matters") return false;
+                                return contentTables.includes(item.table_name);
+                            })
+                            .map(item => ({
+                                field: item.field,
+                                headerName: item.label,
+                                width: item.width,
                                 resizable: false,
                                 renderCell: (params) => (
                                     <Button
@@ -806,40 +991,14 @@ const LokayuktaView = () => {
                                         size="small"
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            handleOpenSplitScreen(params.row, 
-                                            {label: 'Notices', table_name: 'cid_ui_case_notices'}, 
-                                            options?.table
-                                            );
+                                            handleOpenSplitScreen(params.row, { label: item.label, table_name: item.table_name }, options?.table);
                                         }}
                                         className="newStyleButton"
                                     >
-                                        Notices
+                                        {item.label}
                                     </Button>
                                 )
-                            },
-                            {
-                                field: "recording_of_statement",
-                                headerName: "Recording of Statement",
-                                width: 220,
-                                resizable: false,
-                                renderCell: (params) => (
-                                    <Button
-                                        variant="contained"
-                                        size="small"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleOpenSplitScreen(params.row, 
-                                            {label: 'Recording of Statement', table_name: 'cid_ui_case_recording_of_statements'}, 
-                                            options?.table
-                                            );
-                                        }}
-                                        className="newStyleButton"
-                                    >
-                                        Recording of Statement
-                                    </Button>
-                                )
-                            }
-                        ] : []),
+                            })) : []),
                     ]
 
                     const formatDate = (value) => {
@@ -1035,6 +1194,9 @@ const LokayuktaView = () => {
                 const deleteTemplateData = {
                     table_name: options?.table,
                     where: { id: data.id },
+                    transaction_id: `delete_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
+                    ui_case_id : rowData?.id,
+                    pt_case_id : rowData?.pt_case_id,
                 };
 
                 setLoading(true);
@@ -1053,7 +1215,10 @@ const LokayuktaView = () => {
                             draggable: true,
                             progress: undefined,
                             className: "toast-success",
-                            onOpen: () => {getTableData(options)}
+                            onOpen: () => {
+                                  fetchCounts();
+                                  getTableData(options)
+                                }
                         });
                     } else {
                         const errorMessage = deleteTemplateDataResponse.message ? deleteTemplateDataResponse.message : "Failed to delete the template. Please try again.";
@@ -1114,7 +1279,7 @@ const LokayuktaView = () => {
 
     const showAddNewForm = async ()=>{
         
-        if (!currentTableName && (!activeSidebar?.table || activeSidebar?.table === "")) {
+        if (!currentTableName && !secondTableName  && (!activeSidebar?.table || activeSidebar?.table === "")) {
             toast.error("Please Check The Template !", {
                 position: "top-right",
                 autoClose: 3000,
@@ -1129,7 +1294,7 @@ const LokayuktaView = () => {
         }
 
         const viewTableData = {
-            table_name: currentTableName || activeSidebar?.table,
+            table_name: currentTableName || secondTableName || activeSidebar?.table,
         };
 
         setLoading(true);
@@ -1151,6 +1316,8 @@ const LokayuktaView = () => {
                 
                 setFormFields(viewTemplateResponse?.["data"]?.["fields"] || []);
                 setInitialFormData({});
+                setChildTables(viewTemplateResponse?.["data"]?.["child_tables"] || []);
+
                 if (viewTemplateResponse?.["data"]?.no_of_sections && viewTemplateResponse?.["data"]?.no_of_sections > 0) {
                     setFormStepperData(viewTemplateResponse?.["data"]?.sections ? viewTemplateResponse?.["data"]?.sections: []);
                 }else{
@@ -1194,7 +1361,7 @@ const LokayuktaView = () => {
     
     const formSubmit = async (data, formOpen)=>{
 
-        if ((!currentTableName || currentTableName === "") && (!activeSidebar?.table || activeSidebar.table === "")) {
+        if ((!currentTableName || currentTableName === "") && (!secondTableName || secondTableName === "") && (!activeSidebar?.table || activeSidebar.table === "")) {
             toast.warning("Please Check The Template", {
                 position: "top-right",
                 autoClose: 3000,
@@ -1554,6 +1721,57 @@ const LokayuktaView = () => {
             }
         }
     }
+    const [tableCounts, setTableCounts] = useState({});
+
+const ui_case_id = module === "pt_case" ? rowData?.ui_case_id : rowData?.id;
+const pt_case_id = module === "pt_case" ? rowData?.id : rowData?.pt_case_id;
+
+let normalizedSidebarItems = [];
+try {
+    if (typeof contentArray === "string") {
+        normalizedSidebarItems = JSON.parse(contentArray);
+    } else if (Array.isArray(contentArray)) {
+        normalizedSidebarItems = contentArray;
+    } else {
+        normalizedSidebarItems = Object.values(contentArray || {});
+    }
+} catch (e) {
+    console.error("Failed to parse contentArray:", e);
+}
+
+const fetchCounts = async () => {
+    if (!ui_case_id && !pt_case_id) return;
+
+    const tableNamesForCount = normalizedSidebarItems.map(item => item.table).filter(Boolean);
+
+    try {
+        const serverURL = process.env.REACT_APP_SERVER_URL;
+        const response = await fetch(`${serverURL}/templateData/getTableCountsByCaseId`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ table_names: tableNamesForCount, ui_case_id, pt_case_id, module, sysStatus }),
+        });
+
+        const data = await response.json();
+        if (data.success) {
+            setTableCounts(data.data);
+        } else {
+            setTableCounts({});
+        }
+    } catch (err) {
+        console.error("Error fetching table counts:", err);
+        setTableCounts({});
+    }
+};
+
+
+    function sanitizeKey(str) {
+        return str
+            .toLowerCase()
+            .replace(/[^\w]/g, "_")
+            .replace(/_+/g, "_")
+            .replace(/^_+|_+$/g, "");
+        }
 
     const handleDirectCaseSave = async (data, formOpen) => {
         const formData = new FormData();
@@ -1576,6 +1794,39 @@ const LokayuktaView = () => {
                 }
             }
         });
+
+        let childTableDataMap = {};
+
+        if (childTables && Array.isArray(childTables)) {
+            childTables.forEach(child => {
+                const childFieldName = child.field_name;
+
+                if (data[childFieldName]) {
+                    let parsed;
+                    try {
+                        parsed = typeof data[childFieldName] === "string"
+                            ? JSON.parse(data[childFieldName])
+                            : data[childFieldName];
+                    } catch (err) {
+                        parsed = [];
+                    }
+
+                    if (Array.isArray(parsed)) {
+                        const normalizedRows = parsed.map(row => {
+                            let newRow = {};
+                            for (const key in row) {
+                                const sanitizedKey = sanitizeKey(key);
+                                newRow[sanitizedKey] = row[key];
+                            }
+                            return newRow;
+                        });
+
+                        childTableDataMap[child.child_table_name] = normalizedRows;
+                    }
+                }
+            });
+        }
+
         if (activeSidebar?.table === "cid_eq_case_enquiry_order_copy") {
             normalData["sys_status"] = data?.field_status || "eq_case";
             if (data?.field_status && rowData?.id) {
@@ -1607,8 +1858,9 @@ const LokayuktaView = () => {
         normalData["pt_case_id"] = pt_case_id;
 
         var othersData = {};
-        formData.append("table_name", activeSidebar.table || currentTableName);
+        formData.append("table_name", activeSidebar.table || currentTableName || secondTableName);
         formData.append("data", JSON.stringify(normalData));
+        formData.append("child_tables", JSON.stringify(childTableDataMap));
         formData.append("transaction_id", `pt_${Date.now()}_${Math.floor(Math.random() * 10000)}`);
         formData.append("user_designation_id", localStorage.getItem('designation_id') || null);
         formData.append("others_data", JSON.stringify(othersData));
@@ -1630,10 +1882,13 @@ const LokayuktaView = () => {
                     progress: undefined,
                     className: "toast-success",
                     onOpen: () => {
+                        fetchCounts();
                         if (activeSidebar?.table === "cid_eq_case_enquiry_order_copy") {
                             navigate("/case/enquiry");
                         }else if (currentTableName === 'cid_ui_case_old_cms_data') {
                             getTableData({table:"cid_ui_case_old_cms_data"}, formOpen);
+                        }else if (secondTableName === 'cid_pt_case_cnr'){
+                            getTableData({table:"cid_pt_case_cnr"}, formOpen);
                         }else {
                             getTableData(activeSidebar, formOpen);
                         }
@@ -1669,7 +1924,10 @@ const LokayuktaView = () => {
 
     const formUpdate = async (data, formOpen) => {
         console.log("formSubmit", data, formOpen);
-if ((!currentTableName || currentTableName === "") && (!activeSidebar?.table || activeSidebar.table === "")) {
+
+        console.log("selectedTableName", selectedTableName)
+
+    if ((!currentTableName || currentTableName === "") && (!secondTableName || secondTableName === "") && (!selectedTableName || selectedTableName === "") && (!activeSidebar?.table || activeSidebar.table === "")) {
         toast.warning("Please Check The Template", {
             position: "top-right",
             autoClose: 3000,
@@ -1887,6 +2145,38 @@ if ((!currentTableName || currentTableName === "") && (!activeSidebar?.table || 
             }
         });
 
+        let childTableDataMap = {};
+
+        if (childTables && Array.isArray(childTables)) {
+            childTables.forEach(child => {
+                const childFieldName = child.field_name;
+
+                if (data[childFieldName]) {
+                    let parsed;
+                    try {
+                        parsed = typeof data[childFieldName] === "string"
+                            ? JSON.parse(data[childFieldName])
+                            : data[childFieldName];
+                    } catch (err) {
+                        parsed = [];
+                    }
+
+                    if (Array.isArray(parsed)) {
+                        const normalizedRows = parsed.map(row => {
+                            let newRow = {};
+                            for (const key in row) {
+                                const sanitizedKey = sanitizeKey(key);
+                                newRow[sanitizedKey] = row[key];
+                            }
+                            return newRow;
+                        });
+
+                        childTableDataMap[child.child_table_name] = normalizedRows;
+                    }
+                }
+            });
+        }
+
         if (activeSidebar?.table === "cid_eq_case_enquiry_order_copy") {
             normalData["sys_status"] = data?.field_status || "eq_case";
             if (data?.field_status && rowData?.id) {
@@ -1918,10 +2208,17 @@ if ((!currentTableName || currentTableName === "") && (!activeSidebar?.table || 
         normalData["ui_case_id"] = ui_case_id;
         normalData["pt_case_id"] = pt_case_id;
 
-        formData.append("table_name", activeSidebar.table || currentTableName);
+        const tableName = activeSidebar.table || currentTableName || secondTableName || selectedTableName;
+ 
+        formData.append("table_name", tableName);
         formData.append("data", JSON.stringify(normalData));
-        formData.append("id",rowValueId.id);
+        if (tableName === selectedTableName) {
+            formData.append("id", selectedRowId);
+        } else {
+            formData.append("id", rowValueId?.id);
+        }
         formData.append("transaction_id", `pt_${Date.now()}_${Math.floor(Math.random() * 10000)}`);
+        formData.append("child_tables", JSON.stringify(childTableDataMap));
         formData.append("user_designation_id", localStorage.getItem("designation_id") || null);
         formData.append("others_data", JSON.stringify({}));
 
@@ -1945,7 +2242,11 @@ if ((!currentTableName || currentTableName === "") && (!activeSidebar?.table || 
                             navigate("/case/enquiry");
                         }else if (currentTableName === 'cid_ui_case_old_cms_data') {
                             getTableData({table:"cid_ui_case_old_cms_data"});
-                        } else {
+                        }else if (secondTableName === 'cid_pt_case_cnr') {
+                            getTableData({table:"cid_pt_case_cnr"});
+                        }else if(selectedTableName){
+                            getTableData(selectedTableName)
+                        }else {
                             getTableData(activeSidebar);
                         }
                     }
@@ -2665,7 +2966,12 @@ if ((!currentTableName || currentTableName === "") && (!activeSidebar?.table || 
     return (
         <Stack direction="row" justifyContent="space-between">
 
-            <LokayuktaSidebar showMagazineView={showMagazineView} ui_case_id={module === "pt_case" ? rowData?.ui_case_id :  rowData?.id}  pt_case_id={module === "pt_case" ? rowData?.id :  rowData?.pt_case_id} contentArray={sidebarContentArray} onClick={sidebarActive} activeSidebar={activeSidebar} templateName={template_name} fromCDR={fromCDR} />
+            <LokayuktaSidebar showMagazineView={showMagazineView} ui_case_id={module === "pt_case" ? rowData?.ui_case_id :  rowData?.id}  pt_case_id={module === "pt_case" ? rowData?.id :  rowData?.pt_case_id} contentArray={sidebarContentArray} onClick={sidebarActive} activeSidebar={activeSidebar} templateName={template_name} fromCDR={fromCDR} 
+            tableCounts={tableCounts}
+            setTableCounts={setTableCounts} 
+            module={module} 
+            sysStatus={sysStatus}
+                />
 
             <Box flex={4} sx={{ overflow: "hidden" }}>
 
@@ -2690,7 +2996,8 @@ if ((!currentTableName || currentTableName === "") && (!activeSidebar?.table || 
                         selectedRowData={rowData}
                         backNavigation={backToForm}
                         showMagazineView={showMagazineView}
-
+                        fetchCounts={fetchCounts}
+                        module={module}
                     />
                 ) : activeSidebar?.caseDairy === true ? (
 
@@ -2754,7 +3061,8 @@ if ((!currentTableName || currentTableName === "") && (!activeSidebar?.table || 
                         selectedRowData={rowData}
                         backNavigation={backToForm}
                         showMagazineView={showMagazineView}
-
+                        fetchCounts={fetchCounts}
+                        module={module}
                     />
                 ) : activeSidebar?.table === "cid_ui_case_property_form" ? (
 
@@ -2767,9 +3075,10 @@ if ((!currentTableName || currentTableName === "") && (!activeSidebar?.table || 
                         selectedRowData={rowData}
                         backNavigation={backToForm}
                         showMagazineView={showMagazineView}
-
+                        fetchCounts={fetchCounts}
+                        module={module}
                     />
-                ) : activeSidebar?.table === "cid_ui_case_mahajars" ? (
+                ) : activeSidebar?.table === "cid_ui_case_mahazars" ? (
 
 
                      <Mahazars
@@ -2780,7 +3089,8 @@ if ((!currentTableName || currentTableName === "") && (!activeSidebar?.table || 
                         selectedRowData={rowData}
                         backNavigation={backToForm}
                         showMagazineView={showMagazineView}
-
+                        fetchCounts={fetchCounts}
+                        module={module}
                     />    
                 ) : activeSidebar?.table === "cid_ui_case_cdr_ipdr" ? (
 
@@ -2794,7 +3104,7 @@ if ((!currentTableName || currentTableName === "") && (!activeSidebar?.table || 
                         backNavigation={backToForm}
                         module={module}
                         showMagazineView={showMagazineView}
-
+                        fetchCounts={fetchCounts}
                     />
                     
                 ) : activeSidebar?.table === "cid_ui_case_41a_notices" ? (
@@ -3015,7 +3325,11 @@ if ((!currentTableName || currentTableName === "") && (!activeSidebar?.table || 
                             editData={formEditFlag}
                             editName={true}
                             oldCase = {true}
+                            CNR = {true}
+                            onViewCNR ={handleViewCNR}
                             onViewOldCase={handleViewOldCase} 
+                            mappingCase = {true}
+                            onMappingCase = {mappingCases}
                             initialData={initialRowData}
                             formConfig={templateFields}
                             stepperData={stepperConfig}
@@ -3197,16 +3511,34 @@ if ((!currentTableName || currentTableName === "") && (!activeSidebar?.table || 
                                 <Typography sx={{ fontSize: '19px', fontWeight: '500', color: '#171A1C' }} className='Roboto'>
                                     {currentTableName === "cid_ui_case_old_cms_data"
                                         ? "Old CMS Data"
+                                        : secondTableName === "cid_pt_case_cnr"
+                                        ? "CNR"
                                         : (activeSidebar?.name || "Form")}
+
                                 </Typography>
                                 {headerDetails && (
+                                    <Tooltip title={headerDetails}>
                                     <Chip
-                                        label={headerDetails}
+                                        label={
+                                        <Typography
+                                            sx={{
+                                            fontSize: '13px',
+                                            maxWidth: 230,
+                                            whiteSpace: 'nowrap',
+                                            overflow: 'hidden',
+                                            textOverflow: 'ellipsis',
+                                            fontWeight: 500, marginTop: '2px'
+                                            }}
+                                        >
+                                            {headerDetails}
+                                        </Typography>
+                                        }
                                         color="primary"
                                         variant="outlined"
                                         size="small"
                                         sx={{ fontWeight: 500, marginTop: '2px' }}
                                     />
+                                    </Tooltip>
                                 )}
                             </Typography>
 
@@ -3354,21 +3686,37 @@ if ((!currentTableName || currentTableName === "") && (!activeSidebar?.table || 
                                     }
                                 </Box>
 
-                                {
-                                    selectedSplitScreenRows.length > 0 &&
-                                    <Box>
-                                        <Button
-                                            variant="contained"
-                                            className="blueButton"
-                                            size="large"
-                                            sx={{ height: "38px" }}
-                                            onClick={()=>handleOverAllAccused( {label: 'Notices', table_name: 'cid_ui_case_notices'} )}
-                                        >
-                                            Create Notices
-                                        </Button>
-                                    </Box>
-                                }
-                            </Box>
+                                {selectedSplitScreenRows.length > 0 && (
+                                <>
+                                <Button
+                                    variant="contained"
+                                    className="blueButton"
+                                    size="large"
+                                    sx={{ height: '38px' }}
+                                    onClick={handleMenuClick}
+                                >
+                                    Create
+                                </Button>
+                                <Menu
+                                    anchorEl={anchorEl}
+                                    open={open}
+                                    onClose={handleMenuClose}
+                                >
+                                    {menuItems.map((item) => (
+                                    <MenuItem
+                                        key={item.table_name}
+                                        onClick={() => {
+                                        handleOverAllAccused(item);
+                                        handleMenuClose();
+                                        }}
+                                    >
+                                        {`${item.label}`}
+                                    </MenuItem>
+                                    ))}
+                                </Menu>
+                                </>
+                                )}                            
+                                </Box>
 
                         <Box sx={{ display: 'flex', gap: 2, width: '100%' }}>
                             
@@ -3506,23 +3854,46 @@ if ((!currentTableName || currentTableName === "") && (!activeSidebar?.table || 
                                 onChange={handleFileChange}
                             />
                         </Box>
-
-                        {selectedFile && (
-                            <Box sx={{display: 'flex', justifyContent: 'space-between'}}>
-                                <Typography mt={2} color="blue">
-                                    Selected File: {selectedFile.name}
-                                </Typography>
-                                <Button
-                                    variant="contained"
-                                    color="success"
-                                    sx={{ mt: 2, textTransform: 'uppercase', fontWeight: 500 }}
-                                    startIcon={<UploadFileIcon />}
-                                    onClick={checkUploadedFile}
+                            {selectedFile && (
+                                <Box
+                                    sx={{
+                                        display: 'flex',
+                                        flexDirection: 'row',
+                                        alignItems: 'center',
+                                        justifyContent: 'space-between', 
+                                        gap: 2,
+                                        mt: 2,
+                                        flexWrap: 'wrap',
+                                    }}
                                 >
-                                    Upload
-                                </Button>
-                            </Box>
-                        )}
+                                    <Typography
+                                        sx={{
+                                            color: 'blue',
+                                            wordBreak: 'break-word',
+                                            fontSize: '14px',
+                                            flexGrow: 1,
+                                            minWidth: 0,
+                                            maxWidth: '70%',
+                                        }}
+                                    >
+                                        Selected File: {selectedFile.name}
+                                    </Typography>
+
+                                    <Button
+                                        variant="contained"
+                                        color="success"
+                                        sx={{
+                                            textTransform: 'uppercase',
+                                            fontWeight: 500,
+                                            whiteSpace: 'nowrap',
+                                        }}
+                                        startIcon={<UploadFileIcon />}
+                                        onClick={checkUploadedFile}
+                                    >
+                                        Upload
+                                    </Button>
+                                </Box>
+                            )}
                     </DialogContent>
                 </Dialog>
             }
@@ -3538,6 +3909,7 @@ if ((!currentTableName || currentTableName === "") && (!activeSidebar?.table || 
                     module={module}
                     mainTableName={activeSidebar?.table}
                     directAddNew={directAddNewRef.current}
+                    fetchCounts={fetchCounts}
                 />
             }
 

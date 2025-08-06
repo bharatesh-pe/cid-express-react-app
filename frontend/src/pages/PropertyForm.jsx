@@ -21,9 +21,12 @@ import {
     TableHead,
     TableRow,
 } from "@mui/material";
+import Link from "@mui/material/Link";
+import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from '@mui/icons-material/Delete';
 import TextFieldInput from "@mui/material/TextField";
 import Dialog from "@mui/material/Dialog";
+import DialogTitle from "@mui/material/DialogTitle";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
@@ -37,8 +40,10 @@ import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 import ImportExportIcon from '@mui/icons-material/ImportExport';
 import dayjs from "dayjs";
+import UploadFileIcon from '@mui/icons-material/UploadFile';
+import CloseIcon from '@mui/icons-material/Close';
 
-const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRowData, backNavigation, showMagazineView }) => {
+const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRowData, backNavigation, showMagazineView,fetchCounts,module }) => {
     const location = useLocation();
     const navigate = useNavigate();
     const { pageCount, systemStatus } = location.state || {};
@@ -73,6 +78,7 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
     const [othersToDate, setOthersToDate] = useState(null);
     const [othersFiltersDropdown, setOthersFiltersDropdown] = useState([]);
     const [othersFilterData, setOthersFilterData] = useState({});
+    const [childTables, setChildTables] = useState([]);
     const handleOtherPagination = (page) => {
         setOtherTemplatesPaginationCount(page)
     }
@@ -217,6 +223,248 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
     };
 
 
+        // start --- bulk upload functions
+    
+        const [bulkUploadShow, setBulkUploadShow] = useState(false);
+        const [selectedFile, setSelectedFile] = useState(null);
+    
+        const showBulkUploadScreen = ()=>{
+            setBulkUploadShow(true);
+            setSelectedFile(null);
+        }
+        
+        const handleFileChange = (event) => {
+            setSelectedFile(event.target.files[0]);
+        };
+    
+        const downloadExcelHeader = async ()=>{
+            
+            if(!options.table){
+                toast.error('Template Not Found !', {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+                return;
+            }
+    
+            const downloadReport = {
+                "table_name": options.table,
+            }
+            setLoading(true);
+    
+            try {
+                const downloadReportResponse = await api.post("templateData/downloadExcelData", downloadReport);
+                setLoading(false);
+    
+                if (downloadReportResponse) {
+                    const blob = new Blob([downloadReportResponse], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = `${options.table}_Report.xlsx`;
+    
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+    
+                    window.URL.revokeObjectURL(url);
+    
+                } else {
+                    const errorMessage = downloadReportResponse.message ? downloadReportResponse.message : "Failed to download report. Please try again.";
+                    toast.error(errorMessage, {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-error",
+                    });
+                }
+    
+            } catch (error) {
+                setLoading(false);
+                if (error && error.response && error.response['data']) {
+                    toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-error",
+                    });
+                }
+            }
+        }
+    
+        const checkUploadedFile = async ()=> {
+    
+            if(!options?.table){
+                toast.error('Template Not Found !', {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+                return;
+            }
+    
+            if (!selectedFile) {
+                toast.error('Please upload a file !', {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-warning",
+                });
+                return;
+            }
+    
+            const allowedExtensions = ['.xlsx', '.xls'];
+            const fileName = selectedFile.name.toLowerCase();
+            const isValid = allowedExtensions.some(ext => fileName.endsWith(ext));
+    
+            if (!isValid) {
+                toast.error('Invalid file format. Please upload a valid Excel file (.xls or .xlsx) !', {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-warning",
+                });
+                return;
+            }
+    
+            const reader = new FileReader();
+    
+            reader.onload = async (e) => {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                
+                const sheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[sheetName];
+    
+                const headerColumn = XLSX.utils.sheet_to_json(worksheet, {
+                    header: 1,
+                })[0];
+                
+                const jsonData = XLSX.utils.sheet_to_json(worksheet);
+    
+                // remove unwanted column
+    
+                var ui_case_id = selectedRowData?.id;
+                var pt_case_id = selectedRowData?.pt_case_id;
+    
+                if(module === "pt_case"){
+                    ui_case_id = selectedRowData?.ui_case_id
+                    pt_case_id = selectedRowData?.id
+                }
+    
+                const rowExcelData = jsonData.map(({ __rowNum__, ...rest }) => ({...rest, ui_case_id, pt_case_id }));
+    
+                if(rowExcelData.length === 0 || headerColumn.length === 0){
+                    toast.error('Excel Data and Header is Empty', {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-warning",
+                    });
+                    return
+                }
+    
+                var payloadData = {
+                    "table_name" : options?.table,
+                    "rowData" : rowExcelData,
+                    "columnData": headerColumn
+                }
+    
+                setLoading(true);
+                try {
+                    const bulkInsertResponse = await api.post("templateData/bulkInsertData", payloadData);
+                    setLoading(false);
+    
+                    if (bulkInsertResponse?.success) {
+                        toast.success(bulkInsertResponse.message || "Data Uploaded Successfully", {
+                            position: "top-right",
+                            autoClose: 3000,
+                            hideProgressBar: false,
+                            closeOnClick: true,
+                            pauseOnHover: true,
+                            draggable: true,
+                            progress: undefined,
+                            className: "toast-success",
+                            onOpen: () => { handleOtherTemplateActions(options, selectedRow) }
+                        });
+    
+                        if(fetchCounts){
+                            fetchCounts();
+                        }
+                        setBulkUploadShow(false);
+                        setSelectedFile(null);
+    
+                    } else {
+                        toast.error(bulkInsertResponse.message || "Failed to Upload Data.", {
+                            position: "top-right",
+                            autoClose: 3000,
+                            hideProgressBar: false,
+                            closeOnClick: true,
+                            pauseOnHover: true,
+                            draggable: true,
+                            progress: undefined,
+                            className: "toast-error",
+                        });
+                    }
+    
+                } catch (error) {
+                    setLoading(false);
+                    if (error && error.response && error.response['data']) {
+                        toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
+                            position: "top-right",
+                            autoClose: 3000,
+                            hideProgressBar: false,
+                            closeOnClick: true,
+                            pauseOnHover: true,
+                            draggable: true,
+                            progress: undefined,
+                            className: "toast-error",
+                        });
+                    }
+                }
+    
+            };
+    
+            reader.readAsArrayBuffer(selectedFile);
+        }
+    
+        // end --- bulk upload functions
+    
+    
+    
+
     const handleOtherTemplateActions = async (options, selectedRow, searchFlag) => {
 
         const randomId = `random_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
@@ -224,12 +472,19 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
         var disabledDeleteFlag = false;
         setRandomApprovalId(randomId);
 
+        var ui_case_id = selectedRow?.id;
+        var pt_case_id = selectedRow?.pt_case_id;
+
+        if(module === "pt_case" || module === "pt_trail_case"){
+            ui_case_id = selectedRow?.ui_case_id
+            pt_case_id = selectedRow?.id
+        }
         console.log("checking selectedRow", selectedRow);
         var getTemplatePayload = {
             table_name: options.table,
-            ui_case_id: selectedRow.id,
+            ui_case_id: ui_case_id,
             case_io_id: selectedRow?.field_io_name || "",
-            pt_case_id: selectedRow?.pt_case_id || null,
+            pt_case_id: pt_case_id ,
             limit: 10,
             page: !searchFlag ? otherTemplatesPaginationCount : 1,
             search: !searchFlag ? otherSearchValue : "",
@@ -432,7 +687,7 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
                                                     sx={{ cursor: "pointer", color: "red", fontSize: 20 }}
                                                     onClick={(event) => {
                                                         event.stopPropagation();
-                                                        handleOthersDeleteTemplateData(params.row, options.table);
+                                                        handleOthersDeleteTemplateData(params.row, options.table,selectedRow.id);
                                                     }}
                                                 />
                                             )}
@@ -686,6 +941,7 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
                         setOtherFormOpen(true);
                         setOtherRowId(rowData.id);
                         setOtherTemplateId(viewTemplateResponse["data"].template_id);
+                        setChildTables(viewTemplateResponse?.["data"]?.["child_tables"] || []);
                         if (
                             viewTemplateResponse.data.no_of_sections &&
                             viewTemplateResponse.data.no_of_sections > 0
@@ -809,7 +1065,7 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
         );
     };
 
-    const handleOthersDeleteTemplateData = (rowData, table_name) => {
+    const handleOthersDeleteTemplateData = (rowData, table_name, ui_case_id) => {
         Swal.fire({
             title: "Are you sure?",
             text: "Do you want to delete this profile ?",
@@ -822,6 +1078,8 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
                 const deleteTemplateData = {
                     table_name: table_name,
                     where: { id: rowData.id },
+                    ui_case_id: ui_case_id,
+                    transaction_id : "TXN_" + Date.now() + "_" + Math.floor(Math.random() * 1000000),
                 };
                 setLoading(true);
 
@@ -856,6 +1114,9 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
                                     ),
                             }
                         );
+                        if (fetchCounts) {
+                            fetchCounts();
+                        }
                     } else {
                         const errorMessage = deleteTemplateDataResponse.message
                             ? deleteTemplateDataResponse.message
@@ -1376,6 +1637,7 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
                 setOtherFormOpen(true);
                 setOtherInitialTemplateData(initialData);
                 setviewReadonly(false);
+                setChildTables(viewTemplateResponse?.["data"]?.["child_tables"] || []);
                 setEditTemplateData(false);
                 setOptionFormTemplateData(getCaseIdFields ? getCaseIdFields : []);
                 if (
@@ -1565,6 +1827,9 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
                             }
                         },
                     });
+                    if (fetchCounts) {
+                        fetchCounts();
+                    }
                     // No need to clear selectedIds
                 } else {
                     toast.error(response.message || 'Something went wrong.', {
@@ -1595,6 +1860,14 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
         }
     };
 
+
+    function sanitizeKey(str) {
+        return str
+            .toLowerCase()
+            .replace(/[^\w]/g, "_")
+            .replace(/_+/g, "_")
+            .replace(/^_+|_+$/g, "");
+        }
 
     const otherAPPRTemplateSaveFunc = async (data, saveNewAction) => {
 
@@ -1643,11 +1916,48 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
         });
 
 
+        let childTableDataMap = {};
+
+        if (childTables && Array.isArray(childTables)) {
+            childTables.forEach(child => {
+                const childFieldName = child.field_name;
+
+                if (data[childFieldName]) {
+                    let parsed;
+                    try {
+                        parsed = typeof data[childFieldName] === "string"
+                            ? JSON.parse(data[childFieldName])
+                            : data[childFieldName];
+                    } catch (err) {
+                        parsed = [];
+                    }
+
+                    if (Array.isArray(parsed)) {
+                        const normalizedRows = parsed.map(row => {
+                            let newRow = {};
+                            for (const key in row) {
+                                const sanitizedKey = sanitizeKey(key);
+                                newRow[sanitizedKey] = row[key];
+                            }
+                            return newRow;
+                        });
+
+                        childTableDataMap[child.child_table_name] = normalizedRows;
+                    }
+                }
+            });
+        }
+
         normalData.sys_status = "PF"
         normalData.field_submit_status = "";
-        normalData["ui_case_id"] = selectedRowData.id;
+        if(module === 'ui_case'){
+            normalData["ui_case_id"] = selectedRowData.id;
+        }else if(module === 'pt_case'){
+            normalData["pt_case_id"] = selectedRowData.id;
+        }
         formData.append("table_name", selectedOtherTemplate.table);
         formData.append("data", JSON.stringify(normalData));
+        formData.append("child_tables", JSON.stringify(childTableDataMap));
         formData.append("transaction_id", randomApprovalId);
         formData.append("user_designation_id", localStorage.getItem('designation_id') || null);
 
@@ -1666,6 +1976,9 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
 
                 setOtherFormOpen(false);
 
+                if (fetchCounts) {
+                    fetchCounts();
+                }
                 if (selectedOtherTemplate?.field) {
                     const combinedData = {
                         id: selectedRowData.id,
@@ -1767,6 +2080,38 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
             }
         });
 
+        let childTableDataMap = {};
+
+        if (childTables && Array.isArray(childTables)) {
+            childTables.forEach(child => {
+                const childFieldName = child.field_name;
+
+                if (data[childFieldName]) {
+                    let parsed;
+                    try {
+                        parsed = typeof data[childFieldName] === "string"
+                            ? JSON.parse(data[childFieldName])
+                            : data[childFieldName];
+                    } catch (err) {
+                        parsed = [];
+                    }
+
+                    if (Array.isArray(parsed)) {
+                        const normalizedRows = parsed.map(row => {
+                            let newRow = {};
+                            for (const key in row) {
+                                const sanitizedKey = sanitizeKey(key);
+                                newRow[sanitizedKey] = row[key];
+                            }
+                            return newRow;
+                        });
+
+                        childTableDataMap[child.child_table_name] = normalizedRows;
+                    }
+                }
+            });
+        }
+
         if (selectedOtherTemplate.table === "cid_ui_case_progress_report") {
             normalData["field_pr_status"] = "No";
         }
@@ -1774,6 +2119,7 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
         formData.append("table_name", selectedOtherTemplate.table);
         formData.append("id", data.id);
         formData.append("data", JSON.stringify(normalData));
+        formData.append("child_tables", JSON.stringify(childTableDataMap));
         formData.append("transaction_id", randomApprovalId);
         formData.append("user_designation_id", localStorage.getItem("designation_id") || null);
 
@@ -2011,19 +2357,36 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
                                     {selectedOtherTemplate?.name}
                                 </Typography>
 
-                                {selectedRowData?.["field_cid_crime_no./enquiry_no"] && (
-                                    <Chip
-                                        label={selectedRowData["field_cid_crime_no./enquiry_no"]}
-                                        color="primary"
-                                        variant="outlined"
-                                        size="small"
-                                        sx={{ fontWeight: 500, mt: '2px' }}
-                                    />
-                                )}
+                                {/* {selectedRowData?.["field_cid_crime_no./enquiry_no"] && ( */}
+                                    {headerDetails && (
+                                        <Tooltip title={headerDetails}>
+                                        <Chip
+                                            label={
+                                            <Typography
+                                                sx={{
+                                                fontSize: '13px',
+                                                maxWidth: 230,
+                                                whiteSpace: 'nowrap',
+                                                overflow: 'hidden',
+                                                textOverflow: 'ellipsis',
+                                                fontWeight: 500, marginTop: '2px'
+                                                }}
+                                            >
+                                                {headerDetails}
+                                            </Typography>
+                                            }
+                                            color="primary"
+                                            variant="outlined"
+                                            size="small"
+                                            sx={{ fontWeight: 500, marginTop: '2px' }}
+                                        />
+                                        </Tooltip>
+                                    )}
+                                {/* )} */}
 
-                                <Box className="totalRecordCaseStyle">
+                                {/* <Box className="totalRecordCaseStyle">
                                     {otherTemplatesTotalRecord} Records
-                                </Box>
+                                </Box> */}
 
                                 {/* {APIsSubmited && (
                                     <Box className="notifyAtTopCaseStyle">
@@ -2109,11 +2472,21 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
                                     >
                                     {!viewModeOnly && (
                                         <Button
-                                            variant="outlined"
-                                            sx={{ height: '40px' }}
+                                            sx={{height: "38px",}}
+                                            className="blueButton"
+                                            startIcon={
+                                                <AddIcon
+                                                    sx={{
+                                                        border: "1.3px solid #FFFFFF",
+                                                        borderRadius: "50%",
+                                                        background:"#4D4AF3 !important",
+                                                    }}
+                                                />
+                                            }
+                                            variant="contained"
                                             onClick={() => showOptionTemplate(selectedOtherTemplate?.table)}
                                         >
-                                            Add
+                                            Add New
                                         </Button>
                                     )}
                                     {/* <Button
@@ -2145,10 +2518,6 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
                                         color="success"
                                         onClick={handleSubmitPF}
                                         disabled={showSubmitPFButton}
-                                        sx={{
-                                            marginLeft: 'auto',
-                                            mr: 3,
-                                            }}
                                     >
                                         Submit
                                     </Button>
@@ -2162,6 +2531,18 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
                                             Case Docket
                                         </Button>
                                     } */}
+                                    {
+                                        userPermissions && userPermissions?.[0]?.['bulk_upload'] === true &&
+                                        <Button
+                                            variant="contained"
+                                            color="success"
+                                            size="large"
+                                            sx={{ height: "38px" }}
+                                            onClick={showBulkUploadScreen}
+                                        >
+                                            Bulk Upload
+                                        </Button>
+                                    }
                                 </Box>
                                 </Box>     
                             </Box>
@@ -2450,6 +2831,80 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
 
                 </Dialog>
             )}
+
+            {
+            bulkUploadShow &&
+                <Dialog
+                    open={bulkUploadShow}
+                    onClose={()=>setBulkUploadShow(false)}
+                    maxWidth="sm"
+                    fullWidth
+                    PaperProps={{ sx: { borderRadius: 3, p: 2} }}
+                >
+                    <Box display="flex" justifyContent="space-between" alignItems="center">
+                        <DialogTitle sx={{ fontWeight: 600, fontSize: '20px', pb: 0  }}>Excel Upload</DialogTitle>
+                        <IconButton onClick={()=>setBulkUploadShow(false)}>
+                            <CloseIcon />
+                        </IconButton>
+                    </Box>
+
+                    <DialogContent>
+                        <Typography sx={{ mb: 2 }}>
+                            Please check Excel header before upload. If needed,&nbsp;
+                            <Link onClick={downloadExcelHeader} underline="hover" rel="noopener" sx={{cursor: 'pointer'}}>
+                                Download here
+                            </Link>
+                        </Typography>
+
+                        <Box
+                            component="label"
+                            htmlFor="excel-upload"
+                            sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                flexDirection: 'column',
+                                border: '2px dashed #1976d2',
+                                p: 5,
+                                textAlign: 'center',
+                                borderRadius: 2,
+                                backgroundColor: '#f9f9f9',
+                                cursor: 'pointer',
+                                '&:hover': { backgroundColor: '#f0f0f0' },
+                            }}
+                        >
+                            <UploadFileIcon sx={{ fontSize: 48, color: '#1976d2', mb: 1 }} />
+                            <Typography variant="h6" fontWeight={500} sx={{ color: '#555' }}>
+                                Click here to upload Excel file
+                            </Typography>
+                            <input
+                                type="file"
+                                accept=".xlsx, .xls"
+                                id="excel-upload"
+                                hidden
+                                onChange={handleFileChange}
+                            />
+                        </Box>
+
+                        {selectedFile && (
+                            <Box sx={{display: 'flex', justifyContent: 'space-between'}}>
+                                <Typography mt={2} color="blue">
+                                    Selected File: {selectedFile.name}
+                                </Typography>
+                                <Button
+                                    variant="contained"
+                                    color="success"
+                                    sx={{ mt: 2, textTransform: 'uppercase', fontWeight: 500 }}
+                                    startIcon={<UploadFileIcon />}
+                                    onClick={checkUploadedFile}
+                                >
+                                    Upload
+                                </Button>
+                            </Box>
+                        )}
+                    </DialogContent>
+                </Dialog>
+            }
         </>
     );
 };

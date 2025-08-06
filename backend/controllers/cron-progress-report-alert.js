@@ -1771,10 +1771,6 @@ exports.runDailyAlertCronOtherHearing = async () => {
             type: Sequelize.DataTypes.STRING,
             allowNull: true,
             },
-            publickey: {
-                type: Sequelize.DataTypes.STRING,
-                allowNull: true,
-            },
         };
 
         for (const field of schema) {

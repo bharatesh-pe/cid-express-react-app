@@ -358,8 +358,13 @@ const CrimeIntelligence = () => {
 
                 setFormFields(viewTemplateResponse?.["data"]?.["fields"] || []);
                 setInitialFormData({});
-                if (viewTemplateResponse?.["data"]?.no_of_sections && viewTemplateResponse?.["data"]?.no_of_sections > 0) {
-                    setFormStepperData(viewTemplateResponse?.["data"]?.sections ? viewTemplateResponse?.["data"]?.sections : []);
+                const sections = viewTemplateResponse?.["data"]?.sections;
+                const noOfSections = viewTemplateResponse?.["data"]?.no_of_sections;
+
+                if (noOfSections && noOfSections > 0 && Array.isArray(sections)) {
+                    setFormStepperData(sections);
+                } else {
+                    setFormStepperData([]);
                 }
 
                 setFormOpen(true);

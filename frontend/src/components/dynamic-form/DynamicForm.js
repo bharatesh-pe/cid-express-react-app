@@ -523,7 +523,7 @@ const DynamicForm = ({
             }
         }
 
-        if(field.type === "table" && Boolean(field.required)){
+        if(field.type === "table"){
             let error = false;
 
             let tableData = formData?.[field?.name];
@@ -541,13 +541,16 @@ const DynamicForm = ({
                     for (const headerObj of field.tableHeaders) {
                         const key = headerObj?.header;
 
-                        const value = row?.[key];
+                        if(headerObj?.fieldType?.required){
+                            const value = row?.[key];
 
-                        if (value === undefined || value === null || (typeof value === "string" && value.trim() === "") || (Array.isArray(value) && value.length === 0)) {
-                            error = true;
-                            break;
+                            if (value === undefined || value === null || (typeof value === "string" && value.trim() === "") || (Array.isArray(value) && value.length === 0)) {
+                                error = true;
+                                break;
+                            }
                         }
                     }
+
                     if (error) break;
                 }
             }
@@ -1116,6 +1119,79 @@ const DynamicForm = ({
             }
         }
 
+       if (selectedField && selectedField?.name && selectedField?.table === "cid_district" && newFormConfig.some((field) => field.table === "cid_police_station")) {
+           const policeStationField = newFormConfig.find((field) => field.table === "cid_police_station");
+       
+           if (policeStationField && policeStationField?.name) {
+            const getPoliceStationsBasedOnDistrict = async () => {
+              try {
+                const districtIdValue = formData[selectedField.name];
+                if (!districtIdValue) {
+                  console.warn("District ID is empty or undefined. Aborting request.");
+                  return;
+                }
+       
+                const districtPayload = {
+                    district_id: districtIdValue,
+                };
+       
+                const response = await api.post("cidMaster/getPoliceStationsBasedOnDistrict", districtPayload);
+                const data = response?.data;
+       
+                console.log("Received response:", data);
+       
+                if (!Array.isArray(data) || data.length === 0) {
+                    console.warn("No police stations found or invalid response format.");
+
+                    setNewFormConfig((prevFormConfig) =>
+                        prevFormConfig.map((configData) => {
+                            if (configData?.name === policeStationField?.name) {
+                                return { ...configData, options: [] };
+                            }
+                            return configData;
+                        })
+                    );
+                    return;
+                }
+
+                const updatedOptions = data.map((psData) => ({
+                    name: psData["field_name_of_the_police_station"],
+                    code: psData["id"],
+                }));
+
+                console.log("Updated police station options:", updatedOptions);
+
+                setNewFormConfig((prevFormConfig) =>
+                    prevFormConfig.map((configData) => {
+                        if (configData?.name === policeStationField?.name) {
+                            return { ...configData, options: updatedOptions };
+                        }
+                        return configData;
+                    })
+                );
+
+                setFormData((prevData) => ({
+                    ...prevData,
+                    [policeStationField.name]: ""
+                }));
+            } catch (error) {
+                console.error("Error while fetching police stations:", error);
+       
+                setNewFormConfig((prevFormConfig) =>
+                    prevFormConfig.map((configData) => {
+                        if (configData?.name === policeStationField?.name) {
+                            return { ...configData, options: [] };
+                        }
+                        return configData;
+                    })
+                );
+            }
+        };
+        getPoliceStationsBasedOnDistrict();
+      }
+    }
+        
+
     }, [selectedField]);
 
     useEffect(() => {
@@ -1611,204 +1687,276 @@ const DynamicForm = ({
     };
 
     const fetchTemplateData = async () => {
-        try { 
-            const apiCalls = newFormConfig
-            .filter((field) =>  field?.api && field?.table && (!field?.is_dependent || field?.is_dependent == "false") )
-            .map(async (field) => {
-                setLoading(true);
-                try {
+      try { 
+        const apiCalls = newFormConfig
+        .filter((field) =>  field?.api && field?.table && (!field?.is_dependent || field?.is_dependent == "false") )
+        .map(async (field) => {
+          setLoading(true);
+          try {
 
-                    var apiPayload = {};
+            var apiPayload = {};
 
-                    if (field.name === "field_ui_case") {
-                        const response = await api.post("cidMaster/fetchUICaseDetails", {
-                          allowedDepartmentIds : localStorage.getItem("allowedDepartmentIds") ,
-                          allowedDivisionIds : localStorage.getItem("allowedDivisionIds") ,
-                          allowedUserIds :  localStorage.getItem("allowedUserIds") 
-                        });
-                        const updatedOptions = response.data.map((data) => ({
-                            ...data,
-                            name: data.name,
-                            code: data.code,
-                        }));
-                        setUiCaseOptions(updatedOptions);
-                        setNewFormConfig((prevFormConfig) => {
-                            return prevFormConfig.map((data) => {
-                                if (data.name === field.name) {
-                                    return { ...data, options: updatedOptions };
-                                }
-                                return data;
-                            });
-                        });
-                        return { id: field.id, options: updatedOptions };
-                    }
-
-                    if(field.api === "/templateData/getTemplateData"){
-                        apiPayload = {
-                            table_name: field.table
-                        }
-                    }else if(field.table === "users"){
-                        apiPayload = {
-                            designation_id : localStorage.getItem('designation_id') ? localStorage.getItem('designation_id') : null,
-                            get_flag : field?.user_hierarchy || null
-                        }
-                    }
-
-                    const response = await api.post(field.api, apiPayload);
-
-                    setLoading(false);
-
-                    if (!response.data) return { id: field.id, options: [] };
-
-                    const updatedOptions = response.data.map((templateData) => {
-
-                        const nameKey = Object.keys(templateData).find((key) => !["id", "created_at", "updated_at", "created_by", "field_approval_done_by"].includes(key));
-
-                        var headerName = nameKey;
-                        var headerId = 'id';
-
-                        if(field.table === "users"){
-                            headerName = "name"
-                            headerId =  "user_id"
-                        }else if(field.api !== "/templateData/getTemplateData"){
-                            headerName = field.table + "_name"
-                            headerId =  field.table + "_id"
-                        }
-
-                        return {
-                            name: templateData[headerName],
-                            code: templateData[headerId],
-                        };
-                    });
-
-                    return { id: field.id, options: updatedOptions };
-
-                } catch (error) {
-                    setLoading(false);
-                    return { id: field.id, options: [] };
-                }
-            });
-
-            const results = await Promise.all(apiCalls);
-
-            var optionUpdateFields = []
-
-            setNewFormConfig((prevFormConfig) => {
-                const updatedFormConfig = prevFormConfig.map((field) => {
-                    const updatedField = results.find((res) => res.id === field.id);
-                    if (updatedField) {
-                        if (updatedField?.options.length === 1) {
-                            const onlyOption = updatedField.options[0];
-
-                            const gettingFormdata = Object.keys(formData).length === 0 ? (initialData || formData) : formData;
-
-                            if(!gettingFormdata[field?.name] || gettingFormdata[field?.name] === ""){
-                                setFormData((prevData) => ({
-                                    ...prevData,
-                                    [field.name]: onlyOption.code
-                                }));
-                            }
-
-                            optionUpdateFields.push(field);
-                        }
-                        return { ...field, options: updatedField.options };
-                    }
-                    return field;
+            if (field.name === "field_ui_case") {
+              const response = await api.post("cidMaster/fetchUICaseDetails", {
+                allowedDepartmentIds : localStorage.getItem("allowedDepartmentIds") ,
+                allowedDivisionIds : localStorage.getItem("allowedDivisionIds") ,
+                allowedUserIds :  localStorage.getItem("allowedUserIds") 
+              });
+              const updatedOptions = response.data.map((data) => ({
+                ...data,
+                name: data.name,
+                code: data.code,
+              }));
+              setUiCaseOptions(updatedOptions);
+              setNewFormConfig((prevFormConfig) => {
+                return prevFormConfig.map((data) => {
+                  if (data.name === field.name) {
+                    return { ...data, options: updatedOptions };
+                  }
+                  return data;
                 });
-                return updatedFormConfig;
-            });
-
-            gettingDependentedOptions(optionUpdateFields);
-
-            const findDepartmentDivisionField = newFormConfig.filter((element)=>{
-                if(element?.table && (element?.table === "division" || element?.table === "department")){
-                    return element
-                }
-            });
-
-            if(findDepartmentDivisionField?.length > 1){
-    
-                setDepartmentDivisionField(findDepartmentDivisionField);
-
-                var departmentField = findDepartmentDivisionField.find((field)=>field.table === "department");
-
-                if(departmentField && departmentField?.name && initialData[departmentField?.name]){
-
-                    const gettingDivisionBasedOnDepartment = async ()=>{
-                        try {
-
-                            var departmentPayload = {
-                                "department_id" : initialData[departmentField.name]
-                            }
-
-                            const response = await api.post("cidMaster/getDivisionBasedOnDepartment", departmentPayload);
-            
-                            const data = response?.data;
-
-                            if (!data){
-                                setNewFormConfig((prevFormConfig) => {
-                                    const updatedFormConfig = prevFormConfig.map((data) => {
-                                        if (data?.table === "division") {
-                                            return { ...data, options: [] };
-                                        }
-                                        return data;
-                                    });
-                                    return updatedFormConfig;
-                                });
-                                return;
-                            }
-
-                            var updatedOptions = data.map((divisionData) => {
-                                                    return {
-                                                        name: divisionData["division_name"],
-                                                        code: divisionData["division_id"],
-                                                    };
-                                                });
-
-                            setNewFormConfig((prevFormConfig) => {
-                                const updatedFormConfig = prevFormConfig.map((data) => {
-                                    if (data?.table === "division") {
-                                        return { ...data, options: updatedOptions };
-                                    }
-                                    return data;
-                                });
-                                return updatedFormConfig;
-                            });
-                            
-                        } catch (error) {
-                            console.error("Error fetching division details:", error);
-                            setNewFormConfig((prevFormConfig) => {
-                                const updatedFormConfig = prevFormConfig.map((data) => {
-                                    if (data?.table === "division") {
-                                        return { ...data, options: [] };
-                                    }
-                                    return data;
-                                });
-                                return updatedFormConfig;
-                            });
-                        }
-                    }
-
-                    gettingDivisionBasedOnDepartment();
-                }else{
-                    setNewFormConfig((prevFormConfig) => {
-                        const updatedFormConfig = prevFormConfig.map((data) => {
-                            if (data?.table === "division") {
-                                return { ...data, options: [] };
-                            }
-                            return data;
-                        });
-                        return updatedFormConfig;
-                    });
-                }
-
-            }else{
-                setDepartmentDivisionField([]);
+              });
+              return { id: field.id, options: updatedOptions };
             }
 
-        } catch (error) {
-            console.error("Error fetching template data:", error);
+            if(field.api === "/templateData/getTemplateData"){
+              apiPayload = {
+                table_name: field.table
+              }
+            }else if(field.table === "users"){
+              apiPayload = {
+                designation_id : localStorage.getItem('designation_id') ? localStorage.getItem('designation_id') : null,
+                get_flag : field?.user_hierarchy || null
+              }
+            }
+
+            const response = await api.post(field.api, apiPayload);
+
+            setLoading(false);
+
+            if (!response.data) return { id: field.id, options: [] };
+
+            const updatedOptions = response.data.map((templateData) => {
+
+              const nameKey = Object.keys(templateData).find((key) => !["id", "created_at", "updated_at", "created_by", "field_approval_done_by"].includes(key));
+
+              var headerName = nameKey;
+              var headerId = 'id';
+
+              if(field.table === "users"){
+                headerName = "name"
+                headerId =  "user_id"
+              }else if(field.api !== "/templateData/getTemplateData"){
+                headerName = field.table + "_name"
+                headerId =  field.table + "_id"
+              }
+
+              return {
+                name: templateData[headerName],
+                code: templateData[headerId],
+              };
+            });
+
+            return { id: field.id, options: updatedOptions };
+
+          } catch (error) {
+            setLoading(false);
+            return { id: field.id, options: [] };
+          }
+        });
+
+        const results = await Promise.all(apiCalls);
+
+        var optionUpdateFields = []
+
+        setNewFormConfig((prevFormConfig) => {
+          const updatedFormConfig = prevFormConfig.map((field) => {
+            const updatedField = results.find((res) => res.id === field.id);
+            if (updatedField) {
+              if (updatedField?.options.length === 1) {
+                const onlyOption = updatedField.options[0];
+
+                const gettingFormdata = Object.keys(formData).length === 0 ? (initialData || formData) : formData;
+
+                if(!gettingFormdata[field?.name] || gettingFormdata[field?.name] === ""){
+                  setFormData((prevData) => ({
+                    ...prevData,
+                    [field.name]: onlyOption.code
+                  }));
+                }
+
+                optionUpdateFields.push(field);
+              }
+              return { ...field, options: updatedField.options };
+            }
+            return field;
+          });
+          return updatedFormConfig;
+        });
+
+        gettingDependentedOptions(optionUpdateFields);
+
+        // Department/Division logic
+        const findDepartmentDivisionField = newFormConfig.filter((element)=>{
+          if(element?.table && (element?.table === "division" || element?.table === "department")){
+            return element
+          }
+        });
+
+        if(findDepartmentDivisionField?.length > 1){
+    
+          setDepartmentDivisionField(findDepartmentDivisionField);
+
+          var departmentField = findDepartmentDivisionField.find((field)=>field.table === "department");
+
+          if(departmentField && departmentField?.name && initialData[departmentField?.name]){
+
+            const gettingDivisionBasedOnDepartment = async ()=>{
+              try {
+
+                var departmentPayload = {
+                  "department_id" : initialData[departmentField.name]
+                }
+
+                const response = await api.post("cidMaster/getDivisionBasedOnDepartment", departmentPayload);
+        
+                const data = response?.data;
+
+                if (!data){
+                  setNewFormConfig((prevFormConfig) => {
+                    const updatedFormConfig = prevFormConfig.map((data) => {
+                      if (data?.table === "division") {
+                        return { ...data, options: [] };
+                      }
+                      return data;
+                    });
+                    return updatedFormConfig;
+                  });
+                  return;
+                }
+
+                var updatedOptions = data.map((divisionData) => {
+                            return {
+                              name: divisionData["division_name"],
+                              code: divisionData["division_id"],
+                            };
+                          });
+
+                setNewFormConfig((prevFormConfig) => {
+                  const updatedFormConfig = prevFormConfig.map((data) => {
+                    if (data?.table === "division") {
+                      return { ...data, options: updatedOptions };
+                    }
+                    return data;
+                  });
+                  return updatedFormConfig;
+                });
+                
+              } catch (error) {
+                console.error("Error fetching division details:", error);
+                setNewFormConfig((prevFormConfig) => {
+                  const updatedFormConfig = prevFormConfig.map((data) => {
+                    if (data?.table === "division") {
+                      return { ...data, options: [] };
+                    }
+                    return data;
+                  });
+                  return updatedFormConfig;
+                });
+              }
+            }
+
+            gettingDivisionBasedOnDepartment();
+          }else{
+            setNewFormConfig((prevFormConfig) => {
+              const updatedFormConfig = prevFormConfig.map((data) => {
+                if (data?.table === "division") {
+                  return { ...data, options: [] };
+                }
+                return data;
+              });
+              return updatedFormConfig;
+            });
+          }
+
+        }else{
+          setDepartmentDivisionField([]);
         }
+
+        const findDistrictPoliceStationField = newFormConfig.filter((element) => {
+            if (element?.table && (element?.table === "cid_district" || element?.table === "cid_police_station")) {
+                return element;
+            }
+        });
+        
+        if (findDistrictPoliceStationField?.length > 1) {
+            const districtField = findDistrictPoliceStationField.find((field) => field.table === "cid_district");
+            const policeStationField = findDistrictPoliceStationField.find((field) => field.table === "cid_police_station");
+
+            if (districtField && districtField?.column_name && initialData[districtField.column_name]) {
+                const getPoliceStationsBasedOnDistrict = async () => {
+                    try {
+                        const districtPayload = {
+                            district_id: initialData[districtField.column_name]
+                        };
+
+                        const response = await api.post("cidMaster/getPoliceStationsBasedOnDistrict", districtPayload);
+                        const data = response?.data;
+
+                        if (!data || data.length === 0) {
+                            setNewFormConfig((prevFormConfig) => {
+                                return prevFormConfig.map((field) => {
+                                    if (field?.table === "cid_police_station") {
+                                        return { ...field, options: [] };
+                                    }
+                                    return field;
+                                });
+                            });
+                            return;
+                        }
+
+                        const updatedOptions = data.map((psData) => ({
+                            name: psData["field_name_of_the_police_station"],
+                            code: psData["id"],
+                        }));
+
+                        setNewFormConfig((prevFormConfig) => {
+                            return prevFormConfig.map((field) => {
+                                if (field?.table === "cid_police_station") {
+                                    return { ...field, options: updatedOptions };
+                                }
+                                return field;
+                            });
+                        });
+                    } catch (error) {
+                        console.error("Error fetching police stations:", error);
+                        setNewFormConfig((prevFormConfig) => {
+                            return prevFormConfig.map((field) => {
+                                if (field?.table === "cid_police_station") {
+                                    return { ...field, options: [] };
+                                }
+                                return field;
+                            });
+                        });
+                    }
+                };
+
+                getPoliceStationsBasedOnDistrict();
+            } else {
+                setNewFormConfig((prevFormConfig) => {
+                    return prevFormConfig.map((field) => {
+                        if (field?.table === "cid_police_station") {
+                            return { ...field, options: [] };
+                        }
+                        return field;
+                    });
+                });
+            }
+        }
+
+      } catch (error) {
+        console.error("Error fetching template data:", error);
+      }
     };
 
     useEffect(() => {

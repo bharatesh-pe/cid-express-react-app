@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { Box, CircularProgress, Collapse, Divider, List, ListItem, ListItemIcon, ListItemText, Paper, Tooltip, Typography } from "@mui/material";
+import { Box, CircularProgress, Collapse, Divider, List, ListItem, ListItemIcon, ListItemText, Paper, Tooltip, Typography,
+    Dialog,
+    DialogTitle,
+    DialogContent, 
+    IconButton,
+    TextField,
+} from "@mui/material";
+
 import { ExpandLess, ExpandMore } from "@mui/icons-material";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -11,12 +18,12 @@ import "react-toastify/dist/ReactToastify.css";
 import HomeIcon from '@mui/icons-material/Home';
 import DashboardCustomizeIcon from '@mui/icons-material/DashboardCustomize';
 import Navbar from "./navbar";
-import DescriptionIcon from '@mui/icons-material/Description';
-import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
-import AutoStoriesIcon from '@mui/icons-material/AutoStories';
+import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import api from "../services/api";
+import CloseIcon from '@mui/icons-material/Close';
 
-const LokayuktaSidebar = ({ui_case_id, pt_case_id, contentArray, onClick, activeSidebar, templateName, fromCDR, showMagazineView}) => {
+const LokayuktaSidebar = ({ui_case_id, pt_case_id, contentArray, onClick, activeSidebar, templateName, fromCDR, showMagazineView,tableCounts, setTableCounts, module, sysStatus}) => {
 
     const navigate = useNavigate();
     const location = useLocation();
@@ -29,7 +36,7 @@ const LokayuktaSidebar = ({ui_case_id, pt_case_id, contentArray, onClick, active
     const [selectedInvestigationIndex, setSelectedInvestigationIndex] = useState(fromCDR ? 0 : null);
 
     const [notificationCount, setNotificationCount] = useState(localStorage.getItem("unreadNotificationCount") || 0);
-    const [tableCounts, setTableCounts] = useState({});
+    // const [tableCounts, setTableCounts] = useState({});
 
     const handleLogout = async () => {
         const token = localStorage.getItem("auth_token");
@@ -112,6 +119,68 @@ const LokayuktaSidebar = ({ui_case_id, pt_case_id, contentArray, onClick, active
         }
     };
 
+    const [videoOpen, setVideoOpen] = useState(false);
+
+    const [videos, setVideos] = useState({});
+    const [searchQuery, setSearchQuery] = useState("");
+
+    const REACT_APP_SERVER_URL_FILE_VIEW = process.env.REACT_APP_SERVER_URL_FILE_VIEW;
+
+    const handleVideoOpen = async ()=>{
+
+        const pathname = window.location.pathname;
+        const segments = pathname.split('/').filter(Boolean);
+        const lastPath = segments[segments.length - 1];
+
+        const payload = {
+            data : [lastPath]
+        }
+
+        try {
+            setLoading(true);
+
+            const getAllVideosResponse = await api.post("/templateData/gettingAllHelpVideos", payload);
+            setLoading(false);
+
+            if (getAllVideosResponse && getAllVideosResponse.data && getAllVideosResponse.success) {
+
+                setVideos(getAllVideosResponse.data);
+                setVideoOpen(true);
+            
+            } else {
+                setVideos({});
+                const errorMessage = getAllVideosResponse?.data?.message || "Failed to get help videos.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+
+        } catch (error) {
+            setVideos({});
+            setLoading(false);
+
+            toast.error(error?.response?.data?.message || "Please Try Again!", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+        }
+    }
+
+    const handleVideoClose = () => setVideoOpen(false);
+
     const validSidebarItems = contentArray?.filter(item => (!item?.field && item?.table) || item?.viewAction) || [];
 
     const registerItemArray = ["UI Case", "PT Case", "Enquiries"];
@@ -130,7 +199,7 @@ const LokayuktaSidebar = ({ui_case_id, pt_case_id, contentArray, onClick, active
                 const response = await fetch(`${serverURL}/templateData/getTableCountsByCaseId`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ table_names, ui_case_id, pt_case_id })
+                    body: JSON.stringify({ table_names, ui_case_id, pt_case_id, module, sysStatus })
                 });
                 const data = await response.json();
                 if (data.success) setTableCounts(data.data);
@@ -140,6 +209,44 @@ const LokayuktaSidebar = ({ui_case_id, pt_case_id, contentArray, onClick, active
         };
         fetchCounts();
     }, [ui_case_id, pt_case_id]);
+
+    const filteredVideos = Object.entries(videos).flatMap(([moduleKey, videoList]) =>
+        videoList
+            .filter((videoUrl) =>
+                videoUrl.split("/").pop().toLowerCase().includes(searchQuery)
+            )
+            .map((videoUrl, idx) => {
+                const fileName = videoUrl.split("/").pop();
+
+                return (
+                    <div
+                        key={`${moduleKey}-${idx}`}
+                        style={{
+                            border: '1px solid #ccc',
+                            borderRadius: '8px',
+                            padding: '8px',
+                            boxShadow: '0 2px 6px rgba(0, 0, 0, 0.1)',
+                            backgroundColor: '#fafafa',
+                            overflow: 'hidden',
+                        }}
+                    >
+                        <video
+                            src={`${REACT_APP_SERVER_URL_FILE_VIEW}${videoUrl}`}
+                            width="100%"
+                            height="200"
+                            controls
+                            preload="metadata"
+                            style={{ borderRadius: "4px" }}
+                        />
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 1 }}>
+                            <Typography variant="body2" sx={{ wordBreak: 'break-all' }}>
+                                {fileName}
+                            </Typography>
+                        </Box>
+                    </div>
+                );
+            })
+    );
 
     return (
         <>
@@ -232,7 +339,38 @@ const LokayuktaSidebar = ({ui_case_id, pt_case_id, contentArray, onClick, active
                                                             </svg>
                                                         </span>
                                                     )}
-                                                    <ListItemText primary={registerItem.name ? registerItem.name : "FIR"} />
+                                                    {/* <ListItemText primary={registerItem.name ? registerItem.name : "FIR"} /> */}
+                                                    <ListItemText
+                                                        primary={
+                                                            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                                                            <Box
+                                                                onClick={() => {
+                                                                if (onClick) onClick(registerItem);
+                                                                }}
+                                                                sx={{
+                                                                whiteSpace: 'nowrap',
+                                                                overflow: 'hidden',
+                                                                textOverflow: 'ellipsis',
+                                                                fontWeight: 500,
+                                                                fontSize: '14px',
+                                                                color: '#333',
+                                                                cursor: 'pointer'
+                                                                }}
+                                                            >
+                                                                {registerItem.name ?? "FIR"}
+                                                            </Box>
+
+                                                        <Tooltip title="Overview Docket" arrow placement="top">
+                                                        <MenuBookIcon
+                                                            sx={{ color: "#333", fontSize: 22, cursor: 'pointer' }}
+                                                            onClick={() => showMagazineView(true)}
+                                                        />
+                                                        </Tooltip>
+
+                                                            </Box>
+                                                        }
+                                                        />
+
                                                     </ListItem>
                                                 </Tooltip>
                                             ) : (
@@ -424,9 +562,15 @@ const LokayuktaSidebar = ({ui_case_id, pt_case_id, contentArray, onClick, active
                                 fontWeight: "400",
                                 fontSize: "14px",
                                 lineHeight: "18px",
-                                color: "#98A2B3",
+                                color: "#1D2939",
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 1
                             }}
                         >
+                            <Tooltip title="Click for help" onClick={handleVideoOpen}>
+                                <HelpOutlineIcon sx={{fontSize: '26px', cursor: 'pointer'}} />
+                            </Tooltip>
                             <svg
                                 style={{ cursor: "pointer" }}
                                 onClick={handleLogout}
@@ -449,6 +593,63 @@ const LokayuktaSidebar = ({ui_case_id, pt_case_id, contentArray, onClick, active
                     </Box>
                 </Paper>
             </Box>
+
+            <Dialog
+                open={videoOpen}
+                onClose={handleVideoClose}
+                fullWidth
+                maxWidth="2xl"
+                scroll="paper"
+            >
+                <DialogTitle sx={{ m: 0, p: 2 }}>
+                    <Box sx={{display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
+                        Videos
+                        <Box sx={{display: 'flex', alignItems: 'center'}}>
+                            <TextField
+                                fullWidth
+                                variant="outlined"
+                                placeholder="Search videos..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value.toLowerCase())}
+                                sx={{ width: 300 }}
+                            />
+                            <IconButton
+                                aria-label="close"
+                                onClick={handleVideoClose}
+                                sx={{
+                                    color: (theme) => theme.palette.grey[500],
+                                }}
+                            >
+                                <CloseIcon />
+                            </IconButton>
+                        </Box>
+                    </Box>
+                </DialogTitle>
+    
+                <DialogContent dividers>
+                    <Box
+                        sx={{
+                            display: 'grid',
+                            gridTemplateColumns: {
+                                xs: '1fr',
+                                sm: '1fr 1fr',
+                                md: '1fr 1fr 1fr 1fr',
+                            },
+                            mb: 3,
+                            gap: 2,
+                        }}
+                    >
+                        {filteredVideos.length > 0 ? (
+                            filteredVideos
+                        ) : (
+                            <Typography variant="body1" sx={{ gridColumn: '1 / -1', textAlign: 'center', mt: 4 }}>
+                                No videos found.
+                            </Typography>
+                        )}
+                    </Box>
+                </DialogContent>
+            </Dialog>
+
             {loading && (
                 <div className="parent_spinner" tabIndex="-1" aria-hidden="true">
                     <CircularProgress size={100} />

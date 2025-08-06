@@ -94,9 +94,10 @@ exports.createTemplate = async (req, res, next) => {
     let fieldDefinitions = {};
     let indexFields = [];
     let associations = [];
+    let childTables = [];
 
     // Process each field
-    fields.forEach((field) => {
+      for (const field of fields) {
       let {
         name: fieldName,
         data_type,
@@ -112,6 +113,16 @@ exports.createTemplate = async (req, res, next) => {
         forign_key,
         attributes,
       } = field;
+
+
+      if (field.type === "table" || field.formType === "Table") {
+        childTables.push({ field, parentTableName: table_name });
+        fieldDefinitions[field.name + "_json"] = {
+          type: Sequelize.DataTypes.JSONB, // Use JSONB if Postgres; otherwise DataTypes.TEXT or STRING
+          allowNull: true,
+        };
+      }
+
 
       // Handle dependent fields (check only if "table" exists)
       if (table) {
@@ -172,8 +183,7 @@ exports.createTemplate = async (req, res, next) => {
           attributes,
         });
       }
-    });
-
+    }
     // Handle soft delete if paranoid is true
     if (paranoid) {
       fieldDefinitions.deleted_at = {
@@ -229,6 +239,77 @@ exports.createTemplate = async (req, res, next) => {
 
     // Sync the model with the database
     await model.sync({ force: true });
+    sequelize.models[table_name] = model;
+
+
+    for (const { field, parentTableName } of childTables) {
+      const childTableName = `${parentTableName}_${field.name}`;
+      const childFields = {};
+      const tableHeaders = field.tableHeaders || [];
+
+      for (const headerObj of tableHeaders) {
+        let originalHeader = headerObj.header;
+
+        const normalizedHeader = originalHeader
+          .trim()
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "_")
+          .replace(/^_+|_+$/g, "")
+          .slice(0, 63);
+
+        const type = headerObj.fieldType?.type || "short_text";
+        const sequelizeType =
+          type === "short_text"
+            ? Sequelize.DataTypes.STRING(255)
+            : Sequelize.DataTypes.TEXT;
+
+        childFields[normalizedHeader] = {
+          type: sequelizeType,
+          allowNull: true,
+          field: normalizedHeader 
+        };
+      }
+      
+      childFields[`${parentTableName}_id`] = {
+        type: Sequelize.DataTypes.INTEGER,
+        allowNull: false,
+        references: {
+          model: parentTableName,
+          key: 'id',
+        },
+        onDelete: 'CASCADE',
+      };
+
+      childFields.created_at = {
+        type: Sequelize.DataTypes.DATE,
+        allowNull: true,
+      };
+
+      childFields.updated_at = {
+        type: Sequelize.DataTypes.DATE,
+        allowNull: true,
+      };
+
+      const childModel = sequelize.define(childTableName, childFields, {
+        freezeTableName: true,
+        timestamps: true,
+        underscored: true,
+      });
+
+      await childModel.sync({ force: true });
+
+      sequelize.models[childTableName] = childModel;
+
+      model.hasMany(childModel, {
+        foreignKey: `${parentTableName}_id`,
+        as: field.name + "_children", 
+      });
+
+      childModel.belongsTo(model, {
+        foreignKey: `${parentTableName}_id`,
+        as: parentTableName,
+      });
+    }
 
     // Create indexes
     for (let field of indexFields) {
@@ -286,7 +367,7 @@ exports.createTemplate = async (req, res, next) => {
       updated_by: "adminUser.full_name",
       paranoid,
     };
-    console.log("name checking ", saveData.fields);
+
     if (paranoid) {
       const fieldsJson = JSON.parse(saveData.fields); // Parse to modify the fields object
       fieldsJson.push({
@@ -317,7 +398,7 @@ exports.createTemplate = async (req, res, next) => {
 exports.updateTemplate = async (req, res, next) => {
   let dirPath = "";
   try {
-    let {
+    const {
       template_name,
       template_type,
       template_module,
@@ -331,36 +412,25 @@ exports.updateTemplate = async (req, res, next) => {
       is_link_to_organization,
       transaction_id,
     } = req.body;
-    // const iddd = res.locals.admin_user_id;
-    // const adminUser = await admin_user.findOne({
-    // 	where: { admin_user_id: iddd },
-    // 	attributes: ['full_name']
-    // });
-    // Convert template_name to a valid table_name
-    // let table_name = template_name
-    // 	.toLowerCase()
-    // 	.replace(/[^a-z0-9\s]/g, '')
-    // 	.replace(/\s+/g, '_');
-    // let table_name = 'cid_' + template_name
-    // 	.toLowerCase()
-    // 	.replace(/[^a-z0-9\s]/g, '')
-    // 	.replace(/\s+/g, '_');
 
     dirPath = path.join(__dirname, `../data/user_unique/${transaction_id}`);
-    if (fs.existsSync(dirPath))
-      return res
-        .status(400)
-        .json({ success: false, message: "Duplicate transaction detected." });
+    if (fs.existsSync(dirPath)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Duplicate transaction detected." 
+      });
+    }
     fs.mkdirSync(dirPath, { recursive: true });
-    let base_name = template_name
-      .toLowerCase()
-      .replace(/[^a-z0-9\s]/g, "") // Remove special characters
-      .replace(/\s+/g, "_"); // Replace spaces with underscores
 
-    let table_name = link_module
-      ? "cid_" + link_module.toLowerCase() + "_" + base_name
-      : "cid_" + base_name;
-    // Check if table exists
+    const base_name = template_name
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, "")
+      .replace(/\s+/g, "_");
+
+    const table_name = link_module
+      ? `cid_${link_module.toLowerCase()}_${base_name}`
+      : `cid_${base_name}`;
+
     const existingTable = await Template.findOne({ where: { table_name } });
     if (!existingTable) {
       return adminSendResponse(
@@ -371,92 +441,91 @@ exports.updateTemplate = async (req, res, next) => {
         null
       );
     }
+    const pkCheckQuery = `
+      SELECT a.attname, i.indisprimary
+      FROM pg_index i
+      JOIN pg_attribute a ON a.attrelid = i.indrelid
+                        AND a.attnum = ANY(i.indkey)
+      WHERE i.indrelid = '${table_name}'::regclass
+        AND a.attname = 'id';
+    `;
 
-    // Check if there are any entries in the dynamic table itself
-    // const tableEntries = await sequelize.query(
-    // 	`SELECT COUNT(*) AS count FROM "${table_name}"`,
-    // 	{ type: sequelize.QueryTypes.SELECT }
-    // );
+    const [pkResult] = await sequelize.query(pkCheckQuery);
+    const hasId = pkResult.length > 0;
+    const isIdPrimaryKey = hasId && pkResult[0].indisprimary === true;
 
-    // const entryCount = parseInt(tableEntries[0].count, 10);
-    // if (entryCount > 0) {
-    // 	return adminSendResponse(
-    // 		res,
-    // 		400,
-    // 		false,
-    // 		`Cannot Update the table ${table_name} as it contains ${entryCount} record(s). Please delete the records first.`,
-    // 		{ recordCount: entryCount }
-    // 	);
-    // }
+    if (!isIdPrimaryKey) {
+      const [colResult] = await sequelize.query(`
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_name = '${table_name}'
+          AND column_name = 'id';
+      `);
+      const idExists = colResult.length > 0;
 
-    // Initialize mutable variables
-    let fieldDefinitions = {};
-    let indexFields = [];
-    let associations = [];
+      if (idExists) {
+        await sequelize.query(`
+          ALTER TABLE "${table_name}"
+          ADD PRIMARY KEY ("id");
+        `);
+        console.log(`Primary key added to "${table_name}".`);
+      } else {
+        await sequelize.query(`
+          ALTER TABLE "${table_name}"
+          ADD COLUMN "id" SERIAL PRIMARY KEY;
+        `);
+        console.log(`'id' column with primary key created in "${table_name}".`);
+      }
+    }
 
-    // Process each field
-    fields.forEach((field) => {
+    const fieldDefinitions = {};
+    const indexFields = [];
+    const associations = [];
+
+    for (const field of fields) {
       let {
         name: fieldName,
         new_field_name,
         data_type,
         max_length,
-        min_length,
         not_null,
         default_value,
         index,
         unique,
         is_dependent,
-        api,
-
         table,
         forign_key,
         attributes,
       } = field;
 
-      // Handle renaming of fields if new_field_name is provided
       if (new_field_name && new_field_name !== fieldName) {
-        // Rename the column in the database without truncating the data
-        sequelize.query(`
-                    ALTER TABLE "${table_name}" RENAME COLUMN "${fieldName}" TO "${new_field_name}"
-                `);
-
-        // Update fieldName to new field name
+        await sequelize.query(`
+          ALTER TABLE "${table_name}" 
+          RENAME COLUMN "${fieldName}" TO "${new_field_name}"
+        `);
         fieldName = new_field_name;
       }
 
-      // Handle dependent fields (foreign keys)
-      if (is_dependent) {
-        if (!api || !table || !forign_key || !attributes) {
-          const message = `Field ${fieldName} is marked as dependent, but "api", "table", "forign_key", and "attributes" must be provided.`;
-          return adminSendResponse(res, 400, false, message, null);
-        }
-        // data_type = "INTEGER"; // Set the data type to INTEGER for foreign keys
-      }
+      const sequelizeType = data_type.toUpperCase() === "VARCHAR" && max_length
+        ? Sequelize.DataTypes.STRING(max_length)
+        : typeMapping[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
 
-      // Check data type and apply max_length if applicable
-      let sequelizeType;
-      if (data_type.toUpperCase() === "VARCHAR" && max_length) {
-        sequelizeType = Sequelize.DataTypes.STRING(max_length);
-      } else {
-        sequelizeType =
-          typeMapping[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
-      }
-
-      // Create the column definition
-      const columnDef = {
+      fieldDefinitions[fieldName] = {
         type: sequelizeType,
-        allowNull: not_null ? false : true,
+        allowNull: !not_null,
         defaultValue: default_value || null,
+        ...(unique && { unique: true })
       };
-      if (unique) columnDef.unique = true;
 
-      fieldDefinitions[fieldName] = columnDef;
+      if (!fieldDefinitions["id"]) {
+        fieldDefinitions["id"] = {
+          type: Sequelize.DataTypes.INTEGER,
+          autoIncrement: true,
+          primaryKey: true
+        };
+      }
 
-      // Handle indexes
       if (index) indexFields.push(fieldName);
-
-      // Add associations for dependent fields (foreign keys)
       if (is_dependent) {
         associations.push({
           fieldName,
@@ -465,9 +534,8 @@ exports.updateTemplate = async (req, res, next) => {
           attributes,
         });
       }
-    });
+    }
 
-    // Handle soft delete if paranoid is true
     if (paranoid) {
       fieldDefinitions.deleted_at = {
         type: Sequelize.DataTypes.DATE,
@@ -475,43 +543,6 @@ exports.updateTemplate = async (req, res, next) => {
       };
     }
 
-    fieldDefinitions.sys_status = {
-      type: Sequelize.DataTypes.TEXT,
-      allowNull: true,
-      defaultValue: template_module ? template_module : null,
-    };
-
-    fieldDefinitions.created_by = {
-      type: Sequelize.DataTypes.TEXT,
-      allowNull: true,
-    };
-
-    fieldDefinitions.updated_by = {
-      type: Sequelize.DataTypes.TEXT,
-      allowNull: true,
-    };
-
-    fieldDefinitions.created_by_id = {
-      type: Sequelize.DataTypes.INTEGER,
-      allowNull: true,
-    };
-
-    fieldDefinitions.updated_by_id = {
-      type: Sequelize.DataTypes.INTEGER,
-      allowNull: true,
-    };
-
-    fieldDefinitions.ui_case_id = {
-      type: Sequelize.DataTypes.INTEGER,
-      allowNull: true,
-    };
-
-    fieldDefinitions.pt_case_id = {
-      type: Sequelize.DataTypes.INTEGER,
-      allowNull: true,
-    };
-
-    // Define the model
     const model = sequelize.define(table_name, fieldDefinitions, {
       freezeTableName: true,
       timestamps: true,
@@ -520,37 +551,157 @@ exports.updateTemplate = async (req, res, next) => {
       deletedAt: "deleted_at",
     });
 
-    // Alter the table to add new columns or modify existing ones, without truncating data
-    for (const [fieldName, columnDef] of Object.entries(fieldDefinitions)) {
-      await sequelize.query(`
-                ALTER TABLE "${table_name}" ADD COLUMN IF NOT EXISTS "${fieldName}" ${columnDef.type.toString()}
-            `);
-    }
+    // for (const [fieldName, columnDef] of Object.entries(fieldDefinitions)) {
+    //   const columnExists = await sequelize.query(`
+    //     SELECT column_name 
+    //     FROM information_schema.columns 
+    //     WHERE table_name = '${table_name}' 
+    //     AND column_name = '${fieldName}'
+    //   `);
 
-    // Create indexes
-    for (let field of indexFields) {
+    //   if (columnExists[0].length === 0) {
+    //     await sequelize.query(`
+    //       ALTER TABLE "${table_name}" 
+    //       ADD COLUMN "${fieldName}" ${columnDef.type.toString()}
+    //     `);
+    //   }
+    // }
+
+    // Add new section:
+      const existingColumnQuery = await sequelize.query(`
+        SELECT column_name FROM information_schema.columns 
+        WHERE table_name = '${table_name}'
+      `);
+      const existingColumnNames = new Set(
+        existingColumnQuery[0].map(col => col.column_name)
+      );
+
+      const alterTablePromises = [];
+      for (const [fieldName, columnDef] of Object.entries(fieldDefinitions)) {
+        if (!existingColumnNames.has(fieldName)) {
+          const sql = `
+            ALTER TABLE "${table_name}" 
+            ADD COLUMN "${fieldName}" ${columnDef.type.toString()}
+          `;
+          alterTablePromises.push(sequelize.query(sql));
+        }
+      }
+      await Promise.all(alterTablePromises); 
+
+    for (const field of indexFields) {
       await sequelize.query(
-        `CREATE INDEX IF NOT EXISTS idx_${table_name}_${field} ON "${table_name}" ("${field}")`
+        `CREATE INDEX IF NOT EXISTS idx_${table_name}_${field} 
+         ON "${table_name}" ("${field}")`
       );
     }
 
-    // Handle associations for dependent fields
-    // associations.forEach(({ fieldName, tableName, foreignKey, attributes }) => {
-    // 	const referenceModel = sequelize.models[tableName];
-    // 	if (!referenceModel) {
-    // 		const message = `Referenced model ${tableName} does not exist.`;
-    // 		return adminSendResponse(res, 400, false, message, null);
-    // 	}
+    // Helper to sanitize column names
+    const sanitizeColumnName = (name) => {
+      return name
+        .toLowerCase()
+        .replace(/[^a-z0-9_]/gi, "_")
+        .replace(/_+/g, "_")
+        .replace(/^_+|_+$/g, "")
+        .slice(0, 63);
+    };
 
-    // 	// Add associations dynamically using Sequelize
-    // 	model.belongsTo(referenceModel, {
-    // 		foreignKey: foreignKey,   // Foreign key in the current table
-    // 		targetKey: attributes,    // Field in the referenced model
-    // 	});
-    // });
+    const childTables = fields.filter(
+      field => field.type === "table" || field.formType === "Table"
+    );
 
-    // Update the table's metadata in Template model
-    const updatedFields = fields.map((field) => {
+    for (const field of childTables) {
+      const childTableName = sanitizeColumnName(`${table_name}_${field.name}`);
+      const parentKey = `${table_name}_id`;
+
+      const existingColsQuery = await sequelize.query(`
+        SELECT column_name, data_type
+        FROM information_schema.columns
+        WHERE table_name = '${childTableName}'
+      `);
+      const existingColumns = new Set(existingColsQuery[0].map(c => c.column_name));
+
+      const fullFields = {};
+
+      const protectedColumns = new Set([
+        "id",
+        parentKey,
+        `${table_name}_id`,
+      ]);
+
+      for (const col of existingColsQuery[0]) {
+        const colName = col.column_name;
+        if (protectedColumns.has(colName)) continue;
+
+        fullFields[colName] = {
+          type: Sequelize.DataTypes.TEXT,
+          allowNull: true,
+        };
+      }
+
+      for (const headerObj of field.tableHeaders || []) {
+        const raw = headerObj.header;
+        const sanitized = sanitizeColumnName(raw);
+        const fieldType = headerObj.fieldType?.type || "short_text";
+
+         if (!sanitized || existingColumns.has(sanitized)) {
+            continue;
+          }
+
+        fullFields[sanitized] = {
+          type: fieldType === "short_text"
+            ? Sequelize.DataTypes.STRING(255)
+            : Sequelize.DataTypes.TEXT,
+          allowNull: true,
+        };
+      }
+
+      fullFields.created_at = { type: Sequelize.DataTypes.DATE, allowNull: true };
+      fullFields.updated_at = { type: Sequelize.DataTypes.DATE, allowNull: true };
+
+
+      fullFields[parentKey] = {
+        type: Sequelize.DataTypes.INTEGER,
+        allowNull: false,
+        references: {
+          model: table_name,
+          key: 'id',
+        },
+        onDelete: 'CASCADE',
+      };
+
+      const childModel = sequelize.define(childTableName, fullFields, {
+        freezeTableName: true,
+        timestamps: true,
+        underscored: true,
+      });
+
+      try {
+        await childModel.sync({ alter: true });
+      await migrateOldTableFieldData(model, childModel, field, table_name, childTableName);
+        
+      } catch (err) {
+        console.error(`Failed to sync ${childTableName}:`, err);
+        throw err;
+      }
+
+      sequelize.models[childTableName] = childModel;
+
+      if (!model.associations[`${field.name}_children`]) {
+        model.hasMany(childModel, {
+          foreignKey: parentKey,
+          as: `${field.name}_children`,
+        });
+      }
+
+      if (!childModel.associations[`${table_name}_parent`]) {
+        childModel.belongsTo(model, {
+          foreignKey: parentKey,
+          as: `${table_name}_parent`,
+        });
+      }
+    }
+
+    const updatedFields = fields.map(field => {
       if (field.new_field_name) {
         const updatedField = { ...field };
         updatedField.name = field.new_field_name;
@@ -560,7 +711,6 @@ exports.updateTemplate = async (req, res, next) => {
       return field;
     });
 
-    // Add deleted_at to fields if paranoid is true
     if (paranoid) {
       updatedFields.push({
         name: "deleted_at",
@@ -583,25 +733,90 @@ exports.updateTemplate = async (req, res, next) => {
       is_link_to_leader,
       is_link_to_organization,
       updated_by: "adminUser.full_name",
-
       paranoid,
     };
 
     await Template.update(saveData, { where: { table_name } });
 
-    const responseMessage = `Template ${template_name} updated successfully.`;
-    return adminSendResponse(res, 200, true, responseMessage, null);
+    return adminSendResponse(
+      res, 
+      200, 
+      true, 
+      `Template ${template_name} updated successfully.`, 
+      null
+    );
   } catch (error) {
     console.error("Error updating table:", error);
-    return adminSendResponse(res, 400, false, "Failed to update template.", {
-      error: error.message || "Server error.",
-    }
+    return adminSendResponse(
+      res, 
+      400, 
+      false, 
+      "Failed to update template.", 
+      { error: error.message || "Server error." }
     );
   } finally {
-    if (fs.existsSync(dirPath))
+    if (fs.existsSync(dirPath)) {
       fs.rmSync(dirPath, { recursive: true, force: true });
+    }
   }
 };
+
+
+async function migrateOldTableFieldData(model, childModel, field, table_name, childTableName) {
+  const parentKey = `${table_name}_id`;
+  const parentRows = await model.findAll();
+
+  const sanitizeColumnName = (name) => {
+    return name
+      .toLowerCase()
+      .replace(/[^a-z0-9_]/gi, "_")
+      .replace(/_+/g, "_")
+      .replace(/^_+|_+$/g, "");
+  };
+
+  for (const parent of parentRows) {
+    const existingChildren = await childModel.count({
+      where: { [parentKey]: parent.id },
+    });
+
+    if (existingChildren > 0) {
+      console.log(`Skipping migration for parent ID ${parent.id} — child rows already exist.`);
+      continue;
+    }
+
+    const rawTableData = parent.get(field.name);
+    if (!rawTableData) continue;
+
+    let parsedRows;
+    try {
+      parsedRows = typeof rawTableData === "string"
+        ? JSON.parse(rawTableData)
+        : rawTableData;
+    } catch (err) {
+      console.warn(`Invalid JSON in ${field.name} for row ID ${parent.id}`);
+      continue;
+    }
+
+    if (!Array.isArray(parsedRows)) continue;
+
+    for (const row of parsedRows) {
+      const insertRow = {};
+
+      for (const header of field.tableHeaders || []) {
+        const sanitized = sanitizeColumnName(header.header);
+        insertRow[sanitized] = row[header.header] ?? null;
+      }
+
+      insertRow[parentKey] = parent.id;
+
+      try {
+        await childModel.create(insertRow);
+      } catch (err) {
+        console.error(`Error inserting row for parent ID ${parent.id}:`, err);
+      }
+    }
+  }
+}
 
 exports.deleteTemplate = async (req, res, next) => {
   let dirPath = "";
@@ -662,6 +877,25 @@ exports.deleteTemplate = async (req, res, next) => {
         type: sequelize.QueryTypes.DELETE,
       }
     );
+
+    const childTables = await sequelize.query(`
+      SELECT DISTINCT kcu.table_name
+      FROM information_schema.referential_constraints AS rc
+      JOIN information_schema.key_column_usage AS kcu
+        ON rc.constraint_name = kcu.constraint_name
+      WHERE rc.unique_constraint_name IN (
+        SELECT constraint_name
+        FROM information_schema.table_constraints
+        WHERE table_name = :tableName
+      )
+    `, {
+      replacements: { tableName: table_name },
+      type: sequelize.QueryTypes.SELECT
+    });
+    for (const child of childTables) {
+      await sequelize.query(`DROP TABLE IF EXISTS "${child.table_name}" CASCADE`);
+    }
+
 
     // Hard delete: drop the table from the database
     await sequelize.query(`DROP TABLE IF EXISTS "${table_name}" CASCADE`);
@@ -725,6 +959,18 @@ exports.viewTemplate = async (req, res, next) => {
       enable_edit = false;
     }
 
+    const parsedFields = JSON.parse(template.fields);
+
+    const childTables = parsedFields
+      .filter(f => f.type === "table" || f.formType === "Table")
+      .map(f => {
+        return {
+          field_name: f.name,
+          child_table_name: `${table_name}_${f.name}`,
+          tableHeaders: f.tableHeaders || [],
+        };
+    });
+
     return adminSendResponse(
       res,
       200,
@@ -745,6 +991,7 @@ exports.viewTemplate = async (req, res, next) => {
         fields: JSON.parse(template.fields),
         paranoid: template.paranoid,
         enable_edit: enable_edit,
+        child_tables: childTables,
       }
     );
   } catch (error) {

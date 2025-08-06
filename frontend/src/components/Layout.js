@@ -21,6 +21,7 @@ import {
   MenuItem,
   Tooltip,
   IconButton,
+  TextField,
 } from "@mui/material";
 
 import { ExpandLess, ExpandMore } from "@mui/icons-material";
@@ -43,6 +44,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import video1 from "../videos/UI_Introduction.mp4"
 import video2 from "../videos/UI_All_Cases.mp4"
 import video3 from "../videos/UI_FIR Form.mp4"
+import api from "../services/api";
 
 const icons = {
   dashboard: (
@@ -200,7 +202,64 @@ const Layout = ({ children }) => {
 
     const [videoOpen, setVideoOpen] = useState(false);
 
-    const handleVideoOpen = () => setVideoOpen(true);
+    const [videos, setVideos] = useState({});
+    const [searchQuery, setSearchQuery] = useState("");
+
+    const REACT_APP_SERVER_URL_FILE_VIEW = process.env.REACT_APP_SERVER_URL_FILE_VIEW;
+
+    const handleVideoOpen = async ()=>{
+
+        const pathname = window.location.pathname;
+        const segments = pathname.split('/').filter(Boolean);
+        const lastPath = segments[segments.length - 1];
+
+        const payload = {
+            data : [lastPath]
+        }
+
+        try {
+            setLoading(true);
+
+            const getAllVideosResponse = await api.post("/templateData/gettingAllHelpVideos", payload);
+            setLoading(false);
+
+            if (getAllVideosResponse && getAllVideosResponse.data && getAllVideosResponse.success) {
+
+                setVideos(getAllVideosResponse.data);
+                setVideoOpen(true);
+            
+            } else {
+                setVideos({});
+                const errorMessage = getAllVideosResponse?.data?.message || "Failed to get help videos.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+
+        } catch (error) {
+            setVideos({});
+            setLoading(false);
+
+            toast.error(error?.response?.data?.message || "Please Try Again!", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+        }
+    }
+
     const handleVideoClose = () => setVideoOpen(false);
 
     const [userOverallDesignation, setUserOverallDesignation] = useState(localStorage.getItem("userOverallDesignation") ? JSON.parse(localStorage.getItem("userOverallDesignation")) : []);
@@ -595,6 +654,44 @@ const Layout = ({ children }) => {
       navigate("/case/cdr_case", { replace: true });
     }
   }, [isCDRPage, navigate]);
+
+    const filteredVideos = Object.entries(videos).flatMap(([moduleKey, videoList]) =>
+        videoList
+            .filter((videoUrl) =>
+                videoUrl.split("/").pop().toLowerCase().includes(searchQuery)
+            )
+            .map((videoUrl, idx) => {
+                const fileName = videoUrl.split("/").pop();
+
+                return (
+                    <div
+                        key={`${moduleKey}-${idx}`}
+                        style={{
+                            border: '1px solid #ccc',
+                            borderRadius: '8px',
+                            padding: '8px',
+                            boxShadow: '0 2px 6px rgba(0, 0, 0, 0.1)',
+                            backgroundColor: '#fafafa',
+                            overflow: 'hidden',
+                        }}
+                    >
+                        <video
+                            src={`${REACT_APP_SERVER_URL_FILE_VIEW}${videoUrl}`}
+                            width="100%"
+                            height="200"
+                            controls
+                            preload="metadata"
+                            style={{ borderRadius: "4px" }}
+                        />
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 1 }}>
+                            <Typography variant="body2" sx={{ wordBreak: 'break-all' }}>
+                                {fileName}
+                            </Typography>
+                        </Box>
+                    </div>
+                );
+            })
+    );
 
   return (
     <Box>
@@ -1144,6 +1241,8 @@ const Layout = ({ children }) => {
                                         localStorage.setItem("getDataBasesOnUsers",JSON.stringify(responseData.getDataBasesOnUsers));
                                     }else{
                                         localStorage.setItem("allowedUserIds",JSON.stringify(responseData.allowedUserIds));
+                                        localStorage.setItem("allowedDepartmentIds",JSON.stringify(responseData.allowedDepartmentIds));
+                                        localStorage.setItem("allowedDivisionIds",JSON.stringify(responseData.allowedDivisionIds));
                                         localStorage.setItem("getDataBasesOnUsers",JSON.stringify(responseData.getDataBasesOnUsers));
                                     }
 
@@ -1203,19 +1302,28 @@ const Layout = ({ children }) => {
         scroll="paper"
     >
         <DialogTitle sx={{ m: 0, p: 2 }}>
-            Videos
-            <IconButton
-                aria-label="close"
-                onClick={handleVideoClose}
-                sx={{
-                    position: 'absolute',
-                    right: 8,
-                    top: 8,
-                    color: (theme) => theme.palette.grey[500],
-                }}
-            >
-                <CloseIcon />
-            </IconButton>
+            <Box sx={{display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
+                Videos
+                <Box sx={{display: 'flex', alignItems: 'center'}}>
+                    <TextField
+                        fullWidth
+                        variant="outlined"
+                        placeholder="Search videos..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value.toLowerCase())}
+                        sx={{ width: 300 }}
+                    />
+                    <IconButton
+                        aria-label="close"
+                        onClick={handleVideoClose}
+                        sx={{
+                            color: (theme) => theme.palette.grey[500],
+                        }}
+                    >
+                        <CloseIcon />
+                    </IconButton>
+                </Box>
+            </Box>
         </DialogTitle>
 
         <DialogContent dividers>
@@ -1225,43 +1333,19 @@ const Layout = ({ children }) => {
                     gridTemplateColumns: {
                         xs: '1fr',
                         sm: '1fr 1fr',
-                        md: '1fr 1fr 1fr',
+                        md: '1fr 1fr 1fr 1fr',
                     },
+                    mb: 3,
                     gap: 2,
                 }}
             >
-                <video
-                    width="100%"
-                    height="300"
-                    controls
-                    preload="metadata"
-                    style={{ marginBottom: "20px", borderRadius: "8px" }}
-                >
-                    <source src={video1} type="video/mp4" />
-                    Your browser does not support the video tag.
-                </video>
-
-                <video
-                    width="100%"
-                    height="300"
-                    controls
-                    preload="metadata"
-                    style={{ marginBottom: "20px", borderRadius: "8px" }}
-                >
-                    <source src={video2} type="video/mp4" />
-                    Your browser does not support the video tag.
-                </video>
-
-                <video
-                    width="100%"
-                    height="300"
-                    controls
-                    preload="metadata"
-                    style={{ borderRadius: "8px" }}
-                >
-                    <source src={video3} type="video/mp4" />
-                    Your browser does not support the video tag.
-                </video>
+                {filteredVideos.length > 0 ? (
+                    filteredVideos
+                ) : (
+                    <Typography variant="body1" sx={{ gridColumn: '1 / -1', textAlign: 'center', mt: 4 }}>
+                        No videos found.
+                    </Typography>
+                )}
             </Box>
         </DialogContent>
     </Dialog>

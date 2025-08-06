@@ -6,9 +6,13 @@ import Accordion from '@mui/material/Accordion';
 import AccordionSummary from '@mui/material/AccordionSummary';
 import AccordionDetails from '@mui/material/AccordionDetails';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import SearchIcon from "@mui/icons-material/Search";
+import {InputAdornment} from "@mui/material";
+import TextFieldInput from "@mui/material/TextField";
+import FilterListIcon from "@mui/icons-material/FilterList";
 
 // import formConfig from './formConfig.json';
-import { Button, Grid, Box, Typography, IconButton, Chip, FormControl, Autocomplete, DialogActions, TextField } from '@mui/material';
+import { Button, Grid, Box, Typography, IconButton, Chip, FormControl, Autocomplete, DialogActions, TextField, Tooltip } from '@mui/material';
 import { Stepper, Step, StepLabel } from '@mui/material';
 import WestIcon from '@mui/icons-material/West';
 import ShortText from '../form/ShortText';
@@ -61,7 +65,8 @@ import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 
 const NormalViewForm = ({ 
     formConfig, initialData, onSubmit, onError, stepperData, closeForm, table_name, template_name, readOnly, editData, onUpdate, template_id, table_row_id, headerDetails, selectedRow, noPadding, disableEditButton, disableSaveNew, overAllReadonly, investigationViewTable, editedForm
-    , showAssignIo, investigationAction, reloadApproval, showCaseActionBtn, reloadForm , showCaseLog, reloadFormConfig , onSkip , skip , editName ,  oldCase , onViewOldCase, showMagazineView, caseDiary, caseDiaryArray, caseDairy_pt_case_id, caseDairy_ui_case_id
+    , showAssignIo, investigationAction, reloadApproval, showCaseActionBtn, reloadForm , showCaseLog, reloadFormConfig , onSkip , skip , editName ,  oldCase , onViewOldCase, showMagazineView, caseDiary, caseDiaryArray, caseDairy_pt_case_id, caseDairy_ui_case_id, disabledDates, mappingCase, onMappingCase
+    ,CNR,onViewCNR
  }) => {
 
 //   let storageFormData = localStorage.getItem(template_name + '-formData') ? JSON.parse(localStorage.getItem(template_name + '-formData')) : {};
@@ -90,7 +95,7 @@ const NormalViewForm = ({
     const saveNewActionRef = useRef(false);
     const orderCopyFieldMandatory = useRef(false);
     const changingFormField = useRef(false);
-
+    const [uiCaseOptions, setUiCaseOptions] = useState([]);
 
     const [showActionModal, setShowActionModal] = useState(false);
     const [caseActionOptions, setCaseActionOptions] = useState([]);
@@ -102,11 +107,23 @@ const NormalViewForm = ({
     const [caseHistoryModal, setCaseHistoryModal] = useState(false);
     const [caseHistoryData, setCaseHistoryData] = useState([]);
     const [caseHistoryHeaderData, setCasehistoryHeaderData] = useState([
-        { field: "sl_no", headerName: "Sl. No." },
-        { field: "action", headerName: "Action", flex: 1 },
+        { field: "sl_no", headerName: "SL No" , width: 70 },
+        { field: "action", headerName: "Action",flex: 2,
+            renderCell: (params) => (
+                <span dangerouslySetInnerHTML={{ __html: params.value }} />
+            ),
+        },        
         { field: "actor_name", headerName: "User", flex: 1 },
         { field: "date", headerName: "Date & Time", flex: 1 },
     ]);
+    const [paginationCount, setPaginationCount] = useState(1);
+    const [totalPage, setTotalPage] = useState(0);
+    const [totalRecord, setTotalRecord] = useState(0);
+    const [searchValue, setSearchValue] = useState("");
+    const [searchTerm, setSearchTerm] = useState("");
+    const [page, setPage] = useState(1);
+    const [hideClearFilter, setHideClearFilter] = useState(false);
+
 
     // based on department get division options state
 
@@ -400,7 +417,7 @@ const NormalViewForm = ({
                 if (wantUpdateDateFields.includes(field?.name)) {
                     return {
                         ...field,
-                        minValue: formData["field_date_of_registration_by_ps/range"]
+                        maxValue: formData["field_date_of_registration_by_ps/range"]
                     };
                 }
                 return field;
@@ -437,16 +454,58 @@ const NormalViewForm = ({
         const checkInitialData = {};
         const checkFormData = {};
 
+        // newFormConfig.forEach((config) => {
+        //     const name = config.name;
+
+        //     if (initialData && initialData.hasOwnProperty(name)) {
+        //         checkInitialData[name] = Array.isArray(initialData[name]) ? initialData[name].join(',') : initialData[name];
+        //     }
+        //     if (formData.hasOwnProperty(name)) {
+        //         checkFormData[name] = Array.isArray(formData[name]) ? formData[name].join(',') : formData[name];
+        //     }
+        // });  
+
+
         newFormConfig.forEach((config) => {
             const name = config.name;
 
-            if (initialData && initialData.hasOwnProperty(name)) {
-                checkInitialData[name] = Array.isArray(initialData[name]) ? initialData[name].join(',') : initialData[name];
-            }
-            if (formData.hasOwnProperty(name)) {
-                checkFormData[name] = Array.isArray(formData[name]) ? formData[name].join(',') : formData[name];
-            }
-        });  
+            const initVal = initialData?.[name];
+            const formVal = formData?.[name];
+
+            const normalizeValue = (val) => {
+                if (typeof val === "string") {
+                    try {
+                        val = JSON.parse(val);
+                    } catch {
+                        return val.trim();
+                    }
+                }
+
+                if (val === null || val === undefined) return "";
+
+                if (Array.isArray(val)) {
+                    if (
+                        val.length === 0 ||
+                        (val.length === 1 && typeof val[0] === "object" && Object.keys(val[0] || {}).length === 0)
+                    ) {
+                        return "";
+                    }
+                    return val.map(normalizeValue).join(", ");
+                }
+
+                if (typeof val === "object") {
+                    if (Object.keys(val).length === 0) return "";
+                    return JSON.stringify(val);
+                }
+
+                return String(val).trim();
+            };
+
+            checkInitialData[name] = normalizeValue(initVal);
+            checkFormData[name] = normalizeValue(formVal);
+        });
+
+
 
         var changingFlag = false;
 
@@ -547,7 +606,7 @@ const NormalViewForm = ({
                 }
             }
 
-            if(field.type === "table" && Boolean(field.required)){
+            if(field.type === "table"){
                 if (isBefore2015) return null;
                 let error = false;
 
@@ -566,12 +625,15 @@ const NormalViewForm = ({
                         for (const headerObj of field.tableHeaders) {
                             const key = headerObj?.header;
 
-                            const value = row?.[key];
-
-                            if (value === undefined || value === null || (typeof value === "string" && value.trim() === "") || (Array.isArray(value) && value.length === 0)) {
-                                error = true;
-                                break;
+                            if(headerObj?.fieldType?.required){
+                                const value = row?.[key];
+    
+                                if (value === undefined || value === null || (typeof value === "string" && value.trim() === "") || (Array.isArray(value) && value.length === 0)) {
+                                    error = true;
+                                    break;
+                                }
                             }
+
                         }
                         if (error) break;
                     }
@@ -795,8 +857,33 @@ const NormalViewForm = ({
 
   const handleAutocomplete = (field, selectedValue) => {
 
+    // const selectedFullObject =
+    //       field.name === "field_ui_case" && typeof selectedValue === "number"
+    //         ? uiCaseOptions.find((opt) => opt.code === selectedValue)
+    //         : selectedValue;
+
+    //         console.log("selectedFullObjectselectedFullObject",selectedFullObject)
+    //   let updatedFormData = {
+    //     ...formData,
+    //     [field.name]: selectedFullObject?.code || selectedValue,
+    //   };
+
+    //   setSelectedField(field);
+
+    // if (
+    //   field.name === "field_ui_case" &&
+    //   field.table === "cid_under_investigation" &&
+    //   selectedFullObject &&
+    //   table_name === "cid_pending_trial"
+    // ) {
+    //   updatedFormData["field_ps_crime_number"] = selectedFullObject.crime_number || "";
+    //   updatedFormData["field_cid_crime_no./enquiry_no"] = selectedFullObject.cid_enquiry_number || "";
+    //   updatedFormData["field_name_of_the_police_station"] = selectedFullObject.police_station?.id || "";
+    // }
+
     let updatedFormData = { ...formData, [field.name]: selectedValue };
     setSelectedField(field);
+    
 
     if (field.table) {
       var updatedFormConfig = newFormConfig.map((data) => {
@@ -833,9 +920,64 @@ const NormalViewForm = ({
       setNewFormConfig(updatedFormConfig);
     }
 
-    setFormData(updatedFormData);
+    if (field.name === "field_mahajar_type") {
+      const updatedFormConfig = newFormConfig.map((fld) => {
+        if (fld.name === "field_is_nill_mahazar_applicable") {
+          if (selectedValue === "Seizure Mahazar") {
+            return { ...fld, hide_from_ux: false, required: true };
+          } else {
+            return { ...fld, hide_from_ux: true, required: false };
+          }
+        }
+        return fld;
+      });
+      setNewFormConfig(updatedFormConfig);
+    }
 
-  }
+    if (table_name === "cid_ui_case_notices" && field.tabOption === "41A") {
+        if (field.name === "field_whether_fir_&_complaint_copy_enclosed") {
+            if (selectedValue === "Yes" || selectedValue === "No") {
+            const updatedFormConfig = newFormConfig.map((fld) => {
+                if (fld.name === "field_fir_copy" || fld.name === "field_complaint_copy") {
+                if (selectedValue === "Yes") {
+                    return { ...fld, hide_from_ux: false, required: true };
+                } else {
+                    return { ...fld, hide_from_ux: true, required: false };
+                }
+                }
+                return fld;
+            });
+
+            setNewFormConfig(updatedFormConfig);
+            }
+        }
+    }
+
+    if (table_name === "cid_pt_case_petition") {
+        if (field.name === "field_stay_status") {
+            const updatedFormConfig = newFormConfig.map((fld) => {
+                if (fld.name === "field_accused_name") {
+                    return {
+                        ...fld,
+                        required: selectedValue === "Partial" ? true : false,
+                    };
+                }
+
+                if (fld.name === "field_stay_status") {
+                    return {
+                        ...fld,
+                        hide_from_ux: selectedValue === "Stay" ? false : true,
+                        required: selectedValue === "Stay" ? true : false,
+                    };
+                }
+                return fld;
+            });
+            setNewFormConfig(updatedFormConfig);
+        }
+    }
+
+    setFormData(updatedFormData);
+}
 
   const handleCheckBoxChange = (fieldName, fieldCode, selectedValue) => {
     setFormData(prevData => {
@@ -1114,6 +1256,83 @@ const NormalViewForm = ({
 
                 gettingDivisionBasedOnDepartment();
             }
+        }
+
+        if ( selectedField && selectedField?.name && selectedField?.table === "cid_district" && newFormConfig.some((field) => field.table === "cid_police_station")) {
+            const policeStationField = newFormConfig.find((field) => field.table === "cid_police_station");
+
+            if (policeStationField && policeStationField?.name) {
+                const getPoliceStationsBasedOnDistrict = async () => {
+                    try {
+                const districtIdValue = formData[selectedField.name];
+
+                if (!districtIdValue) {
+                    console.warn("District ID is empty or undefined. Aborting request.");
+                    return;
+                }
+
+                const districtPayload = {
+                    district_id: districtIdValue,
+                };
+
+                console.log("Sending districtPayload to backend:", districtPayload);
+
+                const response = await api.post("cidMaster/getPoliceStationsBasedOnDistrict", districtPayload);
+                const data = response?.data;
+
+                console.log("Received response:", data);
+
+                if (!Array.isArray(data) || data.length === 0) {
+                    console.warn("No police stations found or invalid response format.");
+
+                    setNewFormConfig((prevFormConfig) =>
+                        prevFormConfig.map((configData) => {
+                            if (configData?.name === policeStationField?.name) {
+                                return { ...configData, options: [] };
+                            }
+                            return configData;
+                        })
+                    );
+                    return;
+                }
+
+                const updatedOptions = data.map((psData) => ({
+                    name: psData["field_name_of_the_police_station"],
+                    code: psData["id"],
+                }));
+
+
+                console.log("Updated police station options:", updatedOptions);
+
+                setNewFormConfig((prevFormConfig) =>
+                    prevFormConfig.map((configData) => {
+                        if (configData?.name === policeStationField?.name) {
+                            return { ...configData, options: updatedOptions };
+                        }
+                        return configData;
+                    })
+                );
+
+                setFormData((prevData) => ({
+                    ...prevData,
+                    [policeStationField.name]: ""
+                }));
+            } catch (error) {
+                console.error("Error while fetching police stations:", error);
+
+                setNewFormConfig((prevFormConfig) =>
+                    prevFormConfig.map((configData) => {
+                        if (configData?.name === policeStationField?.name) {
+                            return { ...configData, options: [] };
+                        }
+                        return configData;
+                    })
+                );
+            }
+        };
+
+        getPoliceStationsBasedOnDistrict();
+    }
         }
 
     }, [selectedField]);
@@ -1563,6 +1782,29 @@ const NormalViewForm = ({
 
                     var apiPayload = {};
 
+                    if (field.name === "field_ui_case") {
+                        const response = await api.post("cidMaster/fetchUICaseDetails", {
+                            allowedDepartmentIds : localStorage.getItem("allowedDepartmentIds") ,
+                            allowedDivisionIds : localStorage.getItem("allowedDivisionIds") ,
+                            allowedUserIds :  localStorage.getItem("allowedUserIds") 
+                        });
+                        const updatedOptions = response.data.map((data) => ({
+                            ...data,
+                            name: data.name,
+                            code: data.code,
+                        }));
+                        setUiCaseOptions(updatedOptions);
+                        setNewFormConfig((prevFormConfig) => {
+                            return prevFormConfig.map((data) => {
+                                if (data.name === field.name) {
+                                    return { ...data, options: updatedOptions };
+                                }
+                                return data;
+                            });
+                        });
+                        return { id: field.id, options: updatedOptions };
+                    }
+                    
                     if(field.api === "/templateData/getTemplateData"){
                         apiPayload = {
                             table_name: field.table
@@ -1580,7 +1822,6 @@ const NormalViewForm = ({
 
                         payloadApi = "templateData/getAccusedWitness"
 
-
                         if(table_name === "cid_under_investigation" || investigationViewTable === "cid_under_investigation"){
                             apiPayload = {
                                 "table_name": field.table,
@@ -1592,6 +1833,14 @@ const NormalViewForm = ({
                                 "table_name": field.table,
                                 "ui_case_id": selectedRow?.['ui_case_id'] || "",
                                 "pt_case_id": selectedRow?.['id'] || "",
+                            }
+                        }
+                        else
+                        {
+                            apiPayload = {
+                                "table_name": field.table,
+                                "ui_case_id": selectedRow?.['ui_case_id'] || "",
+                                "pt_case_id": selectedRow?.['pt_case_id'] || "",
                             }
                         }
 
@@ -1746,6 +1995,76 @@ const NormalViewForm = ({
                 setDepartmentDivisionField([]);
             }
 
+            const findDistrictPoliceStationField = newFormConfig.filter((element) => {
+                if (element?.table && (element?.table === "cid_district" || element?.table === "cid_police_station")) {
+                    return element;
+                }
+            });
+
+            if (findDistrictPoliceStationField?.length > 1) {
+                const districtField = findDistrictPoliceStationField.find((field) => field.table === "cid_district");
+                const policeStationField = findDistrictPoliceStationField.find((field) => field.table === "cid_police_station");
+
+                if (districtField && districtField?.column_name && initialData[districtField.column_name]) {
+                    const getPoliceStationsBasedOnDistrict = async () => {
+                        try {
+                            const districtPayload = {
+                                district_id: initialData[districtField.column_name]
+                            };
+
+                            const response = await api.post("cidMaster/getPoliceStationsBasedOnDistrict", districtPayload);
+                            const data = response?.data;
+
+                            if (!data || data.length === 0) {
+                                setNewFormConfig((prevFormConfig) => {
+                                    return prevFormConfig.map((field) => {
+                                        if (field?.table === "cid_police_station") {
+                                            return { ...field, options: [] };
+                                        }
+                                        return field;
+                                    });
+                                });
+                                return;
+                            }
+
+                            const updatedOptions = data.map((psData) => ({
+                                name: psData["field_name_of_the_police_station"],
+                                code: psData["id"],
+                            }));
+
+                            setNewFormConfig((prevFormConfig) => {
+                                return prevFormConfig.map((field) => {
+                                    if (field?.table === "cid_police_station") {
+                                        return { ...field, options: updatedOptions };
+                                    }
+                                    return field;
+                                });
+                            });
+                        } catch (error) {
+                            console.error("Error fetching police stations:", error);
+                            setNewFormConfig((prevFormConfig) => {
+                                return prevFormConfig.map((field) => {
+                                    if (field?.table === "cid_police_station") {
+                                        return { ...field, options: [] };
+                                    }
+                                    return field;
+                                });
+                            });
+                        }
+                    };
+
+                    getPoliceStationsBasedOnDistrict();
+                } else {
+                    setNewFormConfig((prevFormConfig) => {
+                        return prevFormConfig.map((field) => {
+                            if (field?.table === "cid_police_station") {
+                                return { ...field, options: [] };
+                            }
+                            return field;
+                        });
+                    });
+                }
+            }
         } catch (error) {
             console.error("Error fetching template data:", error);
         }
@@ -2136,72 +2455,89 @@ const NormalViewForm = ({
         }
     }
 
-    const CaseLogs = async () => {
-        if ( !template_id || template_id === "" || !table_row_id || table_row_id === "" ) {
-            return false;
+    useEffect(() => {
+        if (caseHistoryModal && template_id && table_row_id) {
+        CaseLogs();
         }
+    }, [page, searchTerm, caseHistoryModal]);
 
-        var payload = {
-            template_id: template_id,
-            table_row_id: table_row_id,
+    const CaseLogs = async () => {
+        setLoading(true);
+        const payload = {
+        template_id,
+        table_row_id,
+        page,
+        limit: 10,
+        search: searchTerm,
         };
 
-        setLoading(true);
-
         try {
-            const getHistoryResponse = await api.post( "/profileHistories/getCaseHistory",payload);
-            setLoading(false);
+        const response = await api.post("/profileHistories/getCaseHistory", payload);
+        setLoading(false);
 
-            if (getHistoryResponse && getHistoryResponse.success) {
-                if ( getHistoryResponse["data"] && getHistoryResponse["data"].length > 0 ) {
-                    var updatedData = getHistoryResponse["data"].map((data, index) => {
-                        // var fullname = "";
+        if (response?.success) {
+            const { logs, total_pages, total } = response.data;
 
-                        const readableDate = new Date(data.updated_at).toLocaleString("en-US", {
-                            year: "numeric",
-                            month: "long",
-                            day: "2-digit",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                            second: "2-digit",
-                            hour12: true, // Optional: shows time in AM/PM format
-                        });
+            const updatedData = logs.map((data, index) => {
+            const readableDate = new Date(data.updated_at).toLocaleString("en-US", {
+                year: "numeric",
+                month: "long",
+                day: "2-digit",
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit",
+                hour12: true,
+            });
 
-                        return {
-                            ...data,
-                            id: data.log_id,
-                            sl_no: index + 1,
-                            actor_name: data.actor_name,
-                            date: readableDate,
-                        };
-                    });
+            return {
+                ...data,
+                id: data.log_id,
+                sl_no: (page - 1) * 10 + index + 1,
+                action: data.action,
+                actor_name: data.actor_name,
+                date: readableDate,
+            };
+            });
 
-                    setCaseHistoryData(updatedData);
-                    setCaseHistoryModal(true);
-                } else {
-                    setCaseHistoryData([]);
-                    setCaseHistoryModal(true);
-                }
-            } else {
-                setCaseHistoryData([]);
-                setCaseHistoryModal(true);
-            }
+            setCaseHistoryData(updatedData);
+            setPaginationCount(total_pages);
+            setTotalPage(total_pages);
+            setTotalRecord(total);
+        } else {
+            setCaseHistoryData([]);
+        }
         } catch (error) {
-            setLoading(false);
-            if (error && error.response && error.response["data"]) {
-                toast.error(error.response["data"].message || "Please Try Again!", {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-error",
-                });
-            }
+        setLoading(false);
+        toast.error(error?.response?.data?.message || "Please Try Again!", {
+            position: "top-right",
+            autoClose: 3000,
+            className: "toast-error",
+        });
         }
     };
+
+    const handlePagination = (newPage) => {
+        setPage(newPage);
+    };
+
+    const handleSearch = () => {
+        setPage(1);
+        setSearchTerm(searchValue);
+    };
+
+    const handleCloseCaseHistoryModal = () => {
+        setCaseHistoryModal(false);
+        setSearchValue("");
+        setSearchTerm("");
+        setPage(1);
+    };
+
+    const handleClear = () => {
+        setSearchValue("");
+        setSearchTerm("");
+        setPage(1);
+    };
+
     useEffect(() => {
   if (showActionModal && caseActionSelectedValue && caseActionOptions.length > 0) {
     // Only fetch if actionCases is empty (avoid refetch on every render)
@@ -2496,9 +2832,9 @@ const NormalViewForm = ({
             table: templateActions[index].table,
             date: date ? date.format("YYYY-MM-DDT00:00:00") : null
         };
-
         setSelectedDates(updated);
     };
+
 
     useEffect(()=>{
 
@@ -2873,20 +3209,49 @@ const NormalViewForm = ({
               {template_name ? template_name : 'Form'}
             </Typography>
             {headerDetails && (
+                <Tooltip title={headerDetails}>
                 <Chip
-                    label={headerDetails}
+                    label={
+                    <Typography
+                        sx={{
+                        fontSize: '13px',
+                        maxWidth: 230,
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        fontWeight: 500, marginTop: '2px'
+                        }}
+                    >
+                        {headerDetails}
+                    </Typography>
+                    }
                     color="primary"
                     variant="outlined"
                     size="small"
                     sx={{ fontWeight: 500, marginTop: '2px' }}
                 />
+                </Tooltip>
             )}
-          </Box>
+            </Box>
 
           <Box sx={{ display: 'flex', alignItems: 'center', }}>
 
+            {mappingCase && (
+                <Button
+                    variant="outlined"
+                    onClick={() => {
+                        if (onMappingCase) {
+                            onMappingCase();
+                        }
+                    }}
+                    sx={{marginLeft: "10px", marginRight: "4px", height: '40px'}}
+                >
+                    {table_name === "cid_under_investigation" ? "PT" : "UI"}
+                </Button>
+             )}
 
-            {
+
+            {/* {
                 showMagazineView && 
                 <Button
                 variant="outlined"
@@ -2897,8 +3262,21 @@ const NormalViewForm = ({
                 >
                     Case Docket
                 </Button>
-            }
-            
+            } */}
+            {CNR &&  (table_name === 'cid_under_investigation' || table_name === 'cid_pending_trial') && (
+                <Button
+                    variant="outlined"
+                    onClick={() => {
+                        if (onViewCNR) {
+                            onViewCNR();
+                        }
+                    }}
+                    sx={{marginLeft: "10px", marginRight: "4px", height: '40px'}}
+                >
+                    CNR
+                </Button>
+            )}
+
             {oldCase &&  table_name === 'cid_under_investigation' && (
             <Button
                 variant="outlined"
@@ -2932,7 +3310,7 @@ const NormalViewForm = ({
                 <Button
                     variant="outlined"
                     sx={{marginLeft: "10px", marginRight: "10px", height: '40px'}}
-                    onClick = {() => {CaseLogs()}}
+                    onClick={() => setCaseHistoryModal(true)}
                 >
                     Case Log
                 </Button>
@@ -2957,33 +3335,34 @@ const NormalViewForm = ({
             }
 
 
-            {onSkip && (
-                <Button
-                  onClick={() => {skip();}}
-                  sx={{
-                    border: "1.5px solid #E53935",
-                    background: "transparent",
-                    fontSize: "14px",
-                    fontWeight: "500",
-                    color: "#E53935",
-                    padding: "6px 16px",
-                    marginLeft: "10px",
-                    marginRight: "10px",
-                    boxShadow: "none",
-                    borderRadius: "8px",
-                    transition: "background 0.2s, color 0.2s, border-color 0.2s",
-                    "&:hover": {
+            {typeof onSkip === 'function' && (
+            <Button
+                onClick={() => { skip(); }}
+                sx={{
+                border: "1.5px solid #E53935",
+                background: "transparent",
+                fontSize: "14px",
+                fontWeight: "500",
+                color: "#E53935",
+                padding: "6px 16px",
+                marginLeft: "10px",
+                marginRight: "10px",
+                boxShadow: "none",
+                borderRadius: "8px",
+                transition: "background 0.2s, color 0.2s, border-color 0.2s",
+                "&:hover": {
                     background: "#FFEBEE",
                     borderColor: "#B71C1C",
                     color: "#B71C1C",
-                    },
-                  }}
-                  className="Roboto"
-                  variant="outlined"
-                  >
-                  Skip PF & Save
-                  </Button>
-                )}
+                },
+                }}
+                className="Roboto"
+                variant="outlined"
+            >
+                Skip PF & Save
+            </Button>
+            )}
+
               
               {!readOnlyTemplate && editDataTemplate && onUpdate ?
 
@@ -3003,12 +3382,12 @@ const NormalViewForm = ({
                     sx={{ background: '#0167F8', fontSize: '14px', fontWeight: '500', color: '#FFFFFF', padding: '8px 16px',lineHeight: '1.5', marginRight: '8px', textTransform: 'none',height: '40px !important' }}
                     className="Roboto blueButton"
                   >
-                    {table_name === "cid_ui_case_mahajars" ? "Next" : "Save"}
+                    {table_name === "cid_ui_case_mahazars" ? "Next" : "Save"}
                   </Button>
             
                     {
                         !disableSaveNew && table_name !== "cid_eq_case_closure_report" && table_name !== "cid_ui_case_extension_form" && table_name !== "cid_eq_case_enquiry_order_copy" &&
-                        table_name !== "cid_eq_case_extension_form" && table_name !== "cid_ui_case_mahajars" && table_name !== "cid_ui_case_property_form" &&
+                        table_name !== "cid_eq_case_extension_form" && table_name !== "cid_ui_case_mahazars" && table_name !== "cid_ui_case_property_form" &&
                         <Button
                             variant="contained" color="success"
                             sx={{
@@ -3088,51 +3467,78 @@ const NormalViewForm = ({
                         <AccordionDetails>
                             <LocalizationProvider dateAdapter={AdapterDayjs}>
                                 <Box>
-                                    {Array.from({ length: Math.ceil(templateActions.length / 6) }).map((_, rowIndex) => {
-                                        const start = rowIndex * 6;
-                                        const items = templateActions.slice(start, start + 6);
+                                    {Array.from({ length: Math.ceil(templateActions.length / 3) }).map((_, rowIndex) => {
+                                        const start = rowIndex * 3;
+                                        const items = templateActions.slice(start, start + 3);
                                         return (
                                             <Grid container spacing={2} key={rowIndex} sx={{ mb: 2 }}>
                                                 {items.map((item, index) => {
                                                     const actualIndex = start + index;
                                                     return (
-                                                        <Grid item xs={12 / 6} key={actualIndex}>
-                                                            <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
-                                                                <Typography fontWeight={500} fontSize={14}>
-                                                                    {item.name}
-                                                                </Typography>
-                                                                <Typography
-                                                                    onClick={()=> handleIndividualCaseDiaryLog(actualIndex)}
-                                                                    variant="caption"
-                                                                    sx={{
-                                                                        color: 'primary.main',
-                                                                        cursor: 'pointer',
-                                                                        fontWeight: 500,
-                                                                        fontSize: 12,
-                                                                        whiteSpace: 'nowrap'
-                                                                    }}
-                                                                >
-                                                                    View Data
-                                                                </Typography>
-                                                            </Box>
+                                                    <Grid item xs={12} sm={6} md={4} key={actualIndex} sx={{borderRight: index === 2 ? 'none' : '1px solid #ddd'}} px={2}>
+                                                        <Tooltip arrow title={item.name}>
+                                                        <Box display="flex" alignItems="center" gap={1} borderBottom='1px solid #ddd' pb={1}>
+
+                                                            <Typography
+                                                                fontWeight={500}
+                                                                fontSize={14}
+                                                                noWrap
+                                                                sx={{
+                                                                width: '125px',
+                                                                overflow: 'hidden',
+                                                                textOverflow: 'ellipsis',
+                                                                whiteSpace: 'nowrap',
+                                                                flexShrink: 0
+                                                                }}
+                                                            >
+                                                                {item.name}
+                                                            </Typography>
 
                                                             <DatePicker
                                                                 value={
-                                                                    selectedDates[actualIndex]?.date ? dayjs(selectedDates[actualIndex].date) : null
+                                                                selectedDates[actualIndex]?.date
+                                                                    ? dayjs(selectedDates[actualIndex].date)
+                                                                    : null
                                                                 }
-                                                                onChange={(e) =>
-                                                                    handleDateChange(actualIndex, e)
-                                                                }
+                                                                onChange={(e) => handleDateChange(actualIndex, e)}
                                                                 format="DD-MM-YYYY"
+                                                                disabled={readOnlyTemplate}                                                                
                                                                 slotProps={{
-                                                                    textField: {
-                                                                        size: "small",
-                                                                        fullWidth: true,
+                                                                textField: {
+                                                                    size: "small",
+                                                                    variant: "standard",
+                                                                    InputProps: {
+                                                                    disableUnderline: true
                                                                     },
+                                                                    sx: {
+                                                                        '& .MuiOutlinedInput-notchedOutline': { border: 'none' },
+                                                                        '& .MuiInputBase-root': { border: 'none' },
+                                                                        backgroundColor: 'transparent',
+                                                                        minWidth: '110px'
+                                                                    }
+                                                                }
                                                                 }}
-                                                                disabled={readOnlyTemplate}
                                                             />
-                                                        </Grid>
+
+                                                            <Typography
+                                                                onClick={() => handleIndividualCaseDiaryLog(actualIndex)}
+                                                                variant="caption"
+                                                                sx={{
+                                                                    minWidth: '90px',    
+                                                                    color: 'primary.main',
+                                                                    cursor: 'pointer',
+                                                                    fontWeight: 500,
+                                                                    fontSize: 12,
+                                                                    whiteSpace: 'nowrap',
+                                                                    marginLeft: 'auto',
+                                                                    textAlign: 'center'
+                                                                }}
+                                                            >
+                                                                View Data
+                                                            </Typography>
+                                                        </Box>
+                                                        </Tooltip>
+                                                    </Grid>
                                                     );
                                                 })}
                                             </Grid>
@@ -3187,9 +3593,8 @@ const NormalViewForm = ({
 
 
                 var readOnlyData = readOnlyTemplate
-                
                 if(table_name === "cid_pending_trial" ){
-                  if(field.name === "field_ps_crime_number" || field.name === "field_cid_crime_no./enquiry_no" || field.name === "field_name_of_the_police_station" ){
+                  if(field.name === "field_ps_crime_number" || field.name === "field_cid_crime_no./enquiry_no" || field.name === "field_name_of_the_police_station" || field.name === "field_ui_case"){
                       readOnlyData = true;
                   }
 
@@ -3334,7 +3739,8 @@ const NormalViewForm = ({
                             errors={errors}
                             onHistory={() => showHistory(field.name)}
                             onChange={(value) => { handleChangeDate(field.name, value) }} 
-                            readOnly={readOnlyData}    
+                            readOnly={readOnlyData} 
+                            disabledDates={disabledDates}   
                         />
                         </div>
                       </Grid>
@@ -3657,7 +4063,7 @@ const NormalViewForm = ({
             </FormControl>
 
             <div style={{ marginTop: 16}}>
-              <h4 className="form-field-heading">Cases for Selected Action</h4>
+              <h4 className="form-field-heading">Selected IO handling Case Details</h4>
               <div style={{ }}>
               <TableView
                 rows={actionCases
@@ -3781,43 +4187,107 @@ const NormalViewForm = ({
           </DialogContent>
         </Dialog>
       }
-
+    
         {caseHistoryModal && (
-            <Dialog
-                open={caseHistoryModal}
-                onClose={() => setCaseHistoryModal(false)}
-                aria-labelledby="alert-dialog-title"
-                aria-describedby="alert-dialog-description"
-                maxWidth="md"
-                fullWidth
-                className="approvalModal"
+        <Dialog
+            open={caseHistoryModal}
+            onClose={handleCloseCaseHistoryModal}
+            aria-labelledby="alert-dialog-title"
+            aria-describedby="alert-dialog-description"
+            maxWidth="md"
+            fullWidth
+            className="approvalModal"
+        >
+            <DialogTitle
+            id="alert-dialog-title"
+            sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                paddingBottom: 0,
+            }}
             >
-                <DialogTitle
-                    id="alert-dialog-title"
-                    sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        paddingBottom: 0
-                    }}
+            <Typography variant="h6">Case History</Typography>
+
+            <Box display="flex" alignItems="center" gap={2}>
+                <TextFieldInput
+                InputProps={{
+                    startAdornment: (
+                    <InputAdornment position="start">
+                        <SearchIcon sx={{ color: "#475467" }} />
+                    </InputAdornment>
+                    ),
+                }}
+                onInput={(e) => setSearchValue(e.target.value)}
+                value={searchValue}
+                id="tableSearch"
+                size="small"
+                placeholder="Search"
+                variant="outlined"
+                className="profileSearchClass"
+                onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleSearch();
+                    }
+                }}
+                sx={{
+                    width: "250px",
+                    borderRadius: "6px",
+                    outline: "none",
+                    "& .MuiInputBase-input::placeholder": {
+                    color: "#475467",
+                    opacity: "1",
+                    fontSize: "14px",
+                    fontWeight: "400",
+                    fontFamily: "Roboto",
+                    },
+                }}
+                />
+
+                <IconButton
+                aria-label="close"
+                onClick={handleCloseCaseHistoryModal}
+                sx={{ color: (theme) => theme.palette.grey[500] }}
                 >
-                    <Box>Case History</Box>
-                    <IconButton
-                        aria-label="close"
-                        onClick={() => setCaseHistoryModal(false)}
-                        sx={{ color: (theme) => theme.palette.grey[500] }}
-                    >
-                        <CloseIcon />
-                    </IconButton>
-                </DialogTitle>
-                <DialogContent>
-                    <DialogContentText id="alert-dialog-description">
-                        <Box py={2}>
-                            <TableView rows={caseHistoryData} columns={caseHistoryHeaderData} />
-                        </Box>
-                    </DialogContentText>
-                </DialogContent>
-            </Dialog>
+                <CloseIcon />
+                </IconButton>
+            </Box>
+            </DialogTitle>
+
+            {searchValue && !hideClearFilter && (
+            <Box px={2}>
+                <Typography
+                onClick={handleClear}
+                sx={{
+                    fontSize: "13px",
+                    fontWeight: "500",
+                    textDecoration: "underline",
+                    cursor: "pointer",
+                    textAlign: "right",
+                }}
+                mt={1}
+                >
+                View All / Clear Search
+                </Typography>
+            </Box>
+            )}
+
+            <DialogContent>
+            <DialogContentText id="alert-dialog-description">
+                <Box py={2}>
+                <TableView
+                    rows={caseHistoryData}
+                    columns={caseHistoryHeaderData}
+                    totalPage={totalPage}
+                    totalRecord={totalRecord}
+                    paginationCount={page}
+                    handlePagination={handlePagination}
+                />
+                </Box>
+            </DialogContentText>
+            </DialogContent>
+        </Dialog>
         )}
 
         {caseDiaryHistoryLog && (
@@ -3888,7 +4358,7 @@ const NormalViewForm = ({
                     </DialogContentText>
                 </DialogContent>
                 <DialogActions sx={{ padding: "12px 24px" }}>
-                    <Button onClick={()=>closeLinkTemplateModal}>
+                    <Button onClick={closeLinkTemplateModal}>
                         Cancel
                     </Button>
                 </DialogActions>

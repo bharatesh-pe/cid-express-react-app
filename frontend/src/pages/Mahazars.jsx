@@ -34,12 +34,17 @@ import "react-toastify/dist/ReactToastify.css";
 import FilterListIcon from "@mui/icons-material/FilterList";
 import WestIcon from '@mui/icons-material/West';
 import * as XLSX from 'xlsx';
+import DialogTitle from "@mui/material/DialogTitle"
+import Link from "@mui/material/Link";
+import UploadFileIcon from '@mui/icons-material/UploadFile';
+import CloseIcon from '@mui/icons-material/Close';
 import { saveAs } from 'file-saver';
 import ImportExportIcon from '@mui/icons-material/ImportExport';
 import dayjs from "dayjs";
 import React from "react";
+import AddIcon from "@mui/icons-material/Add";
 
-const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData, backNavigation, showMagazineView }) => {
+const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData, backNavigation, showMagazineView ,fetchCounts}) => {
     const location = useLocation();
     const navigate = useNavigate();
     const { pageCount, systemStatus } = location.state || {};
@@ -129,7 +134,8 @@ const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData
     const [selectKey, setSelectKey] = useState(null);
     const [randomApprovalId, setRandomApprovalId] = useState(0);
     const hoverTableOptionsRef = useRef([]);
-
+    const [childTables, setChildTables] = useState([]);
+    const [secondChildTables, setSecondChildTables] = useState([]);
 
     useEffect(() => {
         handleOtherTemplateActions(selectedOtherTemplate, selectedRowData)
@@ -226,6 +232,244 @@ const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData
         }
     };
 
+    // start --- bulk upload functions
+
+    const [bulkUploadShow, setBulkUploadShow] = useState(false);
+    const [selectedFile, setSelectedFile] = useState(null);
+
+    const showBulkUploadScreen = ()=>{
+        setBulkUploadShow(true);
+        setSelectedFile(null);
+    }
+    
+    const handleFileChange = (event) => {
+        setSelectedFile(event.target.files[0]);
+    };
+
+    const downloadExcelHeader = async ()=>{
+        
+        if(!options.table){
+            toast.error('Template Not Found !', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+
+        const downloadReport = {
+            "table_name": options.table,
+        }
+        setLoading(true);
+
+        try {
+            const downloadReportResponse = await api.post("templateData/downloadExcelData", downloadReport);
+            setLoading(false);
+
+            if (downloadReportResponse) {
+                const blob = new Blob([downloadReportResponse], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `${options.table}_Report.xlsx`;
+
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+
+                window.URL.revokeObjectURL(url);
+
+            } else {
+                const errorMessage = downloadReportResponse.message ? downloadReportResponse.message : "Failed to download report. Please try again.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response['data']) {
+                toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        }
+    }
+
+    const checkUploadedFile = async ()=> {
+
+        if(!options?.table){
+            toast.error('Template Not Found !', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+
+        if (!selectedFile) {
+            toast.error('Please upload a file !', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-warning",
+            });
+            return;
+        }
+
+        const allowedExtensions = ['.xlsx', '.xls'];
+        const fileName = selectedFile.name.toLowerCase();
+        const isValid = allowedExtensions.some(ext => fileName.endsWith(ext));
+
+        if (!isValid) {
+            toast.error('Invalid file format. Please upload a valid Excel file (.xls or .xlsx) !', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-warning",
+            });
+            return;
+        }
+
+        const reader = new FileReader();
+
+        reader.onload = async (e) => {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            
+            const sheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[sheetName];
+
+            const headerColumn = XLSX.utils.sheet_to_json(worksheet, {
+                header: 1,
+            })[0];
+            
+            const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+            // remove unwanted column
+
+            var ui_case_id = selectedRowData?.id;
+            var pt_case_id = selectedRowData?.pt_case_id;
+
+            if(module === "pt_case"){
+                ui_case_id = selectedRowData?.ui_case_id
+                pt_case_id = selectedRowData?.id
+            }
+
+            const rowExcelData = jsonData.map(({ __rowNum__, ...rest }) => ({...rest, ui_case_id, pt_case_id }));
+
+            if(rowExcelData.length === 0 || headerColumn.length === 0){
+                toast.error('Excel Data and Header is Empty', {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-warning",
+                });
+                return
+            }
+
+            var payloadData = {
+                "table_name" : options?.table,
+                "rowData" : rowExcelData,
+                "columnData": headerColumn
+            }
+
+            setLoading(true);
+            try {
+                const bulkInsertResponse = await api.post("templateData/bulkInsertData", payloadData);
+                setLoading(false);
+
+                if (bulkInsertResponse?.success) {
+                    toast.success(bulkInsertResponse.message || "Data Uploaded Successfully", {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-success",
+                        onOpen: () => { handleOtherTemplateActions(options, selectedRow) }
+                    });
+
+                    if(fetchCounts){
+                        fetchCounts();
+                    }
+                    setBulkUploadShow(false);
+                    setSelectedFile(null);
+
+                } else {
+                    toast.error(bulkInsertResponse.message || "Failed to Upload Data.", {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-error",
+                    });
+                }
+
+            } catch (error) {
+                setLoading(false);
+                if (error && error.response && error.response['data']) {
+                    toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-error",
+                    });
+                }
+            }
+
+        };
+
+        reader.readAsArrayBuffer(selectedFile);
+    }
+
+    // end --- bulk upload functions
 
     const handleOtherTemplateActions = async (options, selectedRow, searchFlag) => {
 
@@ -430,7 +674,7 @@ const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData
                                                     sx={{ cursor: "pointer", color: "red", fontSize: 20 }}
                                                     onClick={(event) => {
                                                         event.stopPropagation();
-                                                        handleOthersDeleteTemplateData(params.row, options.table);
+                                                        handleOthersDeleteTemplateData(params.row, options.table,selectedRow.id);
                                                     }}
                                                 />
                                             )}
@@ -729,14 +973,16 @@ const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData
                                     ? viewTemplateResponse.data.sections
                                     : []
                             );
+                            setSecondChildTables(viewTemplateResponse?.["data"]?.["child_tables"] || []);
                             setPropertyFormInitialData(viewTemplateData.data ? viewTemplateData.data : {});
                             setPropertyFormOpen({
                                 open: true,
                                 readOnly: !editData,
                                 editData: editData
                             });
-                                            setOtherReadOnlyTemplateData(!editData);
-                setOtherEditTemplateData(editData);
+                                            
+                            setOtherReadOnlyTemplateData(!editData);
+                            setOtherEditTemplateData(editData);
 
                         } else {
                             toast.error(
@@ -852,6 +1098,7 @@ const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData
                                     : []
                             );
                         }
+                        setChildTables(viewTemplateResponse?.["data"]?.["child_tables"] || []);
                     } else {
                         const errorMessage = viewTemplateResponse.message
                             ? viewTemplateResponse.message
@@ -965,7 +1212,7 @@ const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData
         );
     };
 
-    const handleOthersDeleteTemplateData = (rowData, table_name) => {
+    const handleOthersDeleteTemplateData = (rowData, table_name,ui_case_id) => {
         Swal.fire({
             title: "Are you sure?",
             text: "Do you want to delete this profile ?",
@@ -978,6 +1225,8 @@ const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData
                 const deleteTemplateData = {
                     table_name: table_name,
                     where: { id: rowData.id },
+                    transaction_id : "TXN_" + Date.now() + "_" + Math.floor(Math.random() * 1000000),
+                    ui_case_id : ui_case_id,
                 };
                 setLoading(true);
 
@@ -1012,6 +1261,9 @@ const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData
                                     ),
                             }
                         );
+                        if (fetchCounts) {
+                            fetchCounts();
+                        }
                     } else {
                         const errorMessage = deleteTemplateDataResponse.message
                             ? deleteTemplateDataResponse.message
@@ -1355,6 +1607,7 @@ const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData
                             : []
                     );
                 }
+                setChildTables(viewTemplateResponse?.["data"]?.["child_tables"] || []);
             } else {
                 const errorMessage = viewTemplateResponse.message
                     ? viewTemplateResponse.message
@@ -1510,6 +1763,7 @@ const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData
                 setPropertyFormStepperData(res.data.no_of_sections > 0 ? res.data.sections : []);
                 setPropertyFormInitialData({});
                 setPropertyFormOpen(true);
+                setSecondChildTables(res?.["data"]?.["child_tables"] || []);
             } else {
                 toast.error("Failed to load property form template.", {
                     position: "top-right",
@@ -1528,6 +1782,13 @@ const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData
         return;
     };
 
+    function sanitizeKey(str) {
+        return str
+            .toLowerCase()
+            .replace(/[^\w]/g, "_")
+            .replace(/_+/g, "_")
+            .replace(/^_+|_+$/g, "");
+        }
     const handlePropertyFormSubmit = async (propertyFormData) => {
         if (!pendingMahazarData) return;
         setPropertyFormOpen(false);
@@ -1535,6 +1796,8 @@ const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData
         const { data: mahazarData, saveNewAction } = pendingMahazarData;
         const mahazarNormalData = {};
         let mahazarFolderAttachments = [];
+        let mahazarChildTableDataMap = {};
+
         optionFormTemplateData.forEach((field) => {
             const val = mahazarData[field.name];
             if (val !== undefined && val !== null && val !== "") {
@@ -1554,12 +1817,45 @@ const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData
                 }
             }
         });
+
+        console.log("child tablesss", childTables);
+        if (childTables?.length > 0) {
+            childTables.forEach(child => {
+                const childFieldName = child.field_name;
+                if (mahazarData[childFieldName]) {
+                    let parsed;
+                    try {
+                        parsed = typeof mahazarData[childFieldName] === "string"
+                            ? JSON.parse(mahazarData[childFieldName])
+                            : mahazarData[childFieldName];
+                    } catch (err) {
+                        parsed = [];
+                    }
+
+                    if (Array.isArray(parsed)) {
+                        const normalizedRows = parsed.map(row => {
+                            let newRow = {};
+                            for (const key in row) {
+                                const sanitizedKey = sanitizeKey(key);
+                                newRow[sanitizedKey] = row[key];
+                            }
+                            return newRow;
+                        });
+
+                        mahazarChildTableDataMap[child.child_table_name] = normalizedRows;
+                    }
+                }
+            });
+        }
+
         mahazarNormalData.sys_status = "ui_case";
         mahazarNormalData.field_submit_status = "";
         mahazarNormalData["ui_case_id"] = selectedRowData.id;
 
         const propertyNormalData = {};
         let propertyFolderAttachments = [];
+        let propertyChildTableDataMap = {};
+
         propertyFormConfig.forEach((field) => {
             const val = propertyFormData[field.name];
             if (val !== undefined && val !== null && val !== "") {
@@ -1579,6 +1875,37 @@ const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData
                 }
             }
         });
+
+        if (secondChildTables && Array.isArray(secondChildTables)) {
+        secondChildTables.forEach(child => {
+            const childFieldName = child.field_name;
+
+            if (propertyFormData[childFieldName]) {
+            let parsed;
+            try {
+                parsed = typeof propertyFormData[childFieldName] === "string"
+                ? JSON.parse(propertyFormData[childFieldName])
+                : propertyFormData[childFieldName];
+            } catch (err) {
+                parsed = [];
+            }
+
+            if (Array.isArray(parsed)) {
+                const normalizedRows = parsed.map(row => {
+                let newRow = {};
+                for (const key in row) {
+                    const sanitizedKey = sanitizeKey(key);
+                    newRow[sanitizedKey] = row[key];
+                }
+                return newRow;
+                });
+
+                propertyChildTableDataMap[child.child_table_name] = normalizedRows;
+            }
+            }
+        });
+        }
+
         propertyNormalData.sys_status = "PF";
         propertyNormalData.field_submit_status = "";
         propertyNormalData["ui_case_id"] = selectedRowData.id;
@@ -1586,6 +1913,7 @@ const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData
         const formData = new FormData();
         formData.append("table_name", selectedOtherTemplate.table);
         formData.append("data", JSON.stringify(mahazarNormalData));
+        formData.append("child_tables", JSON.stringify(mahazarChildTableDataMap));
         formData.append("transaction_id", randomApprovalId);
         formData.append("user_designation_id", localStorage.getItem('designation_id') || null);
         if (mahazarFolderAttachments.length > 0) {
@@ -1601,6 +1929,7 @@ const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData
         }
         formData.append("second_table_name", "cid_ui_case_property_form");
         formData.append("second_data", JSON.stringify(propertyNormalData));
+        formData.append("second_child_tables", JSON.stringify(propertyChildTableDataMap));
         if (propertyFolderAttachments.length > 0) {
             formData.append("second_folder_attachment_ids", JSON.stringify(propertyFolderAttachments));
             propertyFormConfig.forEach((field) => {
@@ -1627,6 +1956,9 @@ const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData
                 setOtherFormOpen(false);
                 setPendingMahazarData(null);
                 handleOtherTemplateActions(selectedOtherTemplate, selectedRowData);
+                if (fetchCounts) {
+                    fetchCounts();
+                }
             } else {
                 toast.error(res?.message || "Failed to save Mahazar/Property Form.", {
                     position: "top-right",
@@ -1715,6 +2047,37 @@ const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData
                 }
             });
     
+            let childTableDataMap = {};
+
+            if (childTables && Array.isArray(childTables)) {
+                childTables.forEach(child => {
+                    const childFieldName = child.field_name;
+
+                    if (data[childFieldName]) {
+                        let parsed;
+                        try {
+                            parsed = typeof data[childFieldName] === "string"
+                                ? JSON.parse(data[childFieldName])
+                                : data[childFieldName];
+                        } catch (err) {
+                            parsed = [];
+                        }
+
+                        if (Array.isArray(parsed)) {
+                            const normalizedRows = parsed.map(row => {
+                                let newRow = {};
+                                for (const key in row) {
+                                    const sanitizedKey = sanitizeKey(key);
+                                    newRow[sanitizedKey] = row[key];
+                                }
+                                return newRow;
+                            });
+
+                            childTableDataMap[child.child_table_name] = normalizedRows;
+                        }
+                    }
+                });
+            }
             if (selectedOtherTemplate.table === "cid_ui_case_progress_report") {
                 normalData["field_pr_status"] = "No";
             }
@@ -1722,6 +2085,7 @@ const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData
             formData.append("table_name", selectedOtherTemplate.table);
             formData.append("id", data.id);
             formData.append("data", JSON.stringify(normalData));
+            formData.append("child_tables", JSON.stringify(childTableDataMap));
             formData.append("transaction_id", randomApprovalId);
             formData.append("user_designation_id", localStorage.getItem("designation_id") || null);
     
@@ -1834,9 +2198,42 @@ const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData
             }
         });
 
+        let childTableDataMap = {};
+
+            if (secondChildTables && Array.isArray(secondChildTables)) {
+                secondChildTables.forEach(child => {
+                    const childFieldName = child.field_name;
+
+                    if (data[childFieldName]) {
+                        let parsed;
+                        try {
+                            parsed = typeof data[childFieldName] === "string"
+                                ? JSON.parse(data[childFieldName])
+                                : data[childFieldName];
+                        } catch (err) {
+                            parsed = [];
+                        }
+
+                        if (Array.isArray(parsed)) {
+                            const normalizedRows = parsed.map(row => {
+                                let newRow = {};
+                                for (const key in row) {
+                                    const sanitizedKey = sanitizeKey(key);
+                                    newRow[sanitizedKey] = row[key];
+                                }
+                                return newRow;
+                            });
+
+                            childTableDataMap[child.child_table_name] = normalizedRows;
+                        }
+                    }
+                });
+            }
+
         formData.append("table_name", "cid_ui_case_property_form");
         formData.append("id", data.id);
         formData.append("data", JSON.stringify(normalData));
+        formData.append("child_tables", JSON.stringify(childTableDataMap));
         formData.append("transaction_id", randomApprovalId);
         formData.append("user_designation_id", localStorage.getItem("designation_id") || null);
 
@@ -1907,6 +2304,7 @@ const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData
                 const { data: mahazarData, saveNewAction } = pendingMahazarData;
                 const mahazarNormalData = {};
                 let mahazarFolderAttachments = [];
+                let mahazarChildTableDataMap = {};
                 optionFormTemplateData.forEach((field) => {
                     const val = mahazarData[field.name];
                     if (val !== undefined && val !== null && val !== "") {
@@ -1926,6 +2324,34 @@ const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData
                         }
                     }
                 });
+                if (childTables?.length > 0) {
+                    childTables.forEach(child => {
+                        const childFieldName = child.field_name;
+                        if (mahazarData[childFieldName]) {
+                            let parsed;
+                            try {
+                                parsed = typeof mahazarData[childFieldName] === "string"
+                                    ? JSON.parse(mahazarData[childFieldName])
+                                    : mahazarData[childFieldName];
+                            } catch (err) {
+                                parsed = [];
+                            }
+
+                            if (Array.isArray(parsed)) {
+                                const normalizedRows = parsed.map(row => {
+                                    let newRow = {};
+                                    for (const key in row) {
+                                        const sanitizedKey = sanitizeKey(key);
+                                        newRow[sanitizedKey] = row[key];
+                                    }
+                                    return newRow;
+                                });
+
+                                mahazarChildTableDataMap[child.child_table_name] = normalizedRows;
+                            }
+                        }
+                    });
+                }
                 mahazarNormalData.sys_status = "ui_case";
                 mahazarNormalData.field_submit_status = "";
                 mahazarNormalData["ui_case_id"] = selectedRowData.id;
@@ -1941,6 +2367,7 @@ const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData
                 const formData = new FormData();
                 formData.append("table_name", selectedOtherTemplate.table);
                 formData.append("data", JSON.stringify(mahazarNormalData));
+                formData.append("child_tables", JSON.stringify(mahazarChildTableDataMap));
                 formData.append("transaction_id", randomApprovalId);
                 formData.append("user_designation_id", localStorage.getItem('designation_id') || null);
                 if (mahazarFolderAttachments.length > 0) {
@@ -1969,6 +2396,9 @@ const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData
                         setPendingMahazarData(null);
                         setSkipPropertyForm(false);
                         handleOtherTemplateActions(selectedOtherTemplate, selectedRowData);
+                        if (fetchCounts) {
+                            fetchCounts();
+                        }
                     } else {
                         toast.error(mahazarRes?.message || "Failed to save Mahazar.", {
                             position: "top-right",
@@ -2019,19 +2449,36 @@ const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData
                                     {selectedOtherTemplate?.name}
                                 </Typography>
 
-                                {selectedRowData?.["field_cid_crime_no./enquiry_no"] && (
-                                    <Chip
-                                        label={selectedRowData["field_cid_crime_no./enquiry_no"]}
-                                        color="primary"
-                                        variant="outlined"
-                                        size="small"
-                                        sx={{ fontWeight: 500, mt: '2px' }}
-                                    />
-                                )}
+                                {/* {selectedRowData?.["field_cid_crime_no./enquiry_no"] && ( */}
+                                    {headerDetails && (
+                                        <Tooltip title={headerDetails}>
+                                        <Chip
+                                            label={
+                                            <Typography
+                                                sx={{
+                                                fontSize: '13px',
+                                                maxWidth: 230,
+                                                whiteSpace: 'nowrap',
+                                                overflow: 'hidden',
+                                                textOverflow: 'ellipsis',
+                                                fontWeight: 500, marginTop: '2px'
+                                                }}
+                                            >
+                                                {headerDetails}
+                                            </Typography>
+                                            }
+                                            color="primary"
+                                            variant="outlined"
+                                            size="small"
+                                            sx={{ fontWeight: 500, marginTop: '2px' }}
+                                        />
+                                        </Tooltip>
+                                    )}
+                                {/* )} */}
 
-                                <Box className="totalRecordCaseStyle">
+                                {/* <Box className="totalRecordCaseStyle">
                                     {otherTemplatesTotalRecord} Records
-                                </Box>
+                                </Box> */}
 
                             </Box>
 
@@ -2112,13 +2559,35 @@ const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData
                                     >
                                     {!viewModeOnly && (
                                         <Button
-                                            variant="outlined"
-                                            sx={{ height: '40px' }}
+                                           sx={{height: "38px",}}
+                                            className="blueButton"
+                                            startIcon={
+                                                <AddIcon
+                                                    sx={{
+                                                        border: "1.3px solid #FFFFFF",
+                                                        borderRadius: "50%",
+                                                        background:"#4D4AF3 !important",
+                                                    }}
+                                                />
+                                            }
+                                            variant="contained"
                                             onClick={() => showOptionTemplate(selectedOtherTemplate?.table)}
                                         >
-                                            Add
+                                            Add New
                                         </Button>
                                     )}
+                                    {
+                                        userPermissions && userPermissions?.[0]?.['bulk_upload'] === true &&
+                                        <Button
+                                            variant="contained"
+                                            color="success"
+                                            size="large"
+                                            sx={{ height: "38px" }}
+                                            onClick={showBulkUploadScreen}
+                                        >
+                                            Bulk Upload
+                                        </Button>
+                                    }
                                     {/* {
                                         showMagazineView && 
                                         <Button
@@ -2216,7 +2685,13 @@ const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData
                                 onError={onSaveTemplateError}
                                 closeForm={() => setPropertyFormOpen(false)}
                                 headerDetails={selectedRowData?.["field_cid_crime_no./enquiry_no"]}
-                                onSkip={pendingMahazarData?.data?.field_mahajar_type === "Spot Mahazar" ? handleSkipPropertyForm : undefined}
+                                onSkip={
+                                pendingMahazarData?.data?.field_mahajar_type !== "Seizure Mahazar"
+                                    ? handleSkipPropertyForm
+                                    : pendingMahazarData?.data?.field_is_nill_mahazar_applicable === "Yes"
+                                    ? handleSkipPropertyForm
+                                    : false
+                                }
                                 skip = {handleSkipPropertyForm}
                                 />
 
@@ -2231,6 +2706,79 @@ const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData
                 </Dialog>
             )}
  
+        {
+        bulkUploadShow &&
+             <Dialog
+                 open={bulkUploadShow}
+                 onClose={()=>setBulkUploadShow(false)}
+                 maxWidth="sm"
+                 fullWidth
+                 PaperProps={{ sx: { borderRadius: 3, p: 2} }}
+             >
+                 <Box display="flex" justifyContent="space-between" alignItems="center">
+                     <DialogTitle sx={{ fontWeight: 600, fontSize: '20px', pb: 0  }}>Excel Upload</DialogTitle>
+                     <IconButton onClick={()=>setBulkUploadShow(false)}>
+                         <CloseIcon />
+                     </IconButton>
+                 </Box>
+ 
+                 <DialogContent>
+                     <Typography sx={{ mb: 2 }}>
+                         Please check Excel header before upload. If needed,&nbsp;
+                         <Link onClick={downloadExcelHeader} underline="hover" rel="noopener" sx={{cursor: 'pointer'}}>
+                             Download here
+                         </Link>
+                     </Typography>
+ 
+                     <Box
+                         component="label"
+                         htmlFor="excel-upload"
+                         sx={{
+                             display: 'flex',
+                             alignItems: 'center',
+                             justifyContent: 'center',
+                             flexDirection: 'column',
+                             border: '2px dashed #1976d2',
+                             p: 5,
+                             textAlign: 'center',
+                             borderRadius: 2,
+                             backgroundColor: '#f9f9f9',
+                             cursor: 'pointer',
+                             '&:hover': { backgroundColor: '#f0f0f0' },
+                         }}
+                     >
+                         <UploadFileIcon sx={{ fontSize: 48, color: '#1976d2', mb: 1 }} />
+                         <Typography variant="h6" fontWeight={500} sx={{ color: '#555' }}>
+                             Click here to upload Excel file
+                         </Typography>
+                         <input
+                             type="file"
+                             accept=".xlsx, .xls"
+                             id="excel-upload"
+                             hidden
+                             onChange={handleFileChange}
+                         />
+                     </Box>
+ 
+                     {selectedFile && (
+                         <Box sx={{display: 'flex', justifyContent: 'space-between'}}>
+                             <Typography mt={2} color="blue">
+                                 Selected File: {selectedFile.name}
+                             </Typography>
+                             <Button
+                                 variant="contained"
+                                 color="success"
+                                 sx={{ mt: 2, textTransform: 'uppercase', fontWeight: 500 }}
+                                 startIcon={<UploadFileIcon />}
+                                 onClick={checkUploadedFile}
+                             >
+                                 Upload
+                             </Button>
+                         </Box>
+                     )}
+                 </DialogContent>
+             </Dialog>
+         }
  
         </>
     );

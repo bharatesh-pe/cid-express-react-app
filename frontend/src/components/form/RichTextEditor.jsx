@@ -7,6 +7,7 @@ const RichTextEditor = ({ formData, onChange, field, disabled, errors, onHistory
     const textEditorId = field?.id || "my-editor";
     const fieldRef = useRef(field);
     const readonlyFlag = field?.disabled || readOnly;
+    const overlayId = `${textEditorId}-overlay`;
 
     useEffect(() => {
         fieldRef.current = field;
@@ -88,6 +89,38 @@ const RichTextEditor = ({ formData, onChange, field, disabled, errors, onHistory
         }
     }, [formData?.[field?.name]]);
 
+
+    useEffect(() => {
+        if (!readonlyFlag) return;
+
+        const overlay = document.getElementById(overlayId);
+        if (!overlay) return;
+
+        const onWheel = (e) => {
+            e.preventDefault();
+
+            const iframe = document.querySelector(`#${textEditorId}_ifr`);
+            if (iframe) {
+                const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                if (iframeDoc) {
+                    const scrollable = (iframeDoc.documentElement.scrollHeight > iframeDoc.documentElement.clientHeight)
+                    ? iframeDoc.documentElement
+                    : iframeDoc.body;
+                    scrollable.scrollTop += e.deltaY;
+                } else {
+                    console.log('Iframe document not found');
+                }
+            } else {
+                console.log('Iframe element not found');
+            }
+        };
+        overlay.addEventListener('wheel', onWheel, { passive: false });
+    return () => {
+        overlay.removeEventListener('wheel', onWheel);
+    };
+    }, [readonlyFlag, overlayId, textEditorId]);
+
+
     return (
         <Box sx={{ width: '100%' }}>
             <div
@@ -131,7 +164,7 @@ const RichTextEditor = ({ formData, onChange, field, disabled, errors, onHistory
                     />
                 )}
             </div>
-            <div style={{ position: 'relative' }}>
+            {/* <div style={{ position: 'relative' }}>
                 <textarea id={textEditorId} defaultValue={formData?.[field?.name]} disabled={disabled} />
 
                 {(readOnly || field?.disabled) && (
@@ -147,7 +180,33 @@ const RichTextEditor = ({ formData, onChange, field, disabled, errors, onHistory
                     />
                 )}
 
-            </div>
+            </div> */}
+            <Box sx={{ position: 'relative', height: 300, overflow: 'hidden' }}>
+                <textarea
+                    id={textEditorId}
+                    defaultValue={formData?.[field?.name]}
+                    style={{ height: '100%' }}
+                    disabled={disabled}
+                />
+
+                {(readOnly || field?.disabled) && (
+                    <Box
+                    id={`${textEditorId}-overlay`} 
+                    sx={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        backgroundColor: 'rgba(255, 255, 255, 0.6)',
+                        zIndex: 10,
+                        pointerEvents: 'auto',
+                        overflow: 'hidden',
+                    }}
+                    />
+                )}
+            </Box>
+
         </Box>
     );
 };

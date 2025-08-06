@@ -17,6 +17,7 @@ import {
     Grid,
     TextField,
 } from "@mui/material";
+import AddIcon from "@mui/icons-material/Add";
 import TextFieldInput from "@mui/material/TextField";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
@@ -35,7 +36,7 @@ import Autocomplete from "@mui/material/Autocomplete";
 import { Add } from "@mui/icons-material";
 import dayjs from "dayjs";
 
-const CDR = ({ templateName, headerDetails, rowId, options, selectedRowData, backNavigation, module, showMagazineView }) => {
+const CDR = ({ templateName, headerDetails, rowId, options, selectedRowData, backNavigation, module, showMagazineView , fetchCounts}) => {
     const location = useLocation();
     const navigate = useNavigate();
     const { pageCount, systemStatus } = location.state || {};
@@ -458,7 +459,7 @@ const CDR = ({ templateName, headerDetails, rowId, options, selectedRowData, bac
                                                     sx={{ cursor: "pointer", color: "red", fontSize: 20 }}
                                                     onClick={(event) => {
                                                         event.stopPropagation();
-                                                        handleOthersDeleteTemplateData(params.row, options.table);
+                                                        handleOthersDeleteTemplateData(params.row, options.table,selectedRow.id);
                                                     }}
                                                 />
                                             )}
@@ -829,7 +830,7 @@ const CDR = ({ templateName, headerDetails, rowId, options, selectedRowData, bac
         );
     };
 
-    const handleOthersDeleteTemplateData = (rowData, table_name) => {
+    const handleOthersDeleteTemplateData = (rowData, table_name, ui_case_id) => {
         Swal.fire({
             title: "Are you sure?",
             text: "Do you want to delete this profile ?",
@@ -842,6 +843,8 @@ const CDR = ({ templateName, headerDetails, rowId, options, selectedRowData, bac
                 const deleteTemplateData = {
                     table_name: table_name,
                     where: { id: rowData.id },
+                    transaction_id : "TXN_" + Date.now() + "_" + Math.floor(Math.random() * 1000000),
+                    ui_case_id:ui_case_id
                 };
                 setLoading(true);
 
@@ -876,6 +879,9 @@ const CDR = ({ templateName, headerDetails, rowId, options, selectedRowData, bac
                                     ),
                             }
                         );
+                        if (fetchCounts) {
+                            fetchCounts();
+                        }
                     } else {
                         const errorMessage = deleteTemplateDataResponse.message
                             ? deleteTemplateDataResponse.message
@@ -1602,7 +1608,8 @@ const CDR = ({ templateName, headerDetails, rowId, options, selectedRowData, bac
                         const updateStatusForm = new FormData();
                         updateStatusForm.append("table_name", "cid_ui_case_cdr_ipdr");
                         updateStatusForm.append("id", row.id);
-                        updateStatusForm.append("data", JSON.stringify({ field_done_by: 'IO', field_need_to_do_by: 'SP' }));
+                        updateStatusForm.append("data", JSON.stringify({ field_done_by: 'IO', field_need_to_do_by: 'SP', ui_case_id: selectedRowData?.id }));
+                        updateStatusForm.append("transaction_id", `submitap_${Date.now()}_${Math.floor(Math.random() * 10000)}`);
                         await api.post("/templateData/updateTemplateData", updateStatusForm);
                     }
                 }
@@ -1753,6 +1760,10 @@ const CDR = ({ templateName, headerDetails, rowId, options, selectedRowData, bac
                     progress: undefined,
                     className: "toast-success",
                 });
+
+                if (fetchCounts) {
+                    fetchCounts();
+                }
 
                 if (saveNewAction) {
                     await handleOtherTemplateActions(selectedOtherTemplate, selectedRow);
@@ -2021,6 +2032,7 @@ const CDR = ({ templateName, headerDetails, rowId, options, selectedRowData, bac
         setLoading(true);
         formData.append("id", data.id);
         formData.append("data", JSON.stringify(normalData));
+        formData.append("transaction_id", `update_${Date.now()}_${Math.floor(Math.random() * 10000)}`);
 
         try {
             const saveTemplateData = await api.post(
@@ -2140,7 +2152,8 @@ const CDR = ({ templateName, headerDetails, rowId, options, selectedRowData, bac
                         const updateStatusForm = new FormData();
                         updateStatusForm.append("table_name", "cid_ui_case_cdr_ipdr");
                         updateStatusForm.append("id", row.id);
-                        updateStatusForm.append("data", JSON.stringify({ field_done_by: 'SP', field_need_to_do_by: 'SPCCD CDR' }));
+                        updateStatusForm.append("data", JSON.stringify({ field_done_by: 'SP', field_need_to_do_by: 'SPCCD CDR', ui_case_id: selectedRowData?.id }));
+                        updateStatusForm.append("transaction_id", `approve_${Date.now()}_${Math.floor(Math.random() * 10000)}`);
                         await api.post("/templateData/updateTemplateData", updateStatusForm);
                     }
                 }
@@ -2228,7 +2241,8 @@ const CDR = ({ templateName, headerDetails, rowId, options, selectedRowData, bac
                         const updateStatusForm = new FormData();
                         updateStatusForm.append("table_name", "cid_ui_case_cdr_ipdr");
                         updateStatusForm.append("id", row.id);
-                        updateStatusForm.append("data", JSON.stringify({ field_done_by: 'SPCCD CDR', field_need_to_do_by: 'CDR' }));
+                        updateStatusForm.append("data", JSON.stringify({ field_done_by: 'SPCCD CDR', field_need_to_do_by: 'CDR', ui_case_id: selectedRowData?.id }));
+                        updateStatusForm.append("transaction_id", `cdr_${Date.now()}_${Math.floor(Math.random() * 10000)}`);
                         await api.post("/templateData/updateTemplateData", updateStatusForm);
                     }
                 }
@@ -2318,7 +2332,8 @@ const CDR = ({ templateName, headerDetails, rowId, options, selectedRowData, bac
                         const updateStatusForm = new FormData();
                         updateStatusForm.append("table_name", "cid_ui_case_cdr_ipdr");
                         updateStatusForm.append("id", row.id);
-                        updateStatusForm.append("data", JSON.stringify({ field_done_by: 'SPCCD CDR', field_need_to_do_by: 'IO' }));
+                        updateStatusForm.append("data", JSON.stringify({ field_done_by: 'SPCCD CDR', field_need_to_do_by: 'IO', ui_case_id: selectedRowData?.id }));
+                        updateStatusForm.append("transaction_id", `return_${Date.now()}_${Math.floor(Math.random() * 10000)}`);
                         await api.post("/templateData/updateTemplateData", updateStatusForm);
                     }
                 }
@@ -2410,7 +2425,8 @@ const CDR = ({ templateName, headerDetails, rowId, options, selectedRowData, bac
                         const updateStatusForm = new FormData();
                         updateStatusForm.append("table_name", "cid_ui_case_cdr_ipdr");
                         updateStatusForm.append("id", row.id);
-                        updateStatusForm.append("data", JSON.stringify({ field_done_by: 'SPCCD CDR', field_need_to_do_by: 'Rejected' }));
+                        updateStatusForm.append("data", JSON.stringify({ field_done_by: 'SPCCD CDR', field_need_to_do_by: 'Rejected' , ui_case_id: selectedRowData?.id}));
+                        updateStatusForm.append("transaction_id", `reject_${Date.now()}_${Math.floor(Math.random() * 10000)}`);
                         await api.post("/templateData/updateTemplateData", updateStatusForm);
                     }
                 }
@@ -2472,6 +2488,7 @@ const CDR = ({ templateName, headerDetails, rowId, options, selectedRowData, bac
                     const dataObj = { field_done_by: 'CDR', field_need_to_do_by: 'Completed' };
                     if (cdrUpdateStatus) {
                         dataObj.field_status_update = cdrUpdateStatus;
+                        dataObj.ui_case_id = cdrUpdateId;
                     }
                     updateStatusForm.append("data", JSON.stringify(dataObj));
 
@@ -2967,19 +2984,36 @@ const CDR = ({ templateName, headerDetails, rowId, options, selectedRowData, bac
                                     {selectedOtherTemplate?.name}
                                 </Typography>
 
-                                {selectedRowData?.["field_cid_crime_no./enquiry_no"] && (
+                                {/* {selectedRowData?.["field_cid_crime_no./enquiry_no"] && ( */}
+                                {headerDetails && (
+                                    <Tooltip title={headerDetails}>
                                     <Chip
-                                        label={selectedRowData["field_cid_crime_no./enquiry_no"]}
+                                        label={
+                                        <Typography
+                                            sx={{
+                                            fontSize: '13px',
+                                            maxWidth: 230,
+                                            whiteSpace: 'nowrap',
+                                            overflow: 'hidden',
+                                            textOverflow: 'ellipsis',
+                                            fontWeight: 500, marginTop: '2px'
+                                            }}
+                                        >
+                                            {headerDetails}
+                                        </Typography>
+                                        }
                                         color="primary"
                                         variant="outlined"
                                         size="small"
-                                        sx={{ fontWeight: 500, mt: '2px' }}
+                                        sx={{ fontWeight: 500, marginTop: '2px' }}
                                     />
+                                    </Tooltip>
                                 )}
+                                {/* )} */}
 
-                                <Box className="totalRecordCaseStyle">
+                                {/* <Box className="totalRecordCaseStyle">
                                     {otherTemplatesTotalRecord} Records
-                                </Box>
+                                </Box> */}
 
                                 {APIsSubmited && !isImmediateSupervisior && (
                                     <Box className="notifyAtTopCaseStyle">
@@ -3055,11 +3089,21 @@ const CDR = ({ templateName, headerDetails, rowId, options, selectedRowData, bac
                                     {/* IO: Only show Add button if not submitted (showSubmitAPButton === false) */}
                                     {canAdd && !viewModeOnly && templateActionAddFlag.current && (
                                         <Button
-                                            variant="outlined"
-                                            sx={{ height: '40px' }}
+                                            sx={{height: "38px",}}
+                                            className="blueButton"
+                                            startIcon={
+                                                <AddIcon
+                                                    sx={{
+                                                        border: "1.3px solid #FFFFFF",
+                                                        borderRadius: "50%",
+                                                        background:"#4D4AF3 !important",
+                                                    }}
+                                                />
+                                            }
+                                            variant="contained"
                                             onClick={() => showOptionTemplate('cid_ui_case_cdr_ipdr')}
                                         >
-                                            Add
+                                            Add New
                                         </Button>
                                     )}
 

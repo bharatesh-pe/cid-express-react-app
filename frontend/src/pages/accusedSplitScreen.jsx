@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
+import ReactDOM from 'react-dom';
 
 import { West } from '@mui/icons-material';
 import {
@@ -30,7 +31,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from "@mui/icons-material/Add";
 import CloseIcon from '@mui/icons-material/Close';
 
-const AccusedSplitScreen = ({tableObj, selectedAccused, closeForm, ui_case_id, pt_case_id, module, mainTableName, directAddNew}) =>{
+const AccusedSplitScreen = ({tableObj, selectedAccused, closeForm, ui_case_id, pt_case_id, module, mainTableName, directAddNew, fetchCounts}) =>{
 
     console.log(mainTableName,"mainTableName");    
 
@@ -41,10 +42,13 @@ const AccusedSplitScreen = ({tableObj, selectedAccused, closeForm, ui_case_id, p
     const [tableColumnData, setTableColumnData] = useState([
         { field: 'sl_no', headerName: 'Sl. No.' },
     ]);
+    const [roleTabFieldName, setRoleTabFieldName] = useState(null);
 
     const [accusedHeaderName, setAccusedHeaderName] = useState(
         () => (selectedAccused || []).map(item => item?.[gettingFieldName]).join(', ')
     );
+
+    const [isSaving, setIsSaving] = useState(false);
 
     const [tableRowData, setTableRowData] = useState([]);
 
@@ -67,6 +71,7 @@ const AccusedSplitScreen = ({tableObj, selectedAccused, closeForm, ui_case_id, p
     const [editOnlyForm, setEditOnlyForm] = useState(null);
 
     const [rowData, setRowData] = useState({});
+
     
     const editedForm = useRef(false);
 
@@ -590,22 +595,41 @@ const AccusedSplitScreen = ({tableObj, selectedAccused, closeForm, ui_case_id, p
 
                 var accusedWitnessTabs = false;
 
-                if(tabFields?.length > 0){
-                    tabFields.map((element)=>{
-                        if(element?.options){
-                            if(element?.options.some(options => options.code === "Accused" || options.code === "Witness")){
-                                accusedWitnessTabs = element?.name;
-                            }
+                let matchedElement = null;
+
+                if (tabFields?.length > 0) {
+                    tabFields.forEach((element) => {
+                        console.log("element", element);
+                        console.log("tabfields", tabFields);
+
+                        if (element?.options?.some(opt => opt.code === "Accused" || opt.code === "Witness")) {
+                            setRoleTabFieldName(element.name);
+                            accusedWitnessTabs = element.name;
+                            matchedElement = element;
                         }
                     });
                 }
 
-                console.log(accusedWitnessTabs,"accusedWitnessTabs");
+                if (accusedWitnessTabs && matchedElement) {
+                    const matchedOption = matchedElement.options.find(opt =>
+                        opt.code.trim().toLowerCase() === (mainTableName === "cid_ui_case_accused" ? "accused" : "witness")
+                    );
 
-                if(accusedWitnessTabs !== false && accusedWitnessTabs !== ""){
-                    initialFormConfig[accusedWitnessTabs] = mainTableName === "cid_ui_case_accused" ? "Accused" : "Witness"
+                    if (matchedOption) {
+                        initialFormConfig[accusedWitnessTabs] = matchedOption.code;
+                    }
+
+                    updatedFields = updatedFields.map((item) => {
+                        if (item.name === accusedWitnessTabs) {
+                            return {
+                                ...item,
+                                disabled: true
+                            };
+                        }
+                        return item;
+                    });
                 }
-                
+
                 setSelectedTemplateId(viewTemplateResponse?.["data"]?.template_id);
                 setSelectedTableName(viewTemplateResponse?.["data"]?.table_name);
                 setSelectedTemplateName(viewTemplateResponse?.["data"]?.template_name);
@@ -720,6 +744,11 @@ const AccusedSplitScreen = ({tableObj, selectedAccused, closeForm, ui_case_id, p
 
     const formSubmit = async (data, formOpen)=>{
 
+        if (isSaving) 
+            return;
+
+        setIsSaving(true);
+
         if (!tableObj.table_name || tableObj.table_name === "") {
             toast.warning("Please Check The Template", {
                 position: "top-right",
@@ -750,6 +779,17 @@ const AccusedSplitScreen = ({tableObj, selectedAccused, closeForm, ui_case_id, p
 
         const formData = new FormData();
         let normalData = {};
+
+        if (roleTabFieldName) {
+            const selectedRole = data[roleTabFieldName];
+
+            if (selectedRole === "Accused" && "field_witness_name" in data) {
+                delete data["field_witness_name"];
+            } else if (selectedRole === "Witness" && "field_accused_name" in data) {
+                delete data["field_accused_name"];
+            }
+        }
+
 
         formFields.forEach((field) => {
             if (data[field.name]) {
@@ -809,6 +849,9 @@ const AccusedSplitScreen = ({tableObj, selectedAccused, closeForm, ui_case_id, p
                         getTableData(tableObj, formOpen);
                     }
                 });
+                if (fetchCounts) {
+                    fetchCounts();
+                }
 
                 setFormOpen(false);
 
@@ -838,6 +881,10 @@ const AccusedSplitScreen = ({tableObj, selectedAccused, closeForm, ui_case_id, p
                 className: "toast-error",
             });
         }
+        finally {
+            setIsSaving(false);
+        }
+
     };
 
     const formUpdate = async (data)=>{
@@ -1109,7 +1156,11 @@ const AccusedSplitScreen = ({tableObj, selectedAccused, closeForm, ui_case_id, p
                             onError={formError}
                             closeForm={closeAddForm}
                             noPadding={true}
-                            selectedRow={rowData}
+                            selectedRow={{
+                                ...rowData,
+                                ui_case_id: ui_case_id,
+                                pt_case_id: pt_case_id
+                            }}
                             editedForm={editedFormFlag}
                         />
                     </DialogContent>
@@ -1121,6 +1172,14 @@ const AccusedSplitScreen = ({tableObj, selectedAccused, closeForm, ui_case_id, p
                     <CircularProgress size={100} />
                 </div>
             )}
+
+            {isSaving && ReactDOM.createPortal(
+            <div className="parent_spinner_2">
+                <CircularProgress size={100} />
+            </div>,
+            document.body
+            )}
+
 
         </Dialog>
     )

@@ -949,6 +949,32 @@ const set_user_hierarchy = async (req, res) => {
             }
         }
         else{
+
+            const userDepartment = await DesignationDepartment.findAll({
+                where: { designation_id },
+            });
+            if (!userDepartment) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Department not found for the given designation_id",
+                });
+            }
+    
+            const userDivision = await DesignationDivision.findAll({
+                where: { designation_id },
+            });
+
+             if (!userDivision) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Division not found for the given designation_id",
+                });
+            }
+    
+            const departmentIds = userDepartment.map((ud) => ud.department_id);
+            const divisionIds = userDivision.map((ud) => ud.division_id);
+    
+
             const userDesignations = await UserDesignation.findAll({
                 where: { user_id : user_id },
                 attributes: ["designation_id"],
@@ -985,6 +1011,8 @@ const set_user_hierarchy = async (req, res) => {
             var allowedUserIds = Array.from(new Set([String(user_id), ...subordinateUserIds]));
             data ={
                 allowedUserIds : allowedUserIds,
+                allowedDepartmentIds : departmentIds,
+                allowedDivisionIds : divisionIds,
                 getDataBasesOnUsers: true,
             }
         }
@@ -1330,6 +1358,11 @@ const fetch_dash_count = async (req, res) => {
                     ];
                 } else {
                     caseWhereClause["created_by_id"] = { [Op.in]: normalizedUserIds };
+                }
+            }
+            if (allowedDivisionIds.length > 0) {
+                if (["ui_case", "pt_case", "eq_case"].includes(template_module)) {
+                    whereClause["field_division"] = { [Op.in]: normalizedDivisionIds };
                 }
             }
         }
@@ -2577,7 +2610,7 @@ const store_cnr_table_data = async (req, res) => {
         });
     
         await CNRModel.sync();
-
+        var pt_case_id = [];
         //get the pt_case_id from cid_pending_trial table
         if (data.field_cnr_number) {
             const [results] = await sequelize.query(
@@ -2585,9 +2618,15 @@ const store_cnr_table_data = async (req, res) => {
             { replacements: { cnr: data.field_cnr_number } }
             );
     
-            data.pt_case_id = results.length > 0 ? results[0].id : null;
+            //data.pt_case_id = results.length > 0 ? results[0].id : null;
+            if( results.length > 0) {
+                pt_case_id = [];
+                for (const result of results) {
+                    pt_case_id.push(result.id);
+                }
+            }
         } else {
-            data.pt_case_id = null;
+            pt_case_id = null;
         }
 
         // Append fixed metadata
@@ -2595,11 +2634,32 @@ const store_cnr_table_data = async (req, res) => {
         data.created_by_id = 0;
         data.created_at = new Date();
         data.updated_at = new Date();
+        
+        // if(!pt_case_id || pt_case_id.length === 0) {
+        //     return res.status(400).json({ success: false, message: "No matching PT case found for the provided CNR number." });
+        // }
+       
+        if(pt_case_id && pt_case_id.length > 0) {
+            for(const ptCaseId of pt_case_id) {
+                // Insert data into the CNR table
+                await CNRModel.create({
+                    ...data,
+                    pt_case_id: ptCaseId, // Use the current PT case ID
+                });
+            }
+            return res.status(200).json({ success: true, message: "CNR data stored successfully." });
+        }
+        else
+        {
+            //Insert data into the CNR table with pt_case_id as null
+            await CNRModel.create({
+                ...data,
+                pt_case_id: null, // Use null for pt_case_id if no matching PT case
+            });
+            return res.status(200).json({ success: true, message: "CNR data stored successfully with no matching PT case." });
+        }
+        
     
-        // Insert record
-        await CNRModel.create(data);
-    
-        return res.status(200).json({ success: true, message: "CNR data stored successfully." });
     } catch (error) {
       console.error("CNR Save Error:", error);
       return res.status(500).json({ success: false, message: "Failed to save CNR data.", error: error.message });
@@ -2633,6 +2693,131 @@ const datewisereport = async (req, res) => {
 }
 
 
+//like dumpOldCmsDataFromExcel, this function processes data from an Excel file and updates the database accordingly.
+const updatePoliceStationExcel = async (req, res) => {
+    try {
+        const workbook = xlsx.readFile(path.join(__dirname, '../data/CID_PS_data.xlsx'));
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const data = xlsx.utils.sheet_to_json(sheet, { header: 1 });
+
+        if (!data || data.length === 0) {
+            return res.status(400).json({ success: false, message: "No data found in the Excel sheet" });
+        }
+
+        const headers = data[0];
+
+        //the just we need to take the headed Name and PublicKey and check if the PublicKey exists in the cid_police_station table if not insert it.
+        const fieldNameIndex = headers.indexOf("Name");
+        const publickeyIndex = headers.indexOf("PublicKey");
+        const policeStations = [];
+        data.slice(1).forEach(row => {
+            const name = row[fieldNameIndex];
+            const publickey = row[publickeyIndex];
+
+            if (name && publickey) {
+                policeStations.push({ name, publickey });
+            }
+        });
+        const transaction = await sequelize.transaction();
+        var existingPSCount = 0 ;
+        var newPSCount = 0 ;
+        for (const item of policeStations) {
+            const existingStation = await sequelize.query(
+                `SELECT id FROM cid_police_station WHERE "publickey" = :publickey`,
+                {
+                    replacements: { publickey: item.publickey },
+                    type: sequelize.QueryTypes.SELECT,
+                    transaction
+                }
+            );
+            if (existingStation.length > 0) {
+                existingPSCount++;
+            }
+            if (existingStation.length === 0) {
+                newPSCount++;
+                await sequelize.query(
+                    `INSERT INTO cid_police_station ("name", "publickey", "created_at", "updated_at") VALUES (:name, :publickey, NOW(), NOW())`,
+                    {
+                        replacements: { name: item.name, publickey: item.publickey },
+                        type: sequelize.QueryTypes.INSERT,
+                        transaction
+                    }
+                );
+            }
+        }
+        await transaction.commit();
+        return res.status(200).json({ success: true, message: "Police stations updatedsuccessfully. the no of existiong PS :" + existingPSCount + " and the no of new PS :" + newPSCount });
+    } catch (error) {
+        console.error("Error processing police station data:", error);
+        return res.status(500).json({ success: false, message: "Internal Server Error", error: error.message });
+    }
+}
+
+
+//like updatePoliceStationFromExcel, i need to do it for court data , table name is cid_court.
+const updateCourtFromExcel = async (req, res) => {
+    try {
+        const workbook = xlsx.readFile(path.join(__dirname, '../data/CID_Court_data.xlsx'));
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const data = xlsx.utils.sheet_to_json(sheet, { header: 1 });
+
+        if (!data || data.length === 0) {
+            return res.status(400).json({ success: false, message: "No data found in the Excel sheet" });
+        }
+
+        const headers = data[0];
+
+        //the just we need to take the headed Name and PublicKey and check if the PublicKey exists in the cid_court table if not insert it.
+        const fieldNameIndex = headers.indexOf("Name");
+        const publickeyIndex = headers.indexOf("PublicKey");
+        const courts = [];
+        data.slice(1).forEach(row => {
+            const name = row[fieldNameIndex];
+            const publickey = row[publickeyIndex];
+
+            if (name && publickey) {
+                courts.push({ name, publickey });
+            }
+        });
+        const transaction = await sequelize.transaction();
+        var existingCourtCount = 0 ;
+        var newCourtCount = 0 ;
+        for (const item of courts) {
+            const existingCourt = await sequelize.query(
+                `SELECT id FROM cid_court WHERE "publickey" = :publickey`,
+                {
+                    replacements: { publickey: item.publickey },
+                    type: sequelize.QueryTypes.SELECT,
+                    transaction
+                }
+            );
+            if (existingCourt.length > 0) {
+                existingCourtCount++;
+            }
+            if (existingCourt.length === 0) {
+                newCourtCount++;
+                await sequelize.query(
+                    `INSERT INTO cid_court ("name", "publickey", "created_at", "updated_at") VALUES (:name, :publickey, NOW(), NOW())`,
+                    {
+                        replacements: { name: item.name, publickey: item.publickey },
+                        type: sequelize.QueryTypes.INSERT,
+                        transaction
+                    }
+                );
+            }
+        }
+        await transaction.commit();
+        return res.status(200).json({ success: true, message: "Courts updated successfully. the no of existiong Courts :" + existingCourtCount + " and the no of new Courts :" + newCourtCount });
+    } catch (error) {
+        console.error("Error processing court data:", error);
+        return res.status(500).json({ success: false, message: "Internal Server Error", error: error.message });
+    }
+};
+     
+
+
   
 
 module.exports = {
@@ -2649,7 +2834,9 @@ module.exports = {
   mapUIandPT,
   updatePoliceStationFromExcel,
   dumpOldCmsDataFromExcel,
-  store_cnr_table_data
+  store_cnr_table_data,
+  updatePoliceStationExcel,
+  updateCourtFromExcel
 };
 
 

@@ -10,6 +10,14 @@ const dbConfig = {
     password: process.env.DB_PASSWORD,
     dialect: "postgres",
     schema: process.env.DB_SCHEMA || "public", // Default schema
+
+    // Connection pool settings
+    pool: {
+        max: 100,          
+        min: 5,            
+        acquire: 60000,    
+        idle: 10000        
+    },
 };
 
 // Initialize Sequelize

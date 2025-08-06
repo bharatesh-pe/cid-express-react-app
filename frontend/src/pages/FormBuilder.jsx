@@ -43,6 +43,8 @@ import RightIcon from '../Images/RightArrow.svg';
 import LeftIcon from '../Images/LeftArrow.svg'
 import pdfIcon from '../Images/pdfIcon.svg'
 import docIcon from '../Images/docIcon.svg'
+import docxIcon from '../Images/docxIcon.svg'
+// import docxIcon from '@mui/icons-material/Description';
 import xlsIcon from '../Images/xlsIcon.svg'
 import pptIcon from '../Images/pptIcon.svg'
 import jpgIcon from '../Images/jpgIcon.svg'
@@ -149,7 +151,26 @@ const Formbuilder = () => {
                 const excludedTypes = ['file', 'profilepicture', 'table', 'tabs'];
 
                 var updatedFields = Createdfields.map((element)=>{
-                    
+
+                    if (element.type === "file") {
+                        const hasDocx = element.supportedFormat.some(fmt => fmt.ext === ".docx");
+
+                        if (!hasDocx) {
+                            element.supportedFormat.push({
+                                name: "Docx files",
+                                ext: ".docx"
+                            });
+                        }
+                    }
+
+                    if (element.type === "table" && element.hasOwnProperty("table_display_content")) {
+                        delete element.table_display_content;
+                    }
+
+                    if (element.type === "table" && element.hasOwnProperty("required")) {
+                        delete element.required;
+                    }
+
                     if(element.type === "tabs"){
                         return{
                             ...element,
@@ -1924,6 +1945,7 @@ const Formbuilder = () => {
                 return <img src={xlsIcon} />;
             case '.csv':
             case '.docx':
+                return <img src={docxIcon} />;
             case '.doc':
                 return <img src={docIcon} />;
             case '.ppt':
@@ -3275,7 +3297,6 @@ const Formbuilder = () => {
                                                                 switchOnChange = changePrimaryValue;
                                                             }else if(prop === 'case_diary'){
                                                                 colText = 'Case Diary'
-                                                                switchOnChange = changePrimaryValue;
                                                             }
                                                         }
 
@@ -3503,13 +3524,13 @@ const Formbuilder = () => {
                                                                                                                                 margin="dense"
                                                                                                                             />
                                                                                                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                                                                                                {(option.fieldType?.type === "single_select" || option.fieldType?.type === "multi_select") && (
-                                                                                                                                    <Tooltip title="Add Options">
-                                                                                                                                        <IconButton onClick={() => handleOpenPropsModal(index)}>
-                                                                                                                                            <VisibilityIcon sx={{ color: '#1D2939' }} />
-                                                                                                                                        </IconButton>
-                                                                                                                                    </Tooltip>
-                                                                                                                                )}
+                                                                                                                                
+                                                                                                                                <Tooltip title="Add Options">
+                                                                                                                                    <IconButton onClick={() => handleOpenPropsModal(index)}>
+                                                                                                                                        <VisibilityIcon sx={{ color: '#1D2939' }} />
+                                                                                                                                    </IconButton>
+                                                                                                                                </Tooltip>
+
                                                                                                                                 <button onClick={() => handleRemoveTableHeaders(index)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
                                                                                                                                     <RemoveCircleOutlineIcon sx={{ color: '#1D2939' }} />
                                                                                                                                 </button>
@@ -3753,12 +3774,32 @@ const Formbuilder = () => {
             }
 
             <Dialog open={showPropsModal} onClose={() => setShowPropsModal(false)} maxWidth="md" fullWidth>
-                <DialogTitle>Add Options</DialogTitle>
+                <DialogTitle>Add Properties</DialogTitle>
                 
                 <DialogContent dividers>
 
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+
+                        <Switch
+                            checked={propEditField?.fieldType?.required} 
+                            onChange={(e)=> {
+                                setPropEditField({
+                                    ...propEditField,
+                                    fieldType: {
+                                        ...propEditField.fieldType,
+                                        required: e.target.checked
+                                    }
+                                })
+                            }}
+                        />
+
+                        <Typography pt={1} sx={{ textTransform: 'capitalize', textWrap: 'nowrap' }} className='propsOptionsBtn'>
+                            Mandatory field
+                        </Typography>
+                    </Box>
+
                     {(propEditField?.fieldType?.type === "single_select" || propEditField?.fieldType?.type === "multi_select") && (
-                        <Box sx={{ borderBottom: '20px' }}>
+                        <Box sx={{ py: '20px' }}>
                             <Box sx={{ border: '1px solid #D0D5DD', borderRadius: '8px', background: '#F2F4F7' }}>
                                 <Box p={1} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: '1px solid #D0D5DD', borderRadius: '8px' }}>
                                     <Typography sx={{ color: '#475467', fontWeight: '500', fontSize: '16px' }} className='Roboto'>
