@@ -785,7 +785,15 @@ async function migrateOldTableFieldData(model, childModel, field, table_name, ch
     }
 
     const rawTableData = parent.get(field.name);
-    if (!rawTableData) continue;
+
+    if (
+      !rawTableData ||
+      rawTableData === "[]" ||
+      rawTableData === "{}" ||
+      (typeof rawTableData === "object" && Object.keys(rawTableData).length === 0)
+    ) {
+      continue;
+    }
 
     let parsedRows;
     try {
@@ -797,26 +805,45 @@ async function migrateOldTableFieldData(model, childModel, field, table_name, ch
       continue;
     }
 
-    if (!Array.isArray(parsedRows)) continue;
+    if (!Array.isArray(parsedRows) || parsedRows.length === 0) {
+      continue;
+    }
 
-    for (const row of parsedRows) {
+    const nonEmptyRows = parsedRows.filter(obj =>
+      Object.values(obj).some(val =>
+        val !== null && val !== undefined && val.toString().trim() !== ""
+      )
+    );
+
+    if (nonEmptyRows.length === 0) {
+      continue;
+    }
+
+    const rowsToInsert = [];
+
+    for (const row of nonEmptyRows) {
       const insertRow = {};
-
       for (const header of field.tableHeaders || []) {
         const sanitized = sanitizeColumnName(header.header);
         insertRow[sanitized] = row[header.header] ?? null;
       }
 
       insertRow[parentKey] = parent.id;
+      rowsToInsert.push(insertRow);
+    }
 
-      try {
-        await childModel.create(insertRow);
-      } catch (err) {
-        console.error(`Error inserting row for parent ID ${parent.id}:`, err);
+    try {
+      if (rowsToInsert.length > 0) {
+        console.log(`Inserting ${rowsToInsert.length} child rows for parent ID ${parent.id}`);
+        await childModel.bulkCreate(rowsToInsert, { ignoreDuplicates: true });
       }
+    } catch (err) {
+      console.error(`Error inserting child rows for parent ID ${parent.id}:`, err);
     }
   }
 }
+
+
 
 exports.deleteTemplate = async (req, res, next) => {
   let dirPath = "";

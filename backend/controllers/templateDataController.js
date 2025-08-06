@@ -2133,9 +2133,9 @@ exports.getTemplateData = async (req, res, next) => {
     if(table_name === "cid_ui_case_action_plan" || table_name === "cid_eq_case_plan_of_action" || table_name === 'cid_ui_case_cdr_ipdr')
         relevantSchema.push({ name: "sys_status", data_type: "TEXT", not_null: false });
     
-    if(table_name === "cid_ui_case_property_form")
+    if(table_name === "cid_ui_case_property_form"){
         relevantSchema.push({ name: "sys_status", data_type: "TEXT", not_null: false });
-  
+    }
     // const relevantSchema = schema;
     // Define model attributes based on filtered schema
     const modelAttributes = {};
@@ -2361,7 +2361,7 @@ exports.getTemplateData = async (req, res, next) => {
         }
         else if (module === "pt_case") {
 
-            if(req.body.ui_case_id && req.body.ui_case_id !== "" || req.body.ui_case_id !== null) {
+            if(req.body.ui_case_id && req.body.ui_case_id !== "" && req.body.ui_case_id !== null) {
                 whereClause = {
                   [Op.and]: [
                     {
@@ -2401,6 +2401,69 @@ exports.getTemplateData = async (req, res, next) => {
                 };
             }
         }
+    }
+
+
+    if (module === "pt_case" && table_name === "cid_ui_case_property_form" && (ui_case_id || pt_case_id) ) {
+      console.log("Running property form evidence check");
+
+      const propertyFormTemplate = await Template.findOne({
+        where: { table_name: "cid_ui_case_property_form" },
+      });
+
+      if (propertyFormTemplate) {
+        const tableName = propertyFormTemplate.table_name;
+        const PropertyFormModel = sequelize.models[tableName];
+
+        if (PropertyFormModel) {
+          console.log("Found PropertyFormModel:", tableName);
+
+          const propertyFormData = await PropertyFormModel.findAll({
+            attributes: ["pt_case_id", "ui_case_id", "field_property_details", "id"],
+            where: {
+              [Op.or]: [
+                { ui_case_id: ui_case_id || null },
+                { pt_case_id: pt_case_id || null }
+              ]
+            },
+            raw: true,
+          });
+
+          console.log("Fetched property form data:", propertyFormData);
+
+          const matchedRows = propertyFormData.filter((row) => {
+            const hasUICaseIdOnly = row.ui_case_id && !row.pt_case_id;
+
+            if (hasUICaseIdOnly) {
+              try {
+                const details = JSON.parse(row.field_property_details || "[]");
+                const isUsedAsEvidence = Array.isArray(details) && details.some(
+                  (entry) =>
+                    entry?.["Used as Evidence"]?.toLowerCase() === "yes"
+                );
+                console.log(`Row ID ${row.id}: Used as Evidence = ${isUsedAsEvidence}`);
+                return isUsedAsEvidence;
+              } catch (e) {
+                console.log(`Error parsing JSON for row ID ${row.id}`, e);
+                return false;
+              }
+            }
+
+            return row.pt_case_id;
+          });
+
+          if (matchedRows.length === 0) {
+            console.log("No matching rows with Used as Evidence = Yes. Applying whereClause.id = null");
+            whereClause.id = null;
+          } else {
+            console.log("Matched rows:", matchedRows.map(row => row.id));
+            whereClause.id = {
+              [Op.in]: matchedRows.map(row => row.id)
+            };
+          }
+
+        }
+      }
     }
 
     // Apply field filters if provided
@@ -8006,9 +8069,9 @@ exports.appendToLastLineOfPDF = async (req, res) => {
     const monthBoldFont = await monthPdf.embedFont(StandardFonts.HelveticaBold);
 
     // Insert general info if needed
-    if (shouldInsertGeneralInfoForPdfDoc(ui_case_id)) {
-      await insertGeneralInfo(pdfDoc, aoFields, pageWidth, pageHeight, regularFont, boldFont, 'pdfDoc');
-    }
+    // if (shouldInsertGeneralInfoForPdfDoc(ui_case_id)) {
+    //   await insertGeneralInfo(pdfDoc, aoFields, pageWidth, pageHeight, regularFont, boldFont, 'pdfDoc');
+    // }
     if (shouldInsertGeneralInfoForMonthPdf(ui_case_id, monthLabelRaw)) {
       await insertGeneralInfo(monthPdf, aoFields, pageWidth, pageHeight, monthRegularFont, monthBoldFont, 'monthPdf');
     }
@@ -14153,7 +14216,7 @@ exports.getTableCountsByCaseId = async (req, res) => {
                 //   ]
                 // };
 
-                if(req.body.ui_case_id && req.body.ui_case_id !== "" || req.body.ui_case_id !== null) {
+                if(req.body.ui_case_id && req.body.ui_case_id !== "" && req.body.ui_case_id !== null) {
                     whereClause = {
                     [Op.and]: [
                         {
@@ -14195,6 +14258,70 @@ exports.getTableCountsByCaseId = async (req, res) => {
               }
             }
           }
+
+          if (module === "pt_case" && table_name === "cid_ui_case_property_form" && (ui_case_id || pt_case_id)) {
+            console.log("Running property form evidence check");
+
+            const propertyFormTemplate = await Template.findOne({
+              where: { table_name: "cid_ui_case_property_form" },
+            });
+
+            if (propertyFormTemplate) {
+              const PropertyFormModel = sequelize.models[table_name];
+
+              if (PropertyFormModel) {
+                console.log("Found PropertyFormModel:", table_name);
+
+                const propertyFormData = await PropertyFormModel.findAll({
+                  attributes: ["pt_case_id", "ui_case_id", "field_property_details", "id"],
+                  where: {
+                    [Op.or]: [
+                      { ui_case_id: ui_case_id || null },
+                      { pt_case_id: pt_case_id || null }
+                    ]
+                  },
+                  raw: true,
+                });
+
+                console.log("Fetched property form data:", propertyFormData);
+
+                const matchedRows = propertyFormData.filter((row) => {
+                  const hasUICaseIdOnly = row.ui_case_id && !row.pt_case_id;
+
+                  if (hasUICaseIdOnly) {
+                    try {
+                      const details = JSON.parse(row.field_property_details || "[]");
+                      const isUsedAsEvidence = Array.isArray(details) && details.some(
+                        (entry) => entry?.["Used as Evidence"]?.toLowerCase() === "yes"
+                      );
+                      console.log(`Row ID ${row.id}: Used as Evidence = ${isUsedAsEvidence}`);
+                      return isUsedAsEvidence;
+                    } catch (e) {
+                      console.log(`Error parsing JSON for row ID ${row.id}`, e);
+                      return false;
+                    }
+                  }
+
+                  // If pt_case_id is present, include by default
+                  return row.pt_case_id;
+                });
+
+                if (matchedRows.length === 0) {
+                  console.log("No evidence rows matched. Skipping count.");
+                  result[table_name] = 0;
+                  continue; // Skip to next table
+                } else {
+                  const matchedIds = matchedRows.map(row => row.id);
+                  console.log("Evidence matched rows:", matchedIds);
+
+                  // Add to whereClause
+                  whereClause.id = {
+                    [Op.in]: matchedIds
+                  };
+                }
+              }
+            }
+        }
 
           const count = await Model.count({ where: whereClause });
           result[table_name] = count;
