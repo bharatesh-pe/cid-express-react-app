@@ -1501,7 +1501,8 @@ const Formbuilder = () => {
             "template_module": module,
             "link_module": link_module,
             "fields": newFields,
-            "paranoid": false
+            "paranoid": false,
+            transaction_id : "CREATE_TEMPLATE" + Date.now() + "_" + Math.floor(Math.random() * 1000000),
         }
 
         if(stepper && stepper.length > 0){
