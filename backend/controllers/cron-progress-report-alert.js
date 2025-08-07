@@ -909,6 +909,348 @@ exports.runDailyAlertCronAP = async () => {
     } 
 };
 
+
+const ensureIdIsPrimaryOrUnique = async (tableName) => {
+  const idColumn = await sequelize.query(
+    `SELECT column_name, is_nullable, column_default
+     FROM information_schema.columns
+     WHERE table_name = :tableName AND column_name = 'id'`,
+    {
+      type: Sequelize.QueryTypes.SELECT,
+      replacements: { tableName },
+    }
+  );
+
+  if (!idColumn.length) {
+    console.warn(`Table ${tableName} has no 'id' column.`);
+    return;
+  }
+
+  const { is_nullable } = idColumn[0];
+  if (is_nullable === "YES") {
+    console.warn(`id' column in ${tableName} is nullable, cannot be PK.`);
+    return;
+  }
+
+  const constraintCheck = await sequelize.query(
+    `SELECT c.constraint_type
+     FROM information_schema.constraint_column_usage u
+     JOIN information_schema.table_constraints c
+       ON c.constraint_name = u.constraint_name
+     WHERE u.table_name = :tableName AND u.column_name = 'id'
+       AND c.constraint_type IN ('PRIMARY KEY', 'UNIQUE')`,
+    {
+      type: Sequelize.QueryTypes.SELECT,
+      replacements: { tableName },
+    }
+  );
+
+  if (constraintCheck.length > 0) return;
+
+  const hasPrimary = await sequelize.query(
+    `SELECT constraint_name
+     FROM information_schema.table_constraints
+     WHERE table_name = :tableName AND constraint_type = 'PRIMARY KEY'`,
+    {
+      type: Sequelize.QueryTypes.SELECT,
+      replacements: { tableName },
+    }
+  );
+
+  try {
+    if (hasPrimary.length === 0) {
+      await sequelize.query(`ALTER TABLE "${tableName}" ADD PRIMARY KEY (id);`);
+    } else {
+      const uniqueName = `${tableName}_id_unique`;
+      await sequelize.query(`ALTER TABLE "${tableName}" ADD CONSTRAINT "${uniqueName}" UNIQUE (id);`);
+    }
+  } catch (err) {
+    if (err.message.includes("already exists")) {
+      console.warn(`Constraint already exists on ${tableName}.id`);
+    } else {
+      console.error(`Failed to add constraint on ${tableName}.id:`, err);
+    }
+  }
+};
+
+const defineModelIfNotExists = async (tableName) => {
+  if (sequelize.models[tableName]) return sequelize.models[tableName];
+
+  const tableExists = await sequelize.query(
+    `SELECT table_name FROM information_schema.tables
+     WHERE table_schema = 'public' AND table_name = :tableName`,
+    {
+      type: Sequelize.QueryTypes.SELECT,
+      replacements: { tableName },
+    }
+  );
+
+  if (!tableExists.length) return null;
+
+  const columns = await sequelize.query(
+    `SELECT column_name, data_type, is_nullable, column_default
+     FROM information_schema.columns
+     WHERE table_schema = 'public' AND table_name = :tableName`,
+    {
+      type: Sequelize.QueryTypes.SELECT,
+      replacements: { tableName },
+    }
+  );
+
+  if (!columns.length) return null;
+
+  await ensureIdIsPrimaryOrUnique(tableName);
+
+  const fieldDefinitions = {};
+  for (const col of columns) {
+    let type = Sequelize.STRING;
+    switch (col.data_type) {
+      case "integer":
+      case "smallint":
+      case "bigint":
+        type = Sequelize.INTEGER;
+        break;
+      case "boolean":
+        type = Sequelize.BOOLEAN;
+        break;
+      case "timestamp with time zone":
+      case "timestamp without time zone":
+      case "date":
+        type = Sequelize.DATE;
+        break;
+      case "text":
+        type = Sequelize.TEXT;
+        break;
+    }
+
+    if (col.column_name === "id") {
+      const autoIncrement = col.column_default && col.column_default.startsWith("nextval");
+      fieldDefinitions[col.column_name] = {
+        type,
+        primaryKey: true,
+        autoIncrement: !!autoIncrement,
+        allowNull: false,
+      };
+    } else {
+      fieldDefinitions[col.column_name] = {
+        type,
+        allowNull: col.is_nullable === "YES",
+      };
+    }
+  }
+
+  const hasCreatedAt = columns.some(col => col.column_name === "created_at");
+  const hasUpdatedAt = columns.some(col => col.column_name === "updated_at");
+
+  const model = sequelize.define(tableName, fieldDefinitions, {
+    tableName,
+    freezeTableName: true,
+    underscored: true,
+    timestamps: hasCreatedAt || hasUpdatedAt,
+    createdAt: hasCreatedAt ? "created_at" : false,
+    updatedAt: hasUpdatedAt ? "updated_at" : false,
+  });
+
+  return model;
+};
+
+exports.runChildTableMigrationCron = async () => {
+  try {
+
+    const templates = await Template.findAll({
+      where: {
+        [Op.or]: [{ sys_status: null }, { sys_status: "" }],
+      },
+    });
+
+    for (const template of templates) {
+      const table_name = template.table_name;
+      const model = await defineModelIfNotExists(table_name);
+      if (!model) {
+        continue;
+      }
+
+      let fields;
+      try {
+        fields = JSON.parse(template.fields || "[]");
+      } catch (err) {
+        console.warn(`Failed to parse fields for ${table_name}:`, err);
+        continue;
+      }
+
+      const tableFields = fields.filter(
+        field => field.type === "table" || field.formType === "Table"
+      );
+
+      if (!tableFields.length) {
+        continue;
+      }
+
+      const sanitizeColumnName = (name) =>
+        name
+          .toLowerCase()
+          .replace(/[^a-z0-9_]/gi, "_")
+          .replace(/_+/g, "_")
+          .replace(/^_+|_+$/g, "")
+          .slice(0, 63);
+
+      for (const field of tableFields) {
+        if (!field.name || !field.tableHeaders || field.tableHeaders.length === 0) {
+          continue;
+        }
+
+        const childTableName = sanitizeColumnName(`${table_name}_${field.name}`);
+        const parentKey = `${table_name}_id`;
+
+        const fullFields = {
+          [parentKey]: {
+            type: Sequelize.INTEGER,
+            allowNull: false,
+            references: { model: table_name, key: "id" },
+            onDelete: "CASCADE",
+          },
+          created_at: { type: Sequelize.DATE, allowNull: true },
+          updated_at: { type: Sequelize.DATE, allowNull: true },
+          sys_status: {
+            type: Sequelize.STRING,
+            allowNull: true,
+            defaultValue: "active",
+          },
+        };
+
+        for (const header of field.tableHeaders) {
+          const sanitized = sanitizeColumnName(header.header);
+          const fieldType = header.fieldType?.type || "short_text";
+          fullFields[sanitized] = {
+            type: fieldType === "short_text" ? Sequelize.STRING(255) : Sequelize.TEXT,
+            allowNull: true,
+          };
+        }
+
+        const childModel = sequelize.define(childTableName, fullFields, {
+          freezeTableName: true,
+          timestamps: true,
+          underscored: true,
+        });
+
+        try {
+          await childModel.sync({ alter: true });
+        } catch (err) {
+          console.error(`Failed to sync child table ${childTableName}:`, err);
+          continue;
+        }
+
+        sequelize.models[childTableName] = childModel;
+
+        if (!model.associations[`${field.name}_children`]) {
+          model.hasMany(childModel, {
+            foreignKey: parentKey,
+            as: `${field.name}_children`,
+          });
+        }
+
+        if (!childModel.associations[`${table_name}_parent`]) {
+          childModel.belongsTo(model, {
+            foreignKey: parentKey,
+            as: `${table_name}_parent`,
+          });
+        }
+
+        await migrateOldTableFieldData(model, childModel, field, table_name, childTableName);
+      }
+    }
+
+    console.log("Child table migration cron completed.");
+  } catch (err) {
+    console.error("Error running child table migration cron:", err);
+  }
+};
+
+
+async function migrateOldTableFieldData(model, childModel, field, table_name, childTableName) {
+  const parentKey = `${table_name}_id`;
+  const parentRows = await model.findAll({
+  attributes: { exclude: ['createdAt', 'updatedAt'] }
+});
+
+
+  const sanitizeColumnName = (name) => {
+    return name
+      .toLowerCase()
+      .replace(/[^a-z0-9_]/gi, "_")
+      .replace(/_+/g, "_")
+      .replace(/^_+|_+$/g, "");
+  };
+
+  for (const parent of parentRows) {
+    const parentId = parent.id;
+    const existingChildren = await childModel.count({ where: { [parentKey]: parentId } });
+
+    if (existingChildren > 0) {
+      continue;
+    }
+
+    const rawTableData = parent.get(field.name);
+
+    if (
+      !rawTableData ||
+      rawTableData === "[]" ||
+      rawTableData === "{}" ||
+      (typeof rawTableData === "object" && Object.keys(rawTableData).length === 0)
+    ) {
+      continue;
+    }
+
+    let parsedRows;
+    try {
+      parsedRows = typeof rawTableData === "string"
+        ? JSON.parse(rawTableData)
+        : rawTableData;
+    } catch (err) {
+      console.warn(`Invalid JSON in field '${field.name}' for row ID ${parentId}`, err);
+      continue;
+    }
+
+    if (!Array.isArray(parsedRows) || parsedRows.length === 0) {
+      continue;
+    }
+
+    const nonEmptyRows = parsedRows.filter(obj =>
+      Object.values(obj).some(val =>
+        val !== null && val !== undefined && val.toString().trim() !== ""
+      )
+    );
+
+    if (nonEmptyRows.length === 0) {
+      continue;
+    }
+
+    const rowsToInsert = [];
+
+    for (const row of nonEmptyRows) {
+      const insertRow = {};
+      for (const header of field.tableHeaders || []) {
+        const sanitized = sanitizeColumnName(header.header);
+        insertRow[sanitized] = row[header.header] ?? null;
+      }
+
+      insertRow[parentKey] = parentId;
+      insertRow.sys_status = "active";
+      rowsToInsert.push(insertRow);
+    }
+
+    try {
+      if (rowsToInsert.length > 0) {
+        await childModel.bulkCreate(rowsToInsert, { ignoreDuplicates: true });
+        console.log(`Inserted ${rowsToInsert.length} rows into ${childTableName} for parent ID ${parentId}`);
+      }
+    } catch (err) {
+      console.error(`Failed inserting into ${childTableName} for parent ID ${parentId}:`, err);
+    }
+  }
+}
+
+
 //cron for FSL_PF
 exports.runDailyAlertCronFSL_PF = async () => {
     try {
