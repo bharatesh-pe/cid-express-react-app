@@ -659,10 +659,10 @@ exports.runDailyAlertCronAP = async () => {
             type: Sequelize.DataTypes.STRING,
             allowNull: true,
             },
-            publickey: {
-                type: Sequelize.DataTypes.STRING,
-                allowNull: true,
-            },
+            // publickey: {
+            //     type: Sequelize.DataTypes.STRING,
+            //     allowNull: true,
+            // },
         };
 
         const EQAPmodelAttributes = {
@@ -1296,10 +1296,10 @@ exports.runDailyAlertCronFSL_PF = async () => {
             created_at: { type: Sequelize.DataTypes.DATE, allowNull: false },
             updated_at: { type: Sequelize.DataTypes.DATE, allowNull: false },
             created_by: { type: Sequelize.DataTypes.STRING, allowNull: true },
-            publickey: {
-                type: Sequelize.DataTypes.STRING,
-                allowNull: true,
-            },
+            // publickey: {
+            //     type: Sequelize.DataTypes.STRING,
+            //     allowNull: true,
+            // },
         };
 
         for (const field of schema) {
@@ -1667,10 +1667,10 @@ exports.runDailyAlertCronAccused = async () => {
             type: Sequelize.DataTypes.STRING,
             allowNull: true,
             },
-            publickey: {
-                type: Sequelize.DataTypes.STRING,
-                allowNull: true,
-            },
+            // publickey: {
+            //     type: Sequelize.DataTypes.STRING,
+            //     allowNull: true,
+            // },
         };
   
         for (const field of schema) {
@@ -1852,10 +1852,10 @@ exports.runDailyAlertCronPTHearing = async () => {
             type: Sequelize.DataTypes.STRING,
             allowNull: true,
             },
-            publickey: {
-                type: Sequelize.DataTypes.STRING,
-                allowNull: true,
-            },
+            // publickey: {
+            //     type: Sequelize.DataTypes.STRING,
+            //     allowNull: true,
+            // },
         };
 
         for (const field of schema) {
@@ -2367,10 +2367,10 @@ exports.runDailyAlertCronCourtStay = async () => {
             type: Sequelize.DataTypes.STRING,
             allowNull: true,
             },
-            publickey: {
-                type: Sequelize.DataTypes.STRING,
-                allowNull: true,
-            },
+            // publickey: {
+            //     type: Sequelize.DataTypes.STRING,
+            //     allowNull: true,
+            // },
         };
 
         for (const field of schema) {
@@ -2499,10 +2499,10 @@ exports.runDailyAlertCronPetition = async () => {
             type: Sequelize.DataTypes.STRING,
             allowNull: true,
             },
-            publickey: {
-                type: Sequelize.DataTypes.STRING,
-                allowNull: true,
-            },
+            // publickey: {
+            //     type: Sequelize.DataTypes.STRING,
+            //     allowNull: true,
+            // },
         };
 
         for (const field of schema) {
