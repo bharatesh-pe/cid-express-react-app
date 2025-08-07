@@ -20,6 +20,7 @@ import "react-toastify/dist/ReactToastify.css";
 import InsertDriveFileIcon from "@mui/icons-material/InsertDriveFile";
 import pdfIcon from "../Images/pdfIcon.svg";
 import docIcon from "../Images/docIcon.svg";
+import docxIcon from "../Images/docxIcon.svg";
 import xlsIcon from "../Images/xlsIcon.svg";
 import pptIcon from "../Images/pptIcon.svg";
 import jpgIcon from "../Images/jpgIcon.svg";
@@ -32,7 +33,7 @@ import WestIcon from '@mui/icons-material/West';
 import { Tabs, Tab } from '@mui/material';
 import { CircularProgress } from "@mui/material";
 
-const EqProgressReport = ({ templateName, headerDetails, rowId, options, selectedRowData, backNavigation }) => {
+const EqProgressReport = ({ templateName, headerDetails, rowId, options, selectedRowData, backNavigation, showMagazineView }) => {
 
   useEffect(() => {
     const fetchData = async () => {
@@ -243,7 +244,7 @@ const EqProgressReport = ({ templateName, headerDetails, rowId, options, selecte
             field.name !== "field_section"
         );
 
-        const briefFactField = response.data.fields.find((f) => f.name === "field_breif_fact");
+        const briefFactField = response.data.fields.find((f) => f.name === "field_brief_fact");
         const policeStationField = response.data.fields.find((f) => f.name === "field_investigation_carried_out_by_the_police_station");
 
         if (briefFactField && !aoOnlyFields.includes(briefFactField)) aoOnlyFields.push(briefFactField);
@@ -1641,6 +1642,7 @@ const EqProgressReport = ({ templateName, headerDetails, rowId, options, selecte
         return <img src={xlsIcon} />;
       case "csv":
       case "docx":
+        return <img src={docxIcon} />;
       case "doc":
         return <img src={docIcon} />;
       case "ppt":
@@ -1768,7 +1770,7 @@ const EqProgressReport = ({ templateName, headerDetails, rowId, options, selecte
     let normalData = {};
 
     const allowedFields = [
-      "field_breif_fact",
+      "field_brief_fact",
       "field_investigation_carried_out_by_the_police_station"
     ];
 
@@ -2459,14 +2461,12 @@ const EqProgressReport = ({ templateName, headerDetails, rowId, options, selecte
   return (
     <>
     <Box sx={{  overflow: 'auto' , height: '100vh'}}>
-        <Box pb={1} px={1} sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'start',}}>
+        <Box py={1} px={2} sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'start',}}>
             <Box
                 sx={{
                 width: '100%',
-                p: 2,
                 bgcolor: 'background.paper',
                 borderRadius: 2,
-                boxShadow: 2,
                 zIndex: 1,
                 }}
             >
@@ -2537,22 +2537,22 @@ const EqProgressReport = ({ templateName, headerDetails, rowId, options, selecte
                                 <SearchIcon sx={{ color: "#475467" }} />
                                 </InputAdornment>
                             ),
-                            endAdornment: (
-                                <Box sx={{ display: "flex", alignItems: "center" }}>
-                                <IconButton
-                                    sx={{ px: 1, borderRadius: 0 }}
-                                    onClick={() => handleOthersFilter(selectedOtherTemplate)}
-                                >
-                                    <FilterListIcon sx={{ color: "#475467" }} />
-                                </IconButton>
-                                </Box>
-                            ),
+                            // endAdornment: (
+                            //     <Box sx={{ display: "flex", alignItems: "center" }}>
+                            //     <IconButton
+                            //         sx={{ px: 1, borderRadius: 0 }}
+                            //         onClick={() => handleOthersFilter(selectedOtherTemplate)}
+                            //     >
+                            //         <FilterListIcon sx={{ color: "#475467" }} />
+                            //     </IconButton>
+                            //     </Box>
+                            // ),
                             }}
                             onInput={(e) => setOtherSearchValue(e.target.value)}
                             value={otherSearchValue}
                             id="tableSearch"
                             size="small"
-                            placeholder="Search anything"
+                            placeholder="Search"
                             variant="outlined"
                             className="profileSearchClass"
                             onKeyDown={(e) => {
@@ -2586,7 +2586,7 @@ const EqProgressReport = ({ templateName, headerDetails, rowId, options, selecte
                                 textAlign: { xs: 'left', sm: 'right' },
                             }}
                             >
-                            Clear Filter
+                            Clear Search
                             </Typography>
                         )}
                         </Box>
@@ -2649,6 +2649,16 @@ const EqProgressReport = ({ templateName, headerDetails, rowId, options, selecte
                         >
                             Submit
                         </Button>
+                            {/* {
+                                showMagazineView && 
+                                <Button
+                                    onClick={()=>showMagazineView(false)}
+                                    sx={{height: "38px", textTransform: 'none'}}
+                                    className="whiteBorderedBtn"
+                                >
+                                    Case Docket
+                                </Button>
+                            } */}
                         </Box>
                     </Box>
                     </Box>

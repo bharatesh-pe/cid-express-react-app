@@ -65,6 +65,8 @@ const UserManagement = () => {
     const [totalPage, setTotalPage] = useState(0);
     const [totalRecord, setTotalRecord] = useState(0);
 
+    const [filterParams, setFilterParams] = useState({});
+
   const columns = [
     {
       field: "selection",
@@ -188,11 +190,7 @@ const UserManagement = () => {
     ]
 
   const totalPages = Math.ceil(users.length / pageSize);
-  const currentPageRows = users.slice(
-    currentPage * pageSize,
-    (currentPage + 1) * pageSize
-  );
-
+  const currentPageRows = users; 
     const tableCellRender = (params, key) => {
     
         var value = params?.row?.[key]
@@ -286,7 +284,7 @@ const UserManagement = () => {
 
     useEffect(() => {
         fetchUsers(paginationCount);
-    }, [paginationCount, forceTableLoad]);
+    }, [paginationCount]);
 
     const handleClear = ()=>{
         setSearchValue('');
@@ -301,6 +299,7 @@ const UserManagement = () => {
             division: "",
             department: "",
         });
+        fetchUsers(1);
         setForceTableLoad((prev) => !prev);
     }
 
@@ -359,19 +358,22 @@ const UserManagement = () => {
       setLoading(false);
     }
   };
+  
   const fetchUsers = async (page) => {
 
     console.log("newUser",newUser)
     var filters = {};
-    if (newUser.name) filters.name = newUser.name;
-    if (newUser.kgid) filters.kgid = newUser.kgid;
-    if (newUser.role) filters.role_id = newUser.role;
-    if (newUser.mobile) filters.mobile = newUser.mobile;
-    if (newUser.department) filters.department_id = newUser.department;
-    if (newUser.division) filters.division_id = newUser.division;
-    if (newUser.designation) filters.designation_id = newUser.designation;
-    if (newUser.dev_status !== undefined)
-    filters.dev_status = newUser.dev_status;
+    if (modalTitle === "Set Filters") {
+      if (newUser.name) filters.name = newUser.name;
+      if (newUser.kgid) filters.kgid = newUser.kgid;
+      if (newUser.role) filters.role_id = newUser.role;
+      if (newUser.mobile) filters.mobile = newUser.mobile;
+      if (newUser.department) filters.department_id = newUser.department;
+      if (newUser.division) filters.division_id = newUser.division;
+      if (newUser.designation) filters.designation_id = newUser.designation;
+      if (newUser.dev_status !== undefined)
+      filters.dev_status = newUser.dev_status;
+    }
 
     var current_page = paginationCount;
     var payload = {
@@ -669,7 +671,7 @@ const UserManagement = () => {
           className: "toast-success",
         });
         setSelectedUsers([]);
-        fetchUsers();
+        fetchUsers(1);
         setModalTitle("Add User");
         setIsModalOpen(false);
         setNewUser({
@@ -804,15 +806,15 @@ const UserManagement = () => {
         className: "toast-success",
       });
 
-      if (newUser.id) {
-        setUsers(
-          users.map((user) => (user.id === newUser.id ? newUser : user))
-        );
-        setUserUpdatedFlag(true);
-      } else {
-        setUsers([...users, { ...newUser, id: users.length + 1 }]);
-        setUserUpdatedFlag(false);
-      }
+      // if (newUser.id) {
+      //   setUsers(
+      //     users.map((user) => (user.id === newUser.id ? newUser : user))
+      //   );
+      //   setUserUpdatedFlag(true);
+      // } else {
+      //   setUsers([...users, { ...newUser, id: users.length + 1 }]);
+      //   setUserUpdatedFlag(false);
+      // }
 
       setNewUser({
         name: "",
@@ -828,7 +830,7 @@ const UserManagement = () => {
       });
 
       setSelectedUsers([]);
-      fetchUsers();
+      fetchUsers(1);
       setIsModalOpen(false);
       setModalTitle("Add User");
     } catch (err) {
@@ -1159,7 +1161,7 @@ const UserManagement = () => {
           userIds.includes(user.id) ? { ...user, dev_status: newStatus } : user
         )
       );
-      fetchUsers();
+      fetchUsers(1);
     } catch (err) {
       let errorMessage =
         err.message || "Something went wrong. Please try again.";
@@ -1533,7 +1535,7 @@ const UserManagement = () => {
                 value={searchValue}
                 id="tableSearch"
                 size="small"
-                placeholder="Search anything"
+                placeholder="Search"
                 variant="outlined"
                 className="profileSearchClass"
                 onKeyDown={(e) => {

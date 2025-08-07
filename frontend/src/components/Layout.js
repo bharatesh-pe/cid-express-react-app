@@ -21,6 +21,7 @@ import {
   MenuItem,
   Tooltip,
   IconButton,
+  TextField,
 } from "@mui/material";
 
 import { ExpandLess, ExpandMore } from "@mui/icons-material";
@@ -39,6 +40,11 @@ import Navbar from "./navbar";
 import HomeIcon from '@mui/icons-material/Home';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import CloseIcon from '@mui/icons-material/Close';
+
+import video1 from "../videos/UI_Introduction.mp4"
+import video2 from "../videos/UI_All_Cases.mp4"
+import video3 from "../videos/UI_FIR Form.mp4"
+import api from "../services/api";
 
 const icons = {
   dashboard: (
@@ -196,14 +202,73 @@ const Layout = ({ children }) => {
 
     const [videoOpen, setVideoOpen] = useState(false);
 
-    const handleVideoOpen = () => setVideoOpen(true);
+    const [videos, setVideos] = useState({});
+    const [searchQuery, setSearchQuery] = useState("");
+
+    const REACT_APP_SERVER_URL_FILE_VIEW = process.env.REACT_APP_SERVER_URL_FILE_VIEW;
+
+    const handleVideoOpen = async ()=>{
+
+        const pathname = window.location.pathname;
+        const segments = pathname.split('/').filter(Boolean);
+        const lastPath = segments[segments.length - 1];
+
+        const payload = {
+            data : [lastPath]
+        }
+
+        try {
+            setLoading(true);
+
+            const getAllVideosResponse = await api.post("/templateData/gettingAllHelpVideos", payload);
+            setLoading(false);
+
+            if (getAllVideosResponse && getAllVideosResponse.data && getAllVideosResponse.success) {
+
+                setVideos(getAllVideosResponse.data);
+                setVideoOpen(true);
+            
+            } else {
+                setVideos({});
+                const errorMessage = getAllVideosResponse?.data?.message || "Failed to get help videos.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+
+        } catch (error) {
+            setVideos({});
+            setLoading(false);
+
+            toast.error(error?.response?.data?.message || "Please Try Again!", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+        }
+    }
+
     const handleVideoClose = () => setVideoOpen(false);
 
     const [userOverallDesignation, setUserOverallDesignation] = useState(localStorage.getItem("userOverallDesignation") ? JSON.parse(localStorage.getItem("userOverallDesignation")) : []);
     const [openUserDesignationDropdown, setOpenUserDesignationDropdown] = useState(false);
 
+
+    const isCDR = localStorage.getItem("designation_name") === "CDR" ? true : false;
         
-    const tabLabels = [
+    const allTabs = [
         { label: "UI Module", route: "/case/ui_case", key: "ui_case" },
         {   label: "Court Module", 
             route: "/case/pt_case", 
@@ -229,8 +294,62 @@ const Layout = ({ children }) => {
         // },
     ];
 
-    const selectedTab = useRef(tabLabels[0]);
-    const selectedActiveKey = useRef(tabLabels[0]?.key);
+    const userPermissions = localStorage.getItem("user_permissions") ? JSON.parse(localStorage.getItem("user_permissions")) : {};
+    const sortedTabs = [];
+
+    if(userPermissions?.[0]){
+        const permissionObj = userPermissions?.[0];
+
+        if(permissionObj?.ui_case === true){
+            sortedTabs.push(
+                { label: "UI Module", route: "/case/ui_case", key: "ui_case", name: "UI Case" }
+            )
+        }
+
+        if(permissionObj?.pt_case === true){
+            sortedTabs.push(
+                {   
+                    label: "Court Module", 
+                    route: "/case/pt_case", 
+                    key: "pt_case",
+                    options : [
+                        {label: "Trial Courts", route: "/case/pt_case", key: "pt_trail_case", actionKey: "pt_trail_case", name: "PT Case"},
+                        {label: "Other Courts", route: "/case/pt_case", key: "pt_other_case", actionKey: "pt_other_case", name: "PT Case"},
+                    ]
+                }
+            )
+        }
+
+        if(permissionObj?.crime_intelligence === true){
+            sortedTabs.push(
+                { label: "Crime Intelligence", route: "/case/ci_case", key: "crime_intelligence" }
+            )
+        }
+        
+        if(permissionObj?.enquiry === true){
+            sortedTabs.push(
+                { label: "Enquiries", route: "/case/enquiry", key: "eq_case", name: "Enquiries" }
+            )
+        }
+        
+        if(permissionObj?.crime_analytics === true){
+            sortedTabs.push(
+                { label: "Crime Analytics", route: "/iframe", key: "crime_analytics" }
+            )
+        }
+
+        if(permissionObj?.repos_case === true){
+            sortedTabs.push(
+                { label: "Orders & Repository", route: "/case/repos_case", key: "repos_case" }
+            )
+        }
+
+    }
+
+    const tabLabels = isCDR ? [{ label: "CDR", route: "/case/cdr_case", key: "ui_case" }] : sortedTabs;
+
+    const selectedTab = useRef(tabLabels?.[0]);
+    const selectedActiveKey = useRef(tabLabels?.[0]?.key);
 
     const gettingTabKey = navbarKey || localStorage.getItem("navbarKey") || null;
     
@@ -527,6 +646,52 @@ const Layout = ({ children }) => {
         setLoading(false);
     }
   };
+
+  const isCDRPage = localStorage.getItem("designation_name") === "CDR" ? true : false;
+
+  useEffect(() => {
+    if (isCDRPage && window.location.pathname !== "/case/cdr_case") {
+      navigate("/case/cdr_case", { replace: true });
+    }
+  }, [isCDRPage, navigate]);
+
+    const filteredVideos = Object.entries(videos).flatMap(([moduleKey, videoList]) =>
+        videoList
+            .filter((videoUrl) =>
+                videoUrl.split("/").pop().toLowerCase().includes(searchQuery)
+            )
+            .map((videoUrl, idx) => {
+                const fileName = videoUrl.split("/").pop();
+
+                return (
+                    <div
+                        key={`${moduleKey}-${idx}`}
+                        style={{
+                            border: '1px solid #ccc',
+                            borderRadius: '8px',
+                            padding: '8px',
+                            boxShadow: '0 2px 6px rgba(0, 0, 0, 0.1)',
+                            backgroundColor: '#fafafa',
+                            overflow: 'hidden',
+                        }}
+                    >
+                        <video
+                            src={`${REACT_APP_SERVER_URL_FILE_VIEW}${videoUrl}`}
+                            width="100%"
+                            height="200"
+                            controls
+                            preload="metadata"
+                            style={{ borderRadius: "4px" }}
+                        />
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 1 }}>
+                            <Typography variant="body2" sx={{ wordBreak: 'break-all' }}>
+                                {fileName}
+                            </Typography>
+                        </Box>
+                    </div>
+                );
+            })
+    );
 
   return (
     <Box>
@@ -926,7 +1091,7 @@ const Layout = ({ children }) => {
                     </Box>
 
                     <Box onClick={handleLogout} sx={{ cursor: "pointer" }}>
-                        <svg
+                        {/* <svg
                         width="20"
                         height="20"
                         viewBox="0 0 20 20"
@@ -940,7 +1105,35 @@ const Layout = ({ children }) => {
                             strokeLinecap="round"
                             strokeLinejoin="round"
                         />
-                        </svg>
+                        </svg> */}
+                      <svg 
+                        fill="#1D2939" 
+                        stroke="#1D2939" 
+                        stroke-width="14" 
+                        stroke-linecap="round" 
+                        stroke-linejoin="round" 
+                        height="20px" 
+                        width="20px" 
+                        version="1.1" 
+                        id="Capa_1" 
+                        xmlns="http://www.w3.org/2000/svg"  
+                        viewBox="0 0 471.2 471.2"
+                      >
+                        <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+                        <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+                        <g id="SVGRepo_iconCarrier">
+                          <g>
+                            <g>
+                              <path d="M227.619,444.2h-122.9c-33.4,0-60.5-27.2-60.5-60.5V87.5c0-33.4,27.2-60.5,60.5-60.5h124.9c7.5,0,13.5-6,13.5-13.5 
+                                      s-6-13.5-13.5-13.5h-124.9c-48.3,0-87.5,39.3-87.5,87.5v296.2c0,48.3,39.3,87.5,87.5,87.5h122.9c7.5,0,13.5-6,13.5-13.5 
+                                      S235.019,444.2,227.619,444.2z"/>
+                              <path d="M450.019,226.1l-85.8-85.8c-5.3-5.3-13.8-5.3-19.1,0c-5.3,5.3-5.3,13.8,0,19.1l62.8,62.8h-273.9
+                                      c-7.5,0-13.5,6-13.5,13.5s6,13.5,13.5,13.5h273.9l-62.8,62.8c-5.3,5.3-5.3,13.8,0,19.1c2.6,2.6,6.1,4,9.5,4
+                                      s6.9-1.3,9.5-4l85.8-85.8C455.319,239.9,455.319,231.3,450.019,226.1z"/>
+                            </g>
+                          </g>
+                        </g>
+                      </svg>
                     </Box>
 
                 </Box>
@@ -1076,6 +1269,8 @@ const Layout = ({ children }) => {
                                         localStorage.setItem("getDataBasesOnUsers",JSON.stringify(responseData.getDataBasesOnUsers));
                                     }else{
                                         localStorage.setItem("allowedUserIds",JSON.stringify(responseData.allowedUserIds));
+                                        localStorage.setItem("allowedDepartmentIds",JSON.stringify(responseData.allowedDepartmentIds));
+                                        localStorage.setItem("allowedDivisionIds",JSON.stringify(responseData.allowedDivisionIds));
                                         localStorage.setItem("getDataBasesOnUsers",JSON.stringify(responseData.getDataBasesOnUsers));
                                     }
 
@@ -1135,19 +1330,28 @@ const Layout = ({ children }) => {
         scroll="paper"
     >
         <DialogTitle sx={{ m: 0, p: 2 }}>
-            Videos
-            <IconButton
-                aria-label="close"
-                onClick={handleVideoClose}
-                sx={{
-                    position: 'absolute',
-                    right: 8,
-                    top: 8,
-                    color: (theme) => theme.palette.grey[500],
-                }}
-            >
-                <CloseIcon />
-            </IconButton>
+            <Box sx={{display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
+                Videos
+                <Box sx={{display: 'flex', alignItems: 'center'}}>
+                    <TextField
+                        fullWidth
+                        variant="outlined"
+                        placeholder="Search videos..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value.toLowerCase())}
+                        sx={{ width: 300 }}
+                    />
+                    <IconButton
+                        aria-label="close"
+                        onClick={handleVideoClose}
+                        sx={{
+                            color: (theme) => theme.palette.grey[500],
+                        }}
+                    >
+                        <CloseIcon />
+                    </IconButton>
+                </Box>
+            </Box>
         </DialogTitle>
 
         <DialogContent dividers>
@@ -1157,39 +1361,19 @@ const Layout = ({ children }) => {
                     gridTemplateColumns: {
                         xs: '1fr',
                         sm: '1fr 1fr',
-                        md: '1fr 1fr 1fr',
+                        md: '1fr 1fr 1fr 1fr',
                     },
+                    mb: 3,
                     gap: 2,
                 }}
             >
-                <iframe 
-                    width="100%"
-                    height="350"
-                    src="https://www.youtube.com/embed/K4TOrB7at0Y?si=TwoP9V0PB-i1_fpV" 
-                    title="YouTube video player" 
-                    frameborder="0" 
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-                    referrerpolicy="strict-origin-when-cross-origin" 
-                    allowfullscreen>    
-                </iframe>
-                <iframe
-                    width="100%"
-                    height="350"
-                    src="https://www.youtube.com/embed/b9hBHt317mw?si=PE7AmSJ_7GHiSNIp"
-                    title="Video 2"
-                    frameBorder="0"
-                    allow="autoplay; encrypted-media"
-                    allowFullScreen
-                ></iframe>
-                <iframe
-                    width="100%"
-                    height="350"
-                    src="https://www.youtube.com/embed/wDchsz8nmbo?si=od6PA4Xdw33cZd7Y"
-                    title="Video 3"
-                    frameBorder="0"
-                    allow="autoplay; encrypted-media"
-                    allowFullScreen
-                ></iframe>
+                {filteredVideos.length > 0 ? (
+                    filteredVideos
+                ) : (
+                    <Typography variant="body1" sx={{ gridColumn: '1 / -1', textAlign: 'center', mt: 4 }}>
+                        No videos found.
+                    </Typography>
+                )}
             </Box>
         </DialogContent>
     </Dialog>

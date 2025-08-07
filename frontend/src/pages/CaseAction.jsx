@@ -659,8 +659,6 @@ const CaseActions = () => {
 
     const addNewActionData = async ()=> {
 
-        console.log(addActionFormData,"addActionFormData")
-
         if(!addActionFormData || !addActionFormData['name'] || addActionFormData['name'] === ''){
             toast.error('Please Check Action Name !',{
                 position: "top-right",
@@ -740,6 +738,7 @@ const CaseActions = () => {
     
         const payload = {
             ...addActionFormData,
+            approval_steps: addActionFormData.approval_steps ? JSON.stringify(addActionFormData.approval_steps) : null,
             icon: iconSvg,
             is_pdf: addActionFormData['is_pdf'] || false,
             permissions: addActionFormData['permissions'] ? JSON.stringify(addActionFormData['permissions']) : undefined,
@@ -1019,6 +1018,31 @@ const CaseActions = () => {
     if(tabValue !== 'template'){
         var permissionTypes = ["show", "edit"];
     }
+
+    const approvalSteps = [
+        { label: "IO", value: "IO", name: "Investigation Officer" },
+        { label: "LA", value: "LA", name: "Legal Advisor" },
+        { label: "SP", value: "SP", name: "Superintendent of Police" },
+        { label: "DIG", value: "DIG", name: "Deputy Inspector General" }
+    ];
+
+    const handleApprovalStepperClick = (stepValue) => {
+        
+        var selected = Array.isArray(addActionFormData.approval_steps)
+            ? [...addActionFormData.approval_steps]
+            : [];
+
+        if (selected.includes(stepValue)) {
+            selected = selected.filter((v) => v !== stepValue);
+        } else {
+            selected.push(stepValue);
+        }
+
+        setAddActionFormData({
+            ...addActionFormData,
+            approval_steps: selected
+        });
+    };
 
     return (
         <Box p={2} inert={loading ? true : false}>
@@ -1301,26 +1325,82 @@ const CaseActions = () => {
                                     
                                     {
                                         addActionFormData['is_approval'] && 
-                                        <Box sx={{display:'flex',flexDirection:'column',gap:'12px'}}>
+                                        <>
+                                            <Box sx={{display:'flex',flexDirection:'column',gap:'12px'}}>
+                                                <h4 className='Roboto' style={{ fontSize: '16px', fontWeight: '400', margin: 0, marginBottom:0, color: '#1D2939' }} >
+                                                    Do you want to set default value for approval items
+                                                </h4>
+                                                <Autocomplete
+                                                    id=""
+                                                    options={approvalItemsData}
+                                                    required
+                                                    getOptionLabel={(option) => option.name || ''}
+                                                    value={approvalItemsData.find((option) => option.approval_item_id === (addActionFormData && addActionFormData['approval_items'])) || null}
+                                                    onChange={(event, newValue) => handleOtherTemplateChange('approval_items', newValue?.approval_item_id)}
+                                                    renderInput={(params) =>
+                                                        <TextField
+                                                            {...params}
+                                                            className='selectHideHistory'
+                                                            label='Select Approval Items'
+                                                        />
+                                                    }
+                                                />
+                                            </Box>
                                             <h4 className='Roboto' style={{ fontSize: '16px', fontWeight: '400', margin: 0, marginBottom:0, color: '#1D2939' }} >
-                                                Do you want to set default value for approval items
+                                                Select Approval Steps
                                             </h4>
-                                            <Autocomplete
-                                                id=""
-                                                options={approvalItemsData}
-                                                required
-                                                getOptionLabel={(option) => option.name || ''}
-                                                value={approvalItemsData.find((option) => option.approval_item_id === (addActionFormData && addActionFormData['approval_items'])) || null}
-                                                onChange={(event, newValue) => handleOtherTemplateChange('approval_items', newValue?.approval_item_id)}
-                                                renderInput={(params) =>
-                                                    <TextField
-                                                        {...params}
-                                                        className='selectHideHistory'
-                                                        label='Select Approval Items'
-                                                    />
-                                                }
-                                            />
-                                        </Box>
+                                            <Box sx={{ display: "flex", justifyContent: 'center', alignItems: 'center' }}>
+                                                {approvalSteps.map((step, index) => {
+                                                    const selected = Array.isArray(addActionFormData.approval_steps)
+                                                        ? addActionFormData.approval_steps.includes(step.value)
+                                                        : false;
+
+                                                    var findIndex = Array.isArray(addActionFormData.approval_steps) ? addActionFormData.approval_steps.indexOf(step.value) : -1;
+
+                                                    return (
+                                                        <React.Fragment key={step.value}>
+                                                            <Button
+                                                                variant="contained"
+                                                                onClick={() => handleApprovalStepperClick(step.value)}
+                                                                sx={{
+                                                                    backgroundColor: selected ? "#27ae60" : "#f0f0f0",
+                                                                    color: selected ? "#fff" : "#333",
+                                                                    minWidth: 60,
+                                                                    borderRadius: '50%',
+                                                                    padding: '16px',
+                                                                    fontWeight: 600,
+                                                                    boxShadow: selected ? "0 6px 12px rgba(39, 174, 96, 0.4)" : "0 2px 6px rgba(0, 0, 0, 0.1)",
+                                                                    transition: "all 0.3s ease-in-out",
+                                                                    transform: selected ? "translateY(-2px)" : "none",
+                                                                    "&:hover": {
+                                                                        backgroundColor: selected ? "#219150" : "#dcdcdc",
+                                                                        boxShadow: selected ? "0 8px 16px rgba(39, 174, 96, 0.5)" : "0 4px 10px rgba(0, 0, 0, 0.15)",
+                                                                        transform: "translateY(-3px)",
+                                                                    }
+                                                                }}
+                                                            >
+                                                                {findIndex === -1 ? step.label : findIndex + 1}
+                                                            </Button>
+
+                                                            <Box px={2}>
+                                                                <div className="investigationStepperTitle">
+                                                                    {step?.name || ""}
+                                                                </div>
+                                                            </Box>
+                                                            
+                                                            {index < approvalSteps.length - 1 && (
+                                                                <Box
+                                                                    sx={{
+                                                                        width: 100,
+                                                                    }}
+                                                                    className="divider"
+                                                                />
+                                                            )}
+                                                        </React.Fragment>
+                                                    );
+                                                })}
+                                            </Box>
+                                        </>
                                     }
                                     <div className='divider' style={{margin: '0'}}></div>
 

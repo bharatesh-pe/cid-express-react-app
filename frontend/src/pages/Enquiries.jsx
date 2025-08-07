@@ -58,6 +58,7 @@ import "react-toastify/dist/ReactToastify.css";
 import InsertDriveFileIcon from "@mui/icons-material/InsertDriveFile";
 import pdfIcon from "../Images/pdfIcon.svg";
 import docIcon from "../Images/docIcon.svg";
+import docxIcon from "../Images/docxIcon.svg";
 import xlsIcon from "../Images/xlsIcon.svg";
 import pptIcon from "../Images/pptIcon.svg";
 import jpgIcon from "../Images/jpgIcon.svg";
@@ -213,6 +214,9 @@ const Enquiries = () => {
   const [monthwiseTotalPage, setMonthwiseTotalPage] = useState(1);
   const [monthwisePaginationCount, setMonthwisePaginationCount] = useState(PageSize);
   const [monthwiseCurrentPage, setMonthwiseCurrentPage] = useState(1); // renamed
+  const [extensionFormFields, setExtensionFormFields] = useState([]);
+  const [showExtensionFormDialog, setShowExtensionFormDialog] = useState(false);
+  const [extensionFormData, setExtensionFormData] = useState({});
 
 
   const handleMonthwisePagination = (page) => {
@@ -377,7 +381,7 @@ const Enquiries = () => {
     const hoverTableOptionsRef = useRef([]);
 
     useEffect(() => {
-        var filteredActions =  hoverTableOptions?.filter(item => (!item?.field && item?.table) || item?.viewAction) || [];
+        var filteredActions =  hoverTableOptions || [];
         hoverTableOptionsRef.current = filteredActions;
     }, [hoverTableOptions]);
 
@@ -2813,7 +2817,7 @@ const accusedUpdateTable = async (data, table_name) => {
                     cancelButtonText: "UI Case",
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        showActionsOptionsTemplate("cid_pending_trail");
+                        showActionsOptionsTemplate("cid_pending_trial");
                     } else {
                         natureOfDisposalSysStatus("eq_case")
                     }
@@ -3218,51 +3222,122 @@ const handleCheckboxDemerge = (event, row) => {
                         return new Date(parsed).toLocaleDateString("en-GB");
                     };
   
-                    const updatedTableData = data.map((field, index) => {
-                      const updatedField = {};
+                      const updatedTableData = data.map((field, index) => {
+                        const updatedField = {};
+                        Object.keys(field).forEach((key) => {
+                          if (field[key] && key !== 'id' && isValidISODate(field[key])) {
+                            updatedField[key] = formatDate(field[key]);
+                          } else {
+                            updatedField[key] = field[key];
+                          }
+                        });
+                        console.log("Updated Field:", updatedField);
 
-                      Object.keys(field).forEach((key) => {
-                        if (field[key] && key !== 'id' && isValidISODate(field[key])) {
-                          updatedField[key] = formatDate(field[key]);
-                        } else {
-                          updatedField[key] = field[key];
+                        const isSysStatusNotDone = field["sys_status"] && field["sys_status"].toLowerCase() !== "Completed" || field["sys_status"].toLowerCase() !== "Closed" && field["sys_status"].toLowerCase() !== "Disposal";
+                        const createdAtDate = new Date(field["created_at"]);
+                        const currentDate = new Date();
+                        const extensionDate = field["field_extension_date"] ? new Date(field["field_extension_date"]) : null;
+                        const diffTime = currentDate - createdAtDate;
+                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                        const designation = localStorage.getItem("designation_name") || "";
+                        const designationUpper = designation.toUpperCase();
+                        const fieldUpdatedByUpper = (field["field_extension_updated_by"] || "").toUpperCase();
+
+                        const isOlderThan90Days = diffDays > 90 && diffDays <= 180;
+                        const isOlderThan180to360Days = diffDays > 180 && diffDays <= 360;
+                        const isOlderThan360Days = diffDays > 360;
+
+                        const isUpdatedByDIG = fieldUpdatedByUpper.includes("DIG");
+                        const isUpdatedByADG = fieldUpdatedByUpper.includes("ADG");
+                        const isUpdatedByDGP = fieldUpdatedByUpper.includes("DGP");
+
+                        const isUpdatedByOther = !isUpdatedByDIG && !isUpdatedByADG && !isUpdatedByDGP;
+
+                        let isDisabledForOthers = false;
+                        if (isSysStatusNotDone) {
+                          if (!extensionDate) {
+                            isDisabledForOthers = diffDays > 90;
+                          } else {
+                            const isPastExtension = currentDate > extensionDate;
+                            if (
+                              isUpdatedByDIG &&
+                              isOlderThan90Days &&
+                              field["field_extension_date"] &&
+                              field["field_extension_remark"]
+                            ) {
+                              isDisabledForOthers = false;
+                            } else if (
+                              isUpdatedByADG &&
+                              isOlderThan180to360Days &&
+                              field["field_extension_date"] &&
+                              field["field_extension_remark"]
+                            ) {
+                              isDisabledForOthers = false;
+                            } else if (
+                              isUpdatedByDGP &&
+                              isOlderThan360Days &&
+                              field["field_extension_date"] &&
+                              field["field_extension_remark"]
+                            ) {
+                              isDisabledForOthers = false;
+                            } else {
+                              isDisabledForOthers = isPastExtension || isUpdatedByOther;
+                            }
+                          }
                         }
-                      });
 
-                      const isNatureOfDisposalEmpty = !field["field_nature_of_disposal"];
-                      const createdAtDate = new Date(field["created_at"]);
-                      const currentDate = new Date();
-                      const extensionDate = field["field_extension_date"] ? new Date(field["field_extension_date"]) : null;
-                      const diffTime = currentDate - createdAtDate;
-                      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                      const designation = localStorage.getItem("designation_name") || "";
-                      const isOlderThan90Days = diffDays > 90 && diffDays <= 180;
-                      const isOlderThan180to360Days = diffDays > 180 && diffDays <= 360;
-                      const isOlderThan360Days = diffDays > 360;
 
-                      let isDisabledForOthers = false;
-                      if (isNatureOfDisposalEmpty) {
-                        if (!extensionDate) {
-                          isDisabledForOthers = diffDays > 90;
-                        } else {
-                          const isPastExtension = currentDate > extensionDate;
-                          isDisabledForOthers = isPastExtension;
+
+                        let isDIGEligibleForCaseExtension = false;
+                        let isADGEligibleForCaseExtension = false;
+                        let isDGPEligibleForCaseExtension = false;
+
+                        if (
+                          isSysStatusNotDone &&
+                          isOlderThan90Days &&
+                          designationUpper.includes("DIG") &&
+                          (
+                            (!extensionDate) ||
+                            (!isUpdatedByDIG)
+                          )
+                        ) {
+                          isDIGEligibleForCaseExtension = true;
+                        } else if (
+                          isSysStatusNotDone &&
+                          isOlderThan180to360Days &&
+                          designationUpper.includes("ADG") &&
+                          (
+                            (!extensionDate) ||
+                            (!isUpdatedByADG)
+                          )
+                        ) {
+                          isADGEligibleForCaseExtension = true;
+                        } else if (
+                          isSysStatusNotDone &&
+                          isOlderThan360Days &&
+                          designationUpper.includes("DGP") &&
+                          (
+                            (!extensionDate) ||
+                            (!isUpdatedByDGP)
+                          )
+                        ) {
+                          isDGPEligibleForCaseExtension = true;
                         }
-                      }
-
-                      const isDIGEligibleForCaseExtension = isNatureOfDisposalEmpty && isOlderThan90Days && designation.includes("DIG") && (!extensionDate || currentDate > extensionDate);
-                      const isADGEligibleForCaseExtension = isNatureOfDisposalEmpty && isOlderThan180to360Days && designation.includes("ADG") && (!extensionDate || currentDate > extensionDate);
-                      const isDGPEligibleForCaseExtension = isNatureOfDisposalEmpty && isOlderThan360Days && designation.includes("DGP") && (!extensionDate || currentDate > extensionDate);
 
                       let extraHoverOptions = [];
 
+                      console.log("isDIGEligibleForCaseExtension:", isDIGEligibleForCaseExtension);
+                      console.log("isADGEligibleForCaseExtension:", isADGEligibleForCaseExtension);
+                      console.log("isDGPEligibleForCaseExtension:", isDGPEligibleForCaseExtension);
+
                       if (isDIGEligibleForCaseExtension || isADGEligibleForCaseExtension || isDGPEligibleForCaseExtension) {
                         extraHoverOptions.unshift({
-                          name: "Case Extension",
+                          name: "Case Extension Approve",
                           onclick: (selectedRow) => {
                             const baseDate = dayjs(field["created_at"]);
                             let minDate = null;
                             let maxDate = null;
+                            let extensionDateValue = field["field_extension_date"] || null;
 
                             if (isDIGEligibleForCaseExtension) {
                               minDate = baseDate.add(90, "day");
@@ -3277,10 +3352,49 @@ const handleCheckboxDemerge = (event, row) => {
 
                             setFormData({
                               id: selectedRow.id,
-                              minDate: minDate?.toISOString(),
-                              maxDate: maxDate?.toISOString(),
+                              minDate: minDate ? minDate.toISOString() : null,
+                              maxDate: maxDate ? maxDate.toISOString() : null,
+                              field_extension_date: extensionDateValue,
+                              field_extension_remark: field["field_extension_remark"] || "",
                             });
 
+                            setShowCaseExtensionModal(true);
+                          },
+                        });
+                      }
+                      else if (
+                        isDisabledForOthers &&
+                        !(
+                          designationUpper.includes("DIG") ||
+                          designationUpper.includes("ADG") ||
+                          designationUpper.includes("DGP")
+                        )
+                      ) {
+                        extraHoverOptions.unshift({
+                          name: "Case Extension Request",
+                          onclick: (selectedRow) => {
+                            const baseDate = dayjs(field["created_at"]);
+                            let minDate = null;
+                            let maxDate = null;
+                            let extensionDateValue = field["field_extension_date"] || null;
+                            if (isOlderThan90Days && !isOlderThan180to360Days && !isOlderThan360Days) {
+                              minDate = baseDate.add(90, "day");
+                              maxDate = baseDate.add(180, "day");
+                            } else if (isOlderThan180to360Days && !isOlderThan360Days) {
+                              minDate = baseDate.add(180, "day");
+                              maxDate = baseDate.add(360, "day");
+                            } else if (isOlderThan360Days) {
+                              minDate = baseDate.add(361, "day");
+                              maxDate = null;
+                            }
+                            setFormData({
+                              id: selectedRow.id,
+                              minDate: minDate ? minDate.toISOString() : null,
+                              maxDate: maxDate ? maxDate.toISOString() : null,
+                              field_extension_date: extensionDateValue,
+                              field_extension_remark: field["field_extension_remark"] || "",
+                              field_extension_updated_by: field["field_extension_updated_by"] || "",
+                            });
                             setShowCaseExtensionModal(true);
                           },
                         });
@@ -3337,6 +3451,438 @@ const handleCheckboxDemerge = (event, row) => {
     };
 
 
+    const ExtensionFormWrapper = ({
+        extensionFormData,
+        extensionFormFields,
+        setShowExtensionFormDialog,
+        setLoading,
+        selectedRowData,
+        api,
+        toast
+    }) => {
+        const [extensionFormRecord, setExtensionFormRecord] = useState(null);
+        const [checked, setChecked] = useState(false);
+        // Use different state names for extension form field history popup
+        const [showExtensionFieldHistoryDialog, setShowExtensionFieldHistoryDialog] = useState(false);
+        const [extensionFieldHistoryData, setExtensionFieldHistoryData] = useState([]);
+        const [extensionFieldHistoryRows, setExtensionFieldHistoryRows] = useState([]);
+        const [selectedExtensionFieldName, setSelectedExtensionFieldName] = useState("");
+    
+        // Move these hooks to the top-level, before any return or condition
+        useEffect(() => {
+            if (extensionFieldHistoryData && extensionFieldHistoryData.length > 0) {
+                console.log("ExtensionFormWrapper: extensionFieldHistoryData updated", extensionFieldHistoryData);
+            }
+        }, [extensionFieldHistoryData]);
+    
+        useEffect(() => {
+            if (showExtensionFieldHistoryDialog) {
+                console.log("ExtensionFormWrapper: showExtensionFieldHistoryDialog set to true");
+            }
+        }, [showExtensionFieldHistoryDialog]);
+    
+        useEffect(() => {
+            let isMounted = true;
+            setChecked(false);
+            setExtensionFormRecord(null);
+            (async () => {
+                try {
+                    const res = await api.post("/templateData/getTemplateData", {
+                        table_name: "cid_eq_case_extension_form",
+                        ui_case_id: extensionFormData.ui_case_id,
+                    });
+                    if (isMounted && res?.success && Array.isArray(res.data) && res.data.length > 0) {
+                        setExtensionFormRecord(res.data[0]);
+                    }
+                } catch (err) {
+                    // ignore
+                } finally {
+                    if (isMounted) setChecked(true);
+                }
+            })();
+            return () => { isMounted = false; };
+            // eslint-disable-next-line
+        }, [extensionFormData?.ui_case_id, setShowExtensionFormDialog]);
+    
+        // Add a console to check what is being passed to NormalViewForm
+        console.log("ExtensionFormWrapper: formConfig", extensionFormFields);
+    
+        if (!checked) return null;
+    
+        // Replace fetchFieldHistory to ensure it uses cid_eq_case_extension_form table and logs calls
+        const fetchExtensionFieldHistory = async (field_name, table_row_id, template_id) => {
+            console.log("ExtensionFormWrapper: fetchExtensionFieldHistory called", { field_name, table_row_id, template_id });
+            setLoading(true);
+            try {
+                const payload = {
+                    template_id,
+                    field_name,
+                    table_row_id,
+                    table_name: "cid_eq_case_extension_form", // Always use extension form table
+                };
+                const getHistoryResponse = await api.post("/profileHistories/getProfileHistory", payload);
+                setLoading(false);
+                if (getHistoryResponse.data && getHistoryResponse.data.length > 0) {
+                    const rawData = getHistoryResponse.data || [];
+    
+                    const transformedRows = rawData.map((item, index) => {
+                        const formatDate = (dateStr) => {
+                            const date = new Date(dateStr);
+                            return date.toLocaleDateString('en-GB', {
+                                day: '2-digit',
+                                month: 'short',
+                                year: 'numeric'
+                            });
+                        };
+    
+                        const isOldValueDate = !isNaN(Date.parse(item.old_value));
+                        const isUpdatedValueDate = !isNaN(Date.parse(item.updated_value));
+    
+                        return {
+                            id: index,
+                            user: item.userDetails?.user_firstname || 'N/A',
+                            old_value: isOldValueDate ? formatDate(item.old_value) : (item.old_value || 'N/A'),
+                            updated_value: isUpdatedValueDate ? formatDate(item.updated_value) : item.updated_value,
+                            changed_at: formatDate(item.created_at)
+                        };
+                    });
+    
+                    setExtensionFieldHistoryData(rawData);
+                    setExtensionFieldHistoryRows(transformedRows);
+                    setSelectedExtensionFieldName(field_name);
+                    setShowExtensionFieldHistoryDialog(true);
+                } else {
+                    toast.info("No records found for the specified filters.", {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        className: "toast-info",
+                    });
+                }
+            } catch (error) {
+                console.error("Error fetching field history:", error);
+                setLoading(false);
+                if (error.response && error.response.status === 404) {
+                    toast.error("No records found for the specified filters.", {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        className: "toast-error",
+                    });
+                } else {
+                    toast.error("Failed to fetch field history.", {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        className: "toast-error",
+                    });
+                }
+            }
+        };
+    
+        // When passing formConfig to NormalViewForm, inject a custom onHistory for each field
+        const getFormConfigWithExtensionHistory = (fields, recordOrData) => {
+            return fields.map(field => ({
+                ...field,
+                onHistory: () => {
+                    console.log("ExtensionFormWrapper: onHistory called for field", field.name, field);
+                    fetchExtensionFieldHistory(
+                        field.name,
+                        recordOrData?.id || recordOrData?.ui_case_id,
+                        null
+                    );
+                }
+            }));
+        };
+    
+        if (extensionFormRecord) {
+            if (!extensionFormRecord.id) {
+                console.log("No extensionFormRecord.id found", extensionFormRecord);
+                return (
+                    <NormalViewForm
+                        table_row_id={extensionFormData?.ui_case_id}
+                        template_id={null}
+                        template_name="Case Extension"
+                        table_name="cid_eq_case_extension_form"
+                        readOnly={false}
+                        editData={false}
+                        initialData={extensionFormData}
+                        formConfig={getFormConfigWithExtensionHistory(extensionFormFields, extensionFormData)}
+                        stepperData={[]}
+                        onSubmit={async (data) => {
+                            console.log("onSubmit fallback called", { data, extensionFormData });
+                            const formDataObj = new FormData();
+                            formDataObj.append("table_name", "cid_eq_case_extension_form");
+                            formDataObj.append("data", JSON.stringify({
+                                ...data,
+                                ui_case_id: extensionFormData.ui_case_id,
+                                field_extension_date: data.field_extension_date || extensionFormData.field_extension_date || "",
+                                field_extension_remark: data.field_extension_remark || extensionFormData.field_extension_remark || "",
+                                field_extension_updated_by: localStorage.getItem("designation_name") || extensionFormData.field_extension_updated_by || "",
+                            }));
+                            formDataObj.append("others_data", JSON.stringify({}));
+                            formDataObj.append("transaction_id", `ext_${Date.now()}_${Math.floor(Math.random() * 10000)}`);
+                            formDataObj.append("user_designation_id", localStorage.getItem("designation_id") || "");
+    
+                            setLoading(true);
+                            try {
+                                await api.post("/templateData/saveDataWithApprovalToTemplates", formDataObj);
+                                console.log("Extension form record created");
+                            } catch (err) {
+                                setLoading(false);
+                                toast.error("Failed to create extension form record.", {
+                                    position: "top-right",
+                                    autoClose: 3000,
+                                    className: "toast-error",
+                                });
+                                return;
+                            }
+    
+                            const updateMainCaseForm = new FormData();
+                            updateMainCaseForm.append("table_name", "cid_enquiry");
+                            updateMainCaseForm.append("id", extensionFormData.ui_case_id);
+                            updateMainCaseForm.append("data", JSON.stringify({
+                                field_extension_date: data.field_extension_date || extensionFormData.field_extension_date || "",
+                                field_extension_remark: data.field_extension_remark || extensionFormData.field_extension_remark || "",
+                                field_extension_updated_by: localStorage.getItem("designation_name") || extensionFormData.field_extension_updated_by || "",
+                            }));
+    
+                            try {
+                                await api.post("/templateData/updateTemplateData", updateMainCaseForm);
+                                setLoading(false);
+                                toast.success("Extension submitted successfully.", {
+                                    position: "top-right",
+                                    autoClose: 3000,
+                                    className: "toast-success",
+                                });
+                                setShowExtensionFormDialog(false);
+                                showExtensionCaseApprovalPage(extensionFormData, data);
+                                console.log("Main case extension fields updated");
+                            } catch (err) {
+                                setLoading(false);
+                                toast.error("Failed to update main case extension fields.", {
+                                    position: "top-right",
+                                    autoClose: 3000,
+                                    className: "toast-error",
+                                });
+                            }
+                        }}
+                        onError={() => { console.log("onError called"); }}
+                        closeForm={() => setShowExtensionFormDialog(false)}
+                        headerDetails={selectedRowData?.["field_cid_crime_no./enquiry_no"]}
+                    />
+                );
+            }
+            return (
+                <NormalViewForm
+                    table_row_id={extensionFormRecord.id}
+                    template_id={null}
+                    template_name="Case Extension"
+                    table_name="cid_eq_case_extension_form"
+                    readOnly={false}
+                    editData={true}
+                    initialData={extensionFormRecord}
+                    formConfig={getFormConfigWithExtensionHistory(extensionFormFields, extensionFormRecord)}
+                    stepperData={[]}
+                    onUpdate={async (data) => {
+                        console.log("onUpdate called", { data, extensionFormRecord, extensionFormData });
+                        const updateForm = new FormData();
+                        updateForm.append("table_name", "cid_eq_case_extension_form");
+                        updateForm.append("id", extensionFormRecord.id);
+                        updateForm.append("data", JSON.stringify({
+                            ...data,
+                            ui_case_id: extensionFormData.ui_case_id,
+                            field_extension_date: data.field_extension_date || extensionFormData.field_extension_date || "",
+                            field_extension_remark: data.field_extension_remark || extensionFormData.field_extension_remark || "",
+                            field_extension_updated_by: localStorage.getItem("designation_name") || extensionFormData.field_extension_updated_by || "",
+                        }));
+    
+                        setLoading(true);
+                        try {
+                            await api.post("/templateData/updateTemplateData", updateForm);
+                            console.log("Extension form record updated");
+                        } catch (err) {
+                            setLoading(false);
+                            toast.error("Failed to update extension form record.", {
+                                position: "top-right",
+                                autoClose: 3000,
+                                className: "toast-error",
+                            });
+                            return;
+                        }
+    
+                        const updateMainCaseForm = new FormData();
+                        updateMainCaseForm.append("table_name", "cid_enquiry");
+                        updateMainCaseForm.append("id", extensionFormData.ui_case_id);
+                        updateMainCaseForm.append("data", JSON.stringify({
+                            field_extension_date: data.field_extension_date || extensionFormData.field_extension_date || "",
+                            field_extension_remark: data.field_extension_remark || extensionFormData.field_extension_remark || "",
+                            field_extension_updated_by: localStorage.getItem("designation_name") || extensionFormData.field_extension_updated_by || "",
+                        }));
+    
+                        try {
+                            await api.post("/templateData/updateTemplateData", updateMainCaseForm);
+                            setLoading(false);
+                            toast.success("Extension updated successfully.", {
+                                position: "top-right",
+                                autoClose: 3000,
+                                className: "toast-success",
+                                onOpen: () => {loadTableData(paginationCount);},
+                            });
+                            setShowExtensionFormDialog(false);
+                            showExtensionCaseApprovalPage(extensionFormData, data);
+                            console.log("Main case extension fields updated");
+                        } catch (err) {
+                            setLoading(false);
+                            toast.error("Failed to update main case extension fields.", {
+                                position: "top-right",
+                                autoClose: 3000,
+                                className: "toast-error",
+                            });
+                        }
+                    }}
+                    onSubmit={async (data) => {
+                        console.log("onSubmit called in edit mode", { data, extensionFormRecord, extensionFormData });
+                    }}
+                    onError={() => {console.log("onError called"); }}
+                    closeForm={() => setShowExtensionFormDialog(false)}
+                    headerDetails={selectedRowData?.["field_cid_crime_no./enquiry_no"]}
+                />
+            );
+        } else {
+            return (
+                <NormalViewForm
+                    table_row_id={extensionFormData?.ui_case_id}
+                    template_id={null}
+                    template_name="Case Extension"
+                    table_name="cid_eq_case_extension_form"
+                    readOnly={false}
+                    editData={false}
+                    initialData={extensionFormData}
+                    formConfig={getFormConfigWithExtensionHistory(extensionFormFields, extensionFormData)}
+                    stepperData={[]}
+                    onSubmit={async (data) => {
+                        console.log("onSubmit called", { data, extensionFormData });
+                        const formDataObj = new FormData();
+                        formDataObj.append("table_name", "cid_eq_case_extension_form");
+                        formDataObj.append("data", JSON.stringify({
+                            ...data,
+                            ui_case_id: extensionFormData.ui_case_id,
+                            field_extension_date: data.field_extension_date || extensionFormData.field_extension_date || "",
+                            field_extension_remark: data.field_extension_remark || extensionFormData.field_extension_remark || "",
+                            field_extension_updated_by: localStorage.getItem("designation_name") || extensionFormData.field_extension_updated_by || "",
+                        }));
+                        formDataObj.append("others_data", JSON.stringify({}));
+                        formDataObj.append("transaction_id", `ext_${Date.now()}_${Math.floor(Math.random() * 10000)}`);
+                        formDataObj.append("user_designation_id", localStorage.getItem("designation_id") || "");
+    
+                        setLoading(true);
+                        try {
+                            await api.post("/templateData/saveDataWithApprovalToTemplates", formDataObj);
+                            console.log("Extension form record created");
+                        } catch (err) {
+                            setLoading(false);
+                            toast.error("Failed to create extension form record.", {
+                                position: "top-right",
+                                autoClose: 3000,
+                                className: "toast-error",
+                            });
+                            return;
+                        }
+    
+                        const updateMainCaseForm = new FormData();
+                        updateMainCaseForm.append("table_name", "cid_enquiry");
+                        updateMainCaseForm.append("id", extensionFormData.ui_case_id);
+                        updateMainCaseForm.append("data", JSON.stringify({
+                            field_extension_date: data.field_extension_date || extensionFormData.field_extension_date || "",
+                            field_extension_remark: data.field_extension_remark || extensionFormData.field_extension_remark || "",
+                            field_extension_updated_by: localStorage.getItem("designation_name") || extensionFormData.field_extension_updated_by || "",
+                        }));
+    
+                        try {
+                            await api.post("/templateData/updateTemplateData", updateMainCaseForm);
+                            setLoading(false);
+                            toast.success("Extension submitted successfully.", {
+                                position: "top-right",
+                                autoClose: 3000,
+                                className: "toast-success",
+                                onOpen: () => {loadTableData(paginationCount);},
+                            });
+                            setShowExtensionFormDialog(false);
+                            showExtensionCaseApprovalPage(extensionFormData, data);
+                            console.log("Main case extension fields updated");
+                        } catch (err) {
+                            setLoading(false);
+                            toast.error("Failed to update main case extension fields.", {
+                                position: "top-right",
+                                autoClose: 3000,
+                                className: "toast-error",
+                            });
+                        }
+                    }}
+                    onError={() => { console.log("onError called"); }}
+                    closeForm={() => setShowExtensionFormDialog(false)}
+                    headerDetails={selectedRowData?.["field_cid_crime_no./enquiry_no"]}
+                />
+            );
+        }
+    
+        // Extension Field History Dialog
+        {showExtensionFieldHistoryDialog && (
+            <Dialog
+                open={showExtensionFieldHistoryDialog}
+                onClose={() => setShowExtensionFieldHistoryDialog(false)}
+                aria-labelledby="alert-dialog-title"
+                aria-describedby="alert-dialog-description"
+                maxWidth="md"
+                fullWidth
+            >
+                <DialogTitle id="alert-dialog-title">Extension Field History: {selectedExtensionFieldName}</DialogTitle>
+                <DialogContent>
+                    <DialogContentText id="alert-dialog-description">
+                        <div style={{ padding: 16 }}>
+                            {extensionFieldHistoryRows && extensionFieldHistoryRows.length > 0 ? (
+                                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                                    <thead>
+                                        <tr>
+                                            <th>User</th>
+                                            <th>Old Value</th>
+                                            <th>Updated Value</th>
+                                            <th>Changed At</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {extensionFieldHistoryRows.map(row => (
+                                            <tr key={row.id}>
+                                                <td>{row.user}</td>
+                                                <td>{row.old_value}</td>
+                                                <td>{row.updated_value}</td>
+                                                <td>{row.changed_at}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            ) : (
+                                <div>No history found.</div>
+                            )}
+                        </div>
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setShowExtensionFieldHistoryDialog(false)}>Close</Button>
+                </DialogActions>
+            </Dialog>
+        )}
+    }
     const fetchFieldHistory = async (field_name, table_row_id, template_id) => {
     
         setLoading(true);
@@ -3489,20 +4035,20 @@ const handleCheckboxDemerge = (event, row) => {
                             ),
                         }
                     : null,
-                        sysStatus !== "b_Report" && sysStatus !== 'merge_cases' && sysStatus !== 'disposal' ?{
-                            name: "Nature of Disposal",
-                            onclick: (selectedRow) => showNatureOfDisposal(selectedRow, table_name),
-                        } : null,
-                        sysStatus === "b_Report" ?
-                        {
-                            name: "Accepted By Court",
-                            onclick: (selectedRow) => showOrderCopyCourt(selectedRow, table_name, true),
-                        } : null,
-                        sysStatus === "b_Report" ? 
-                        {
-                            name: "Rejected By Court",
-                            onclick: (selectedRow) => showOrderCopyCourt(selectedRow, table_name, false),
-                        } : null,
+                        // sysStatus !== "b_Report" && sysStatus !== 'merge_cases' && sysStatus !== 'disposal' ?{
+                        //     name: "Nature of Disposal",
+                        //     onclick: (selectedRow) => showNatureOfDisposal(selectedRow, table_name),
+                        // } : null,
+                        // sysStatus === "b_Report" ?
+                        // {
+                        //     name: "Accepted By Court",
+                        //     onclick: (selectedRow) => showOrderCopyCourt(selectedRow, table_name, true),
+                        // } : null,
+                        // sysStatus === "b_Report" ? 
+                        // {
+                        //     name: "Rejected By Court",
+                        //     onclick: (selectedRow) => showOrderCopyCourt(selectedRow, table_name, false),
+                        // } : null,
                         userPermissions?.delete_enquiry
                             ? {
                                 name: "Delete",
@@ -3803,6 +4349,7 @@ const handleCheckboxDemerge = (event, row) => {
         return <img src={xlsIcon} />;
       case "csv":
       case "docx":
+        return <img src={docxIcon} />;
       case "doc":
         return <img src={docIcon} />;
       case "ppt":
@@ -4078,7 +4625,7 @@ const loadAOFields = async () => {
   setLoading(true);
   try {
     const response = await api.post("/templates/viewTemplate", {
-      table_name: "cid_under_investigation",
+      table_name: "cid_enquiry",
     });
 
     if (response.success && response.data?.fields) {
@@ -4091,7 +4638,7 @@ const loadAOFields = async () => {
       );
 
       const briefFactField = response.data.fields.find(
-        (f) => f.name === "field_breif_fact"
+        (f) => f.name === "field_brief_fact"
       );
       const policeStationField = response.data.fields.find(
         (f) => f.name === "field_investigation_carried_out_by_the_police_station"
@@ -4142,7 +4689,7 @@ const loadAOFields = async () => {
       setAoFields(aoOnlyFields);
 
       // You can await this and get AO field values if needed
-      await loadValueField(aoFieldId, false, "cid_under_investigation");
+      await loadValueField(aoFieldId, false, "cid_enquiry");
     }
   } catch (error) {
     toast.error("Failed to load AO fields", {
@@ -4166,7 +4713,7 @@ useEffect(() => {
   const loadExtensionFields = async () => {
     try {
       const response = await api.post("/templates/viewTemplate", {
-        table_name: "cid_under_investigation",
+        table_name: "cid_enquiry",
       });
 
 
@@ -4210,7 +4757,7 @@ useEffect(() => {
     let normalData = {};
   
     const allowedFields = [
-      "field_breif_fact",
+      "field_brief_fact",
       "field_investigation_carried_out_by_the_police_station"
     ];
   
@@ -4600,7 +5147,7 @@ const handleUpdatePdfClick = async ({
       const aoFieldValues = await loadValueField(
         selectedRowData,
         false,
-        "cid_under_investigation"
+        "cid_enquiry"
       );
 
       const aoFieldsToInclude = [
@@ -6703,7 +7250,7 @@ const handleOpenExportPopup = async () => {
 
     setRandomApprovalId(randomId);
 
-    // const isAuthorized = await handleAssignToIo(selectedRow, "cid_under_investigation");
+    // const isAuthorized = await handleAssignToIo(selectedRow, "cid_enquiry");
     // setIsIoAuthorized(isAuthorized);    
 
     setSelectedRowData(selectedRow);
@@ -8584,156 +9131,150 @@ const handleOpenExportPopup = async () => {
           }
     }
 
-    const handleExtensionApprovalWithUpdate = async () => {
+const handleExtensionApprovalWithUpdate = async () => {
 
-          if (!approvalFormData || !approvalFormData["approval_item"]) {
-            toast.error("Please Select Approval Item!", {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-error",
-            });
-            return;
-         }
-    
-        if (!approvalFormData || !approvalFormData["approved_by"]) {
-            toast.error("Please Select Designation!", {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-error",
-            });
-            return;
-        }
-    
-        if (!approvalFormData || !approvalFormData["approval_date"]) {
-            toast.error("Please Select Approval Date!", {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-error",
-            });
-            return;
-        }
-    
-        if (!approvalFormData || !approvalFormData["remarks"]) {
-            toast.error("Please Enter Comments!", {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-error",
-            });
-            return;
-        }
-        
-      const caseData = approvalSaveCaseData.caseData || {};
-      const id = caseData.id;
+    if (!approvalFormData || !approvalFormData["approval_item"]) {
+      toast.error("Please Select Approval Item!", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        className: "toast-error",
+      });
+      return;
+    }
 
-      const tableName = "cid_under_investigation";
+    if (!approvalFormData || !approvalFormData["approved_by"]) {
+      toast.error("Please Select Designation!", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        className: "toast-error",
+      });
+      return;
+    }
 
-      const { id: _, ...dataWithoutId } = caseData;
+    if (!approvalFormData || !approvalFormData["approval_date"]) {
+      toast.error("Please Select Approval Date!", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        className: "toast-error",
+      });
+      return;
+    }
 
-      const approvalItems = {
-        id: id,
-        type: "eq_case",
-        module_name: "Enquiry",
-        action: "Extension Natural of Disposal",
-      };
+    if (!approvalFormData || !approvalFormData["remarks"]) {
+      toast.error("Please Enter Comments!", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        className: "toast-error",
+      });
+      return;
+    }
 
-      const approvalData = {
-        approval: approvalFormData,
-        approval_details: approvalItems,
-      };
+    const caseData = approvalSaveCaseData.caseData || {};
+    const id = caseData.ui_case_id;
 
-      const formData = new FormData();
+    const tableName = "cid_under_investigation";
 
-      if (approvalSaveCaseData.formData instanceof FormData) {
-        for (const [key, value] of approvalSaveCaseData.formData.entries()) {
-          formData.append(key, value);
-        }
-      }
-
-      formData.append("table_name", tableName);
-      formData.append("id", id.toString());
-      formData.append("data", JSON.stringify(dataWithoutId));
-      formData.append("others_data", JSON.stringify(approvalData));
-
-      const transactionId = `pt_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
-      formData.append("transaction_id", transactionId);
-      formData.append("user_designation_id", localStorage.getItem("designation_id") || "");
-      for (const [key, value] of formData.entries()) {
-        console.log(`${key}:`, value);
-      }
-      setLoading(true);
-
-      try {
-        const response = await api.post("/templateData/updateDataWithApprovalToTemplates", formData);
-        setLoading(false);
-
-        if (response?.success) {
-          toast.success(response.message || "Extension Updated with Approval!", {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-success",
-            onOpen: () => loadTableData(paginationCount),
-        });
-
-          setShowExtensionApprovalModal(false);
-          setApprovalSaveCaseData({});
-          setApprovalItemsData([]);
-          setApprovalDesignationData([]);
-          setApprovalSaveData({});
-          setFormData({});
-          setShowCaseExtensionModal(false);
-        } else {
-          toast.error(response.message, {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-error",
-        });
-        }
-        } catch (error) {
-            setLoading(false);
-            if (error && error.response && error.response["data"]) {
-                toast.error(error.response["data"].message || "Please Try Again!", {
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    className: "toast-error",
-                });
-            }
-        }
+    const approvalItems = {
+      id: id,
+      type: "ui_case",
+      module_name: "Under Investigation",
+      action: "Extension Natural of Disposal",
     };
+
+    const approvalData = {
+      approval: approvalFormData,
+      approval_details: approvalItems,
+    };
+
+    const formData = new FormData();
+
+    console.log("formdata", formData)
+    formData.append("table_name", tableName);
+    formData.append("id", caseData.ui_case_id);
+    // Only update others_data, not the main data
+    formData.append("others_data", JSON.stringify(approvalData));
+
+    const transactionId = `pt_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+    formData.append("transaction_id", transactionId);
+    formData.append("user_designation_id", localStorage.getItem("designation_id") || "");
+
+    for (const [key, value] of formData.entries()) {
+      console.log(`${key}:`, value);
+    }
+    setLoading(true);
+
+    try {
+      const response = await api.post("/templateData/updateDataWithApprovalToTemplates", formData);
+      setLoading(false);
+
+      if (response?.success) {
+        toast.success(response.message || "Extension Updated with Approval!", {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "toast-success",
+          onOpen: () => loadTableData(paginationCount),
+        });
+
+        setShowExtensionApprovalModal(false);
+        setApprovalSaveCaseData({});
+        setApprovalItemsData([]);
+        setApprovalDesignationData([]);
+        setApprovalSaveData({});
+        setFormData({});
+        setShowCaseExtensionModal(false);
+      } else {
+        toast.error(response.message, {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "toast-error",
+        });
+      }
+    } catch (error) {
+      setLoading(false);
+      if (error && error.response && error.response["data"]) {
+        toast.error(error.response["data"].message || "Please Try Again!", {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "toast-error",
+        });
+      }
+    }
+  };
 
 
 
@@ -10770,7 +11311,7 @@ const handleOpenExportPopup = async () => {
                 value={searchValue}
                 id="tableSearch"
                 size="small"
-                placeholder="Search anything"
+                placeholder="Search"
                 variant="outlined"
                 className="profileSearchClass"
                 onKeyDown={(e) => {
@@ -11441,7 +11982,7 @@ const handleOpenExportPopup = async () => {
                         value={otherSearchValue}
                         id="tableSearch"
                         size="small"
-                        placeholder='Search anything'
+                        placeholder='Search'
                         variant="outlined"
                         className="profileSearchClass"
                         onKeyDown={(e) => {
@@ -11567,7 +12108,7 @@ const handleOpenExportPopup = async () => {
                         value={otherSearchValue}
                         id="tableSearch"
                         size="small"
-                        placeholder='Search anything'
+                        placeholder='Search'
                         variant="outlined"
                         className="profileSearchClass"
                         onKeyDown={(e) => {
@@ -11743,7 +12284,7 @@ const handleOpenExportPopup = async () => {
                                         <Tooltip title="Save">
                                             <SaveIcon  
                                                 onClick={() =>
-                                                    onActionPlanUpdate("cid_under_investigation", filterAoValues)
+                                                    onActionPlanUpdate("cid_enquiry", filterAoValues)
                                                 }
                                                 sx={{
                                                 color: '#1570EF',
@@ -11762,7 +12303,7 @@ const handleOpenExportPopup = async () => {
                                           color="primary"
                                           size="small"
                                           onClick={() =>
-                                            onActionPlanUpdate("cid_under_investigation", filterAoValues)
+                                            onActionPlanUpdate("cid_enquiry", filterAoValues)
                                           }
                                           style={{ marginLeft: 'auto' }}
                                         >
@@ -11936,7 +12477,7 @@ const handleOpenExportPopup = async () => {
 
                                             <SaveIcon  
                                                 onClick={() =>
-                                                    onActionPlanUpdate("cid_under_investigation", filterAoValues)
+                                                    onActionPlanUpdate("cid_enquiry", filterAoValues)
                                                 }
                                                 sx={{
                                                 color: '#1570EF',
@@ -11955,7 +12496,7 @@ const handleOpenExportPopup = async () => {
                                           color="primary"
                                           size="small"
                                           onClick={() =>
-                                            onActionPlanUpdate("cid_under_investigation", filterAoValues)
+                                            onActionPlanUpdate("cid_enquiry", filterAoValues)
                                           }
                                           style={{ marginLeft: 'auto' }}
                                         >
@@ -12307,103 +12848,269 @@ const handleOpenExportPopup = async () => {
         </DialogActions>
       </Dialog>
 
-      <Dialog
-        open={showCaseExtensionModal}
-        onClose={() => {
-          setShowCaseExtensionModal(false);
-          setHistoryData([]);
-        }}
-        aria-labelledby="alert-dialog-title"
-        aria-describedby="alert-dialog-description"
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle id="alert-dialog-title">Case Extension</DialogTitle>
-        <DialogContent>
-          <DialogContentText id="alert-dialog-description">
-            {extensionFields.length === 0 ? (
-              <p>No extension fields available</p>
-            ) : (
-              extensionFields.map((field) => (
-                <FormControl fullWidth key={field.name} sx={{ marginBottom: "20px" }}>
-                  {field.name === "field_extension_remark" ? (
-                    <LongText
-                      field={{
-                        ...field,
-                        label: field.label || field.name,
-                        multiline: true,
-                        rows: 4,
-                        history: true,
-                        required: true,
+
+              <Dialog
+                open={showCaseExtensionModal}
+                onClose={() => {
+                  setShowCaseExtensionModal(false);
+                    setHistoryData([]);
+                  }}
+                  aria-labelledby="alert-dialog-title"
+                  aria-describedby="alert-dialog-description"
+                  maxWidth="sm"
+                  fullWidth
+                  >
+                  <DialogTitle id="alert-dialog-title">
+                    Case Extension
+                   {console.log("formData.field_extension_updated_by", formData)}
+                    {/* Show "Request Submitted" if field_extension_updated_by is not DIG, ADG, or DGP */}
+                    {formData.field_extension_updated_by &&
+                     !["dig", "adg", "dgp"].some((rank) =>
+                        String(formData.field_extension_updated_by).toLowerCase().startsWith(rank)
+                      ) && (
+                      <span
+                      style={{
+                        marginLeft: 16,
+                        background: "#FFF7E0",
+                        color: "#B54708",
+                        fontWeight: 600,
+                        fontSize: 15,
+                        padding: "2px 12px",
+                        borderRadius: 8,
+                        verticalAlign: "middle",
                       }}
-                      formData={formData}
-                      onChange={(e) =>
-                        setFormData({ ...formData, [field.name]: e.target.value })
-                      }
-                      onHistory={() => fetchFieldHistory(field.name, formData.id, selectTemplateId.template_id)}
-                    />
-                  ) : (
-                    <LocalizationProvider dateAdapter={AdapterDayjs}>
-                      <h4 className="form-field-heading">Extension Date</h4>
-                      <DatePicker
-                        className="selectHideHistory"
-                        label={
-                          <div style={{ display: 'flex', alignItems: 'center' }}>
+                      >
+                      Request Submitted
+                      </span>
+                    )}
+                  </DialogTitle>
+                  <DialogContent>
+                    <DialogContentText id="alert-dialog-description">
+                    {extensionFields.length === 0 ? (
+                      <p>No extension fields available</p>
+                    ) : (
+                      extensionFields.map((field) => (
+                      <FormControl fullWidth key={field.name} sx={{ marginBottom: "20px" }}>
+                        {field.name === "field_extension_remark" ? (
+                        <LongText
+                          field={{
+                          ...field,
+                          label: field.label || field.name,
+                          multiline: true,
+                          rows: 4,
+                          history: true,
+                          required: true,
+                          readOnly:
+                           (formData.field_extension_updated_by &&
+                                      !["dig", "adg", "dgp"].some((rank) =>
+                                        String(formData.field_extension_updated_by)
+                                          .toLowerCase()
+                                          .startsWith(rank)
+                          )
+                        )}}
+                          formData={formData}
+                          onChange={(e) =>
+                          setFormData({ ...formData, [field.name]: e.target.value })
+                          }
+                          onHistory={() =>
+                          fetchFieldHistory(
+                            field.name,
+                            formData.id,
+                            selectTemplateId.template_id
+                          )
+                          }
+                          readOnly={(formData.field_extension_updated_by &&
+                                      !["dig", "adg", "dgp"].some((rank) =>
+                                        String(formData.field_extension_updated_by)
+                                          .toLowerCase()
+                                          .startsWith(rank)
+                                      ))}
+                        />
+                        ) : (
+                        <LocalizationProvider dateAdapter={AdapterDayjs}>
+                          <h4 className="form-field-heading">Extension Date</h4>
+                          <DatePicker
+                          className="selectHideHistory"
+                          label={
+                            <div style={{ display: "flex", alignItems: "center" }}>
                             <span>{field.label || field.name}</span>
                             <span
                               className="MuiFormLabel-asterisk MuiInputLabel-asterisk css-1ljffdk-MuiFormLabel-asterisk"
-                              style={{ padding: '0px 0px 0px 5px', verticalAlign: 'middle' }}
+                              style={{
+                              padding: "0px 0px 0px 5px",
+                              verticalAlign: "middle",
+                              }}
                             >
                               *
                             </span>
                             <HistoryIcon
                               onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                fetchFieldHistory(field.name, formData.id, selectTemplateId.template_id);
+                              e.preventDefault();
+                              e.stopPropagation();
+                              fetchFieldHistory(
+                                field.name,
+                                formData.id,
+                                selectTemplateId.template_id
+                              );
                               }}
                               className="historyIcon"
                               sx={{
-                                color: '#1570EF',
-                                padding: '0 1px',
-                                fontSize: '20px',
-                                verticalAlign: 'middle',
-                                cursor: 'pointer',
-                                pointerEvents: 'auto',
-                                marginBottom: '3px',
+                              color: "#1570EF",
+                              padding: "0 1px",
+                              fontSize: "20px",
+                              verticalAlign: "middle",
+                              cursor: "pointer",
+                              pointerEvents: "auto",
+                              marginBottom: "3px",
                               }}
                             />
-                          </div>
-                        }
-                        value={formData[field.name] ? dayjs(formData[field.name]) : null}
-                        onChange={(newVal) =>
-                          setFormData({
+                            </div>
+                          }
+                          value={
+                            formData[field.name] ? dayjs(formData[field.name]) : null
+                          }
+                          onChange={(newVal) =>
+                            setFormData({
                             ...formData,
                             [field.name]: newVal ? newVal.toISOString() : null,
-                          })
-                        }
-                        minDate={formData.minDate ? dayjs(formData.minDate) : null}
-                        maxDate={formData.maxDate ? dayjs(formData.maxDate) : null}
-                        disableFuture={false}
-                        renderInput={(params) => (
-                          <TextField {...params} fullWidth required={field.required} />
+                            })
+                          }
+                          minDate={
+                            formData.minDate ? dayjs(formData.minDate) : null
+                          }
+                          maxDate={
+                            formData.maxDate ? dayjs(formData.maxDate) : null
+                          }
+                          disableFuture={false}
+                          renderInput={(params) => (
+                            <TextField
+                            {...params}
+                            fullWidth
+                            required={field.required}
+                            InputProps={{
+                              ...params.InputProps,
+                              readOnly:
+                               (formData.field_extension_updated_by &&
+                                      !["dig", "adg", "dgp"].some((rank) =>
+                                        String(formData.field_extension_updated_by)
+                                          .toLowerCase()
+                                          .startsWith(rank)
+                                      ))
+                            }}
+                            />
+                          )}
+                          disabled={
+                                    (formData.field_extension_updated_by &&
+                                      !["dig", "adg", "dgp"].some((rank) =>
+                                        String(formData.field_extension_updated_by)
+                                          .toLowerCase()
+                                          .startsWith(rank)
+                                      ))
+                          }
+                          />
+                        </LocalizationProvider>
                         )}
-                      />
-                    </LocalizationProvider>
-                  )}
-                </FormControl>
-              ))
-            )}
+                      </FormControl>
+                      ))
+                    )}
+                    </DialogContentText>
+                  </DialogContent>
+                  <DialogActions>
+                    <Button onClick={() => setShowCaseExtensionModal(false)}>Cancel</Button>
+                    <Button
+                    onClick={async () => {
+                      // Only open extension form dialog if both fields are filled
+                      if (!formData.field_extension_date || !formData.field_extension_remark) {
+                      toast.error(
+                        "Please fill both Extension Date and Extension Remark before proceeding.",
+                        {
+                        position: "top-right",
+                        autoClose: 3000,
+                        className: "toast-error",
+                        }
+                      );
+                      return;
+                      }
+                      setShowCaseExtensionModal(false);
 
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setShowCaseExtensionModal(false)}>Cancel</Button>
-          <Button onClick={handleCaseExtension} className="fillPrimaryBtn">
-            Submit
-          </Button>
-        </DialogActions>
-      </Dialog>
+                      // Fetch template fields for cid_eq_case_extension_form
+                      setLoading(true);
+                      try {
+                      const templateRes = await api.post("/templates/viewTemplate", {
+                        table_name: "cid_eq_case_extension_form",
+                      });
+                      setLoading(false);
+
+                      if (templateRes && templateRes.success) {
+                        setExtensionFormFields(templateRes.data.fields || []);
+                        setShowExtensionFormDialog(true);
+                        setExtensionFormData({
+                        ui_case_id: formData.id,
+                        field_extension_date: formData.field_extension_date || "",
+                        field_extension_remark: formData.field_extension_remark || "",
+                        field_extension_updated_by:
+                          localStorage.getItem("designation_name") || "",
+                        });
+                      } else {
+                        toast.error("Failed to load extension form template.", {
+                        position: "top-right",
+                        autoClose: 3000,
+                        className: "toast-error",
+                        });
+                      }
+                      } catch (err) {
+                      setLoading(false);
+                      toast.error("Failed to load extension form template.", {
+                        position: "top-right",
+                        autoClose: 3000,
+                        className: "toast-error",
+                      });
+                      }
+                    }}
+                    className="fillPrimaryBtn"
+                    disabled={
+                       (formData.field_extension_updated_by &&
+                        !["dig", "adg", "dgp"].some((rank) =>
+                          String(formData.field_extension_updated_by)
+                            .toLowerCase()
+                            .startsWith(rank)
+                        ))
+                    }
+                    >
+                    Submit
+                    </Button>
+                  </DialogActions>
+                  </Dialog>
+
+                      {showExtensionFormDialog &&
+                      <Dialog
+                          open={showExtensionFormDialog}
+                          onClose={() => {setShowExtensionFormDialog(false);}}
+                          aria-labelledby="alert-dialog-title"
+                          aria-describedby="alert-dialog-description"
+                          maxWidth="md"
+                          fullWidth
+                      >
+                          <DialogContent sx={{ minWidth: '400px', padding: '0'  }}>
+                              <DialogContentText id="alert-dialog-description">
+                                  <FormControl fullWidth>
+                                      <ExtensionFormWrapper
+                                          extensionFormData={extensionFormData}
+                                          extensionFormFields={extensionFormFields}
+                                          setShowExtensionFormDialog={setShowExtensionFormDialog}
+                                          setLoading={setLoading}
+                                          selectedRowData={selectedRowData}
+                                          api={api}
+                                          toast={toast}
+                                      />
+                                  </FormControl>
+                              </DialogContentText>
+                          </DialogContent>
+                          <DialogActions sx={{ padding: '12px 24px' }}>
+                              <Button onClick={() => setShowExtensionFormDialog(false)}>Cancel</Button>
+                          </DialogActions>
+                      </Dialog>
+                  }
 
       <Dialog
         open={showHistoryDialog}
@@ -12797,7 +13504,7 @@ const handleOpenExportPopup = async () => {
                                         value={listApprovalSearchValue}
                                         id="tableSearch"
                                         size="small"
-                                        placeholder='Search anything'
+                                        placeholder='Search'
                                         variant="outlined"
                                         className="profileSearchClass"
                                         onKeyDown={(e) => {

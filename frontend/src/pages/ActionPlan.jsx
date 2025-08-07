@@ -17,6 +17,12 @@ import {
   Grid,
   TextField,
 } from "@mui/material";
+import * as XLSX from 'xlsx';
+import Link from "@mui/material/Link";
+import DialogTitle from "@mui/material/DialogTitle";
+import UploadFileIcon from '@mui/icons-material/UploadFile';
+import CloseIcon from '@mui/icons-material/Close';
+import AddIcon from "@mui/icons-material/Add";
 import TextFieldInput from "@mui/material/TextField";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
@@ -30,9 +36,13 @@ import FilterListIcon from "@mui/icons-material/FilterList";
 import MultiSelect from "../components/form/MultiSelect";
 import AutocompleteField from "../components/form/AutoComplete";
 import ShortText from "../components/form/ShortText";
+import DateField from "../components/form/Date";
 import WestIcon from '@mui/icons-material/West';
+import { CircularProgress } from "@mui/material";
 
-const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowData, backNavigation}) => {
+const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowData, backNavigation, showMagazineView, fetchCounts}) => {
+
+    console.log("ActionPlan component rendered with options:", options);
     const location = useLocation();
     const navigate = useNavigate();
     const { pageCount, systemStatus } = location.state || {};
@@ -109,7 +119,9 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
     const [selectKey, setSelectKey] = useState(null);
     const [randomApprovalId, setRandomApprovalId] = useState(0);
     const hoverTableOptionsRef = useRef([]);
+    const [childTables, setChildTables] = useState([]);
 
+    const [actionPlanData, setActionPlanData] = useState([])
     const loadValueField = async (rowData, editData, table_name) => {
         if (!table_name || table_name === "") {
           toast.warning("Please Check Table Name", {
@@ -249,46 +261,72 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
               field.name !== "field_section"
           );
     
-          const briefFactField = response.data.fields.find((f) => f.name === "field_breif_fact");
+          const briefFactField = response.data.fields.find((f) => f.name === "field_brief_fact");
           const policeStationField = response.data.fields.find((f) => f.name === "field_investigation_carried_out_by_the_police_station");
+
+          console.log(briefFactField,"briefFactField");
+          console.log(response.data,"response.data");
     
           if (briefFactField && !aoOnlyFields.includes(briefFactField)) aoOnlyFields.push(briefFactField);
           if (policeStationField && !aoOnlyFields.includes(policeStationField)) aoOnlyFields.push(policeStationField);
     
-          for (const field of aoOnlyFields) {
-            if (field && field.api) {
-              const payloadApi = field.api;
-              const apiPayload = {}; // Define this as needed
-    
-              try {
-                const res = await api.post(payloadApi, apiPayload);
-                if (!res.data) continue;
-    
-                const updatedOptions = res.data.map((item) => {
-                    const nameKey = Object.keys(item).find((key) => !["id", "created_at", "updated_at"].includes(key));
-                    var headerName = nameKey;
-                    var headerId = 'id';
-    
-                    if(field.table === "users"){
-                        headerName = "name"
-                        headerId =  "user_id"
-                    }else if(field.api !== "/templateData/getTemplateData"){
-                        headerName = field.table + "_name"
-                        headerId =  field.table + "_id"
+            for (const field of aoOnlyFields) {
+                if (field && field.api) {
+                const payloadApi = field.api;
+                const apiPayload = {}; 
+
+                try {
+                    if (field.api === "/templateData/getTemplateData") {
+                    const table_name = field.table;
+                    apiPayload.table_name = table_name;
+                    const res = await api.post(payloadApi, apiPayload);
+                    if (!res.data) {
+                        field.options = [];
+                        continue;
                     }
-    
-                    return {
+                    let headerName = "name";
+                    let headerId = "id";
+                    const updatedOptions = res.data.map((item) => {
+                        headerName =
+                        Object.keys(item).find(
+                            (key) =>
+                            !["id", "created_at", "updated_at"].includes(key)
+                        ) || "name";
+                        headerId = "id";
+                        return {
                         name: item[headerName],
                         code: item[headerId],
-                    };
-                });
-    
-                field.options = updatedOptions;
-              } catch (err) {
-                console.error(`Error loading options for field ${field.name}`, err);
-              }
+                        };
+                    });
+                    field.options = updatedOptions;
+                    continue;
+                    }
+
+                    const res = await api.post(payloadApi, apiPayload);
+                    if (!res.data) {
+                    field.options = [];
+                    continue;
+                    }
+                    let headerName = "name";
+                    let headerId = "id";
+                    if (field.table === "users") {
+                    headerName = "name";
+                    headerId = "user_id";
+                    } else if (field.api !== "/templateData/getTemplateData") {
+                    headerName = field.table + "_name";
+                    headerId = field.table + "_id";
+                    }
+                    const updatedOptions = res.data.map((item) => ({
+                    name: item[headerName],
+                    code: item[headerId],
+                    }));
+                    field.options = updatedOptions;
+                } catch (err) {
+                    console.error(`Error loading options for field ${field.name}`, err);
+                    field.options = [];
+                }
+                }
             }
-          }
     
           setAoFields(aoOnlyFields);
           loadValueField(aoFieldId, false, "cid_under_investigation");
@@ -318,6 +356,247 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
         setIsValid(false);
     };
 
+            // start --- bulk upload functions
+        
+            const [bulkUploadShow, setBulkUploadShow] = useState(false);
+            const [selectedFile, setSelectedFile] = useState(null);
+        
+            const showBulkUploadScreen = ()=>{
+                setBulkUploadShow(true);
+                setSelectedFile(null);
+            }
+            
+            const handleFileChange = (event) => {
+                setSelectedFile(event.target.files[0]);
+            };
+        
+            const downloadExcelHeader = async ()=>{
+                
+                if(!options.table){
+                    toast.error('Template Not Found !', {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-error",
+                    });
+                    return;
+                }
+        
+                const downloadReport = {
+                    "table_name": options.table,
+                }
+                setLoading(true);
+        
+                try {
+                    const downloadReportResponse = await api.post("templateData/downloadExcelData", downloadReport);
+                    setLoading(false);
+        
+                    if (downloadReportResponse) {
+                        const blob = new Blob([downloadReportResponse], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement("a");
+                        a.href = url;
+                        a.download = `${options.table}_Report.xlsx`;
+        
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+        
+                        window.URL.revokeObjectURL(url);
+        
+                    } else {
+                        const errorMessage = downloadReportResponse.message ? downloadReportResponse.message : "Failed to download report. Please try again.";
+                        toast.error(errorMessage, {
+                            position: "top-right",
+                            autoClose: 3000,
+                            hideProgressBar: false,
+                            closeOnClick: true,
+                            pauseOnHover: true,
+                            draggable: true,
+                            progress: undefined,
+                            className: "toast-error",
+                        });
+                    }
+        
+                } catch (error) {
+                    setLoading(false);
+                    if (error && error.response && error.response['data']) {
+                        toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
+                            position: "top-right",
+                            autoClose: 3000,
+                            hideProgressBar: false,
+                            closeOnClick: true,
+                            pauseOnHover: true,
+                            draggable: true,
+                            progress: undefined,
+                            className: "toast-error",
+                        });
+                    }
+                }
+            }
+        
+            const checkUploadedFile = async ()=> {
+        
+                if(!options?.table){
+                    toast.error('Template Not Found !', {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-error",
+                    });
+                    return;
+                }
+        
+                if (!selectedFile) {
+                    toast.error('Please upload a file !', {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-warning",
+                    });
+                    return;
+                }
+        
+                const allowedExtensions = ['.xlsx', '.xls'];
+                const fileName = selectedFile.name.toLowerCase();
+                const isValid = allowedExtensions.some(ext => fileName.endsWith(ext));
+        
+                if (!isValid) {
+                    toast.error('Invalid file format. Please upload a valid Excel file (.xls or .xlsx) !', {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-warning",
+                    });
+                    return;
+                }
+        
+                const reader = new FileReader();
+        
+                reader.onload = async (e) => {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    
+                    const sheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[sheetName];
+        
+                    const headerColumn = XLSX.utils.sheet_to_json(worksheet, {
+                        header: 1,
+                    })[0];
+                    
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet);
+        
+                    // remove unwanted column
+        
+                    var ui_case_id = selectedRowData?.id;
+                    var pt_case_id = selectedRowData?.pt_case_id;
+        
+                    if(module === "pt_case"){
+                        ui_case_id = selectedRowData?.ui_case_id
+                        pt_case_id = selectedRowData?.id
+                    }
+        
+                    const rowExcelData = jsonData.map(({ __rowNum__, ...rest }) => ({...rest, ui_case_id, pt_case_id }));
+        
+                    if(rowExcelData.length === 0 || headerColumn.length === 0){
+                        toast.error('Excel Data and Header is Empty', {
+                            position: "top-right",
+                            autoClose: 3000,
+                            hideProgressBar: false,
+                            closeOnClick: true,
+                            pauseOnHover: true,
+                            draggable: true,
+                            progress: undefined,
+                            className: "toast-warning",
+                        });
+                        return
+                    }
+        
+                    var payloadData = {
+                        "table_name" : options?.table,
+                        "rowData" : rowExcelData,
+                        "columnData": headerColumn
+                    }
+        
+                    setLoading(true);
+                    try {
+                        const bulkInsertResponse = await api.post("templateData/bulkInsertData", payloadData);
+                        setLoading(false);
+        
+                        if (bulkInsertResponse?.success) {
+                            toast.success(bulkInsertResponse.message || "Data Uploaded Successfully", {
+                                position: "top-right",
+                                autoClose: 3000,
+                                hideProgressBar: false,
+                                closeOnClick: true,
+                                pauseOnHover: true,
+                                draggable: true,
+                                progress: undefined,
+                                className: "toast-success",
+                                onOpen: () => { handleOtherTemplateActions(options, selectedRow) }
+                            });
+        
+                            if(fetchCounts){
+                                fetchCounts();
+                            }
+                            setBulkUploadShow(false);
+                            setSelectedFile(null);
+        
+                        } else {
+                            toast.error(bulkInsertResponse.message || "Failed to Upload Data.", {
+                                position: "top-right",
+                                autoClose: 3000,
+                                hideProgressBar: false,
+                                closeOnClick: true,
+                                pauseOnHover: true,
+                                draggable: true,
+                                progress: undefined,
+                                className: "toast-error",
+                            });
+                        }
+        
+                    } catch (error) {
+                        setLoading(false);
+                        if (error && error.response && error.response['data']) {
+                            toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
+                                position: "top-right",
+                                autoClose: 3000,
+                                hideProgressBar: false,
+                                closeOnClick: true,
+                                pauseOnHover: true,
+                                draggable: true,
+                                progress: undefined,
+                                className: "toast-error",
+                            });
+                        }
+                    }
+        
+                };
+        
+                reader.readAsArrayBuffer(selectedFile);
+            }
+        
+            // end --- bulk upload functions
+        
+        
+    
     const handleOtherTemplateActions = async (options, selectedRow, searchFlag) => {
 
         const randomId = `random_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
@@ -481,6 +760,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                     setShowSubmitAPButton(anySubmitAP);
                     setIsImmediateSupervisior(isSuperivisor);
                     setAPIsSubmited(APisSubmited);
+                    setActionPlanData(getTemplateResponse.data, options.table, disabledEditFlag, disabledDeleteFlag, getTemplateResponse);
                     
                     if (getTemplateResponse.data[0]) {
                         var excludedKeys = [
@@ -494,7 +774,8 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                         "sys_status",
                         "field_status",
                         "field_submit_status",
-                        "supervisior_designation_id"
+                        "supervisior_designation_id",
+                        "field_approval_done_by",
                         ];
 
                     
@@ -519,14 +800,14 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                                     }
 
                                     return (
-                                        <Box sx={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                                        <Box sx={{ display: "flex", alignItems: "center", gap: "4px", paddingTop : "4px" }}>
                                             {params.value}
                                             {canDelete && !isViewAction && !isActionPlan && (
                                                 <DeleteIcon
                                                     sx={{ cursor: "pointer", color: "red", fontSize: 20 }}
                                                     onClick={(event) => {
                                                         event.stopPropagation();
-                                                        handleOthersDeleteTemplateData(params.row, options.table);
+                                                        handleOthersDeleteTemplateData(params.row, options.table,selectedRow.id);
                                                     }}
                                                 />
                                             )}
@@ -560,7 +841,8 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                                 return {
                                     field: key,
                                     headerName: updatedKeyName || "",
-                                    width: 250,
+                                    width: 540,
+                                    // cellClassName: 'wrap-cell',
                                     resizable: true,
                                     renderHeader: () => (
                                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
@@ -602,9 +884,19 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                                                         cursor: "pointer",
                                                         fontWeight: 400,
                                                         fontSize: "14px",
+                                                        whiteSpace: "normal",
+                                                        wordBreak: "break-word",
+                                                        overflowWrap: "break-word",
+                                                        display: "block",
+                                                        marginBottom: "6px",
                                                     }}
                                                 >
-                                                    {params.value || "View"}
+                                                    <div
+                                                        className="clamped-cell"
+                                                        title={params.value || "-"}
+                                                        >
+                                                        {params.value || "-"}
+                                                    </div>
                                                 </span>
                                             );
                                         }
@@ -770,6 +1062,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                 setOtherFormOpen(true);
                 setOtherRowId(rowData.id);
                 setOtherTemplateId(viewTemplateResponse["data"].template_id);
+                setChildTables(viewTemplateResponse?.["data"]?.["child_tables"] || []);
                 if (
                 viewTemplateResponse.data.no_of_sections &&
                 viewTemplateResponse.data.no_of_sections > 0
@@ -881,7 +1174,13 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                         </span>                  
                     ) : (
                         <span
-                            style={highlightColor}
+                            style={{
+                                ...highlightColor,
+                                whiteSpace: "normal",
+                                wordBreak: "break-word",
+                                display: "block",
+                            }}
+
                             onClick={onClickHandler}
                             className={`tableValueTextView Roboto`}
                         >
@@ -893,7 +1192,8 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
         );
     };
 
-    const handleOthersDeleteTemplateData = (rowData, table_name) => {
+    const handleOthersDeleteTemplateData = (rowData, table_name,ui_case_id) => {
+        console.log("rowdataaa", rowData)
         Swal.fire({
             title: "Are you sure?",
             text: "Do you want to delete this profile ?",
@@ -906,6 +1206,8 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
             const deleteTemplateData = {
                 table_name: table_name,
                 where: { id: rowData.id },
+                ui_case_id: ui_case_id,
+                transaction_id : "TXN_" + Date.now() + "_" + Math.floor(Math.random() * 1000000),
             };
             setLoading(true);
 
@@ -940,6 +1242,9 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                         ),
                     }
                 );
+                if (fetchCounts) {
+                    fetchCounts();
+                }
                 } else {
                 const errorMessage = deleteTemplateDataResponse.message
                     ? deleteTemplateDataResponse.message
@@ -1462,6 +1767,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
             setviewReadonly(false);
             setEditTemplateData(false);
             setOptionFormTemplateData(getCaseIdFields ? getCaseIdFields : []);
+            setChildTables(viewTemplateResponse?.["data"]?.["child_tables"] || []);
             if (
                 viewTemplateResponse.data.no_of_sections &&
                 viewTemplateResponse.data.no_of_sections > 0
@@ -1802,6 +2108,9 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                     }else{
                         loadTableData(paginationCount);
                     }
+                    if (isImmediateSupervisior && fetchCounts) {
+                        fetchCounts();
+                    }
                 },
             });
             } else {
@@ -1851,7 +2160,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
         let normalData = {};
         
         const allowedFields = [
-            "field_breif_fact",
+            "field_brief_fact",
             "field_investigation_carried_out_by_the_police_station"
         ];
     
@@ -1884,7 +2193,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                 progress: undefined,
                 className: "toast-success",
                 onOpen: () => {
-                    handleOtherTemplateActions("cid_ui_case_action_plan");
+                    handleOtherTemplateActions(selectedOtherTemplate, selectedRowData);
                 },
             });
             } else {
@@ -1897,6 +2206,14 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
             );
         }
     };
+
+    function sanitizeKey(str) {
+        return str
+            .toLowerCase()
+            .replace(/[^\w]/g, "_")
+            .replace(/_+/g, "_")
+            .replace(/^_+|_+$/g, "");
+        }
 
     const otherAPPRTemplateSaveFunc = async (data, saveNewAction) => {
     
@@ -1943,6 +2260,38 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
             }
           }
         });
+
+        let childTableDataMap = {};
+
+        if (childTables && Array.isArray(childTables)) {
+            childTables.forEach(child => {
+                const childFieldName = child.field_name;
+
+                if (data[childFieldName]) {
+                    let parsed;
+                    try {
+                        parsed = typeof data[childFieldName] === "string"
+                            ? JSON.parse(data[childFieldName])
+                            : data[childFieldName];
+                    } catch (err) {
+                        parsed = [];
+                    }
+
+                    if (Array.isArray(parsed)) {
+                        const normalizedRows = parsed.map(row => {
+                            let newRow = {};
+                            for (const key in row) {
+                                const sanitizedKey = sanitizeKey(key);
+                                newRow[sanitizedKey] = row[key];
+                            }
+                            return newRow;
+                        });
+
+                        childTableDataMap[child.child_table_name] = normalizedRows;
+                    }
+                }
+            });
+        }
       
         
         normalData.sys_status = isImmediateSupervisior ? "IO" : "ui_case";
@@ -1950,6 +2299,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
         normalData["ui_case_id"] = selectedRowData.id;
         formData.append("table_name", selectedOtherTemplate.table);
         formData.append("data", JSON.stringify(normalData));
+        formData.append("child_tables", JSON.stringify(childTableDataMap));
         formData.append("transaction_id", randomApprovalId);
         formData.append("user_designation_id", localStorage.getItem('designation_id') || null);
         formData.append("immediate_supervisior_id", ImmediateSupervisiorId || null);
@@ -1958,7 +2308,6 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
       
         try {
           const response = await api.post("/templateData/saveActionPlan", formData);
-          setLoading(false);
       
           if (response?.success) {
             toast.success(response.message || "Case Updated Successfully", {
@@ -1969,6 +2318,9 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
       
             setOtherFormOpen(false);
       
+            if (fetchCounts) {
+                fetchCounts();
+            }
             if (selectedOtherTemplate?.field) {
               const combinedData = {
                 id: selectedRowData.id,
@@ -1997,170 +2349,8 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
             autoClose: 3000,
             className: "toast-error",
           });
-        }
-    };
-    
-    const otherTemplateSaveFunc = async (data, saveNewAction) => {
-    
-        if ((!selectedOtherTemplate.table || selectedOtherTemplate.table === "")) {
-            toast.warning("Please Check The Template", {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-warning",
-            });
-            return;
-        }
-    
-        if (Object.keys(data).length === 0) {
-            toast.warning("Data Is Empty Please Check Once", {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-warning",
-            });
-            return;
-        }
-    
-    
-        const formData = new FormData();
-    
-        var normalData = {}; // Non-file upload fields
-    
-        optionFormTemplateData.forEach((field) => {
-          if (data[field.name]) {
-            if (field.type === "file" || field.type === "profilepicture") {
-              // Append file fields to formData
-              if (field.type === "file") {
-                if (Array.isArray(data[field.name])) {
-                  const hasFileInstance = data[field.name].some(
-                    (file) => file.filename instanceof File
-                  );
-                  var filteredArray = data[field.name].filter(
-                    (file) => file.filename instanceof File
-                  );
-                  if (hasFileInstance) {
-                    data[field.name].forEach((file) => {
-                      if (file.filename instanceof File) {
-                        formData.append(field.name, file.filename);
-                      }
-                    });
-    
-                    filteredArray = filteredArray.map((obj) => {
-                      return {
-                        ...obj,
-                        filename: obj.filename["name"],
-                      };
-                    });
-    
-                    formData.append(
-                      "folder_attachment_ids",
-                      JSON.stringify(filteredArray)
-                    );
-                  }
-                }
-              } else {
-                formData.append(field.name, data[field.name]);
-              }
-            } else {
-              // Add non-file fields to normalData
-              normalData[field.name] = Array.isArray(data[field.name]) ? data[field.name].join(",") : data[field.name]
-            }
-          }
-        });
-        normalData.sys_status = "ui_case";
-        normalData["ui_case_id"] = selectedRowData.id;
-    
-        var othersData = {};
-    
-    
-        formData.append("table_name", selectedOtherTemplate.table);
-        formData.append("data", JSON.stringify(normalData));
-        formData.append("others_data", JSON.stringify(othersData));
-        formData.append("transaction_id", randomApprovalId);
-        formData.append("user_designation_id", localStorage.getItem('designation_id') ? localStorage.getItem('designation_id') : null);
-    
-        setLoading(true);
-    
-        try {
-            const overallSaveData = await api.post("/templateData/saveDataWithApprovalToTemplates",formData);
-    
+        }finally {
             setLoading(false);
-    
-            if (overallSaveData && overallSaveData.success) {
-    
-                toast.success(overallSaveData.message ? overallSaveData.message : "Case Updated Successfully", {
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    className: "toast-success",
-                });
-    
-               if(saveNewAction){
-                  await handleOtherTemplateActions(selectedOtherTemplate, selectedRow);   
-                  showOptionTemplate('cid_ui_case_action_plan');
-                }else{
-                  handleOtherTemplateActions(selectedOtherTemplate, selectedRow);
-                }
-    
-                setOtherFormOpen(false);
-    
-                if(selectedOtherTemplate?.field){
-                    var combinedData = {
-                        id: selectedRowData.id,
-                        [selectKey.name]: selectedOtherFields.code,
-                    };
-            
-                    // update func
-                    onUpdateTemplateData(combinedData);
-    
-                    setSelectKey(null);
-                    setSelectedRow(null);
-                    setSelectedOtherFields(null);
-                    setselectedOtherTemplate(null);
-                }else{
-                    return;
-                }
-    
-            } else {
-                const errorMessage = overallSaveData.message ? overallSaveData.message : "Failed to change the status. Please try again.";
-                toast.error(errorMessage, {
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    className: "toast-error",
-                });
-            }
-        } catch (error) {
-            setLoading(false);
-            if (error && error.response && error.response["data"]) {
-                toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !",{
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    className: "toast-error",
-                });
-            }
         }
     };
 
@@ -2233,6 +2423,43 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
             }
           }
         });
+
+        let childTableDataMap = {};
+
+        if (childTables && Array.isArray(childTables)) {
+            childTables.forEach(child => {
+                const childFieldName = child.field_name;
+
+                if (data[childFieldName]) {
+                    let parsed;
+                    try {
+                        parsed = typeof data[childFieldName] === "string"
+                            ? JSON.parse(data[childFieldName])
+                            : data[childFieldName];
+                    } catch (err) {
+                        parsed = [];
+                    }
+
+                    if (Array.isArray(parsed)) {
+                        const normalizedRows = parsed.map(row => {
+                            let newRow = {};
+                            for (const key in row) {
+                                const sanitizedKey = sanitizeKey(key);
+                                newRow[sanitizedKey] = row[key];
+                            }
+                            return newRow;
+                        });
+
+                        childTableDataMap[child.child_table_name] = normalizedRows;
+                    }
+                }
+            });
+        }
+
+        if (data.hasOwnProperty("ui_case_id")) {
+            normalData.ui_case_id = data.ui_case_id;
+        }
+
     
         if(selectedOtherTemplate.table === "cid_ui_case_progress_report"){
             normalData["field_pr_status"] = "No";
@@ -2241,6 +2468,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
         formData.append("table_name", selectedOtherTemplate.table);
         formData.append("id", data.id);
         formData.append("data", JSON.stringify(normalData));
+        formData.append("child_tables", JSON.stringify(childTableDataMap));
         formData.append("transaction_id", randomApprovalId);
         formData.append( "user_designation_id", localStorage.getItem("designation_id") || null);
       
@@ -2448,17 +2676,195 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
     };
 
  
+    // --- Approval Stepper Logic (from LokayuktaView.jsx style) ---
+    // Get activeSidebar from localStorage (or context if available)
+    const activeSidebar = JSON.parse(localStorage.getItem("activeSidebar")) || {};
+    // Approval stepper arrays
+    const approvalStepperArray = options?.approval_steps ? JSON.parse(options.approval_steps) : [];
+    // Find approvalFieldArray from selectedRowData (if available)
+    const approvalFieldArray = selectedRowData?.approval_field_array || [];
+
+    // Approval stepper click handler (dummy, implement as needed)
+    const handleApprovalStepperClick = (step) => {
+        // Implement navigation or logic as per your requirements
+        // Example: toast.info(`Clicked step: ${step}`);
+    };
+
     return (
         <>
         <Box sx={{  overflow: 'auto' , height: '100vh'}}>
-            <Box pb={1} px={1} sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'start',}}>
+            {approvalStepperArray.length > 0 && (
+                <Box sx={{ display: "flex", justifyContent: 'center', alignItems: 'center', mb: 2, mt: 2 }}>
+                    {approvalStepperArray.map((step, index) => {
+                        let selected = false;
+                        let roleTitle = JSON.parse(localStorage.getItem("role_title")) || "";
+                        let designationName = localStorage.getItem("designation_name") || "";
+                        let stepperValue = "";
+
+                        if (roleTitle.toLowerCase() === "investigation officer") {
+                            stepperValue = "io";
+                        } else {
+                            const splitingValue = designationName.split(" ");
+                            if (splitingValue?.[0]) {
+                                stepperValue = splitingValue[0].toLowerCase();
+                            }
+                        }
+
+                        let alreadySubmited = false;
+                        let nextStageStep = false;
+
+                        let sysStatus = actionPlanData[0]?.sys_status;
+                        let fieldSubmitStatus = actionPlanData[0]?.field_submit_status;
+                        let stepLower = step.toLowerCase();
+                        // If sys_status is IO, mark IO as submitted
+                        if (sysStatus === "IO" && stepLower === "io") {
+                            alreadySubmited = true;
+                        }
+                        // If sys_status is IO and field_submit_status is submit, mark SP as submitted
+                        if (
+                            (sysStatus === "IO" && fieldSubmitStatus === "submit" && stepLower === "sp") ||
+                            (fieldSubmitStatus === "submit" && stepLower === "sp") ||
+                            (fieldSubmitStatus === "submit" && stepLower === "io" && sysStatus !== "IO")
+                        ) {
+                            alreadySubmited = true;
+                        }
+
+                        // Fallback to approvalFieldArray logic if not already submitted
+                        if (!alreadySubmited) {
+                            const lastApprovedRole = approvalFieldArray[0];
+                            const lastApprovedIndex = approvalStepperArray.indexOf(lastApprovedRole);
+
+                            const approvedStages = approvalStepperArray.slice(0, lastApprovedIndex + 1);
+
+                            const nextStepIndex = lastApprovedIndex + 1;
+                            const nextStep = approvalStepperArray[nextStepIndex];
+
+                            if (approvedStages.includes(step)) {
+                                alreadySubmited = true;
+                            } else if (step === nextStep) {
+                                nextStageStep = true;
+                            }
+                        }
+
+                        let statusLabel = "Not Approved";
+                        let statusClass = "submissionNotAssigned";
+
+                        if (alreadySubmited) {
+                            statusLabel = "Submitted";
+                            statusClass = "submissionCompleted";
+                        } else if (nextStageStep) {
+                            statusLabel = "Pending";
+                            statusClass = "submissionPending";
+                        }
+
+                        if (stepLower === stepperValue) {
+                            selected = true;
+                        }
+
+                        let StepperTitle = "";
+                        switch (stepLower) {
+                            case "io":
+                                StepperTitle = "Investigation Officer";
+                                break;
+                            case "la":
+                                StepperTitle = "Legal Advisor";
+                                break;
+                            case "sp":
+                                StepperTitle = "Superintendent of Police";
+                                break;
+                            case "dig":
+                                StepperTitle = "Deputy Inspector General";
+                                break;
+                            default:
+                                StepperTitle = "";
+                                break;
+                        }
+
+                        return (
+                            <span key={step} style={{ display: "flex", alignItems: "center" }}>
+                                <Button
+                                    variant="contained"
+                                    onClick={() => handleApprovalStepperClick(step)}
+                                    sx={() => {
+                                        let backgroundColor = "#f0f0f0";
+                                        let color = "#333";
+                                        let boxShadow = "0 2px 6px rgba(0, 0, 0, 0.1)";
+
+                                        if (alreadySubmited) {
+                                            backgroundColor = "#27ae60";
+                                            color = "#fff";
+                                            boxShadow = "0 0 0 5px #d4f7e8";
+                                        } else if (nextStageStep) {
+                                            backgroundColor = "#ffd230";
+                                            color = "#333";
+                                            boxShadow = "0 0 0 5px #fff4cc ";
+                                        } else if (selected) {
+                                            backgroundColor = "#1570ef";
+                                            color = "#fff";
+                                            boxShadow = "0 0 0 5px #dcebff ";
+                                        }
+
+                                        return {
+                                            backgroundColor,
+                                            color,
+                                            minWidth: 52,
+                                            height: 50,
+                                            borderRadius: '50%',
+                                            padding: '16px',
+                                            fontWeight: 600,
+                                            boxShadow,
+                                            transition: "all 0.3s ease-in-out",
+                                            transform: selected ? "translateY(-2px)" : "none",
+                                            "&:hover": {
+                                                backgroundColor: alreadySubmited
+                                                    ? "#219150"
+                                                    : nextStageStep
+                                                        ? "#e6c200"
+                                                        : selected
+                                                            ? "#2980b9"
+                                                            : "#dcdcdc",
+                                                boxShadow: alreadySubmited
+                                                    ? "0 8px 16px rgba(39, 174, 96, 0.5)"
+                                                    : nextStageStep
+                                                        ? "0 8px 16px rgba(255, 210, 48, 0.5)"
+                                                        : selected
+                                                            ? "0 8px 16px rgba(52, 152, 219, 0.5)"
+                                                            : "0 4px 10px rgba(0, 0, 0, 0.15)",
+                                                transform: "translateY(-3px)",
+                                            }
+                                        };
+                                    }}
+                                >
+                                    {step}
+                                </Button>
+                                <Box px={2}>
+                                    <div className="investigationStepperTitle" style={{ marginBottom: '4px' }}>
+                                        {StepperTitle}
+                                    </div>
+                                    <div className={`stepperCompletedPercentage ${statusClass}`}>
+                                        {statusLabel}
+                                    </div>
+                                </Box>
+                                {index < approvalStepperArray.length - 1 && (
+                                    <Box
+                                        sx={{
+                                            width: 60,
+                                        }}
+                                        className="divider"
+                                    />
+                                )}
+                            </span>
+                        );
+                    })}
+                </Box>
+            )}
+
+            <Box py={1} px={2} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', }}>
                 <Box
                     sx={{
                         width: '100%',
-                        p: 2,
                         bgcolor: 'background.paper',
                         borderRadius: 2,
-                        boxShadow: 2,
                         zIndex: 1,
                     }}
                 >
@@ -2471,8 +2877,8 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                             mb: 2
                         }}
                     >
-                        <Box 
-                            sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }} 
+                        <Box
+                            sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }}
                             onClick={() => backNavigation()}
                         >
                             <WestIcon />
@@ -2480,25 +2886,42 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                                 {selectedOtherTemplate?.name}
                             </Typography>
 
-                            {selectedRowData?.["field_cid_crime_no./enquiry_no"] && (
+                            {/* {selectedRowData?.["field_cid_crime_no./enquiry_no"] && ( */}
+                            {headerDetails && (
+                                <Tooltip title={headerDetails}>
                                 <Chip
-                                    label={selectedRowData["field_cid_crime_no./enquiry_no"]}
+                                    label={
+                                    <Typography
+                                        sx={{
+                                        fontSize: '13px',
+                                        maxWidth: 230,
+                                        whiteSpace: 'nowrap',
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                        fontWeight: 500, marginTop: '2px'
+                                        }}
+                                    >
+                                        {headerDetails}
+                                    </Typography>
+                                    }
                                     color="primary"
                                     variant="outlined"
                                     size="small"
-                                    sx={{ fontWeight: 500, mt: '2px' }}
+                                    sx={{ fontWeight: 500, marginTop: '2px' }}
                                 />
+                                </Tooltip>
                             )}
+                            {/* )} */}
 
-                            <Box className="totalRecordCaseStyle">
+                            {/* <Box className="totalRecordCaseStyle">
                                 {otherTemplatesTotalRecord} Records
-                            </Box>
+                            </Box> */}
 
-                            {APIsSubmited && !isImmediateSupervisior && (
+                            {/* {APIsSubmited && !isImmediateSupervisior && (
                                 <Box className="notifyAtTopCaseStyle">
                                     Submission request in progress. Awaiting SP approval.
                                 </Box>
-                            )}
+                            )} */}
                         </Box>
 
                         {/* Actions Section */}
@@ -2514,22 +2937,22 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                                                     <SearchIcon sx={{ color: "#475467" }} />
                                                 </InputAdornment>
                                             ),
-                                            endAdornment: (
-                                                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                                                    <IconButton
-                                                        sx={{ px: 1, borderRadius: 0 }}
-                                                        onClick={() => handleOthersFilter(selectedOtherTemplate)}
-                                                    >
-                                                        <FilterListIcon sx={{ color: "#475467" }} />
-                                                    </IconButton>
-                                                </Box>
-                                            ),
+                                            // endAdornment: (
+                                            //     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                            //         <IconButton
+                                            //             sx={{ px: 1, borderRadius: 0 }}
+                                            //             onClick={() => handleOthersFilter(selectedOtherTemplate)}
+                                            //         >
+                                            //             <FilterListIcon sx={{ color: "#475467" }} />
+                                            //         </IconButton>
+                                            //     </Box>
+                                            // ),
                                         }}
                                         onInput={(e) => setOtherSearchValue(e.target.value)}
                                         value={otherSearchValue}
                                         id="tableSearch"
                                         size="small"
-                                        placeholder="Search anything"
+                                        placeholder="Search"
                                         variant="outlined"
                                         className="profileSearchClass"
                                         onKeyDown={(e) => {
@@ -2539,7 +2962,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                                             }
                                         }}
                                         sx={{
-                                            width: '350px',
+                                            width: { xs: '100%', sm: '250px' },
                                             borderRadius: '6px',
                                             '& .MuiInputBase-input::placeholder': {
                                                 color: '#475467',
@@ -2561,19 +2984,38 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                                                 mt: 1,
                                             }}
                                         >
-                                            Clear Filter
+                                            Clear Search
                                         </Typography>
                                     )}
                                 </Box>
 
-                               
+                                <Box
+                                    sx={{
+                                        display: 'flex',
+                                        flexWrap: 'wrap',
+                                        gap: 1.5,
+                                        justifyContent: 'flex-end',
+                                        marginLeft: 'auto',
+                                    }}
+                                >
+
                                 {!viewModeOnly && !showSubmitAPButton && templateActionAddFlag.current === true && (
                                     <Button
-                                        variant="outlined"
-                                        sx={{ height: '40px' }}
-                                        onClick={() => showOptionTemplate('cid_ui_case_action_plan')}
+                                        sx={{height: "38px",}}
+                                        className="blueButton"
+                                        startIcon={
+                                            <AddIcon
+                                                sx={{
+                                                    border: "1.3px solid #FFFFFF",
+                                                    borderRadius: "50%",
+                                                    background:"#4D4AF3 !important",
+                                                }}
+                                            />
+                                        }
+                                        variant="contained"
+                                        onClick={() => showOptionTemplate(selectedOtherTemplate?.table || 'cid_ui_case_action_plan')}
                                     >
-                                        Add
+                                        Add New
                                     </Button>
                                 )}
                                 {!showSubmitAPButton && (
@@ -2583,9 +3025,33 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                                         onClick={() => handleSubmitAp({ id: selectedRowData?.id })}
                                         disabled={otherTemplatesTotalRecord === 0}
                                     >
-                                        Submit
+                                        {isImmediateSupervisior ? "Approve" : "Submit for Approval"}
+                                        {/* {JSON.parse(localStorage.getItem("role_title")).toLowerCase() === "investigation officer" ? "Submit for Approval" : "Approve"} */}
                                     </Button>
                                 )}
+                                {
+                                    userPermissions && userPermissions?.[0]?.['bulk_upload'] === true &&
+                                    <Button
+                                        variant="contained"
+                                        color="success"
+                                        size="large"
+                                        sx={{ height: "38px" }}
+                                        onClick={showBulkUploadScreen}
+                                    >
+                                        Bulk Upload
+                                    </Button>
+                                }
+                                {/* {
+                                    showMagazineView && 
+                                    <Button
+                                        onClick={()=>showMagazineView(false)}
+                                        sx={{height: "38px", textTransform: 'none'}}
+                                        className="whiteBorderedBtn"
+                                    >
+                                        Case Docket
+                                    </Button>
+                                } */}
+                                </Box>
                             </Box>
                         </Box>
                     </Box>
@@ -2594,34 +3060,51 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 2 }}>
                         {aoFields.length > 0 ? (
                             <Grid container spacing={2}>
-                                {aoFields.slice(0, 6).map((field, index) => (
-                                    <Grid item xs={12} md={4} key={index}>
-                                        {field.type === 'text' && (
-                                            <ShortText key={field.id} field={field} formData={filterAoValues} disabled />
-                                        )}
-                                        {field.type === 'multidropdown' && (
-                                            <MultiSelect
-                                                key={field.id}
-                                                field={field}
-                                                formData={filterAoValues}
-                                                onChange={(name, selectedCode) => handleAutocomplete(field, selectedCode)}
-                                                disabled
-                                            />
-                                        )}
-                                        {(field.type === 'dropdown' || field.type === 'autocomplete') && (
-                                            <AutocompleteField
-                                                key={field.id}
-                                                field={field}
-                                                formData={filterAoValues}
-                                                onChange={(name, selectedCode) => handleAutocomplete(field, selectedCode)}
-                                                value={(() => {
-                                                    const fieldValue = filterAoValues?.[field.name];
-                                                    return field.options.find(opt => String(opt.code) === String(fieldValue)) || null;
-                                                })()}
-                                                disabled
-                                            />
-                                        )}
-                                    </Grid>
+                                {aoFields.map((field, index) => (
+                                <Grid item xs={12} md={4} key={index}>
+                                    {field.type === 'text' && (
+                                    <ShortText
+                                        key={field.id}
+                                        field={field}
+                                        formData={filterAoValues}
+                                        disabled
+                                    />
+                                    )}
+
+                                    {field.type === 'multidropdown' && (
+                                    <MultiSelect
+                                        key={field.id}
+                                        field={field}
+                                        formData={filterAoValues}
+                                        onChange={(name, selectedCode) => handleAutocomplete(field, selectedCode)}
+                                        disabled
+                                    />
+                                    )}
+
+                                    {(field.type === 'dropdown' || field.type === 'autocomplete') && (
+                                    <AutocompleteField
+                                        key={field.id}
+                                        field={field}
+                                        formData={filterAoValues}
+                                        onChange={(name, selectedCode) => handleAutocomplete(field, selectedCode)}
+                                        value={(() => {
+                                        const fieldValue = filterAoValues?.[field.name];
+                                        return field.options.find(
+                                            (opt) => String(opt.code) === String(fieldValue)
+                                        ) || null;
+                                        })()}
+                                        disabled
+                                    />
+                                    )}
+
+                                    {field.type === 'date' && (
+                                    <DateField
+                                        field={field}
+                                        formData={filterAoValues}
+                                        readOnly={true}
+                                    />
+                                    )}
+                                </Grid>
                                 ))}
 
                                 {/* Text Areas */}
@@ -2682,6 +3165,8 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                         paginationCount={otherTemplatesPaginationCount}
                         handlePagination={handleOtherPagination}
                         tableName={selectedOtherTemplate?.table}
+                        dynamicRowHeight={true}
+                        shouldPadRows={true}
                     />
                 </Box>
             </Box>
@@ -2690,7 +3175,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
         {otherFormOpen && (
             <Dialog
                 open={otherFormOpen}
-                onClose={() => closeOtherForm}
+                onClose={closeOtherForm}
                 aria-labelledby="alert-dialog-title"
                 aria-describedby="alert-dialog-description"
                 maxWidth="xl"
@@ -2726,8 +3211,87 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
             </DialogActions>
             </Dialog>
         )}
+
+        {loading && (
+        <div className="parent_spinner" tabIndex="-1" aria-hidden="true">
+            <CircularProgress size={100} />
+        </div>
+        )}
+         {
+            bulkUploadShow &&
+                <Dialog
+                    open={bulkUploadShow}
+                    onClose={()=>setBulkUploadShow(false)}
+                    maxWidth="sm"
+                    fullWidth
+                    PaperProps={{ sx: { borderRadius: 3, p: 2} }}
+                >
+                    <Box display="flex" justifyContent="space-between" alignItems="center">
+                        <DialogTitle sx={{ fontWeight: 600, fontSize: '20px', pb: 0  }}>Excel Upload</DialogTitle>
+                        <IconButton onClick={()=>setBulkUploadShow(false)}>
+                            <CloseIcon />
+                        </IconButton>
+                    </Box>
+
+                    <DialogContent>
+                        <Typography sx={{ mb: 2 }}>
+                            Please check Excel header before upload. If needed,&nbsp;
+                            <Link onClick={downloadExcelHeader} underline="hover" rel="noopener" sx={{cursor: 'pointer'}}>
+                                Download here
+                            </Link>
+                        </Typography>
+
+                        <Box
+                            component="label"
+                            htmlFor="excel-upload"
+                            sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                flexDirection: 'column',
+                                border: '2px dashed #1976d2',
+                                p: 5,
+                                textAlign: 'center',
+                                borderRadius: 2,
+                                backgroundColor: '#f9f9f9',
+                                cursor: 'pointer',
+                                '&:hover': { backgroundColor: '#f0f0f0' },
+                            }}
+                        >
+                            <UploadFileIcon sx={{ fontSize: 48, color: '#1976d2', mb: 1 }} />
+                            <Typography variant="h6" fontWeight={500} sx={{ color: '#555' }}>
+                                Click here to upload Excel file
+                            </Typography>
+                            <input
+                                type="file"
+                                accept=".xlsx, .xls"
+                                id="excel-upload"
+                                hidden
+                                onChange={handleFileChange}
+                            />
+                        </Box>
+
+                        {selectedFile && (
+                            <Box sx={{display: 'flex', justifyContent: 'space-between'}}>
+                                <Typography mt={2} color="blue">
+                                    Selected File: {selectedFile.name}
+                                </Typography>
+                                <Button
+                                    variant="contained"
+                                    color="success"
+                                    sx={{ mt: 2, textTransform: 'uppercase', fontWeight: 500 }}
+                                    startIcon={<UploadFileIcon />}
+                                    onClick={checkUploadedFile}
+                                >
+                                    Upload
+                                </Button>
+                            </Box>
+                        )}
+                    </DialogContent>
+                </Dialog>
+        }
         </>
-    );    
+    );
 };
 
 export default ActionPlan;

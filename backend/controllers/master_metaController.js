@@ -43,7 +43,7 @@ exports.fetch_masters_meta = async (req, res) => {
     const totalPages = Math.ceil(totalItems / limit);
     return res.status(200).json({ success: true, master ,meta: { page, limit, totalItems,totalPages, order,},});
   } catch (error) {
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ success: false, message: "Failed to fetch master meta data." + error.message });
   }
 };
 
@@ -668,7 +668,7 @@ exports.fetch_specific_master_data = async (req, res) => {
           limit,
           offset,
           order: [[sort_by, order]],
-          attributes: ["id", "kgid", "name", "mobile", "created_at"],
+          attributes: ["id", "kgid", "name", "mobile", "start_date", "end_date", "created_at"],
         });
 
         data = kgids.rows;
@@ -776,7 +776,7 @@ exports.fetch_specific_master_data = async (req, res) => {
     });
   } catch (error) {
     console.error("Error fetching master data:", error);
-    return res.status(500).json({ message: "Internal server error" });
+    return res.status(500).json({ message: "Failed to Fetch data" + error.message });
   }
 };
 
@@ -806,7 +806,7 @@ exports.create_master_data = async (req, res) => {
             const existingDepartment = await Department.findOne({
             where: {
                 department_name: {
-                [Op.iLike]: `%${data.department_name}%`,
+                [Op.iLike]: data.department_name,
                 },
             },
             });
@@ -821,7 +821,7 @@ exports.create_master_data = async (req, res) => {
             const existingDesignation = await Designation.findOne({
             where: {
                 designation_name: {
-                [Op.iLike]: `%${data.designation_name}%`,
+                [Op.iLike]: data.designation_name,
                 },
             },
             });
@@ -897,7 +897,7 @@ exports.create_master_data = async (req, res) => {
             const existingDivision = await Division.findOne({
             where: {
                 division_name: {
-                [Op.iLike]: `%${data.division_name}%`,
+                [Op.iLike]: data.division_name,
                 },
             },
             });
@@ -917,7 +917,7 @@ exports.create_master_data = async (req, res) => {
           const existingApprovalItem = await ApprovalItem.findOne({
               where: {
                   name: {
-                      [Op.iLike]: `%${data.name}%`,
+                      [Op.iLike]: data.name,
                   },
               },
           });
@@ -1078,7 +1078,7 @@ exports.create_master_data = async (req, res) => {
             const existingAct = await Act.findOne({
             where: {
                 act_name: {
-                [Op.iLike]: `%${data.act_name}%`,
+                [Op.iLike]: data.act_name,
                 },
             },
             });
@@ -1089,11 +1089,12 @@ exports.create_master_data = async (req, res) => {
             break;
         case "Section":
             const existingSection = await Section.findOne({
-            where: {
-                section_name: {
-                [Op.iLike]: `%${data.section_name}%`,
+                where: {
+                    section_name: {
+                    [Op.iLike]: data.section_name, // Case-insensitive partial match
+                    },
+                    act_id: data.act_id,
                 },
-            },
             });
             if (existingSection) {
                  return res.status(409).json({success: false,message: "Similar section name already exists.",});
@@ -1117,7 +1118,7 @@ exports.create_master_data = async (req, res) => {
     });
   } catch (error) {
     console.log("Error creating master data:", error);
-    return res.status(500).json({ message: "Internal server error" });
+    return res.status(500).json({ message: "Failed to create master data.", error: error.message });
   } finally {
     if (fs.existsSync(dirPath))
       fs.rmSync(dirPath, { recursive: true, force: true });
@@ -1457,7 +1458,7 @@ exports.update_master_data = async (req, res) => {
     });
   } catch (error) {
     console.log("Error updating master data:", error);
-    return res.status(500).json({ message: "Internal server error" });
+    return res.status(500).json({ message: "Failed to update data" + error.message });
   } finally {
     if (fs.existsSync(dirPath))
       fs.rmSync(dirPath, { recursive: true, force: true });

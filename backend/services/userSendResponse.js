@@ -32,8 +32,8 @@ const userSendResponse = async (
 
     try {
         // Store the log in the database
-        if (UserLog && typeof UserLog.create === "function") {
-            //await UserLog.create(userApiLog);
+        if (UserLog) {
+            await UserLog.create(userApiLog);
 
         } else {
             console.warn("UserLog model is not defined or not initialized.");

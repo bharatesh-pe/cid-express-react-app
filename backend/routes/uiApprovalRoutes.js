@@ -19,6 +19,11 @@ router.post(
   uiCaseApprovalController.get_alert_notification
 );
 router.post(
+  "/mark_alert_notification_read",
+  [validate_token],
+  uiCaseApprovalController.mark_alert_notification_read
+);
+router.post(
   "/get_case_approval_by_id",
   [validate_token],
   uiCaseApprovalController.get_case_approval_by_id

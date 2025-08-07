@@ -101,6 +101,29 @@ const router = express.Router();
         limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
     });
 
+
+    const uploadHelpVideos = multer({
+        storage: multer.diskStorage({
+            destination: (req, file, cb) => {
+                const safeModule = (req.body.module || 'default').replace(/[^a-zA-Z0-9-_]/g, '');
+                const uploadPath = path.join(__dirname, "../data/helpVideos", safeModule);
+                fs.mkdirSync(uploadPath, { recursive: true });
+                cb(null, uploadPath);
+            },
+            filename: (req, file, cb) => {
+                const safeModule = (req.body.module || 'default').replace(/[^a-zA-Z0-9-_]/g, '');
+                const uploadPath = path.join(__dirname, "../data/helpVideos", safeModule);
+                const fullPath = path.join(uploadPath, file.originalname);
+
+                if (fs.existsSync(fullPath)) {
+                    return cb(new Error(`File "${file.originalname}" already exists in this module`), null);
+                }
+                cb(null, file.originalname);
+            }
+        }),
+        limits: { fileSize: 500 * 1024 * 1024 }
+    });
+
 // AWS S3 Configuration
 // const s3Client = new S3Client({
 //     region: process.env.AWS_REGION,
@@ -208,6 +231,27 @@ router.post(
     templateDataController.insertTemplateData
 );
 
+router.post(
+    '/insertTwoTemplateData',
+    // eitherAuthMiddleware,
+    (req, res, next) => {
+        if (req.is('multipart/form-data')) {
+            upload.any()(req, res, (err) => {
+                if (err) {
+                    console.error('Error during file upload:', err);
+                    return res.status(400).json(
+                        userSendResponse(false, req, 'File upload failed', err)
+                    );
+                }
+                next();
+            });
+        } else {
+            next();
+        }
+    },
+    [insertDataValidation],[validate_token],
+    templateDataController.insertTwoTemplateData
+);
 
 
 router.post('/updateTemplateData',
@@ -234,6 +278,31 @@ router.post('/updateTemplateData',
     },
     [validate_token],
     templateDataController.updateTemplateData)
+router.post('/updateEditTemplateData',
+    // userAuthMiddleware,
+    // eitherAuthMiddleware,
+    (req, res, next) => {
+        // Dynamically decide whether to use file upload middleware based on request
+        if (req.is('multipart/form-data')) {
+            upload.any()(req, res, (err) => {
+                if (err) {
+                    console.error('Error during file upload:', err);
+                    return res
+                        .status(400)
+                        .json(
+                            userSendResponse(false, req, 'File upload failed', err)
+                        );
+                }
+                next();
+            });
+        } else {
+            // If not multipart/form-data, skip the file upload step
+            next();
+        }
+    },
+    [validate_token],
+    templateDataController.updateEditTemplateData)
+
 router.post('/deleteTemplateData',
     // eitherAuthMiddleware,
     // userAuthMiddleware,
@@ -250,11 +319,80 @@ router.post('/getTemplateData',
     // userAuthMiddleware,
     [gwtDataValidation],[validate_token],
     templateDataController.getTemplateData)
-router.post('/getPrimaryTemplateData',
+router.post('/bulkUpdateColumn',
     // eitherAuthMiddleware,
     // userAuthMiddleware,
     [gwtDataValidation],[validate_token],
+    templateDataController.bulkUpdateColumn)
+router.post('/bulkInsertData',
+    [gwtDataValidation],[validate_token],
+    templateDataController.bulkInsertData)
+router.post('/updateFieldsWithApproval',
+    // eitherAuthMiddleware,
+    // userAuthMiddleware,
+    [gwtDataValidation],[validate_token],
+    templateDataController.updateFieldsWithApproval)
+
+router.post('/getTemplateAlongWithData',
+    [gwtDataValidation],[validate_token],
+    templateDataController.getTemplateAlongWithData)
+
+router.post('/getTemplateDataWithAccused',
+    [gwtDataValidation],[validate_token],
+    templateDataController.getTemplateDataWithAccused)
+
+router.post('/getDateWiseTableCounts',
+    [validate_token],
+    templateDataController.getDateWiseTableCounts)
+router.post('/viewMagazineTemplateAllData',
+    [validate_token],
+    templateDataController.viewMagazineTemplateAllData)
+
+    router.post('/gettingAllHelpVideos',
+        [validate_token],
+        templateDataController.gettingAllHelpVideos)
+
+    router.post("/uploadHelpVideo", (req, res) => {
+        uploadHelpVideos.any()(req, res, function (err) {
+            if (err) {
+                console.error('Error Message', err.message);
+                return res.json({
+                    success: false,
+                    message: err.message || "Upload failed",
+                });
+            }
+
+            return res.json({
+                success: true,
+                message: "File uploaded successfully",
+                files: req.files.map(file => ({
+                    originalname: file.originalname,
+                    filename: file.filename,
+                    size: file.size,
+                    path: file.path
+                })),
+                module: req.body.module
+            });
+        });
+    });
+
+router.post('/getTemplateDataWithDate',
+    [validate_token],
+    templateDataController.getTemplateDataWithDate)
+
+router.post('/getSingleTemplateDataWithDate',
+    [validate_token],
+    templateDataController.getSingleTemplateDataWithDate)
+
+router.post('/getPrimaryTemplateData',
+    [gwtDataValidation],[validate_token],
     templateDataController.getPrimaryTemplateData)
+router.post('/getPrimaryTemplateDataWithoutPagination',
+    [gwtDataValidation],[validate_token],
+    templateDataController.getPrimaryTemplateDataWithoutPagination)
+router.post('/addDropdownSingleFieldValue',
+    [validate_token],
+    templateDataController.addDropdownSingleFieldValue)
 
     router.post('/getActionTemplateData',
     // eitherAuthMiddleware,
@@ -428,6 +566,8 @@ router.post('/submitActionPlanPR',[validate_token],
     templateDataController.submitPropertyFormFSL)
 router.post('/checkFinalSheet',[validate_token],
    templateDataController.checkFinalSheet)
+   
+router.post('/getTableCountsByCaseId', templateDataController.getTableCountsByCaseId)
    
         
 module.exports = router;

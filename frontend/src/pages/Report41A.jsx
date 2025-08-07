@@ -32,7 +32,7 @@ import AutocompleteField from "../components/form/AutoComplete";
 import ShortText from "../components/form/ShortText";
 import WestIcon from '@mui/icons-material/West';
 
-const Report41A = ({templateName, headerDetails, rowId, options, selectedRowData, backNavigation, case_table_name}) => {
+const Report41A = ({templateName, headerDetails, rowId, options, selectedRowData, backNavigation, case_table_name, showMagazineView}) => {
     const location = useLocation();
     const navigate = useNavigate();
     const { pageCount, systemStatus } = location.state || {};
@@ -1829,7 +1829,7 @@ const Report41A = ({templateName, headerDetails, rowId, options, selectedRowData
         let normalData = {};
         
         const allowedFields = [
-            "field_breif_fact",
+            "field_brief_fact",
             "field_investigation_carried_out_by_the_police_station"
         ];
     
@@ -2429,14 +2429,12 @@ const Report41A = ({templateName, headerDetails, rowId, options, selectedRowData
     return (
         <>
         <Box sx={{  overflow: 'auto' , height: '100vh'}}>
-            <Box pb={1} px={1} sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'start',}}>
+            <Box py={1} px={2} sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'start',}}>
                 <Box
                     sx={{
                         width: '100%',
-                        p: 2,
                         bgcolor: 'background.paper',
                         borderRadius: 2,
-                        boxShadow: 2,
                         zIndex: 1,
                     }}
                 >
@@ -2492,22 +2490,22 @@ const Report41A = ({templateName, headerDetails, rowId, options, selectedRowData
                                                     <SearchIcon sx={{ color: "#475467" }} />
                                                 </InputAdornment>
                                             ),
-                                            endAdornment: (
-                                                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                                                    <IconButton
-                                                        sx={{ px: 1, borderRadius: 0 }}
-                                                        onClick={() => handleOthersFilter(selectedOtherTemplate)}
-                                                    >
-                                                        <FilterListIcon sx={{ color: "#475467" }} />
-                                                    </IconButton>
-                                                </Box>
-                                            ),
+                                            // endAdornment: (
+                                            //     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                            //         <IconButton
+                                            //             sx={{ px: 1, borderRadius: 0 }}
+                                            //             onClick={() => handleOthersFilter(selectedOtherTemplate)}
+                                            //         >
+                                            //             <FilterListIcon sx={{ color: "#475467" }} />
+                                            //         </IconButton>
+                                            //     </Box>
+                                            // ),
                                         }}
                                         onInput={(e) => setOtherSearchValue(e.target.value)}
                                         value={otherSearchValue}
                                         id="tableSearch"
                                         size="small"
-                                        placeholder="Search anything"
+                                        placeholder="Search"
                                         variant="outlined"
                                         className="profileSearchClass"
                                         onKeyDown={(e) => {
@@ -2539,7 +2537,7 @@ const Report41A = ({templateName, headerDetails, rowId, options, selectedRowData
                                                 mt: 1,
                                             }}
                                         >
-                                            Clear Filter
+                                            Clear Search
                                         </Typography>
                                     )}
                                 </Box>
@@ -2551,6 +2549,16 @@ const Report41A = ({templateName, headerDetails, rowId, options, selectedRowData
                                     >
                                         Add
                                     </Button>
+                                    {/* {
+                                        showMagazineView && 
+                                        <Button
+                                            onClick={()=>showMagazineView(false)}
+                                            sx={{height: "38px", textTransform: 'none'}}
+                                            className="whiteBorderedBtn"
+                                        >
+                                            Case Docket
+                                        </Button>
+                                    } */}
 
                             </Box>
                         </Box>

@@ -15,6 +15,7 @@ import ProfilePicture from '../components/form/ProfilePicture';
 import AutocompleteField from '../components/form/AutoComplete';
 import TabsComponents from '../components/form/Tabs';
 import RichTextEditor from '../components/form/RichTextEditor';
+import TableField from '../components/form/Table';
 
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
@@ -42,6 +43,8 @@ import RightIcon from '../Images/RightArrow.svg';
 import LeftIcon from '../Images/LeftArrow.svg'
 import pdfIcon from '../Images/pdfIcon.svg'
 import docIcon from '../Images/docIcon.svg'
+import docxIcon from '../Images/docxIcon.svg'
+// import docxIcon from '@mui/icons-material/Description';
 import xlsIcon from '../Images/xlsIcon.svg'
 import pptIcon from '../Images/pptIcon.svg'
 import jpgIcon from '../Images/jpgIcon.svg'
@@ -53,6 +56,7 @@ import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 import InfoIcon from '@mui/icons-material/Info';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -61,6 +65,9 @@ import HistoryIcon from '@mui/icons-material/History';
 
 import EditIcon from '@mui/icons-material/Edit';
 import CloseIcon from '@mui/icons-material/Close';
+import DropdownWithAdd from '../components/form/DropdownWithAdd';
+import Swal from 'sweetalert2';
+import SelectField from '../components/form/Select';
 
 const camelize = (str) => {
     return str.replace(/(?:^\w|[A-Z]|\b\w|\s+)/g, (match, index) => (index === 0 ? match.toLowerCase() : match.toUpperCase())).replace(/\s+/g, '');
@@ -102,18 +109,93 @@ const Formbuilder = () => {
     // Array for step labels
     const steps = stepper;
 
+    const [dropdownInputValue, setDropdownInputValue] = useState({});
+
     const [loading, setLoading] = useState(false); // State for loading indicator
+
+    const [propEditIndex, setPropEditIndex] = useState(null);
+    const [propEditField, setPropEditField] = useState(null);
+    const [showPropsModal, setShowPropsModal] = useState(false);
+
+    const handleOpenPropsModal = (index) => {
+        const field = selectedField.tableHeaders[index];
+        setPropEditIndex(index);
+        setPropEditField({ ...field });
+        setShowPropsModal(true);
+    };
+
+    const handleSaveProps = () => {
+        const updatedHeaders = [...selectedField.tableHeaders];
+        updatedHeaders[propEditIndex] = propEditField;
+
+        setSelectedField({ ...selectedField, tableHeaders: updatedHeaders });
+        setFields(fields.map(f => f.id === selectedField.id ? { ...f, tableHeaders: updatedHeaders } : f));
+        setShowPropsModal(false);
+    };
+
+    const importOptionsToField = (index, dbOptions) => {
+        const updatedHeaders = [...selectedField.tableHeaders];
+        updatedHeaders[index].fieldType = {
+            ...(updatedHeaders[index].fieldType || {}),
+            options: dbOptions
+        };
+
+        setSelectedField({ ...selectedField, tableHeaders: updatedHeaders });
+        setFields(fields.map(f => f.id === selectedField.id ? { ...f, tableHeaders: updatedHeaders } : f));
+    };
 
     useEffect(() => {
         if (Createdfields && action === 'edit') {
             if (Createdfields.length > 0) {
 
+                const excludedTypes = ['file', 'profilepicture', 'table', 'tabs'];
+
                 var updatedFields = Createdfields.map((element)=>{
-                    return{
-                        ...element,
-                        is_primary_field : element.is_primary_field ? element.is_primary_field : false,
-                        ao_field : element.ao_field ? element.ao_field : false
+
+                    if (element.type === "file") {
+                        const hasDocx = element.supportedFormat.some(fmt => fmt.ext === ".docx");
+
+                        if (!hasDocx) {
+                            element.supportedFormat.push({
+                                name: "Docx files",
+                                ext: ".docx"
+                            });
+                        }
                     }
+
+                    if (element.type === "table" && element.hasOwnProperty("table_display_content")) {
+                        delete element.table_display_content;
+                    }
+
+                    if (element.type === "table" && element.hasOwnProperty("required")) {
+                        delete element.required;
+                    }
+
+                    if(element.type === "tabs"){
+                        return{
+                            ...element,
+                            is_primary_field : element.is_primary_field ? element.is_primary_field : false,
+                            ao_field : element.ao_field ? element.ao_field : false,
+                            tableTabs : element.tableTabs ? element.tableTabs : false,
+                            hide_from_edit : element.hide_from_edit ? element.hide_from_edit : false,
+                        }
+                    }
+
+                    const commonProps = {
+                        ...element,
+                        is_primary_field: element.is_primary_field || false,
+                        ao_field: element.ao_field || false,
+                        hide_from_edit: element.hide_from_edit || false,
+                    };
+
+                    if (!excludedTypes.includes(element.type)) {
+                        return {
+                            ...commonProps,
+                            case_diary: element.case_diary || true,
+                        };
+                    }
+
+                    return commonProps;
                 })
                 
                 setFields(updatedFields);
@@ -354,6 +436,7 @@ const Formbuilder = () => {
               formType : 'divider',
               label: `random_${Date.now()}_divider`, 
               id: `random_${Date.now()}_divider`, 
+              name: `random_${Date.now()}_divider`, 
               section: steps && steps[activeStep] ? steps[activeStep] : null 
             }
         ]);          
@@ -407,16 +490,35 @@ const Formbuilder = () => {
         // Update the selectedField state with a new object, preserving the current state, 
         // and updating the value of the field corresponding to the `name` key.
         // If the `name` is 'label', also update the `name` property with the new value (same as `label`).
+
+        var existingData = false;
+
+        if (Createdfields && Createdfields.length > 0) {
+            existingData = Createdfields.some((element) => element.id === selectedField.id);
+        }
+
         setSelectedField({
-            ...selectedField, // Spread the previous selectedField to maintain other properties
-            [name]: value, // Update the property based on the `name` (e.g., 'label', 'value', etc.)
-            name: name === 'label' ? camelize(value) : camelize(selectedField.name) // If the 'name' is 'label', set the name to the new value (same as label)
+            ...selectedField,
+            [name]: value,
+            name: existingData
+                ? selectedField.name
+                : name === 'label'
+                    ? convertToUnderscore(value)
+                    : selectedField.name
         });
 
-        // Update the fields array by mapping over it and changing the field whose id matches selectedField.id
-        // It updates the field that corresponds to the selected field, leaving others unchanged.
         setFields(fields.map((field) =>
-            (field.id === selectedField.id ? { ...field, [name]: value, name: name === 'label' ? camelize(value) : camelize(field.name) } : field) // If the field's id matches selectedField's id, update the value and name for the specific field
+            field.id === selectedField.id
+                ? {
+                    ...field,
+                    [name]: value,
+                    name: existingData
+                        ? field.name
+                        : name === 'label'
+                            ? convertToUnderscore(value)
+                            : field.name
+                }
+                : field
         ));
     };
 
@@ -458,7 +560,176 @@ const Formbuilder = () => {
         ));
     };
 
-    // Handles adding a new option to a field's options array
+    const handleTableHeaderChange = (index, field, value, type) => {
+        const newOptions = [...field.tableHeaders]; // Create a copy of the options array
+
+        if (!newOptions[index]) {
+            newOptions[index] = {};
+        }
+
+        const isDuplicate = newOptions.some((item, idx) => {
+            if (idx === index) return false;
+            return item?.['header'] === value;
+        });
+
+        if (isDuplicate) {
+            toast.warning('This value is already used in another header', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-warning",
+            });
+            return;
+        }
+
+        if(type === "header"){
+            newOptions[index][type] = value;
+        }else if (type === "defaultValue") {
+            for (let i = 0; i < newOptions.length; i++) {
+                if (!newOptions[i].fieldType) {
+                    newOptions[i].fieldType = {};
+                }
+                newOptions[i].fieldType.defaultValue = i === index ? value : null;
+            }
+        }else{
+            if (!newOptions[index].fieldType) {
+                newOptions[index].fieldType = {};
+            }
+            newOptions[index].fieldType[type] = value;
+        }
+        
+        // Update the selectedField state with the new options array
+        setSelectedField({ ...field, tableHeaders: newOptions });
+
+        // Update the fields array with the modified options for the field whose id matches the field.id
+        setFields(fields.map((f) =>
+            (f.id === field.id ? { ...f, tableHeaders: newOptions } : f) // If id matches, update the field's options
+        ));
+
+        setFormData(prevData => {
+            const updatedData = { ...prevData };
+            delete updatedData[field?.name];
+            return {
+                ...updatedData
+            };
+        });
+
+    };
+
+    const handleAddTableHeaders = () => {
+        const newOption = { header: "", fieldType: {type: ""} };
+
+        const hasEmptyOption = selectedField?.tableHeaders?.some(option =>
+            !option.header?.trim() || !option.fieldType?.type?.trim()
+        );
+
+        if(hasEmptyOption){
+            toast.warning('Please Check Previous Table Header and Cell Options', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-warning",
+            });
+            return;
+        }
+
+        setSelectedField({
+            ...selectedField,
+            tableHeaders: [...selectedField.tableHeaders, newOption]
+        });
+
+        setFields(fields.map((field) =>
+            (field.id === selectedField.id ? { ...field, tableHeaders: [...field.tableHeaders, newOption] } : field)
+        ));
+    };
+
+    const handleRemoveTableHeaders = (index) => {
+
+        if(selectedField.tableHeaders.length === 1){
+            toast.warning('At least one option is required.', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-warning",
+            });
+            return;
+        }
+
+        const newOptions = selectedField.tableHeaders.filter((_, i) => i !== index);
+
+        setSelectedField({ ...selectedField, tableHeaders: newOptions });
+
+        setFields(fields.map((field) =>
+            (field.id === selectedField.id ? { ...field, tableHeaders: newOptions } : field)
+        ));
+    };
+
+    const deleteAllTableHeaders = (index) => {
+
+        var userUpdateFields = {
+            tableHeaders: [],
+        }
+
+        setSelectedField((prev) => ({
+            ...prev,
+            tableHeaders : []
+        }));
+
+        setFields(fields.map((field) =>
+            (field.id === selectedField.id ? { ...field, ...userUpdateFields } : field)
+        ));
+
+    };
+
+    const handleTableDataChange = (field, data)=>{
+        setFormData(prevData => {
+            return {
+                ...prevData,
+                [field.name]: data,
+            };
+        });
+    }
+
+    const handleTableFieldRemoveOption = (index) => {
+        const updated = [...(propEditField?.fieldType?.options || [])];
+
+        if (updated.length <= 1) {
+            toast.warning('At least one option is required.', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-warning",
+            });
+            return;
+        }
+
+        updated.splice(index, 1);
+
+        setPropEditField({
+            ...propEditField,
+            fieldType: {
+                ...propEditField.fieldType,
+                options: updated
+            }
+        });
+    };
+
     const handleAddOption = () => {
         const newOption = { name: "", code: "" }; // Create a new option with default empty name and code
 
@@ -610,6 +881,31 @@ const Formbuilder = () => {
         return result;
     };
 
+    const handleDragTableHeader = (result)=>{
+
+        const { destination, source } = result;
+
+        if (!destination) {
+            return;
+        }
+
+        if (destination.index === source.index) {
+            return;
+        }
+
+        const reorderedFields = reorder(selectedField?.tableHeaders, source.index, destination.index);
+        
+        setSelectedField({
+            ...selectedField,
+            tableHeaders: reorderedFields
+        });
+
+        setFields(fields.map((field) =>
+            (field.id === selectedField.id ? { ...field, tableHeaders: reorderedFields } : field)
+        ));
+
+    }
+
     const handleDragEnd = (result) => {
         const { destination, source } = result;
 
@@ -654,6 +950,10 @@ const Formbuilder = () => {
             existingData = Createdfields.some((element) => element.id === field.id);
         }
 
+        if(field?.name === "field_approval_done_by"){
+            return null
+        }
+
         switch (field.type) {
             case "text":
                 return (
@@ -684,6 +984,30 @@ const Formbuilder = () => {
                             errors=""
                             onChange={(html) => handleTextEditorChange(field?.name, html)}
                             onFocus={(currentField) => { setSelectedField(currentField) }}
+                            isFocused={field.label == selectedField.label}
+                        />
+                        {!existingData &&
+                            <button className='formbuilderDeleteIcon' onClick={() => handleFieldDelete(field.label)}>
+                                <img src={deleteBtn} />
+                            </button>
+                        }
+                    </div>
+                );
+            case "dropdown_with_add":
+                return (
+                    <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
+                        <DropdownWithAdd
+                            key={field.id}
+                            field={field}
+                            formData={formData}
+                            errors=""
+                            onChange={(selectedCode) => handleAutocomplete(field.name, selectedCode)}
+                            onAdd={(value)=>dropdownWithAddItem(field, value)}
+                            onChangeDropdownInputValue={(value) => 
+                                setDropdownInputValue({ ...dropdownInputValue, [field.name]: value })
+                            }
+                            dropdownInputValue={dropdownInputValue}
+                            onFocus={(e) => { setSelectedField(field) }}
                             isFocused={field.label == selectedField.label}
                         />
                         {!existingData &&
@@ -758,122 +1082,17 @@ const Formbuilder = () => {
             case "dropdown":
                 return (
                     <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
-                        <Box sx={{ width: '100%' }}>
-                            {field.heading && <h4 className='form-field-heading'>{field.heading}</h4>}
-                            <FormControl fullWidth key={field.id}>
-                                <InputLabel
-                                className='hideHistoy'>
-                                    <div style={{ display: 'flex', alignItems: 'center' }}>
-                                        <span>
-                                            {field.label}
-                                        </span>
-                                        <span className="anekKannada" style={{ marginTop: '6px' }}>
-                                            {field.kannada ? '/ ' + field.kannada + ' ' : ''}
-                                        </span>
-                                        {field.required && (
-                                            <span
-                                                style={{
-                                                    padding: '0px 0px 0px 5px', 
-                                                    verticalAlign: 'middle'
-                                                }} 
-                                                className='MuiFormLabel-asterisk MuiInputLabel-asterisk css-1ljffdk-MuiFormLabel-asterisk'
-                                            >
-                                                {'*'}
-                                            </span>
-                                        )}
-                                        {field.info && (
-                                            <Tooltip title={field.info ? field.info : ''} arrow placement="top">
-                                                <InfoIcon sx={{
-                                                    color: '#1570EF', 
-                                                    padding: '0px 0px 0px 3px;', 
-                                                    fontSize: '20px',
-                                                    verticalAlign: 'middle',
-                                                    marginBottom:'3px'
-                                                }}/>
-                                            </Tooltip>
-                                        )}
-                                        {field.history && (
-                                            <HistoryIcon className='historyIcon' sx={{
-                                                color: '#1570EF', 
-                                                padding: '0 1px', 
-                                                fontSize: '20px',
-                                                verticalAlign: 'middle',
-                                                marginBottom:'3px'
-                                            }}/>
-                                        )}
-                                    </div>
-                                </InputLabel>
-                                <Select
-                                    value={formData[field.name] || ""} // Ensure the value is linked to formData
-                                    onChange={(e) => handleDropdownChange(field.name, e.target.value)} // Handle change
-                                    id={field.id}
-                                    className='selectHideHistory'
-                                    label={
-                                        <div style={{ display: 'flex', alignItems: 'center' }}>
-                                            <span>
-                                                {field.label}
-                                            </span>
-                                            <span className="anekKannada" style={{ marginTop: '6px' }}>
-                                                {field.kannada ? '/ ' + field.kannada + ' ' : ''}
-                                            </span>
-                                            {field.required && (
-                                                <span
-                                                    style={{
-                                                        padding: '0px 0px 0px 5px', 
-                                                        verticalAlign: 'middle'
-                                                    }} 
-                                                    className='MuiFormLabel-asterisk MuiInputLabel-asterisk css-1ljffdk-MuiFormLabel-asterisk'
-                                                >
-                                                    {'*'}
-                                                </span>
-                                            )}
-                                            {field.info && (
-                                                <Tooltip title={field.info ? field.info : ''} arrow placement="top">
-                                                    <InfoIcon className='infoIcon' sx={{
-                                                        color: '#1570EF', 
-                                                        padding: '0px 0px 0px 3px;', 
-                                                        fontSize: '20px',
-                                                        verticalAlign: 'middle',
-                                                        marginBottom:'3px'
-                                                    }}/>
-                                                </Tooltip>
-                                            )}
-                                            {field.history && (
-                                                <HistoryIcon className='historyIcon' sx={{
-                                                    color: '#1570EF', 
-                                                    padding: '0', 
-                                                    fontSize: '20px',
-                                                    verticalAlign: 'middle',
-                                                    marginBottom:'3px'
-                                                }}/>
-                                            )}
-                                        </div>
-                                    }
-                                    sx={{
-                                        '& .MuiOutlinedInput-root': {
-                                            // backgroundColor: '#fff', // Inner input background color
-                                        },
-                                        '& .MuiOutlinedInput-notchedOutline': {
-                                            borderWidth: field.label == selectedField.label ? '2px' : '1px', // Apply border width based on focus
-                                            borderColor: field.label == selectedField.label ? '#1976d2' : '#ccc', // Apply border color based on focus
-                                            boxShadow: field.label == selectedField.label ? '0px 4px 6px rgba(25, 118, 210, 0.5)' : 'none', // Apply shadow based on focus
-                                        },
-                                    }}
-                                    errors=""
-                                    onFocus={(e) => { setSelectedField(field) }}
-                                    isFocused={field.label == selectedField.label}
-                                >
-                                    {field.options.map((option) => (
-                                        <MenuItem key={option.code} value={option.code}>
-                                            {option.name}
-                                        </MenuItem>
-                                    ))}
-                                </Select>
-                                <FormHelperText>
-                                    {field.supportingText || field.supportingText || ' '}
-                                </FormHelperText>
-                            </FormControl>
-                        </Box>
+                        <SelectField
+                            key={field.id}
+                            field={field}
+                            formData={formData}
+                            errors={""}
+                            onChange={(value) =>
+                              handleAutocomplete(field, value.target.value)
+                            }
+                            onFocus={(e) => { setSelectedField(field) }}
+                            isFocused={field.label == selectedField.label}
+                        />
                         {!existingData &&
                             <button className='formbuilderDeleteIcon' onClick={() => handleFieldDelete(field.label)}>
                                 <img src={deleteBtn} />
@@ -1091,6 +1310,25 @@ const Formbuilder = () => {
                         }
                     </div>
                 );
+            case 'table':
+                return (
+                    <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
+
+                        <TableField
+                            key={field.id}
+                            field={field}
+                            formData={formData}
+                            onChange={handleTableDataChange}
+                            onFocus={(e) => { setSelectedField(field) }}
+                            isFocused={field.label == selectedField.label}
+                        />
+                        {!existingData &&
+                            <button className='formbuilderDeleteIcon' onClick={() => handleFieldDelete(field.label)}>
+                                <img src={deleteBtn} />
+                            </button>
+                        }
+                    </div>
+                );
             case 'divider':
                 return (<div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: '16px' }}>
                     <div className='divider'></div>
@@ -1160,12 +1398,10 @@ const Formbuilder = () => {
                 }
             }
 
-            const transformedName = convertToUnderscore(labelValue); // Use the helper function
             return {
                 ...field, // Keep all other properties of the field
-                name: transformedName, // Update the 'name' key with the transformed value
                 searchable: true, // for searching fields from the table
-                data_type: field.type === 'textarea' ? 'text' : field.formType, // Update the 'data_type' key with the formType value
+                data_type: 'text', // Update the 'data_type' key with the formType value
             };
         });
 
@@ -1197,14 +1433,76 @@ const Formbuilder = () => {
         //     return;
         // }
 
+        var newFields = [
+            ...updatedFields
+        ]
+
+        if((module === "others" || module === "ui_case" || module === "pt_case" || module === "eq_case") && !newFields.some(field => field.name === "field_approval_done_by")){
+            var newFields = [
+                ...newFields, 
+                { 
+                    type: 'text', 
+                    formType: 'text',
+                    label: `Approval Done By`, 
+                    name: `field_approval_done_by`, 
+                    id: `random_${Date.now()}_approval_done_by`, 
+                    hide_from_ux : true,
+                    table_display_content : true,
+                    searchable: true,
+                    data_type : 'text',
+                    section: steps && steps[activeStep] ? steps[activeStep] : null 
+                }
+            ];
+        }
+
+        if (module === "approval") {
+            const fieldsToAdd = [
+                {
+                    label: `Reference Id`,
+                    name: `field_reference_id`
+                },
+                {
+                    label: `Approval Type`,
+                    name: `field_approval_type`
+                },
+                {
+                    label: `Module`,
+                    name: `field_module`
+                },
+                {
+                    label: `Action`,
+                    name: `field_action`
+                }
+            ];
+
+            fieldsToAdd.forEach(field => {
+                const alreadyExists = newFields.some(f => f.name === field.name);
+                if (!alreadyExists) {
+                    newFields.push({
+                        type: 'text',
+                        formType: 'text',
+                        label: field.label,
+                        name: field.name,
+                        id: `random_${Date.now()}_${field.name.split('field_')[1]}`,
+                        hide_from_ux: true,
+                        table_display_content: true,
+                        searchable: true,
+                        data_type: 'text',
+                        section: steps && steps[activeStep] ? steps[activeStep] : null
+                    });
+                }
+            });
+        }
+
         // Log the updated fields array to check the result
         var createTemplatePayload = {
             "template_name": editTemplateDetailsData,
             "template_type": type,
             "template_module": module,
             "link_module": link_module,
-            "fields": updatedFields,
-            "paranoid": false
+            "fields": newFields,
+            "paranoid": false,
+            transaction_id : "CREATE_TEMPLATE" + Date.now() + "_" + Math.floor(Math.random() * 1000000),
         }
 
         if(stepper && stepper.length > 0){
@@ -1323,13 +1621,10 @@ const Formbuilder = () => {
                     }
                 }
 
-                const transformedName = convertToUnderscore(labelValue);
-
                 return {
                     ...field, // Keep all other properties of the field
-                    name: transformedName, // Update the 'name' key with the transformed value
                     searchable: true, // for searching fields from the table
-                    data_type: field.type === 'textarea' ? 'text' : field.formType, // Update the 'data_type' key with the formType value
+                    data_type: 'text', // Update the 'data_type' key with the formType value
                 };
             });
 
@@ -1361,13 +1656,76 @@ const Formbuilder = () => {
         //     return;
         // }
 
+        var newFields = [
+            ...updatedFields
+        ]
+
+        if ((module === "others" || module === "ui_case" || module === "pt_case" || module === "eq_case") && !newFields.some(field => field.name === "field_approval_done_by")) {
+            var newFields = [
+                ...newFields, 
+                { 
+                    type: 'text', 
+                    formType: 'text',
+                    label: `Approval Done By`, 
+                    name: `field_approval_done_by`, 
+                    id: `random_${Date.now()}_approval_done_by`, 
+                    hide_from_ux : true,
+                    table_display_content : true,
+                    searchable: true,
+                    data_type : 'text',
+                    section: steps && steps[activeStep] ? steps[activeStep] : null 
+                }
+            ];
+        }
+
+
+        if (module === "approval") {
+            const fieldsToAdd = [
+                {
+                    label: `Reference Id`,
+                    name: `field_reference_id`
+                },
+                {
+                    label: `Approval Type`,
+                    name: `field_approval_type`
+                },
+                {
+                    label: `Module`,
+                    name: `field_module`
+                },
+                {
+                    label: `Action`,
+                    name: `field_action`
+                }
+            ];
+
+            fieldsToAdd.forEach(field => {
+                const alreadyExists = newFields.some(f => f.name === field.name);
+                if (!alreadyExists) {
+                    newFields.push({
+                        type: 'text',
+                        formType: 'text',
+                        label: field.label,
+                        name: field.name,
+                        id: `random_${Date.now()}_${field.name.split('field_')[1]}`,
+                        hide_from_ux: true,
+                        table_display_content: true,
+                        searchable: true,
+                        data_type: 'text',
+                        section: steps && steps[activeStep] ? steps[activeStep] : null
+                    });
+                }
+            });
+        }
+
         var updateTemplatePayload = {
             "template_name": editTemplateDetailsData,
             "template_type": type,
             "template_module": module,
             "link_module": link_module,
-            "fields": updatedFields,
-            "paranoid": false
+            "fields": newFields,
+            "paranoid": false,
+            transaction_id : "UPDATETEMPLATE" + Date.now() + "_" + Math.floor(Math.random() * 1000000),
         }
 
         setLoading(true);
@@ -1452,8 +1810,6 @@ const Formbuilder = () => {
             // const data = await api.post("/siims/getAllFields");
             // setLoading(false);
             // console.log(data.data);
-
-            console.log(formFields,"formFields")
 
             // if(data && data.success && data.data && data.data.length > 0){
             if(formFields && formFields.length > 0){
@@ -1591,6 +1947,7 @@ const Formbuilder = () => {
                 return <img src={xlsIcon} />;
             case '.csv':
             case '.docx':
+                return <img src={docxIcon} />;
             case '.doc':
                 return <img src={docIcon} />;
             case '.ppt':
@@ -1672,7 +2029,378 @@ const Formbuilder = () => {
         }
     }
 
+    const tableSaveOptions = async ()=>{
+        
+        if (selectedMasterOptions && selectedMasterOptions.table) {
+
+            if (selectedMasterOptions.api) {
+
+                if(selectedMasterOptions.is_dependent === "true"){
+                    
+                    if(selectedMasterOptions.dependent_table && selectedMasterOptions.dependent_table.length > 0){
+                        
+                        var getTableField = selectedField?.tableHeaders?.filter((field) => selectedMasterOptions.dependent_table.includes(field?.fieldType?.table));
+
+                        if(getTableField.length === 0 || selectedMasterOptions.dependent_table.length !== getTableField.length){
+                            toast.warning('Please Check the ' + selectedMasterOptions.dependent_table.join(',') + ' Data Before Getting ' + selectedMasterOptions.table, {
+                                position: "top-right",
+                                autoClose: 3000,
+                                hideProgressBar: false,
+                                closeOnClick: true,
+                                pauseOnHover: true,
+                                draggable: true,
+                                progress: undefined,
+                                className: "toast-warning",
+                            });
+                            return;
+                        }
+
+                        var emptyValue = false;
+
+                        const fieldData = formData?.[selectedField?.name];
+
+                        const isEmpty = !Array.isArray(fieldData) || fieldData.length === 0 || fieldData.every(item => Object.keys(item).length === 0);
+
+                        if(isEmpty) {
+                            toast.warning('Please check the ' + selectedMasterOptions.dependent_table.join(', ') + ' values before getting ' + selectedMasterOptions.table, {
+                                position: "top-right",
+                                autoClose: 3000,
+                                hideProgressBar: false,
+                                closeOnClick: true,
+                                pauseOnHover: true,
+                                draggable: true,
+                                progress: undefined,
+                                className: "toast-warning",
+                            });
+                            return;
+                        }
+
+                        const apiPayload = getTableField.reduce((payload, field) => {
+                            if (fieldData && fieldData[0][field?.header]) {
+                                const key = field.fieldType?.table === 'users' ? 'user_id' : `${field.fieldType?.table}_id`;
+                                payload[key] = fieldData[0][field?.header];
+                            } else {
+                                emptyValue = true;
+                            }
+                            return payload;
+                        }, {});
+
+                        if(emptyValue){
+                            toast.warning('Please Check the ' + selectedMasterOptions.dependent_table.join(',') + ' values Before Getting ' + selectedMasterOptions.table, {
+                                position: "top-right",
+                                autoClose: 3000,
+                                hideProgressBar: false,
+                                closeOnClick: true,
+                                pauseOnHover: true,
+                                draggable: true,
+                                progress: undefined,
+                                className: "toast-warning",
+                            });
+                            return;
+                        }
+                        setLoading(true);
+
+                        try {
+                            var getOptionsValue = await api.post(selectedMasterOptions.api,apiPayload);
+                            setLoading(false);
+
+                            var updatedOptions = [];
+
+                            var forignKey = selectedMasterOptions?.table === 'users' ? 'user_id' : selectedMasterOptions?.table + '_id';
+                            var attributeKey = selectedMasterOptions?.table === 'users' ? ['name'] : [selectedMasterOptions?.table + '_name'];
+                            if (getOptionsValue && getOptionsValue.data) {
+    
+                                var firstValueId = false
+
+                                updatedOptions = getOptionsValue.data.map((field, i) => {
+
+                                    if (firstValueId === false) {
+                                        firstValueId = field[selectedMasterOptions?.table === 'users' ? 'user_id' : selectedMasterOptions?.table + '_id']
+                                    }
+
+                                    return {
+                                        name: field[selectedMasterOptions?.table === 'users' ? 'name' : selectedMasterOptions?.table + '_name'],
+                                        code: field[selectedMasterOptions?.table === 'users' ? 'user_id' : selectedMasterOptions?.table + '_id']
+                                    }
+                                });
+    
+                                var userUpdateFields = {
+                                    api: selectedMasterOptions.api,
+                                    readonlyOption: true,
+                                    is_dependent : "true",
+                                    dependent_table : selectedMasterOptions.dependent_table,
+                                    table: selectedMasterOptions?.table,
+                                    options: updatedOptions,
+                                    forign_key : forignKey,
+                                    attributes : attributeKey
+                                }
+
+                                if(showPropsModal){
+                                    setPropEditField({
+                                        ...propEditField,
+                                        fieldType: {
+                                            ...propEditField.fieldType,
+                                            ...userUpdateFields
+                                        }
+                                    });
+                                    setMasterModalOpen(false);
+                                    return;
+                                }
+    
+                            }else{
+                                var userUpdateFields = {
+                                    api: '',
+                                    readonlyOption: false,
+                                    is_dependent : "",
+                                    table: '',
+                                    options: [],
+                                    forign_key : "",
+                                    attributes : []
+                                }
+
+                                if(showPropsModal){
+                                    setPropEditField({
+                                        ...propEditField,
+                                        fieldType: {
+                                            ...propEditField.fieldType,
+                                            ...userUpdateFields
+                                        }
+                                    });
+                                    setMasterModalOpen(false);
+                                    return;
+                                }
+
+                            }
+                        }catch (error) {
+                            setLoading(false);
+
+                            if (error && error.response && error.response.data) {
+                                toast.error(error.response.data['message'] ? error.response.data['message'] : 'Need dependent Fields', {
+                                    position: "top-right",
+                                    autoClose: 3000,
+                                    hideProgressBar: false,
+                                    closeOnClick: true,
+                                    pauseOnHover: true,
+                                    draggable: true,
+                                    progress: undefined,
+                                    className: "toast-error",
+                                });
+                                return;
+                            }
+                        }
+                    }
+                }else{
+                    setLoading(true);
+
+                    try {
+                        var getOptionsValue = await api.post(selectedMasterOptions.api);
+                        setLoading(false);
+
+                        var updatedOptions = []
+
+                        if (getOptionsValue && getOptionsValue.data) {
+
+                            var forignKey = selectedMasterOptions.table === 'users' ? 'user_id' : selectedMasterOptions.table + '_id';
+                            var attributeKey = selectedMasterOptions.table === 'users' ? ['name'] : [selectedMasterOptions.table + '_name'];
+                            
+                            var firstValueId = false;
+
+                            updatedOptions = getOptionsValue.data.map((field, i) => {
+
+                                if (firstValueId === false) {
+                                    firstValueId = field[selectedMasterOptions.table === 'users' ? 'user_id' : selectedMasterOptions.table + '_id']
+                                }
+
+                                return {
+                                    name: field[selectedMasterOptions.table === 'users' ? 'name' : selectedMasterOptions.table + '_name'],
+                                    code: field[selectedMasterOptions.table === 'users' ? 'user_id' : selectedMasterOptions.table + '_id']
+                                }
+                            })
+
+                            var userUpdateFields = {
+                                api: selectedMasterOptions.api,
+                                readonlyOption: true,
+                                is_dependent : "false",
+                                table: selectedMasterOptions.table,
+                                options: updatedOptions,
+                                forign_key : forignKey,
+                                attributes : attributeKey
+                            }
+
+                            if(showPropsModal){
+                                setPropEditField({
+                                    ...propEditField,
+                                    fieldType: {
+                                        ...propEditField.fieldType,
+                                        ...userUpdateFields
+                                    }
+                                });
+                                setMasterModalOpen(false);
+                                return;
+                            }
+
+                        }else{
+                            var userUpdateFields = {
+                                api: '',
+                                readonlyOption: false,
+                                is_dependent : "",
+                                table: '',
+                                options: [],
+                                forign_key : "",
+                                attributes : []
+                            }
+                            
+                            if(showPropsModal){
+                                setPropEditField({
+                                    ...propEditField,
+                                    fieldType: {
+                                        ...propEditField.fieldType,
+                                        ...userUpdateFields
+                                    }
+                                });
+                                setMasterModalOpen(false);
+                                return;
+                            }
+                        }
+                    }catch (error) {
+                        setLoading(false);
+
+                        if (error && error.response && error.response.data) {
+                            toast.error(error.response.data['message'] ? error.response.data['message'] : 'Need dependent Fields', {
+                                position: "top-right",
+                                autoClose: 3000,
+                                hideProgressBar: false,
+                                closeOnClick: true,
+                                pauseOnHover: true,
+                                draggable: true,
+                                progress: undefined,
+                                className: "toast-error",
+                            });
+                            return;
+                        }
+                    }
+                }
+            } else {
+                setLoading(true);
+
+                try {
+
+                    var getOptionsValue = await api.post('/templateData/getPrimaryTemplateDataWithoutPagination', { table_name: selectedMasterOptions.table });
+                    setLoading(false);
+
+                    if (getOptionsValue && getOptionsValue.success && getOptionsValue.data) {
+
+                        const { data , primaryAttribute} = getOptionsValue.data
+
+                        var forignKey = 'id';
+                        var attributeKey = [primaryAttribute || 'id'];
+                        
+                        var updatedOptions = data.map((templateData) => {
+
+                            var nameKey = Object.keys(templateData).find(
+                                key => !['id', 'created_at', 'updated_at'].includes(key)
+                            );
+
+                            return {
+                                name: nameKey ? templateData[nameKey] : '',
+                                code: templateData.id
+                            }
+                        })
+
+                        var userUpdateFields = {
+                            api: '/templateData/getTemplateData',
+                            readonlyOption: true,
+                            table: selectedMasterOptions.table,
+                            options: updatedOptions,
+                            forign_key : forignKey,
+                            attributes : attributeKey,
+                            defaultValue : false
+                        }
+
+                        if(showPropsModal){
+                            setPropEditField({
+                                ...propEditField,
+                                fieldType: {
+                                    ...propEditField.fieldType,
+                                    ...userUpdateFields
+                                }
+                            });
+                            setMasterModalOpen(false);
+                            return;
+                        }
+
+                    } else {
+
+                        var userUpdateFields = {
+                            api: '',
+                            readonlyOption: false,
+                            table: '',
+                            options: [],
+                            forign_key : '',
+                            attributes : [],
+                            defaultValue : false
+                        }
+
+                        if(showPropsModal){
+                            setPropEditField({
+                                ...propEditField,
+                                fieldType: {
+                                    ...propEditField.fieldType,
+                                    ...userUpdateFields
+                                }
+                            });
+                            setMasterModalOpen(false);
+                            return;
+                        }
+
+                        toast.error('No Data Found', {
+                            position: "top-right",
+                            autoClose: 3000,
+                            hideProgressBar: false,
+                            closeOnClick: true,
+                            pauseOnHover: true,
+                            draggable: true,
+                            progress: undefined,
+                            className: "toast-error",
+                        });
+                    }
+                } catch (error) {
+                    setLoading(false);
+                    toast.error(error?.response?.data?.['message'] ? error.response.data['message'] : 'Need dependent Fields', {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-error",
+                    });
+                    return;
+                }
+            }
+
+            setMasterModalOpen(false);
+        } else {
+            toast.error('Check Master Table', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+        }
+    }
+
     const handleSaveMasterOptions = async () => {
+
+        if(showPropsModal){
+            tableSaveOptions();
+            return;
+        }
 
         if (selectedMasterOptions && selectedMasterOptions.table) {
 
@@ -1760,6 +2488,18 @@ const Formbuilder = () => {
                                     forign_key : forignKey,
                                     attributes : attributeKey
                                 }
+
+                                if(showPropsModal){
+                                    setPropEditField({
+                                        ...propEditField,
+                                        fieldType: {
+                                            ...propEditField.fieldType,
+                                            ...userUpdateFields
+                                        }
+                                    });
+                                    setMasterModalOpen(false);
+                                    return;
+                                }
             
 
                                 setFields(fields.map((field) =>
@@ -1792,6 +2532,18 @@ const Formbuilder = () => {
                                     options: [],
                                     forign_key : "",
                                     attributes : []
+                                }
+
+                                if(showPropsModal){
+                                    setPropEditField({
+                                        ...propEditField,
+                                        fieldType: {
+                                            ...propEditField.fieldType,
+                                            ...userUpdateFields
+                                        }
+                                    });
+                                    setMasterModalOpen(false);
+                                    return;
                                 }
             
                                 setFields(fields.map((field) =>
@@ -1865,6 +2617,17 @@ const Formbuilder = () => {
                                 attributes : attributeKey
                             }
 
+                            if(showPropsModal){
+                                setPropEditField({
+                                    ...propEditField,
+                                    fieldType: {
+                                        ...propEditField.fieldType,
+                                        ...userUpdateFields
+                                    }
+                                });
+                                setMasterModalOpen(false);
+                                return;
+                            }
         
                             setFields(fields.map((field) =>
                                 (field.id === selectedField.id ? { ...field, ...userUpdateFields } : field)
@@ -1895,6 +2658,18 @@ const Formbuilder = () => {
                                 options: [],
                                 forign_key : "",
                                 attributes : []
+                            }
+                            
+                            if(showPropsModal){
+                                setPropEditField({
+                                    ...propEditField,
+                                    fieldType: {
+                                        ...propEditField.fieldType,
+                                        ...userUpdateFields
+                                    }
+                                });
+                                setMasterModalOpen(false);
+                                return;
                             }
         
                             setFields(fields.map((field) =>
@@ -1934,83 +2709,124 @@ const Formbuilder = () => {
             } else {
                 setLoading(true);
 
-                var getOptionsValue = await api.post('/templateData/getTemplateData', { table_name: selectedMasterOptions.table });
-                setLoading(false);
+                try {
 
-                if (getOptionsValue && getOptionsValue.success && getOptionsValue.data) {
+                    var getOptionsValue = await api.post('/templateData/getPrimaryTemplateDataWithoutPagination', { table_name: selectedMasterOptions.table });
+                    setLoading(false);
 
-                    var forignKey = 'id';
-                    var attributeKey = [];
-                    
-                    var updatedOptions = getOptionsValue.data.map((templateData) => {
+                    if (getOptionsValue && getOptionsValue.success && getOptionsValue.data) {
 
-                        var nameKey = Object.keys(templateData).find(
-                            key => !['id', 'created_at', 'updated_at'].includes(key)
-                        );
+                        const { data , primaryAttribute} = getOptionsValue.data
 
-                        if(attributeKey.length === 0){
-                            attributeKey = [nameKey]
+                        var forignKey = 'id';
+                        var attributeKey = [primaryAttribute || 'id'];
+                        
+                        var updatedOptions = data.map((templateData) => {
+
+                            var nameKey = Object.keys(templateData).find(
+                                key => !['id', 'created_at', 'updated_at'].includes(key)
+                            );
+
+                            // if(attributeKey.length === 0){
+                            //     attributeKey = [nameKey]
+                            // }
+
+                            return {
+                                name: nameKey ? templateData[nameKey] : '',
+                                code: templateData.id
+                            }
+                        })
+
+                        var userUpdateFields = {
+                            api: '/templateData/getTemplateData',
+                            readonlyOption: true,
+                            table: selectedMasterOptions.table,
+                            options: updatedOptions,
+                            forign_key : forignKey,
+                            attributes : attributeKey,
+                            defaultValue : false
                         }
 
-                        return {
-                            name: nameKey ? templateData[nameKey] : '',
-                            code: templateData.id
+                        if(showPropsModal){
+                            setPropEditField({
+                                ...propEditField,
+                                fieldType: {
+                                    ...propEditField.fieldType,
+                                    ...userUpdateFields
+                                }
+                            });
+                            setMasterModalOpen(false);
+                            return;
                         }
-                    })
 
-                    var userUpdateFields = {
-                        api: '/templateData/getTemplateData',
-                        readonlyOption: true,
-                        table: selectedMasterOptions.table,
-                        options: updatedOptions,
-                        forign_key : forignKey,
-                        attributes : attributeKey,
-                        defaultValue : false
+                        setFields(fields.map((field) =>
+                            (field.id === selectedField.id ? { ...field, ...userUpdateFields } : field)
+                        ));
+
+                        setSelectedField((prev) => ({
+                            ...prev,
+                            options: updatedOptions,
+                            table: selectedMasterOptions.table,
+                            api: '/templateData/getTemplateData',
+                            readonlyOption: true,
+                            forign_key : forignKey,
+                            attributes : attributeKey,
+                            defaultValue : false
+                        }));
+
+                    } else {
+
+                        var userUpdateFields = {
+                            api: '',
+                            readonlyOption: false,
+                            table: '',
+                            options: [],
+                            forign_key : '',
+                            attributes : [],
+                            defaultValue : false
+                        }
+
+                        if(showPropsModal){
+                            setPropEditField({
+                                ...propEditField,
+                                fieldType: {
+                                    ...propEditField.fieldType,
+                                    ...userUpdateFields
+                                }
+                            });
+                            setMasterModalOpen(false);
+                            return;
+                        }
+
+                        setFields(fields.map((field) =>
+                            (field.id === selectedField.id ? { ...field, ...userUpdateFields } : field)
+                        ));
+
+                        setSelectedField((prev) => ({
+                            ...prev,
+                            options: [],
+                            table: '',
+                            api: '',
+                            readonlyOption: false,
+                            forign_key : '',
+                            attributes : [],
+                            defaultValue : false
+                        }));
+
+                        toast.error('No Data Found', {
+                            position: "top-right",
+                            autoClose: 3000,
+                            hideProgressBar: false,
+                            closeOnClick: true,
+                            pauseOnHover: true,
+                            draggable: true,
+                            progress: undefined,
+                            className: "toast-error",
+                        });
                     }
-
-                    setFields(fields.map((field) =>
-                        (field.id === selectedField.id ? { ...field, ...userUpdateFields } : field)
-                    ));
-
-                    setSelectedField((prev) => ({
-                        ...prev,
-                        options: updatedOptions,
-                        table: selectedMasterOptions.table,
-                        api: '/templateData/getTemplateData',
-                        readonlyOption: true,
-                        forign_key : forignKey,
-                        attributes : attributeKey,
-                        defaultValue : false
-                    }));
-
-                } else {
-
-                    var userUpdateFields = {
-                        api: '',
-                        readonlyOption: false,
-                        table: '',
-                        options: [],
-                        forign_key : '',
-                        attributes : [],
-                        defaultValue : false
-                    }
-
-                    setFields(fields.map((field) =>
-                        (field.id === selectedField.id ? { ...field, ...userUpdateFields } : field)
-                    ));
-
-                    setSelectedField((prev) => ({
-                        ...prev,
-                        options: [],
-                        table: '',
-                        api: '',
-                        readonlyOption: false,
-                        forign_key : '',
-                        attributes : [],
-                        defaultValue : false
-                    }));
-
-                    toast.error('No Data Found', {
+                } catch (error) {
+                    setLoading(false);
+                    toast.error(error?.response?.data?.['message'] ? error.response.data['message'] : 'Need dependent Fields', {
                         position: "top-right",
                         autoClose: 3000,
                         hideProgressBar: false,
@@ -2020,6 +2836,7 @@ const Formbuilder = () => {
                         progress: undefined,
                         className: "toast-error",
                     });
+                    return;
                 }
             }
 
@@ -2087,6 +2904,10 @@ const Formbuilder = () => {
                 var propmtMsg = ''
                 if(name === 'duplicateCheck'){
                     propmtMsg = `The field "${alreadyChecked[0].label}" is already marked as duplicate check. Please change that field before make this one as duplicate check.`
+                }else if(name === 'tableTabs'){
+                    propmtMsg = `The field "${alreadyChecked[0].label}" is already enabled as table tabs. Please change that field before make this one as table tabs`
+                }else if(name === 'case_diary'){
+                    propmtMsg = `The field "${alreadyChecked[0].label}" is already enabled as Case Diary. Please change that field before make this one as Case Diary`
                 }else{
                     propmtMsg = `The field "${alreadyChecked[0].label}" is already marked as primary. Please change that field before make this one as primary.`
                 }
@@ -2125,6 +2946,101 @@ const Formbuilder = () => {
             f.id === field.id ? { ...f, [name]: code } : f
         ));
     };
+
+    const dropdownWithAddItem = async (field, value) => {
+
+        if(!value || value.trim() === ""){
+            toast.error('Please Check the Value Before Adding', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+
+        const result = await Swal.fire({
+            title: 'Add Value?',
+            text: `Do you want to add "${value}" to the dropdown?`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, add it',
+            cancelButtonText: 'No, cancel'
+        });
+
+        if (!result.isConfirmed) {
+            return;
+        }
+
+        if(field.table){
+
+            var payloadData = {
+                table_name : field.table,
+                key: field?.attributes?.[0],
+                value: value,
+                id : field?.id
+            }
+    
+            setLoading(true);
+            try {
+                const response = await api.post('/templateData/addDropdownSingleFieldValue', payloadData)
+    
+                setLoading(false);
+    
+                if (response && response.success && response.data) {
+    
+                    const {addingValue, options} = response.data;
+    
+                    setFields(fields.map((f) =>
+                        f.id === field.id ? { ...f, options: [...options] } : f
+                    ));
+    
+                    setSelectedField(prev => ({
+                        ...prev,
+                        options: [...options]
+                    }));
+    
+                    if(addingValue?.id){
+                        setFormData(prevData => ({
+                            ...prevData,
+                            [field.name]: addingValue?.id
+                        }));
+                    }
+    
+                    setDropdownInputValue(prev => {
+                        if (!prev) return prev;
+                        const updated = { ...prev };
+                        delete updated[field.name];
+                        return updated;
+                    });
+                }
+                
+            } catch (error) {
+                setLoading(false);
+                if (error && error.response && error.response.data) {
+                    toast.error(error.response.data['message'] ? error.response.data['message'] : 'Please try again!', {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-error",
+                    });
+                    return;
+                }
+            }
+
+        }else{
+            handleOptionChange(field?.options?.length, field, value)
+        }
+
+    }
 
     return (
 
@@ -2197,85 +3113,30 @@ const Formbuilder = () => {
                         >
                             <Box sx={{ backgroundColor: '#F2F4F7', border: '1px solid #D0D5DD', borderTopLeftRadius: '8px', borderTopRightRadius: '8px', height: '50vh', overflow: 'auto' }}>
 
-                                <Grid container sx={{ backgroundColor: '#FFFFFF', borderBottom: '1px solid #D0D5DD', borderRadius: '8px' }} p={2}>
-                                    <Grid item xs={12} md={8} sx={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                            {steps && steps.length > 0 && <Typography className='HighlightedSquare'>
-                                                {activeStep + 1}
-                                            </Typography>
-                                            }
-                                            <Typography className='HighlightedText'>
-                                                {steps && steps.length ? steps[activeStep] : 'General Detail'}
-                                            </Typography>
-                                        </Box>
-                                        {/* <Box sx={{ display: 'flex', alignItems: 'center', gap: '20px', background: '#F9FAFB', border: '.8px solid #D0D5DD', borderRadius: '6px', padding: '4px 8px' }} px={1}>
-                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                <img src={Infoicon} />
-                                                <Typography className='moreInfoText'>
-                                                    For more information
+                                {steps && steps.length > 0 && 
+                                    <Grid container sx={{ backgroundColor: '#FFFFFF', borderBottom: '1px solid #D0D5DD', borderRadius: '8px' }} p={2}>
+
+                                        <Grid item xs={12} md={8} sx={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                {steps && steps.length > 0 && <Typography className='HighlightedSquare'>
+                                                    {activeStep + 1}
+                                                </Typography>
+                                                }
+                                                <Typography className='HighlightedText'>
+                                                    {steps && steps.length ? steps[activeStep] : 'General Detail'}
                                                 </Typography>
                                             </Box>
-                                            <Box sx={{ border: '1px solid #D0D5DD', height: '12px', alignSelf: 'auto' }}></Box>
-                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                <img src={PreviousLog} />
-                                                <Typography className='moreInfoText'>
-                                                    To check previous logs
-                                                </Typography>
+                                        </Grid>
+
+                                        <Grid item xs={12} md={4} sx={{ display: 'flex', justifyContent: 'end', alignItems: 'center', gap: '17px' }}>
+                                            <Box sx={{display:'flex',alignItems:'center',gap:'12px'}}>
+                                                <Button onClick={handleBack} sx={{display:'flex',alignItems:'center',justifyContent:'center',minWidth:'16px'}} > <ArrowBackIosIcon sx={{height:'16px',width:'16px',color:'rgba(0, 0, 0, 0.56)',cursor:'pointer'}} /> </Button>
+                                                <Button onClick={handleNext} sx={{display:'flex',alignItems:'center',justifyContent:'center',minWidth:'16px'}} > <ArrowForwardIosIcon sx={{height:'16px',width:'16px',color:'rgba(0, 0, 0, 0.56)',cursor:'pointer'}} /> </Button>
                                             </Box>
-                                        </Box> */}
-                                    </Grid>
-                                    {steps && steps.length > 0 && <Grid item xs={12} md={4} sx={{ display: 'flex', justifyContent: 'end', alignItems: 'center', gap: '17px' }}>
-                                        <Box sx={{display:'flex',alignItems:'center',gap:'12px'}}>
-                                            <Button onClick={handleBack} sx={{display:'flex',alignItems:'center',justifyContent:'center',minWidth:'16px'}} > <ArrowBackIosIcon sx={{height:'16px',width:'16px',color:'rgba(0, 0, 0, 0.56)',cursor:'pointer'}} /> </Button>
-                                            <Button onClick={handleNext} sx={{display:'flex',alignItems:'center',justifyContent:'center',minWidth:'16px'}} > <ArrowForwardIosIcon sx={{height:'16px',width:'16px',color:'rgba(0, 0, 0, 0.56)',cursor:'pointer'}} /> </Button>
-                                        </Box>
-                                        {/* <Button onClick={handleBack} className='smallSecondaryBtn' sx={{ textTransform: 'none' }}>
-                                            <img src={LeftIcon} />
-                                            Back
-                                        </Button>
-                                        <Button onClick={handleNext} className='fillPrimaryBtn' sx={{ textTransform: 'none' }}>
-                                            Next
-                                            <img src={RightIcon} />
-                                        </Button> */}
-                                    </Grid>
-                                    }
-                                </Grid>
+                                        </Grid>
 
-                                {/* <Grid container>
-                                    {previewFormData.map((field, index) => {
-                                        switch (field.type) {
-                                            case 'text':
-                                                return (
-                                                    <Grid item xs={12} md={6} px={2} py={0.5}>
-                                                        <div className='form-field-wrapper_selectedField'>
-                                                            <ShortText
-                                                                field={field}
-                                                                formData={formData}
-                                                                errors={null}
-                                                                onChange={handleChange}
-                                                                onFocus={(e) => { console.log(e); console.log(field); setSelectedField(field) }}
-                                                            />
-                                                        </div>
-                                                    </Grid>
-                                                );
-
-                                            case 'number':
-                                                return (
-                                                    <Grid item xs={12} md={6} px={2} py={0.5}>
-                                                        <div className='form-field-wrapper_selectedField'>
-                                                            <NumberField
-                                                                field={field}
-                                                                formData={formData}
-                                                                errors={null}
-                                                                onChange={handleChange}
-                                                            />
-                                                        </div>
-                                                    </Grid>
-                                                );
-                                        }
-                                    }
-                                    )}
-                                </Grid> */}
+                                    </Grid>
+                                }
 
                                 <DragDropContext onDragEnd={handleDragEnd}>
                                     <Droppable droppableId="droppableFields" direction="vertical">
@@ -2387,11 +3248,11 @@ const Formbuilder = () => {
                                                         // Skip specific field
 
 
-                                                        const DisplayNoneFields = ['col', 'defaultValue', 'user_hierarchy', 'readonlyOption', 'formType', 'type', 'name', 'id', 'selectedSupportFormat', 'api', 'is_dependent', 'section', 'table', 'dependent_table', 'data_type', 'attributes', 'dependentNode', 'forign_key', 'updated_at', 'created_at', 'field_name', 'field_id', 'disableFutureDate', 'disablePreviousDate', 'searchable', 'tabOption'];
+                                                        const DisplayNoneFields = ['col', 'defaultValue', 'user_hierarchy', 'readonlyOption', 'formType', 'type', 'id', 'selectedSupportFormat', 'api', 'is_dependent', 'section', 'table', 'dependent_table', 'data_type', 'attributes', 'dependentNode', 'forign_key', 'updated_at', 'created_at', 'field_name', 'field_id', 'disableFutureDate', 'disablePreviousDate', 'searchable', 'tabOption'];
                                                         if (DisplayNoneFields.includes(prop)) return null;
 
 
-                                                        const increment = (prop === 'required' || prop === 'ao_field' || prop === 'disabled' || prop === 'history' || prop === 'minDate' || prop === 'maxDate' || prop === 'multiple' || prop === 'table_display_content' || prop === 'is_primary_field') ? 2 : 5;
+                                                        const increment = (prop === 'required' || prop === 'ao_field' || prop === 'case_diary' || prop === 'tableTabs' || prop === 'disabled' || prop === 'history' || prop === 'minDate' || prop === 'maxDate' || prop === 'multiple' || prop === 'table_display_content' || prop === 'is_primary_field') ? 2 : 5;
                                                         rowCountValue += increment;
 
                                                         const isRowFull = rowCountValue === 10 && !toggleRenderedOnce;
@@ -2405,7 +3266,7 @@ const Formbuilder = () => {
 
                                                         var switchOnChange = handleSwitch;
 
-                                                        if (prop === 'required' || prop === 'ao_field' || prop === 'disabled' || prop === 'history' || prop === 'minDate' || prop === 'maxDate' || prop === 'multiple' || prop === 'table_display_content' || prop === 'is_primary_field' || prop === 'duplicateCheck' || prop === 'hide_from_ux' || prop === 'hide_from_edit' || prop === 'particular_case_options') {
+                                                        if (prop === 'required' || prop === 'ao_field' || prop === 'case_diary' || prop === 'linkModule' || prop === 'tableTabs' || prop === 'disabled' || prop === 'history' || prop === 'minDate' || prop === 'maxDate' || prop === 'multiple' || prop === 'table_display_content' || prop === 'is_primary_field' || prop === 'duplicateCheck' || prop === 'hide_from_ux' || prop === 'hide_from_edit' || prop === 'particular_case_options') {
                                                             rowColValue = 2;
                                                             colText = (prop === 'required') ? 'Mandatory field' : (prop === 'history') ? 'Enable field history' : 'Disabled';
 
@@ -2429,8 +3290,15 @@ const Formbuilder = () => {
                                                                 colText = 'Hide in Edit'
                                                             }else if(prop === 'particular_case_options'){
                                                                 colText = 'Particular Case'
+                                                            }else if(prop === 'linkModule'){
+                                                                colText = 'Link Module'
                                                             }else if(prop === 'ao_field'){
                                                                 colText = 'AO'
+                                                            }else if(prop === 'tableTabs'){
+                                                                colText = 'Enable Tabs'
+                                                                switchOnChange = changePrimaryValue;
+                                                            }else if(prop === 'case_diary'){
+                                                                colText = 'Case Diary'
                                                             }
                                                         }
 
@@ -2463,7 +3331,7 @@ const Formbuilder = () => {
                                                                                 </Box>
                                                                             </Box>
                                                                         ) :
-                                                                        prop === 'hide_from_ux'|| prop === 'hide_from_edit' || prop === 'ao_field' || prop === 'required' || prop === 'disabled' || prop === 'history' || prop === 'minDate' || prop === 'maxDate' || prop === 'multiple' || prop === 'table_display_content' || prop === 'is_primary_field' || prop === 'duplicateCheck' || prop === 'particular_case_options' ? (
+                                                                        prop === 'hide_from_ux'|| prop === 'hide_from_edit' || prop === 'ao_field' || prop === 'case_diary' || prop === 'linkModule' || prop === 'tableTabs' || prop === 'required' || prop === 'disabled' || prop === 'history' || prop === 'minDate' || prop === 'maxDate' || prop === 'multiple' || prop === 'table_display_content' || prop === 'is_primary_field' || prop === 'duplicateCheck' || prop === 'particular_case_options' ? (
                                                                                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
                                                                                     <Switch name={prop} checked={selectedField[prop]} onChange={switchOnChange} disabled={(prop === 'is_primary_field' && selectedField.options && module !== 'master') ? true : false} />
                                                                                     <Typography pt={1} sx={{ textTransform: 'capitalize', textWrap: 'nowrap' }} className='propsOptionsBtn'>
@@ -2583,10 +3451,148 @@ const Formbuilder = () => {
                                                                                                 </Box>
                                                                                             </Box>
                                                                                         </Box>
-                                                                                    )
+                                                                                    ) : (prop === "tableHeaders") ?
+                                                                                        <Box sx={{ borderBottom: '20px' }}>
+                                                                                            <Box sx={{ border: '1px solid #D0D5DD', borderRadius: '8px', background: '#F2F4F7' }}>
+                                                                                                <Box p={1} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: '1px solid #D0D5DD', borderRadius: '8px' }}>
+                                                                                                    <Typography sx={{ color: '#475467', fontWeight: '500', fontSize: '16px' }} className='Roboto'>
+                                                                                                        Enter Table Headers Below
+                                                                                                    </Typography>
+                                                                                                    <Button onClick={() => deleteAllTableHeaders()} sx={{ color: '#F04438', fontSize: '16px', fontWeight: '500', textTransform: 'none' }} className='Roboto'>
+                                                                                                        Delete all
+                                                                                                    </Button>
+                                                                                                </Box>
+                                                                                                <Box py={1} px={2} sx={{ maxHeight: '270px', overflow: 'auto' }}>
+                                                                                                    {selectedField.tableHeaders.length > 0 ? (
+                                                                                                        <DragDropContext onDragEnd={handleDragTableHeader}>
+                                                                                                            <Droppable droppableId="droppableFields" direction="vertical">
+                                                                                                            {(provided) => (
+                                                                                                                <div {...provided.droppableProps} ref={provided.innerRef}>
+                                                                                                                {selectedField.tableHeaders.map((option, index) => (
+                                                                                                                    <Draggable key={index} draggableId={`draggable-${index}`} index={index}>
+                                                                                                                    {(provided, snapshot) => (
+                                                                                                                        <Box
+                                                                                                                            py={1}
+                                                                                                                            ref={provided.innerRef}
+                                                                                                                            {...provided.draggableProps}
+                                                                                                                            {...provided.dragHandleProps}
+                                                                                                                            sx={{
+                                                                                                                                display: "flex",
+                                                                                                                                alignItems: "center",
+                                                                                                                                gap: '18px',
+                                                                                                                                backgroundColor: snapshot.isDragging ? '#f9f9f9' : 'transparent',
+                                                                                                                                borderRadius: 1,
+                                                                                                                                border: '1px dashed #ccc',
+                                                                                                                                padding: '8px',
+                                                                                                                            }}
+                                                                                                                        >
+                                                                                                                            <TextField
+                                                                                                                                label="Table Header"
+                                                                                                                                disabled={selectedField.readonlyOption || false}
+                                                                                                                                value={option.header}
+                                                                                                                                onChange={(e) => handleTableHeaderChange(index, selectedField, e.target.value, "header")}
+                                                                                                                                fullWidth
+                                                                                                                                required
+                                                                                                                                size="small"
+                                                                                                                                margin="dense"
+                                                                                                                            />
+                                                                                                                            <FormControl fullWidth size="small" margin="dense">
+                                                                                                                                <InputLabel>Field Type</InputLabel>
+                                                                                                                                <Select
+                                                                                                                                    label="Field Type"
+                                                                                                                                    value={option.fieldType?.type || ""}
+                                                                                                                                    onChange={(e) => handleTableHeaderChange(index, selectedField, e.target.value, "type")}
+                                                                                                                                >
+                                                                                                                                    <MenuItem value="short_text">Short Text</MenuItem>
+                                                                                                                                    <MenuItem value="number">Number</MenuItem>
+                                                                                                                                    <MenuItem value="date">Date</MenuItem>
+                                                                                                                                    <MenuItem value="single_select">Single Select</MenuItem>
+                                                                                                                                    <MenuItem value="multi_select">Multi Select</MenuItem>
+                                                                                                                                    <MenuItem value="text_area">Text Area</MenuItem>
+                                                                                                                                </Select>
+                                                                                                                            </FormControl>
+                                                                                                                            <TextField
+                                                                                                                                label="Width (px)"
+                                                                                                                                type="number"
+                                                                                                                                value={option.fieldType?.width || ''}
+                                                                                                                                onChange={(e) => {
+                                                                                                                                const newValue = e.target.value;
+                                                                                                                                if (newValue === '' || /^[0-9\b]+$/.test(newValue)) {
+                                                                                                                                    handleTableHeaderChange(index, selectedField, newValue, "width")
+                                                                                                                                }
+                                                                                                                                }}
+                                                                                                                                fullWidth
+                                                                                                                                size="small"
+                                                                                                                                margin="dense"
+                                                                                                                            />
+                                                                                                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                                                                                                
+                                                                                                                                <Tooltip title="Add Options">
+                                                                                                                                    <IconButton onClick={() => handleOpenPropsModal(index)}>
+                                                                                                                                        <VisibilityIcon sx={{ color: '#1D2939' }} />
+                                                                                                                                    </IconButton>
+                                                                                                                                </Tooltip>
+
+                                                                                                                                <button onClick={() => handleRemoveTableHeaders(index)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
+                                                                                                                                    <RemoveCircleOutlineIcon sx={{ color: '#1D2939' }} />
+                                                                                                                                </button>
+                                                                                                                                <button onClick={handleAddTableHeaders} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
+                                                                                                                                    <AddCircleOutlineIcon />
+                                                                                                                                </button>
+                                                                                                                            </Box>
+                                                                                                                        </Box>
+                                                                                                                    )}
+                                                                                                                    </Draggable>
+                                                                                                                ))}
+
+                                                                                                                {provided.placeholder}
+                                                                                                                </div>
+                                                                                                            )}
+                                                                                                            </Droppable>
+                                                                                                        </DragDropContext>
+                                                                                                        ) : 
+                                                                                                        <Box py={1} key={0} sx={{ display: "flex", alignItems: "center", gap: '18px' }}>
+                                                                                                            <TextField
+                                                                                                                label="Table Header"
+                                                                                                                disabled={selectedField['readonlyOption'] ? selectedField['readonlyOption'] : false}
+                                                                                                                value=''
+                                                                                                                onChange={(e) => handleTableHeaderChange(0, selectedField, e.target.value, "header")}
+                                                                                                                fullWidth
+                                                                                                                required
+                                                                                                                size="small"
+                                                                                                                margin="dense"
+                                                                                                            />
+                                                                                                            <FormControl fullWidth size="small" margin="dense">
+                                                                                                                <InputLabel>Field Type</InputLabel>
+                                                                                                                <Select
+                                                                                                                    label="Field Type"
+                                                                                                                    onChange={(e) => handleTableHeaderChange(0, selectedField, e.target.value, "type")}
+                                                                                                                >
+                                                                                                                    <MenuItem value="short_text">Short Text</MenuItem>
+                                                                                                                    <MenuItem value="number">Number</MenuItem>
+                                                                                                                    <MenuItem value="date">Date</MenuItem>
+                                                                                                                    <MenuItem value="single_select">Single Select</MenuItem>
+                                                                                                                    <MenuItem value="multi_select">Multi Select</MenuItem>
+                                                                                                                    <MenuItem value="text_area">Text Area</MenuItem>
+                                                                                                                </Select>
+                                                                                                            </FormControl>
+                                                                                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                                                                                <button style={{ outline: 'none', border: 'none', color: '#1D2939', padding: '0', display: 'flow', cursor: 'pointer' }} onClick={() => handleRemoveTableHeaders(0)}>
+                                                                                                                    <RemoveCircleOutlineIcon sx={{ color: '#1D2939' }} />
+                                                                                                                </button>
+                                                                                                                <button style={{ outline: 'none', border: 'none', color: '#1D2939', padding: '0', display: 'flow', cursor: 'pointer' }} onClick={handleAddTableHeaders}>
+                                                                                                                    <AddCircleOutlineIcon />
+                                                                                                                </button>
+                                                                                                            </Box>
+                                                                                                        </Box>
+                                                                                                    }
+                                                                                                </Box>
+                                                                                            </Box>
+                                                                                        </Box>
+
                                                                                         : (
                                                                                             <TextField
-                                                                                                label={prop.charAt(0).toUpperCase() + prop.slice(1)}
+                                                                                                label={prop !== "name" ? prop.charAt(0).toUpperCase() + prop.slice(1) : "DB Name"}
                                                                                                 name={prop}
                                                                                                 value={selectedField[prop] || ""}
                                                                                                 onChange={handlePropertyChange}
@@ -2595,7 +3601,7 @@ const Formbuilder = () => {
                                                                                                     maxLength : prop === 'label' ? 50 : undefined
                                                                                                 }}
                                                                                                 fullWidth
-                                                                                                disabled={(updateFieldReadonly && prop === "label") ? true : false}
+                                                                                                disabled={prop === "name" ? true : false}
                                                                                                 size="small" // Default size is "medium"
                                                                                                 margin="none" // Adjust the margin to control spacing
                                                                                             />
@@ -2620,6 +3626,7 @@ const Formbuilder = () => {
                                                                                 >
                                                                                     <ToggleButton className='rowToggleBtn' value="12">1</ToggleButton>
                                                                                     <ToggleButton className='rowToggleBtn' value="6">2</ToggleButton>
+                                                                                    <ToggleButton className='rowToggleBtn' value="4">3</ToggleButton>
                                                                                 </ToggleButtonGroup>
                                                                             </ThemeProvider>
                                                                         </Box>
@@ -2768,6 +3775,229 @@ const Formbuilder = () => {
                             </div>
             }
 
+            <Dialog open={showPropsModal} onClose={() => setShowPropsModal(false)} maxWidth="md" fullWidth>
+                <DialogTitle>Add Properties</DialogTitle>
+                
+                <DialogContent dividers>
+
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+
+                        <Switch
+                            checked={propEditField?.fieldType?.required} 
+                            onChange={(e)=> {
+                                setPropEditField({
+                                    ...propEditField,
+                                    fieldType: {
+                                        ...propEditField.fieldType,
+                                        required: e.target.checked
+                                    }
+                                })
+                            }}
+                        />
+
+                        <Typography pt={1} sx={{ textTransform: 'capitalize', textWrap: 'nowrap' }} className='propsOptionsBtn'>
+                            Mandatory field
+                        </Typography>
+                    </Box>
+
+                    {(propEditField?.fieldType?.type === "single_select" || propEditField?.fieldType?.type === "multi_select") && (
+                        <Box sx={{ py: '20px' }}>
+                            <Box sx={{ border: '1px solid #D0D5DD', borderRadius: '8px', background: '#F2F4F7' }}>
+                                <Box p={1} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: '1px solid #D0D5DD', borderRadius: '8px' }}>
+                                    <Typography sx={{ color: '#475467', fontWeight: '500', fontSize: '16px' }} className='Roboto'>
+                                        Enter dropdown values below
+                                    </Typography>
+                                    <Button 
+                                        onClick={()=> {
+                                            if (propEditField?.fieldType?.api) {
+                                                const { api, ...restFieldType } = propEditField.fieldType;
+
+                                                setPropEditField({
+                                                    ...propEditField,
+                                                    fieldType: {
+                                                        ...restFieldType,
+                                                        options: []
+                                                    }
+                                                });
+
+                                            }else{
+                                                setPropEditField({
+                                                    ...propEditField,
+                                                    fieldType: {
+                                                        ...propEditField.fieldType,
+                                                        options: []
+                                                    }
+                                                })
+                                            }
+                                        }} 
+                                        sx={{ color: '#F04438', fontSize: '16px', fontWeight: '500', textTransform: 'none' }} className='Roboto'>
+                                        Delete all
+                                    </Button>
+                                </Box>
+                                <Box py={1} px={2} sx={{ maxHeight: '270px', overflow: 'auto' }}>
+                                    {propEditField?.fieldType?.options?.length > 0 ? propEditField?.fieldType?.options.map((option, index) => (
+                                        <Box py={1} key={index} sx={{ display: "flex", alignItems: "center", gap: '18px' }}>
+                                            <TextField
+                                                label="Option Name"
+                                                disabled={propEditField?.fieldType?.['readonlyOption'] ? propEditField?.fieldType?.['readonlyOption'] : false}
+                                                value={option.name}
+                                                onChange={(e) => {
+                                                    const value = e.target.value;
+
+                                                    let updated = [...(propEditField?.fieldType?.options || [])];
+
+                                                    if (!updated[index]) {
+                                                        updated[index] = { name: '', code: '' };
+                                                    }
+
+                                                    updated[index].name = value;
+                                                    updated[index].code = value;
+
+                                                    setPropEditField({
+                                                        ...propEditField,
+                                                        fieldType: {
+                                                            ...propEditField.fieldType,
+                                                            options: updated
+                                                        }
+                                                    });
+                                                }}
+                                                fullWidth
+                                                required
+                                                size="small" // Default size is "medium"
+                                                margin="dense" // Adjust the margin to control spacing
+                                            />
+                                            <TextField
+                                                label="Option Code"
+                                                disabled
+                                                value={option.code}
+                                                fullWidth
+                                                required
+                                                size="small" // Default size is "medium"
+                                                margin="dense" // Adjust the margin to control spacing
+                                            />
+                                            <Box key={`default_value_${option.code}`}>
+                                                <Radio
+                                                    name="defaultValue"
+                                                    id={`default_value_${option.code}`}
+                                                    value={option.code}
+                                                    checked={option.defaultValue === true}
+                                                    onChange={() => {
+                                                        const updated = (propEditField?.fieldType?.options || []).map((opt, idx) => ({
+                                                            ...opt,
+                                                            defaultValue: idx === index,
+                                                        }));
+                                                        setPropEditField({
+                                                            ...propEditField,
+                                                            fieldType: {
+                                                                ...propEditField.fieldType,
+                                                                options: updated
+                                                            }
+                                                        });
+                                                    }}
+                                                />
+                                                <label style={{ color: '#475467', fontSize: '14px', fontWeight: '400' }} htmlFor={`default_value_${option?.code}`}>
+                                                    Default
+                                                </label>
+                                            </Box>
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                <button style={{ outline: 'none', border: 'none', color: '#1D2939', padding: '0', display: 'flow', cursor: 'pointer' }} onClick={() => handleTableFieldRemoveOption(index)}>
+                                                    <RemoveCircleOutlineIcon sx={{ color: '#1D2939' }} />
+                                                </button>
+                                                <button 
+                                                    style={{ outline: 'none', border: 'none', color: '#1D2939', padding: '0', display: 'flow', cursor: 'pointer' }} 
+                                                    onClick={() => {
+                                                        const updated = [...(propEditField?.fieldType?.options || []), { name: '', code: '' }];
+                                                        setPropEditField({
+                                                            ...propEditField,
+                                                            fieldType: {
+                                                                ...propEditField.fieldType,
+                                                                options: updated
+                                                            }
+                                                        });
+                                                    }}
+                                                >
+                                                    <AddCircleOutlineIcon />
+                                                </button>
+                                            </Box>
+                                        </Box>
+                                    )) :
+                                        <Box py={1} key={0} sx={{ display: "flex", alignItems: "center", gap: '18px' }}>
+                                            <TextField
+                                                label="Option Name"
+                                                disabled={propEditField?.fieldType?.['readonlyOption'] ? propEditField?.fieldType?.['readonlyOption'] : false}
+                                                value=''
+                                                onChange={(e) => {
+                                                    const value = e.target.value;
+
+                                                    let updated = [...(propEditField?.fieldType?.options || [])];
+
+                                                    if (!updated[0]) {
+                                                        updated[0] = { name: '', code: '' };
+                                                    }
+
+                                                    updated[0].name = value;
+                                                    updated[0].code = value;
+
+                                                    setPropEditField({
+                                                        ...propEditField,
+                                                        fieldType: {
+                                                            ...propEditField.fieldType,
+                                                            options: updated
+                                                        }
+                                                    });
+                                                }}
+                                                fullWidth
+                                                required
+                                                size="small"
+                                                margin="dense"
+                                            />
+                                            <TextField
+                                                label="Option Code"
+                                                disabled
+                                                value=''
+                                                fullWidth
+                                                required
+                                                size="small"
+                                                margin="dense"
+                                            />
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                <button style={{ outline: 'none', border: 'none', color: '#1D2939', padding: '0', display: 'flow', cursor: 'pointer' }} onClick={() => handleTableFieldRemoveOption(0)}>
+                                                    <RemoveCircleOutlineIcon sx={{ color: '#1D2939' }} />
+                                                </button>
+                                                <button 
+                                                    style={{ outline: 'none', border: 'none', color: '#1D2939', padding: '0', display: 'flow', cursor: 'pointer' }} 
+                                                    onClick={() => {
+                                                        const updated = [...(propEditField?.fieldType?.options || []), { name: '', code: '' }];
+                                                        setPropEditField({
+                                                            ...propEditField,
+                                                            fieldType: {
+                                                                ...propEditField.fieldType,
+                                                                options: updated
+                                                            }
+                                                        });
+                                                    }}
+                                                >
+                                                    <AddCircleOutlineIcon />
+                                                </button>
+                                            </Box>
+                                        </Box>
+                                        }
+                                    </Box>
+                                <Box p={1} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: '1px solid #D0D5DD', borderRadius: '4px', gap: '14px', background: '#F2F4F7' }}>
+                                    <Button onClick={showMasterTable} sx={{ width: '100%', color: '#1D2939', fontSize: '16px', fontWeight: '500', textTransform: 'none', border: '1px solid #D0D5DD', borderRadius: '4px' }} className='Roboto'>
+                                        Import from data base
+                                    </Button>
+                                </Box>
+                            </Box>
+                        </Box>
+                    )}
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setShowPropsModal(false)}>Cancel</Button>
+                    <Button variant="contained" onClick={handleSaveProps}>Save</Button>
+                </DialogActions>
+            </Dialog>
+    
         </Box>
     );
 };

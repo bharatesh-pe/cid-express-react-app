@@ -18,6 +18,7 @@ const {
   CaseAlerts,
   Template,
 } = require("../models");
+const xlsx = require('xlsx');
 const Sequelize = require("sequelize");
 const { userSendResponse } = require("../services/userSendResponse");
 const db = require("../models");
@@ -30,6 +31,17 @@ const { Op , fn, col, literal } = require("sequelize");
 const fs = require("fs");
 const path = require("path");
 const { pdfDocEncodingDecode } = require("pdf-lib");
+const { sendSMS } = require("../services/smsService"); // <-- Add this import
+const typeMapping = {
+  STRING: Sequelize.DataTypes.STRING,
+  INTEGER: Sequelize.DataTypes.INTEGER,
+  TEXT: Sequelize.DataTypes.TEXT,
+  DATE: Sequelize.DataTypes.DATE,
+  BOOLEAN: Sequelize.DataTypes.BOOLEAN,
+  FLOAT: Sequelize.DataTypes.FLOAT,
+  DOUBLE: Sequelize.DataTypes.DOUBLE,
+  JSONB: Sequelize.DataTypes.JSONB,
+};
 const get_module = async (req, res) => {
   try {
     const { user_id } = req.user;
@@ -123,13 +135,15 @@ const get_module = async (req, res) => {
       modules: enabled_modules,
       unreadNotificationCount,
     });
-  } catch (error) {
-    // Log and return error if an error occurs during module retrieval
+    } catch (error) {
     console.error("error retrieving modules:", error.message);
-    return res
-      .status(500)
-      .json({ success: false, message: "internal server error" });
-  }
+    return res.status(500).json({
+        success: false,
+        message: "Failed to retrieve modules",
+        error: error.message || "Internal Server Error"
+    });
+    }
+
 };
 
 // Function to verify OTP
@@ -312,6 +326,15 @@ const verify_OTP = async (req, res) => {
             const allowedUserIds = Array.from(new Set([String(userId), ...subordinateUserIds]));
 
 
+            var log_user_id = user.user_id;
+            var log_user_name = user_detail.name;
+            var log_user_designation_name = users_designation.map((ud) => {
+                return {
+                    designation_name: ud.designation.designation_name,
+                };
+            });
+            var logedin_user =  log_user_id +" - "+ log_user_name +" - "+ log_user_designation_name.map((ud) => ud.designation_name).join(", ");
+            // userSendResponse(res, 200, true, "OTP verified successfully. for user "+ logedin_user )
           return res.status(200).json({
             success: true,
             message: "OTP verified successfully.",
@@ -346,9 +369,11 @@ const verify_OTP = async (req, res) => {
   } catch (error) {
     // Log and return error if an error occurs during OTP verification
     console.error("Error verifying OTP:", error.message);
-    return res
-      .status(500)
-      .json({ success: false, message: "Internal Server Error" });
+    return res.status(500).json({
+        success: false,
+        message: "Failed to verify OTP",
+        error: error.message || "Internal Server Error"
+    });
   }
 };
 
@@ -366,73 +391,89 @@ const generate_OTP = async (req, res) => {
     const user_detail = await KGID.findOne({ where: { kgid } });
 
     if (user_detail) {
-      const mobile = user_detail.mobile;
-      const kgid_id = user_detail.id;
-      // Find the user by kgid
-      const user = await AuthSecure.findOne({ where: { kgid_id } });
-      // If user is found
-      if (user) {
-        const userRole = await Users.findOne({
-          where: { user_id: user.user_id },
-        });
-        if (userRole && userRole.dev_status === false) {
-          return res.status(500).json({
-            success: false,
-            message: "User deactivated, please contact admin",
-          });
-        }
-        // Check if the user has exceeded the maximum number of attempts
-        if (user.no_of_attempts >= 5) {
-          // Calculate the time for the next attempt
-          const nextAttemptTime = moment(user.last_attempt_at).add(
-            15,
-            "minutes"
-          );
-          // If the current time is before the next attempt time, return an error
-          if (moment().isBefore(nextAttemptTime)) {
-            return res.status(429).json({
-              success: false,
-              message: "Too many attempts. Please try again after 15 minutes.",
+        const mobile = user_detail.mobile;
+        const kgid_id = user_detail.id;
+        // Find the user by kgid
+        const user = await AuthSecure.findOne({ where: { kgid_id } });
+        // If user is found
+        if (user) {
+            const userRole = await Users.findOne({
+            where: { user_id: user.user_id },
             });
-          } else {
-            // Reset the number of attempts if the time for the next attempt has passed
-            await user.update({ no_of_attempts: 0 });
-          }
+            if (userRole && userRole.dev_status === false) {
+            return res.status(500).json({
+                success: false,
+                message: "User deactivated, please contact admin",
+            });
+            }
+            // Check if the user has exceeded the maximum number of attempts
+            if (user.no_of_attempts >= 5) {
+            // Calculate the time for the next attempt
+            const nextAttemptTime = moment(user.last_attempt_at).add(
+                15,
+                "minutes"
+            );
+            // If the current time is before the next attempt time, return an error
+            if (moment().isBefore(nextAttemptTime)) {
+                return res.status(429).json({
+                success: false,
+                message: "Too many attempts. Please try again after 15 minutes.",
+                });
+            } else {
+                // Reset the number of attempts if the time for the next attempt has passed
+                await user.update({ no_of_attempts: 0 });
+            }
+            }
+
+            // Check if the entered PIN is correct
+            if (user.pin !== pin) {
+            // Increment the number of attempts
+            await user.increment("no_of_attempts");
+            user.last_attempt_at = moment(); // Update the last attempt time
+            await user.save(); // Save the user record
+
+            return res.status(401).json({
+                success: false,
+                message: "Invalid credentials. Please try again.",
+            });
+            }
+
+            // Generate a random OTP
+            const otp = crypto.randomInt(100000, 999999).toString();
+            
+            // Set the OTP expiration time to 10 minutes from now
+            const expiresAt = moment().add(2, "minutes").toDate();
+            // Get the current timestamp
+            const currentTimeStamp = moment().toDate();
+
+            // Update the user with the new OTP, expiration time, and increment the number of attempts
+            await user.update({ otp, otp_expires_at: expiresAt });
+
+            // Send SMS after OTP is generated and saved
+            try {
+                await sendSMS({
+                    message: `Dear User, use this One Time Password ${otp} to log in to your CMS application. This OTP will be valid for the next 2 mins.-KSPPCW`,
+                    mobile: mobile,
+                    template_id: '1107174885741640587',
+                });
+            } catch (smsErr) {
+                console.error("Failed to send SMS:", smsErr.message);
+                if (smsErr.response) {
+                    console.error("SMS response body:", smsErr.response.data);
+                }
+            }
+
+            // Return success response
+            return res.status(200).json({
+            success: true,
+            message: "OTP generated and sent successfully."+otp,
+            });
+        } else {
+            // Return error if the user is not found
+            return res
+            .status(404)
+            .json({ success: false, message: "User not found" });
         }
-
-        // Check if the entered PIN is correct
-        if (user.pin !== pin) {
-          // Increment the number of attempts
-          await user.increment("no_of_attempts");
-          user.last_attempt_at = moment(); // Update the last attempt time
-          await user.save(); // Save the user record
-
-          return res.status(401).json({
-            success: false,
-            message: "Invalid credentials. Please try again.",
-          });
-        }
-
-        // Generate a random OTP
-        const otp = crypto.randomInt(100000, 999999).toString();
-        // Set the OTP expiration time to 10 minutes from now
-        const expiresAt = moment().add(10, "minutes").toDate();
-        // Get the current timestamp
-        const currentTimeStamp = moment().toDate();
-
-        // Update the user with the new OTP, expiration time, and increment the number of attempts
-        await user.update({ otp, otp_expires_at: expiresAt });
-        // Return success response
-        return res.status(200).json({
-          success: true,
-          message: "OTP generated and sent successfully.",
-        });
-      } else {
-        // Return error if the user is not found
-        return res
-          .status(404)
-          .json({ success: false, message: "User not found" });
-      }
     } else {
       return res
         .status(404)
@@ -441,9 +482,11 @@ const generate_OTP = async (req, res) => {
   } catch (error) {
     // Log and return error if an error occurs during OTP generation
     console.error("Error generating OTP:", error.message);
-    return res
-      .status(500)
-      .json({ success: false, message: "Internal Server Error" });
+    return res.status(500).json({
+        success: false,
+        message: "Failed to generate OTP",
+        error: error.message || "Internal Server Error"
+    });
   }
 };
 
@@ -483,9 +526,11 @@ const logout = async (req, res) => {
     } catch (error) {
 
         console.error("Error logging out:", error.message);
-        return res
-        .status(500)
-        .json({ success: false, message: "Internal Server Error" });
+        return res.status(500).json({
+            success: false,
+            message: "Failed to log out",
+            error: error.message || "Internal Server Error"
+        });
     }
     
 };
@@ -543,6 +588,19 @@ const generate_OTP_without_pin = async (req, res) => {
 
         // Update the user with the new OTP, expiration time, and increment the number of attempts
         await user.update({ otp, otp_expires_at: expiresAt });
+
+        // Send SMS after OTP is generated and saved
+        try {
+          await sendSMS({
+            message: `Dear User, use this One Time Password ${otp} to log in to your CMS application. This OTP will be valid for the next 2 mins.-KSPPCW`,
+            mobile: mobile,
+            template_id: '1107174885741640587',
+          });
+        } catch (smsErr) {
+          console.error("Failed to send SMS:", smsErr.message);
+          // Optionally, you can return an error or continue
+        }
+
         // Return success response
         return res.status(200).json({
           success: true,
@@ -562,9 +620,11 @@ const generate_OTP_without_pin = async (req, res) => {
   } catch (error) {
     // Log and return error if an error occurs during OTP generation
     console.error("Error generating OTP:", error.message);
-    return res
-      .status(500)
-      .json({ success: false, message: "Internal Server Error" });
+    return res.status(500).json({
+        success: false,
+        message: "Failed to generate OTP",
+        error: error.message || "Internal Server Error"
+    });
   }
 };
 
@@ -635,9 +695,11 @@ const verify_OTP_without_pin = async (req, res) => {
   } catch (error) {
     // Log and return error if an error occurs during OTP verification
     console.error("Error verifying OTP:", error.message);
-    return res
-      .status(500)
-      .json({ success: false, message: "Internal Server Error" });
+    return res.status(500).json({
+        success: false,
+        message: "Failed to verify OTP",
+        error: error.message || "Internal Server Error"
+    });
   }
 };
 
@@ -701,9 +763,11 @@ const update_pin = async (req, res) => {
     }
   } catch (error) {
     console.error("Error updating PIN:", error.message);
-    return res
-      .status(500)
-      .json({ success: false, message: "Internal Server Error" });
+    return res.status(500).json({
+        success: false,
+        message: "Failed to update PIN",
+        error: error.message || "Internal Server Error"
+    });
   } finally {
     if (fs.existsSync(dirPath))
       fs.rmSync(dirPath, { recursive: true, force: true });
@@ -808,9 +872,10 @@ const get_supervisor_id = async (req, res) => {
     }
   } catch (error) {
     console.error("Error logging out:", error.message);
-    return res
-      .status(500)
-      .json({ success: false, message: "Internal Server Error" });
+    return res.status(500).json({
+        success: false,
+        message: "Failed to get supervisor id. " + error.message || "Internal Server Error"
+    });
   }
 };
 
@@ -884,6 +949,32 @@ const set_user_hierarchy = async (req, res) => {
             }
         }
         else{
+
+            const userDepartment = await DesignationDepartment.findAll({
+                where: { designation_id },
+            });
+            if (!userDepartment) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Department not found for the given designation_id",
+                });
+            }
+    
+            const userDivision = await DesignationDivision.findAll({
+                where: { designation_id },
+            });
+
+             if (!userDivision) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Division not found for the given designation_id",
+                });
+            }
+    
+            const departmentIds = userDepartment.map((ud) => ud.department_id);
+            const divisionIds = userDivision.map((ud) => ud.division_id);
+    
+
             const userDesignations = await UserDesignation.findAll({
                 where: { user_id : user_id },
                 attributes: ["designation_id"],
@@ -920,6 +1011,8 @@ const set_user_hierarchy = async (req, res) => {
             var allowedUserIds = Array.from(new Set([String(user_id), ...subordinateUserIds]));
             data ={
                 allowedUserIds : allowedUserIds,
+                allowedDepartmentIds : departmentIds,
+                allowedDivisionIds : divisionIds,
                 getDataBasesOnUsers: true,
             }
         }
@@ -933,9 +1026,10 @@ const set_user_hierarchy = async (req, res) => {
         });
     } catch (error) {
         console.error("Error setting user hierarchy:", error.message);
-        return res
-        .status(500)
-        .json({ success: false, message: "Internal Server Error" });
+        return res.status(500).json({
+        success: false,
+        message: "Failed to set user hierarchy. " + error.message || "Internal Server Error"
+    });
     }
 };
 
@@ -1239,6 +1333,7 @@ const fetch_dash_count = async (req, res) => {
             allowedDepartmentIds = [],
             case_modules,
             user_designation,
+            sub_court,
         } = req.body;
 
         const normalizedDivisionIds = normalizeValues(allowedDivisionIds, "string");
@@ -1263,6 +1358,11 @@ const fetch_dash_count = async (req, res) => {
                     ];
                 } else {
                     caseWhereClause["created_by_id"] = { [Op.in]: normalizedUserIds };
+                }
+            }
+            if (allowedDivisionIds.length > 0) {
+                if (["ui_case", "pt_case", "eq_case"].includes(template_module)) {
+                    whereClause["field_division"] = { [Op.in]: normalizedDivisionIds };
                 }
             }
         }
@@ -1389,7 +1489,7 @@ const fetch_dash_count = async (req, res) => {
                     ...baseWhereClause,
                     alert_type: {
                         [Op.in]: [   
-                            "TRIAL_TODAY",
+                            "PT_HEARING",
                         ]
                     }
                 };
@@ -1400,7 +1500,17 @@ const fetch_dash_count = async (req, res) => {
                     ...baseWhereClause,
                     alert_type: {
                         [Op.in]: [   
-                            "TRIAL_TODAY",
+                            "OTHER_HEARING",
+                            "UI_FULL",
+                            "UI_PARTIAL",
+                            "EQ_FULL",
+                            "EQ_PARTIAL",
+                            "PENDING_QUASH_PETITIONS_HC",
+                            "PENDING_BAIL_PETITIONS_HC",
+                            "PENDING_ANTICIPATORY_BAIL_PETITIONS_HC",
+                            "PENDING_QUASH_PETITIONS_SC",
+                            "PENDING_BAIL_PETITIONS_SC",
+                            "PENDING_ANTICIPATORY_BAIL_PETITIONS_SC",
                         ]
                     }
                 };
@@ -1411,15 +1521,16 @@ const fetch_dash_count = async (req, res) => {
                     ...baseWhereClause,
                     alert_type: {
                         [Op.in]: [   
-                            "TRIAL_TODAY",
+                            "EO_ALLOCATION",
+                            "ACTION_PLAN",
+                            "PROGRESS_REPORT",
                         ]
                     }
                 };
             }
         }
 
-        
-        
+
         const groupedAlerts = await CaseAlerts.findAll({
             attributes: [
                 "alert_type",
@@ -1475,6 +1586,9 @@ const fetch_dash_count = async (req, res) => {
         // 10. CUSTODIAL
 
         var alertTemplates = {}
+        var ptHearingTemplates = {}
+        var otherHearingTemplates = {}
+        var hearingTemplates = {}
         if(case_modules === "ui_case") {
             alertTemplates = {
                 IO_ALLOCATION: {
@@ -1503,10 +1617,8 @@ const fetch_dash_count = async (req, res) => {
                         high: { name: "Over Due", count: 0, record_id: [], level: "high" }
                     },
                     total_count: 0
-                },NOTICE_41A_PENDING: {
-                    label: "41A CrPC/35 (3) BNSS Notices",
-                    total_count: 0
-                },FSL_PF: {
+                },
+                FSL_PF: {
                     label: "FSL - Property to be send to FSL",
                     divider: 3,
                     divider_details: {
@@ -1531,12 +1643,12 @@ const fetch_dash_count = async (req, res) => {
                     total_count: 0
                 },
 		            EXTENSION: {
-                    label: "Investigation Extension",
+                    label: "Cases(Expired) Due for Extension",
                     total_count: 0,
                     record_id: []
                 },
                 NATURE_OF_DISPOSAL: {
-                    label: "Charge Sheet (CC)",
+                    label: "Charge Sheeted (Due for CC No.)",
                     total_count: 0
                 },
             };
@@ -1560,110 +1672,134 @@ const fetch_dash_count = async (req, res) => {
                 //     },
                 //     total_count: 0
                 // },
-                full_stay_on_investigation: {
-                  label: "Full Stay on Investigation",
-                  total_count: 0
-                  },
-                  full_stay_on_trial: {
-                    label: "Full Stay on Trial",
-                    total_count: 0
-                  },
-                  full_stay_on_enquiries: {
-                    label: "Full Stay on Enquiries",
-                    total_count: 0
-                  },
-                  partial_stay_on_investigation: {
-                    label: "Partial Stay on Investigation",
-                    total_count: 0
-                  },
-                  partial_stay_on_trial: {
-                    label: "Partial Stay on Trial",
-                    total_count: 0
-                  },
-                  partial_stay_on_enquiries: {
-                    label: "Partial Stay on Enquiries",
-                    total_count: 0
-                  },
-                  pending_quash_petitions_in_hc: {
-                    label: "Pending Quash Petitions in HC",
-                    total_count: 0
-                  },
-                  pending_bail_petitions_in_hc: {
-                    label: "Pending Bail Petitions in HC",
-                    total_count: 0
-                  },
-                  pending_anticipatory_petitions_in_hc: {
-                    label: "Pending Anticipatory Petitions in HC",
-                    total_count: 0
-                  },
-                  cases_in_supreme_court: {
-                    label: "Cases in Supreme Court",
-                    total_count: 0
-                  }
+                // full_stay_on_investigation: {
+                //   label: "Full Stay on Investigation",
+                //   total_count: 0
+                //   },
+                //   full_stay_on_trial: {
+                //     label: "Full Stay on Trial",
+                //     total_count: 0
+                //   },
+                //   full_stay_on_enquiries: {
+                //     label: "Full Stay on Enquiries",
+                //     total_count: 0
+                //   },
+                //   partial_stay_on_investigation: {
+                //     label: "Partial Stay on Investigation",
+                //     total_count: 0
+                //   },
+                //   partial_stay_on_trial: {
+                //     label: "Partial Stay on Trial",
+                //     total_count: 0
+                //   },
+                //   partial_stay_on_enquiries: {
+                //     label: "Partial Stay on Enquiries",
+                //     total_count: 0
+                //   },
+                //   pending_quash_petitions_in_hc: {
+                //     label: "Pending Quash Petitions in HC",
+                //     total_count: 0
+                //   },
+                //   pending_bail_petitions_in_hc: {
+                //     label: "Pending Bail Petitions in HC",
+                //     total_count: 0
+                //   },
+                //   pending_anticipatory_petitions_in_hc: {
+                //     label: "Pending Anticipatory Petitions in HC",
+                //     total_count: 0
+                //   },
+                //   cases_in_supreme_court: {
+                //     label: "Cases in Supreme Court",
+                //     total_count: 0
+                //   }
                 
             };
+            ptHearingTemplates = {
+                "TRIAL_TODAY": {
+                    "label": "Today",
+                    "total_count": 0,
+                    "record_ids": []
+                },
+                "TRIAL_TOMORROW": {
+                    "label": "Tomorrow",
+                    "total_count": 0,
+                    "record_ids": []
+                },
+                "TRIAL_THIS_WEEK": {
+                    "label": "This Week",
+                    "total_count": 0,
+                    "record_ids": []
+                },
+                "TRIAL_NEXT_WEEK": {
+                    "label": "Next Week",
+                    "total_count": 0,
+                    "record_ids": []
+                }
+            };
+
         }
         else if (case_modules === "pt_other_case") {
+
+            var appendingText = "HC";
+
+            if(sub_court && sub_court.toLowerCase() === "supreme_court") {
+                appendingText = "SC";
+            }            
+
             alertTemplates = {
-                // OTHER_CASE_1: {
-                //     label: "Other Case 1",
-                //     total_count: 0
-                // },
-                // OTHER_CASE_2: {
-                //     label: "Other Case 2",
-                //     total_count: 0
-                // },
-                // OTHER_CASE_3: {
-                //     label: "Other Case 3",
-                //     divider: 2,
-                //     divider_details: {
-                //         low: { name: "Pending", count: 0, record_id: [], level: "low" },
-                //         high: { name: "Over Due", count: 0, record_id: [], level: "high" }
-                //     },
-                //     total_count: 0
-                // },
-                full_stay_on_investigation: {
-                  label: "Full Stay on Investigation",
-                  total_count: 0
-                  },
-                  full_stay_on_trial: {
-                    label: "Full Stay on Trial",
+                "UI_FULL": {
+                    label: "Full Stay on Investigation",
                     total_count: 0
-                  },
-                  full_stay_on_enquiries: {
+                },
+                "EQ_FULL": {
                     label: "Full Stay on Enquiries",
                     total_count: 0
-                  },
-                  partial_stay_on_investigation: {
+                },
+                "UI_PARTIAL": {
                     label: "Partial Stay on Investigation",
                     total_count: 0
-                  },
-                  partial_stay_on_trial: {
-                    label: "Partial Stay on Trial",
-                    total_count: 0
-                  },
-                  partial_stay_on_enquiries: {
+                },
+                "EQ_PARTIAL": {
                     label: "Partial Stay on Enquiries",
                     total_count: 0
-                  },
-                  pending_quash_petitions_in_hc: {
-                    label: "Pending Quash Petitions in HC",
+                },
+                [`PENDING_QUASH_PETITIONS_${appendingText}`]: {
+                    label: `Pending Quash Petitions in ${appendingText}`,
                     total_count: 0
-                  },
-                  pending_bail_petitions_in_hc: {
-                    label: "Pending Bail Petitions in HC",
+                },
+                [`PENDING_BAIL_PETITIONS_${appendingText}`]: {
+                    label: `Pending Bail Petitions in ${appendingText}`,
                     total_count: 0
-                  },
-                  pending_anticipatory_petitions_in_hc: {
-                    label: "Pending Anticipatory Petitions in HC",
+                },
+                [`PENDING_ANTICIPATORY_BAIL_PETITIONS_${appendingText}`]: {
+                    label: `Pending Anticipatory Bail Petitions in ${appendingText}`,
                     total_count: 0
-                  },
-                  cases_in_supreme_court: {
-                    label: "Cases in Supreme Court",
-                    total_count: 0
-                  }
-                
+                }
+            }
+
+            otherHearingTemplates = {
+                "TRIAL_TODAY": {
+                    "label": "Today",
+                    "total_count": 0,
+                    "record_ids": []
+                },
+                "TRIAL_TOMORROW": {
+                    "label": "Tomorrow",
+                    "total_count": 0,
+                    "record_ids": []
+                },
+                "TRIAL_THIS_WEEK": {
+                    "label": "This Week",
+                    "total_count": 0,
+                    "record_ids": []
+                },
+                "TRIAL_NEXT_WEEK": {
+                    "label": "Next Week",
+                    "total_count": 0,
+                    "record_ids": []
+                }
             };
+
         }
         else if (case_modules === "eq_case") {
             // alertTemplates = {
@@ -1674,8 +1810,8 @@ const fetch_dash_count = async (req, res) => {
             // };
 
             alertTemplates = {
-                IO_ALLOCATION: {
-                    label: "IO Allocation",
+                EO_ALLOCATION: {
+                    label: "EO Allocation",
                     divider: 2,
                     divider_details: {
                         low: { name: "24 hrs", count: 0, record_id: [], level: "low" },
@@ -1702,17 +1838,17 @@ const fetch_dash_count = async (req, res) => {
                     total_count: 0
                 },
                 EXTENSION: {
-                    label: "Enquiries Extension",
+                    label: "Enquiries(Expired) Due for Extension",
                     total_count: 0,
                     record_id: []
                 },
                 FINAL_ENQUIRIES_REPORT: {
-                    label: "Final Enquiries Report",
+                    label: "Final Report Approved Due for Submission",
                     total_count: 0,
                     record_id: []
                 },
                 CLOSURE_REPORT: {
-                    label: "Closure Report",
+                    label: "Closure Report Due for Submission",
                     total_count: 0,
                     record_id: []
                 }
@@ -1826,17 +1962,886 @@ const fetch_dash_count = async (req, res) => {
             }
         }
 
+        if( case_modules === "pt_trail_case" || case_modules === "pt_other_case") {
+
+            if( case_modules === "pt_trail_case"){
+                for (const row of groupedAlerts)
+                {
+                    if(row && row.alert_level && row.record_ids && row.count)
+                    {
+                        var alertLevel = row.alert_level.toLowerCase();
+                        var record_ids = row.record_ids;
+                        var record_count = row.count;
+                        
+                        if(alertLevel === "high")
+                        {
+                            if(ptHearingTemplates["TRIAL_TODAY"])
+                            {
+                                ptHearingTemplates["TRIAL_TODAY"].total_count  = record_count;
+                                ptHearingTemplates["TRIAL_TODAY"]["record_ids"] = record_ids ;
+                            }
+                        }
+                        else if(alertLevel === "medium")
+                        {
+                            if(ptHearingTemplates["TRIAL_TOMORROW"])
+                            {
+                                ptHearingTemplates["TRIAL_TOMORROW"].total_count  = record_count;
+                                ptHearingTemplates["TRIAL_TOMORROW"]["record_ids"] = record_ids ;
+                            }
+                        }
+                        else if(alertLevel === "low")
+                        {
+                            if(ptHearingTemplates["TRIAL_THIS_WEEK"])
+                            {
+                                ptHearingTemplates["TRIAL_THIS_WEEK"].total_count  = record_count;
+                                ptHearingTemplates["TRIAL_THIS_WEEK"]["record_ids"] = record_ids ;
+                            }
+                        }
+                        else if(alertLevel === "very_low")
+                        {
+                            if(ptHearingTemplates["TRIAL_NEXT_WEEK"])
+                            {
+                                ptHearingTemplates["TRIAL_NEXT_WEEK"].total_count  = record_count;
+                                ptHearingTemplates["TRIAL_NEXT_WEEK"]["record_ids"] = record_ids ;
+                            }
+                        }
+                    }
+                }
+            }
+            else{
+                for (const row of groupedAlerts)
+                {
+                    if(row && row.alert_level)
+                    {
+                        var alertLevel = row.alert_level.toLowerCase();
+                        var alertType = row.alert_type.toLowerCase();
+                        var record_ids = row.record_ids;
+                        var record_count = row.count;
+                        if(alertLevel === "high")
+                        {
+                            if(otherHearingTemplates["TRIAL_TODAY"])
+                            {
+                                otherHearingTemplates["TRIAL_TODAY"].total_count = record_count;
+                                otherHearingTemplates["TRIAL_TODAY"]["record_ids"] = record_ids;
+                            }
+                        }
+                        else if(alertLevel === "medium")
+                        {
+                            if(otherHearingTemplates["TRIAL_TOMORROW"])
+                            {
+                                otherHearingTemplates["TRIAL_TOMORROW"].total_count  = record_count;
+                                otherHearingTemplates["TRIAL_TOMORROW"]["record_ids"] = record_ids ;
+                            }
+                        }
+                        else if(alertLevel === "low")
+                        {
+                            if(otherHearingTemplates["TRIAL_THIS_WEEK"])
+                            {
+                                otherHearingTemplates["TRIAL_THIS_WEEK"].total_count  = record_count;
+                                otherHearingTemplates["TRIAL_THIS_WEEK"]["record_ids"] = record_ids ;
+                            }
+                        }
+                        else if(alertLevel === "very_low")
+                        {
+                            if(otherHearingTemplates["TRIAL_NEXT_WEEK"])
+                            {
+                                otherHearingTemplates["TRIAL_NEXT_WEEK"].total_count  = record_count;
+                                otherHearingTemplates["TRIAL_NEXT_WEEK"]["record_ids"] = record_ids ;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
 
         return res.status(200).json({
             success: true,
             data: dashboard_count_details,
-            "groupedAlerts":groupedAlerts
+            hearingTemplates: case_modules === "pt_trail_case" ? ptHearingTemplates : case_modules === "pt_other_case" ? otherHearingTemplates : hearingTemplates,
+            "groupedAlerts":  groupedAlerts,
         });
     } catch (error) {
         console.error("Error retrieving dashboard count:", error.message);
-        return res.status(500).json({ success: false, message: "Internal server error"+error });
+        return res.status(500).json({
+        success: false,
+        message: "Failed to retrieve dashboard count",
+        error: error.message || "Internal Server Error"
+    });
     }
 };
+
+const mapUIandPT = async (req, res) => {
+    try {
+        const ui_cases = await sequelize.query(
+            `SELECT id, "field_cid_crime_no./enquiry_no" FROM cid_under_investigation;`,
+            { type: sequelize.QueryTypes.SELECT }
+        );
+
+        const pt_cases = await sequelize.query(
+            `SELECT id, "field_cid_crime_no./enquiry_no" FROM cid_pending_trial;`,
+            { type: sequelize.QueryTypes.SELECT }
+        );
+
+        // Build map of UI cases by their key
+        const ui_case_map = {};
+        ui_cases.forEach(ui => {
+            const key = ui["field_cid_crime_no./enquiry_no"]?.trim();
+            if (key) ui_case_map[key] = ui.id;
+        });
+
+        // For each PT case, update accordingly
+        for (const pt of pt_cases) {
+            const key = pt["field_cid_crime_no./enquiry_no"]?.trim();
+
+            if (key && ui_case_map[key]) {
+                // Match found → update ui_case_id
+                await sequelize.query(
+                    `UPDATE cid_pending_trial SET ui_case_id = :uiCaseId WHERE id = :ptCaseId;`,
+                    {
+                        replacements: { uiCaseId: ui_case_map[key], ptCaseId: pt.id },
+                        type: sequelize.QueryTypes.UPDATE
+                    }
+                );
+            } else {
+                // No match → update pt_case_id with its own ID (or a fallback if needed)
+                await sequelize.query(
+                    `UPDATE cid_pending_trial SET pt_case_id = :ptCaseId WHERE id = :ptCaseId;`,
+                    {
+                        replacements: { ptCaseId: pt.id },
+                        type: sequelize.QueryTypes.UPDATE
+                    }
+                );
+            }
+        }
+
+        return res.status(200).json({ success: true, message: "PT cases updated with UI or PT IDs as required" });
+    } catch (error) {
+        console.error("Error mapping UI and PT:", error.message);
+        return res.status(500).json({
+        success: false,
+        message: "Failed to map UI and PT cases",
+        error: error.message || "Internal Server Error"
+    });
+    }
+};
+
+const updatePoliceStationFromExcel = async (req, res) => {
+    try {
+        const workbook = xlsx.readFile(path.join(__dirname, '../data/CID_data.xlsx'));
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const data = xlsx.utils.sheet_to_json(sheet, { header: 1 });
+
+        if (!data || data.length === 0) {
+            return res.status(400).json({ success: false, message: "No data found in the Excel sheet" });
+        }
+
+        const headers = data[0];
+
+        const fieldIsUIIndex = headers.indexOf("IsUI");
+        const fieldCrimeNumberIndex = headers.indexOf("field_crime_number_of_ps");
+        const fieldEnquiryNoIndex = headers.indexOf("field_cid_crime_no./enquiry_no");
+        const fieldCCNoIndex = headers.indexOf("field_cc_no./sc_no");
+        const policeStationIdIndex = headers.indexOf("PoliceStationId");
+        const CourtIdIndex = headers.indexOf("CourtId");
+        const fieldDateOfRegistrationByPsIndex = headers.indexOf("field_date_of_registration_by_ps/range");
+        const fieldDateOfEntrustmentToCidIndex = headers.indexOf("field_date_of_entrustment_to_cid");
+        const fieldDateOfTakingOverByCidIndex = headers.indexOf("field_date_of_taking_over_by_cid");
+        const fieldDateOfTakingOverByPresentIoIndex = headers.indexOf("field_date_of_taking_over_by_present_io");
+        const publickeyIndex = headers.indexOf("PublicKey");
+        const fieldNumberOfAccusedIndex = headers.indexOf("TotalAccusedCount");
+        const fieldNumberOfAccusedCustodyIndex = headers.indexOf("TotalAccusedinCustody");
+        const fieldDateOfSubmissionOfFrToCourtIndex = headers.indexOf("field_date_of_submission_of_fr_to_court");
+        const fieldDateOfFilingLastSupplimentaryChargeSheetIndex =headers.indexOf("field_date_of_filing_last_supplimentary_charge_sheet");
+        const fieldDateOfFilingLastPreliminaryChargeSheetIndex =headers.indexOf("field_date_of_filing_last_preliminary_charge_sheet");
+        const fieldNameOfAccusedA1Index = headers.indexOf("field_name_of_accused");
+        const fieldDateOfJudgementIndex = headers.indexOf("field_date_of_judgement");
+        const fieldResultOfJudgementIndex = headers.indexOf("field_result_of_judgment");
+        const fieldPtRemarksIndex = headers.indexOf("PT_Remarks");
+        const fieldTrialStatusIndex = headers.indexOf("StateofTrialId");
+        const fieldHigherCourtIdIndex = headers.indexOf("HigherCourtId");
+        const fieldSpecialPPIdIndex = headers.indexOf("SplPPId");
+
+        const uiCases = [];
+        const ptCases = [];
+        const eqCases = [];
+
+        data.slice(1).forEach(row => {
+            const isUI = row[fieldIsUIIndex];
+            var crimeNumber = row[fieldCrimeNumberIndex];
+            const enquiryNo = row[fieldEnquiryNoIndex];
+            const policeStationkey = row[policeStationIdIndex];
+            const ccNo = row[fieldCCNoIndex];
+            const courtkey = row[CourtIdIndex];
+            const dateOfRegistrationByPs = row[fieldDateOfRegistrationByPsIndex];
+            const dateOfEntrustmentToCid = row[fieldDateOfEntrustmentToCidIndex];
+            const dateOfTakingOverByCid = row[fieldDateOfTakingOverByCidIndex];
+            const dateOfTakingOverByPresentIo = row[fieldDateOfTakingOverByPresentIoIndex];
+            const publickey = row[publickeyIndex];
+            const TotalAccusedCount = row[fieldNumberOfAccusedIndex];
+            const TotalAccusedinCustody = row[fieldNumberOfAccusedCustodyIndex];
+            const dateOfSubmissionOfFrToCourt = row[fieldDateOfSubmissionOfFrToCourtIndex];
+            const dateOfFilingLastSupplimentaryChargeSheet = row[fieldDateOfFilingLastSupplimentaryChargeSheetIndex];
+            const dateOfFilingLastPreliminaryChargeSheet = row[fieldDateOfFilingLastPreliminaryChargeSheetIndex];
+            const fieldNameOfAccusedA1 = row[fieldNameOfAccusedA1Index];
+            const fieldDateOfJudgement = row[fieldDateOfJudgementIndex];
+            const fieldResultOfJudgement = row[fieldResultOfJudgementIndex];
+            const fieldPtRemarks = row[fieldPtRemarksIndex];
+            const fieldTrialStatus = row[fieldTrialStatusIndex];
+            const fieldHigherCourtId = row[fieldHigherCourtIdIndex];
+            const fieldSpecialPPId = row[fieldSpecialPPIdIndex];
+            
+
+
+            if ((isUI === 2 || isUI === '2') && crimeNumber && enquiryNo) {
+                uiCases.push({ crimeNumber, enquiryNo, policeStationkey ,courtkey , dateOfRegistrationByPs, dateOfEntrustmentToCid, dateOfTakingOverByCid, dateOfTakingOverByPresentIo , publickey , TotalAccusedCount , dateOfSubmissionOfFrToCourt , dateOfFilingLastSupplimentaryChargeSheet , dateOfFilingLastPreliminaryChargeSheet, fieldNameOfAccusedA1});
+            } else if ((isUI === 4 || isUI === 5 || isUI === '4' || isUI === '5') && crimeNumber && enquiryNo) {
+                ptCases.push({ crimeNumber, enquiryNo, policeStationkey ,ccNo , courtkey ,publickey , TotalAccusedCount , TotalAccusedinCustody , fieldDateOfJudgement , fieldResultOfJudgement , fieldPtRemarks , fieldTrialStatus , fieldHigherCourtId , fieldSpecialPPId});
+            } else if ((isUI === 1 || isUI === '1') && enquiryNo) {
+                if(crimeNumber == undefined || crimeNumber == null)
+                    crimeNumber = '';
+
+                eqCases.push({ enquiryNo, policeStationkey , crimeNumber , dateOfRegistrationByPs, dateOfEntrustmentToCid, dateOfTakingOverByCid, dateOfTakingOverByPresentIo , publickey , TotalAccusedCount });
+            }
+        });
+
+        const updateUICases = async (cases, tableName) => {
+            for (const item of cases) {
+
+                var police_station_id = '';
+                if (item.policeStationkey)
+                {
+                    const police_station_result = await sequelize.query(
+                        `SELECT id FROM cid_police_station WHERE "publickey" = :policeStationkey`,
+                        {
+                            replacements: { policeStationkey: item.policeStationkey },
+                            type: sequelize.QueryTypes.SELECT
+                        }
+                    );
+    
+                    police_station_id = police_station_result[0]?.id;
+                }
+
+                var court_id = "";
+                if (item.courtkey) {
+                    const court_result = await sequelize.query(
+                        `SELECT id FROM cid_court WHERE "publickey" = :courtkey`,
+                        {
+                            replacements: { courtkey: item.courtkey },
+                            type: sequelize.QueryTypes.SELECT
+                        }
+                    );
+                    
+                    court_id = court_result[0]?.id;
+                    if (!court_id) continue;
+                }
+
+
+                await sequelize.query(
+                    `UPDATE ${tableName} 
+                     SET 
+                     "field_name_of_the_police_station" = :police_station_id , 
+                     "field_name_of_the_court_place" = :court_id ,
+                     "field_date_of_registration_by_ps/range" = :dateOfRegistrationByPs,
+                     "field_date_of_entrustment_to_cid" = :dateOfEntrustmentToCid, 
+                     "field_date_of_taking_over_by_cid" = :dateOfTakingOverByCid, 
+                     "field_date_of_taking_over_by_present_io" = :dateOfTakingOverByPresentIo,
+                     "publickey" = :publickey,
+                     "field_number_of_accused" = :TotalAccusedCount,
+                     "field_date_of_submission_of_fr_to_court" = :dateOfSubmissionOfFrToCourt,
+                     "field_date_of_filing_last_supplimentary_charge_sheet" = :dateOfFilingLastSupplimentaryChargeSheet,
+                     "field_date_of_filing_last_preliminary_charge_sheet" = :dateOfFilingLastPreliminaryChargeSheet,
+                     "field_name_of_accused" = :fieldNameOfAccusedA1
+                     WHERE "field_cid_crime_no./enquiry_no" = :enquiryNo 
+                       AND "field_crime_number_of_ps" = :crimeNumber`,
+                    {
+                        replacements: {
+                            police_station_id : String(police_station_id),
+                            enquiryNo: String(item.enquiryNo),
+                            crimeNumber: String(item.crimeNumber),
+                            court_id: String(court_id),
+                            dateOfRegistrationByPs: excelDateToString(item.dateOfRegistrationByPs),
+                            dateOfEntrustmentToCid: excelDateToString(item.dateOfEntrustmentToCid),
+                            dateOfTakingOverByCid: excelDateToString(item.dateOfTakingOverByCid),
+                            dateOfTakingOverByPresentIo: excelDateToString(item.dateOfTakingOverByPresentIo),
+                            publickey: String(item.publickey),
+                            TotalAccusedCount: String(item.TotalAccusedCount || ''),
+                            dateOfSubmissionOfFrToCourt: excelDateToString(item.dateOfSubmissionOfFrToCourt || ''),
+                            dateOfFilingLastSupplimentaryChargeSheet: excelDateToString(item.dateOfFilingLastSupplimentaryChargeSheet || ''),
+                            dateOfFilingLastPreliminaryChargeSheet: excelDateToString(item.dateOfFilingLastPreliminaryChargeSheet || ''),
+                            fieldNameOfAccusedA1: String(item.fieldNameOfAccusedA1 || '')
+                        },
+                        type: sequelize.QueryTypes.UPDATE
+                    }
+                );
+            }
+        };
+
+        const updatePTCases = async (cases, tableName) => {
+            for (const item of cases) {
+                var police_station_id = '';
+                if (item.policeStationkey)
+                {
+                    const police_station_result = await sequelize.query(
+                        `SELECT id FROM cid_police_station WHERE "publickey" = :policeStationkey`,
+                        {
+                            replacements: { policeStationkey: item.policeStationkey },
+                            type: sequelize.QueryTypes.SELECT
+                        }
+                    );
+    
+                    police_station_id = police_station_result[0]?.id;
+                }
+
+                var court_id = "";
+                if (item.courtkey) {
+                    const court_result = await sequelize.query(
+                        `SELECT id FROM cid_court WHERE "publickey" = :courtkey`,
+                        {
+                            replacements: { courtkey: item.courtkey },
+                            type: sequelize.QueryTypes.SELECT
+                        }
+                    );
+                    
+                    court_id = court_result[0]?.id;
+                    if (!court_id) continue;
+                }
+
+                var result_of_judgement_id = '';
+                if (item.fieldResultOfJudgement) {
+                    const judgement_result = await sequelize.query(
+                        `SELECT id FROM cid_result_of_judgement WHERE "publickey" = :fieldResultOfJudgement`,
+                        {
+                            replacements: { fieldResultOfJudgement: item.fieldResultOfJudgement },
+                            type: sequelize.QueryTypes.SELECT
+                        }
+                    );
+    
+                    result_of_judgement_id = judgement_result[0]?.id;
+                }
+
+
+                var higher_court_id  = '';
+                if (item.fieldHigherCourtId) {
+                    const higher_court_result = await sequelize.query(
+                        `SELECT id FROM cid_court WHERE "publickey" = :courtkey`,
+                        {
+                            replacements: { courtkey: item.fieldHigherCourtId },
+                            type: sequelize.QueryTypes.SELECT
+                        }
+                    );
+    
+                    higher_court_id = higher_court_result[0]?.id;
+                }
+
+                var trial_status_id = '';
+                if (item.fieldTrialStatus) {
+                    const trial_status_result = await sequelize.query(
+                        `SELECT id FROM cid_state_of_trial WHERE "publickey" = :trialkey`,
+                        {
+                            replacements: { trialkey: item.fieldTrialStatus },
+                            type: sequelize.QueryTypes.SELECT
+                        }
+                    );
+    
+                    trial_status_id = trial_status_result[0]?.id;
+                }
+
+                var pp_id = '';
+                if (item.fieldSpecialPPId) {
+                    const pp_result = await sequelize.query(
+                        `SELECT id FROM cid_state_of_trial WHERE "publickey" = :PPkey`,
+                        {
+                            replacements: { PPkey: item.fieldSpecialPPId },
+                            type: sequelize.QueryTypes.SELECT
+                        }
+                    );
+    
+                    pp_id = pp_result[0]?.id;
+                }
+
+                await sequelize.query(
+                    `UPDATE ${tableName} 
+                        SET 
+                            "field_name_of_the_police_station" = :police_station_id,
+                            "field_ps_crime_number" = :crimeNumber,
+                            "field_name_of_the_court" = :court_id,
+                            "publickey" = :publickey,
+                            "field_total_number_of_accused_persons" = :TotalAccusedCount,
+                            "field_total_number_of_accused_persons_in_custody" = :TotalAccusedinCustody, 
+                            "field_date_of_judgement" = :fieldDateOfJudgement,
+                            "field_result_of_judgment(dis/acq/con)" = :result_of_judgement_id,
+                            "field_remark" = :fieldPtRemarks,
+                            "field_state_of_trial" = :fieldTrialStatus,
+                            "field_name_of_the_higher_court" = :higher_court_id,
+                            "field_name_of_spl.pp" = :pp_id
+                        WHERE 
+                            "field_cid_crime_no./enquiry_no" = :enquiryNo 
+                            AND "field_cc_no./sc_no" = :ccNo`,
+                    {
+                        replacements: {
+                            police_station_id : String(police_station_id),
+                            enquiryNo: String(item.enquiryNo),
+                            crimeNumber: String(item.crimeNumber),
+                            ccNo: String(item.ccNo),
+                            court_id: String(court_id),
+                            publickey: String(item.publickey),
+                            TotalAccusedCount: String(item.TotalAccusedCount || ''),
+                            TotalAccusedinCustody: String(item.TotalAccusedinCustody != undefined || item.TotalAccusedinCustody != null ? item.TotalAccusedinCustody : ''), 
+                            fieldDateOfJudgement: excelDateToString(item.fieldDateOfJudgement),
+                            result_of_judgement_id: String(result_of_judgement_id || ''),
+                            fieldPtRemarks: String(item.fieldPtRemarks || ''),
+                            fieldTrialStatus: String(trial_status_id || ''),
+                            higher_court_id: String(higher_court_id || ''),
+                            pp_id: String(pp_id || ''),
+                        },
+                        type: sequelize.QueryTypes.UPDATE
+                    }
+                );
+            }
+        };
+
+        const updateEQCases = async (cases, tableName) => {
+            for (const item of cases) {
+                var police_station_id = null;
+                if (item.policeStationkey)
+                {
+                    const police_station_result = await sequelize.query(
+                        `SELECT id FROM cid_police_station WHERE "publickey" = :policeStationkey`,
+                        {
+                            replacements: { policeStationkey: item.policeStationkey },
+                            type: sequelize.QueryTypes.SELECT
+                        }
+                    );
+    
+                    police_station_id = police_station_result[0]?.id;
+                }
+                
+                await sequelize.query(
+                    `UPDATE ${tableName} 
+                     SET 
+                     "field_name_of_the_ps/range" = :police_station_id , 
+                     "field_crime_number_of_ps/range" = :crimeNumber ,
+                     "field_date_of_registration_by_ps/range" = :dateOfRegistrationByPs,
+                     "field_date_of_entrustment_to_cid" = :dateOfEntrustmentToCid, 
+                     "field_date_of_taking_over_by_cid" = :dateOfTakingOverByCid, 
+                     "field_date_of_taking_over_by_present_io" = :dateOfTakingOverByPresentIo,
+                     "publickey" = :publickey,
+                     "field_number_of_accused" = :TotalAccusedCount
+                     WHERE "field_cid_crime_no./enquiry_no" = :enquiryNo `,
+                    {
+                        replacements: {
+                            police_station_id : police_station_id,
+                            enquiryNo: String(item.enquiryNo),
+                            crimeNumber: String(item.crimeNumber || ''),
+                            dateOfRegistrationByPs: excelDateToString(item.dateOfRegistrationByPs),
+                            dateOfEntrustmentToCid: excelDateToString(item.dateOfEntrustmentToCid),
+                            dateOfTakingOverByCid: excelDateToString(item.dateOfTakingOverByCid),
+                            dateOfTakingOverByPresentIo: excelDateToString(item.dateOfTakingOverByPresentIo),
+                            publickey: String(item.publickey),
+                            TotalAccusedCount: String(item.TotalAccusedCount || '')
+                        },
+                        type: sequelize.QueryTypes.UPDATE
+                    }
+                );
+            }
+        };
+
+        // await updateUICases(uiCases, 'cid_under_investigation');
+        // await updatePTCases(ptCases, 'cid_pending_trial');
+        await updateEQCases(eqCases, 'cid_enquiry');
+
+        return res.status(200).json({
+            success: true,
+            message: "Police Station fields updated successfully for valid records.",
+            stats: {
+                uiUpdated: uiCases.length,
+                ptUpdated: ptCases.length,
+                eqUpdated: eqCases.length
+            }
+        });
+    } catch (error) {
+        console.error("Excel processing error:", error);
+        return res.status(500).json({ success: false, message: "Internal Server Error", error: error.message });
+    }
+};
+
+
+const dumpOldCmsDataFromExcel = async (req, res) => {
+    const transaction = await sequelize.transaction();
+    try {
+        const workbook = xlsx.readFile(path.join(__dirname, '../data/Old_CID_data.xlsx'));
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const data = xlsx.utils.sheet_to_json(sheet, { header: 1 });
+
+        if (!data || data.length === 0) {
+            return res.status(400).json({ success: false, message: "No data found in the Excel sheet" });
+        }
+
+        const headers = data[0];
+        const fieldIsUIIndex = headers.indexOf("IsUI");
+        const publickeyIndex = headers.indexOf("PublicKey");
+
+        for (const row of data.slice(1)) {
+            const isUI = row[fieldIsUIIndex];
+            const publickeyValue = row[publickeyIndex];
+            let caseId = null;
+
+            if (publickeyValue) {
+                let table = '';
+                if (isUI === 2 || isUI === '2') table = 'cid_under_investigation';
+                else if (isUI === 4 || isUI === 5 || isUI === '4' || isUI === '5') table = 'cid_pending_trial';
+                else if (isUI === 1 || isUI === '1') table = 'cid_enquiry';
+
+                if (table) {
+                    const result = await sequelize.query(
+                        `SELECT id FROM ${table} WHERE "publickey" = :publickeyValue`,
+                        {
+                            replacements: { publickeyValue },
+                            type: sequelize.QueryTypes.SELECT,
+                            transaction
+                        }
+                    );
+                    if (result?.length > 0) {
+                        caseId = result[0].id;
+                    }
+                }
+            }
+
+            // Map headers to DB column names
+            const columns = headers.map(header =>
+                `field_${header.toLowerCase().replace(/ /g, '_')}`
+            );
+
+            // Build rowData by ensuring all columns are covered
+            const rowData = headers.map((_, index) => {
+                const value = row[index];
+                if (value instanceof Date) {
+                    return excelDateToString(value);
+                }
+                if (value == undefined || value == '') {
+                    console.log("Value at index", index, ":", value);
+                    return null; // Treat empty or undefined as NULL
+                }
+                return String(value); // Convert all values to string
+            });
+
+            // const values = normalizeValues(rowData, 'string');
+            const values = rowData;
+
+            // Add dynamic case ID field
+            if (isUI === 2 || isUI === '2') {
+                columns.push('ui_case_id');
+                values.push(caseId);
+            } else if (isUI === 4 || isUI === 5 || isUI === '4' || isUI === '5') {
+                columns.push('pt_case_id');
+                values.push(caseId);
+            } else if (isUI === 1 || isUI === '1') {
+                columns.push('eq_case_id');
+                values.push(caseId);
+            }
+
+            columns.push('created_at','created_by','updated_at','updated_by');
+            values.push(new Date(), 'system',new Date(), 'system'); // Assuming 'system' as created_by for this
+
+            const insertQuery = `INSERT INTO cid_ui_case_old_cms_data (${columns.join(', ')}) VALUES (${values.map(() => '?').join(', ')})`;
+
+            const [insertResult, metadata] = await sequelize.query(insertQuery, {
+                replacements: values,
+                type: sequelize.QueryTypes.INSERT,
+                transaction
+            });
+
+            // if (!insertResult || (Array.isArray(insertResult) && insertResult.length === 0)) {
+                
+            //     throw new Error(`Insert failed for publickey: ${insertResult}`);
+            // }
+
+        }
+
+        await transaction.commit();
+        return res.status(200).json({ success: true, message: "Old CMS data processed successfully" });
+    } catch (error) {
+        await transaction.rollback();
+        return res.status(500).json({ success: false, message: "Transaction failed", error: error.message });
+    }
+};
+
+const store_cnr_table_data = async (req, res) => {
+    const data = req.body;
+  
+    try {
+        // Fetch template schema
+        const CNRtableData = await Template.findOne({ where: { table_name: "cid_pt_case_cnr" } });
+        if (!CNRtableData) {
+            return res.status(400).json({ success: false, message: "Table 'cid_pt_case_cnr' does not exist." });
+        }
+    
+        // Parse field structure
+        const schema = typeof CNRtableData.fields === "string" ? JSON.parse(CNRtableData.fields) : CNRtableData.fields;
+    
+        // Build model dynamically
+        const attributes = {
+            id: { type: Sequelize.DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+            created_at: { type: Sequelize.DataTypes.DATE, allowNull: false, defaultValue: Sequelize.NOW },
+            updated_at: { type: Sequelize.DataTypes.DATE, allowNull: false, defaultValue: Sequelize.NOW },
+        };
+    
+        for (const field of schema) {
+            const { name, data_type, not_null } = field;
+            attributes[name] = {
+            type: typeMapping[data_type?.toUpperCase()] || Sequelize.DataTypes.STRING,
+            allowNull: !not_null,
+            };
+        }
+
+        attributes['pt_case_id'] = {
+            type: Sequelize.DataTypes.TEXT,
+            allowNull: true,
+        };
+  
+        const CNRModel = sequelize.define("cid_pt_case_cnr", attributes, {
+            freezeTableName: true,
+            timestamps: true,
+            createdAt: 'created_at',
+            updatedAt: 'updated_at',
+        });
+    
+        await CNRModel.sync();
+        var pt_case_id = [];
+        //get the pt_case_id from cid_pending_trial table
+        if (data.field_cnr_number) {
+            const [results] = await sequelize.query(
+            `SELECT id FROM cid_pending_trial WHERE field_cnr_number = :cnr`,
+            { replacements: { cnr: data.field_cnr_number } }
+            );
+    
+            //data.pt_case_id = results.length > 0 ? results[0].id : null;
+            if( results.length > 0) {
+                pt_case_id = [];
+                for (const result of results) {
+                    pt_case_id.push(result.id);
+                }
+            }
+        } else {
+            pt_case_id = null;
+        }
+
+        // Append fixed metadata
+        data.created_by = 'system';
+        data.created_by_id = 0;
+        data.created_at = new Date();
+        data.updated_at = new Date();
+        
+        // if(!pt_case_id || pt_case_id.length === 0) {
+        //     return res.status(400).json({ success: false, message: "No matching PT case found for the provided CNR number." });
+        // }
+       
+        if(pt_case_id && pt_case_id.length > 0) {
+            //before insert check where there the data.field_cnr_number and the pt_case_id already exists in the CNR table, if it exist dont do anything.
+           
+            for(const ptCaseId of pt_case_id) {
+
+                var existingCNR = await CNRModel.findOne({
+                    where: {
+                        field_cnr_number: data.field_cnr_number,
+                        pt_case_id: ptCaseId, // Check against the PT case ID
+                    }
+                });
+
+                if (existingCNR) {
+                    // If a record already exists, skip insertion
+                    console.log(`CNR record with CNR number ${data.field_cnr_number} and PT case ID ${ptCaseId} already exists. Skipping insertion.`);
+                    continue;
+                }
+                // Insert data into the CNR table
+                await CNRModel.create({
+                    ...data,
+                    pt_case_id: ptCaseId, // Use the current PT case ID
+                });
+            }
+            return res.status(200).json({ success: true, message: "CNR data stored successfully." });
+        }
+        else
+        {
+
+            // var existingCNR = await CNRModel.findOne({
+            //     where: {
+            //         field_cnr_number: data.field_cnr_number,
+            //         pt_case_id: ptCaseId, // Check against the PT case ID
+            //     }
+            // });
+            // //Insert data into the CNR table with pt_case_id as null
+            // await CNRModel.create({
+            //     ...data,
+            //     pt_case_id: null, // Use null for pt_case_id if no matching PT case
+            // });
+            // return res.status(200).json({ success: true, message: "CNR data stored successfully with no matching PT case." });
+            //return an error like this "No matching PT case found for the provided CNR number."
+            return res.status(400).json({ success: false, message: "No matching PT case found for the provided CNR number." });
+        }
+        
+    
+    } catch (error) {
+      console.error("CNR Save Error:", error);
+      return res.status(500).json({ success: false, message: "Failed to save CNR data.", error: error.message });
+    }
+  };
+
+const datewisereport = async (req, res) => {
+    try {
+        const { startDate, endDate } = req.body;
+
+        if (!startDate || !endDate) {
+            return res.status(400).json({ success: false, message: "Start date and end date are required." });
+        }
+
+        const formattedStartDate = new Date(startDate);
+        const formattedEndDate = new Date(endDate);
+
+        const results = await sequelize.query(
+            `SELECT * FROM cid_pending_trial WHERE created_at BETWEEN :startDate AND :endDate`,
+            {
+                replacements: { startDate: formattedStartDate, endDate: formattedEndDate },
+                type: sequelize.QueryTypes.SELECT
+            }
+        );
+
+        return res.status(200).json({ success: true, data: results });
+    } catch (error) {
+        console.error("Error fetching date-wise report:", error);
+        return res.status(500).json({ success: false, message: "Failed to fetch date-wise report.", error: error.message });
+    }
+}
+
+
+//like dumpOldCmsDataFromExcel, this function processes data from an Excel file and updates the database accordingly.
+const updatePoliceStationExcel = async (req, res) => {
+    try {
+        const workbook = xlsx.readFile(path.join(__dirname, '../data/CID_PS_data.xlsx'));
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const data = xlsx.utils.sheet_to_json(sheet, { header: 1 });
+
+        if (!data || data.length === 0) {
+            return res.status(400).json({ success: false, message: "No data found in the Excel sheet" });
+        }
+
+        const headers = data[0];
+
+        //the just we need to take the headed Name and PublicKey and check if the PublicKey exists in the cid_police_station table if not insert it.
+        const fieldNameIndex = headers.indexOf("Name");
+        const publickeyIndex = headers.indexOf("PublicKey");
+        const policeStations = [];
+        data.slice(1).forEach(row => {
+            const name = row[fieldNameIndex];
+            const publickey = row[publickeyIndex];
+
+            if (name && publickey) {
+                policeStations.push({ name, publickey });
+            }
+        });
+        const transaction = await sequelize.transaction();
+        var existingPSCount = 0 ;
+        var newPSCount = 0 ;
+        for (const item of policeStations) {
+            const existingStation = await sequelize.query(
+                `SELECT id FROM cid_police_station WHERE "publickey" = :publickey`,
+                {
+                    replacements: { publickey: item.publickey },
+                    type: sequelize.QueryTypes.SELECT,
+                    transaction
+                }
+            );
+            if (existingStation.length > 0) {
+                existingPSCount++;
+            }
+            if (existingStation.length === 0) {
+                newPSCount++;
+                await sequelize.query(
+                    `INSERT INTO cid_police_station ("name", "publickey", "created_at", "updated_at") VALUES (:name, :publickey, NOW(), NOW())`,
+                    {
+                        replacements: { name: item.name, publickey: item.publickey },
+                        type: sequelize.QueryTypes.INSERT,
+                        transaction
+                    }
+                );
+            }
+        }
+        await transaction.commit();
+        return res.status(200).json({ success: true, message: "Police stations updatedsuccessfully. the no of existiong PS :" + existingPSCount + " and the no of new PS :" + newPSCount });
+    } catch (error) {
+        console.error("Error processing police station data:", error);
+        return res.status(500).json({ success: false, message: "Internal Server Error", error: error.message });
+    }
+}
+
+
+//like updatePoliceStationFromExcel, i need to do it for court data , table name is cid_court.
+const updateCourtFromExcel = async (req, res) => {
+    try {
+        const workbook = xlsx.readFile(path.join(__dirname, '../data/CID_Court_data.xlsx'));
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const data = xlsx.utils.sheet_to_json(sheet, { header: 1 });
+
+        if (!data || data.length === 0) {
+            return res.status(400).json({ success: false, message: "No data found in the Excel sheet" });
+        }
+
+        const headers = data[0];
+
+        //the just we need to take the headed Name and PublicKey and check if the PublicKey exists in the cid_court table if not insert it.
+        const fieldNameIndex = headers.indexOf("Name");
+        const publickeyIndex = headers.indexOf("PublicKey");
+        const courts = [];
+        data.slice(1).forEach(row => {
+            const name = row[fieldNameIndex];
+            const publickey = row[publickeyIndex];
+
+            if (name && publickey) {
+                courts.push({ name, publickey });
+            }
+        });
+        const transaction = await sequelize.transaction();
+        var existingCourtCount = 0 ;
+        var newCourtCount = 0 ;
+        for (const item of courts) {
+            const existingCourt = await sequelize.query(
+                `SELECT id FROM cid_court WHERE "publickey" = :publickey`,
+                {
+                    replacements: { publickey: item.publickey },
+                    type: sequelize.QueryTypes.SELECT,
+                    transaction
+                }
+            );
+            if (existingCourt.length > 0) {
+                existingCourtCount++;
+            }
+            if (existingCourt.length === 0) {
+                newCourtCount++;
+                await sequelize.query(
+                    `INSERT INTO cid_court ("name", "publickey", "created_at", "updated_at") VALUES (:name, :publickey, NOW(), NOW())`,
+                    {
+                        replacements: { name: item.name, publickey: item.publickey },
+                        type: sequelize.QueryTypes.INSERT,
+                        transaction
+                    }
+                );
+            }
+        }
+        await transaction.commit();
+        return res.status(200).json({ success: true, message: "Courts updated successfully. the no of existiong Courts :" + existingCourtCount + " and the no of new Courts :" + newCourtCount });
+    } catch (error) {
+        console.error("Error processing court data:", error);
+        return res.status(500).json({ success: false, message: "Internal Server Error", error: error.message });
+    }
+};
+     
+
+
   
 
 module.exports = {
@@ -1850,6 +2855,12 @@ module.exports = {
   get_supervisor_id,
   set_user_hierarchy,
   fetch_dash_count,
+  mapUIandPT,
+  updatePoliceStationFromExcel,
+  dumpOldCmsDataFromExcel,
+  store_cnr_table_data,
+  updatePoliceStationExcel,
+  updateCourtFromExcel
 };
 
 
@@ -1861,4 +2872,13 @@ function normalizeValues(values, expectedType) {
         if (expectedType === 'int') return Number(v);
         return v;
         });
+}
+
+
+function excelDateToString(serial) {
+    if (!serial || isNaN(serial)) return null;
+    const utc_days = Math.floor(serial - 25569);
+    const utc_value = utc_days * 86400; // seconds
+    const date_info = new Date(utc_value * 1000);
+    return date_info.toISOString().split('T')[0]; // 'YYYY-MM-DD'
 }

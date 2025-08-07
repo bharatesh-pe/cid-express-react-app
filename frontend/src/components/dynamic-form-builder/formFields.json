@@ -21,8 +21,10 @@
         "minLength": 1,
         "maxLength": 100,
         "validation": "",
+        "name": "",
         "type": "text",
-        "formType": "Short Text"
+        "formType": "Short Text",
+        "case_diary": true
     },
     {
         "field_id": 2,
@@ -46,8 +48,10 @@
         "minLength": 1,
         "maxLength": 100,
         "validation": "",
+        "name": "",
         "type": "number",
-        "formType": "Number"
+        "formType": "Number",
+        "case_diary": true
     },
     {
         "field_id": 3,
@@ -71,8 +75,10 @@
         "minLength": 1,
         "maxLength": 100,
         "validation": "",
+        "name": "",
         "type": "email",
-        "formType": "Email"
+        "formType": "Email",
+        "case_diary": true
     },
     {
         "field_id": 4,
@@ -93,10 +99,13 @@
         "disabled": "",
         "ao_field": false,
         "hide_from_edit": false,
+        "name": "",
         "particular_case_options": false,
+        "linkModule":false,
         "options": [],
         "type": "dropdown",
-        "formType": "Dropdown"
+        "formType": "Dropdown",
+        "case_diary": true
     },
     {
         "field_id": 5,
@@ -120,8 +129,10 @@
         "info": "",
         "minLength": 1,
         "maxLength": 100,
+        "name": "",
         "type": "valuesinput",
-        "formType": "Values input"
+        "formType": "Values input",
+        "case_diary": true
     },
     {
         "field_id": 6,
@@ -142,8 +153,10 @@
         "disabled": "",
         "minDate": "",
         "maxDate": "",
+        "name": "",
         "ao_field": false,
         "hide_from_edit": false,
+        "case_diary": true,
         "disableFutureDate": true,
         "disablePreviousDate": true,
         "type": "date",
@@ -168,6 +181,8 @@
         "disabled": "",
         "ao_field": false,
         "hide_from_edit": false,
+        "name": "",
+        "case_diary": true,
         "type": "time",
         "formType": "Time"
     },
@@ -190,8 +205,10 @@
         "disabled": "",
         "minDate": "",
         "maxDate": "",
+        "name": "",
         "ao_field": false,
         "hide_from_edit": false,
+        "case_diary": true,
         "type": "datetime",
         "formType": "Date & Time"
     },
@@ -215,6 +232,8 @@
         "ao_field": false,
         "hide_from_edit": false,
         "info": "",
+        "name": "",
+        "case_diary": true,
         "type": "textarea",
         "formType": "Long text"
     },
@@ -237,7 +256,10 @@
         "disabled": "",
         "ao_field": false,
         "hide_from_edit": false,
+        "name": "",
         "particular_case_options": false,
+        "linkModule":false,
+        "case_diary": true,
         "options": [],
         "type": "autocomplete",
         "formType": "Autocomplete"
@@ -261,7 +283,10 @@
         "disabled": "",
         "ao_field": false,
         "hide_from_edit": false,
+        "name": "",
         "particular_case_options": false,
+        "linkModule":false,
+        "case_diary": true,
         "options": [],
         "type": "multidropdown",
         "formType": "Multiple Dropdown"
@@ -277,15 +302,16 @@
         "required": "",
         "history": "",
         "hide_from_ux": false,
-        "options": [],
+        "name": "",
         "table_display_content": true,
         "is_primary_field": false,
         "duplicateCheck": false,
+        "options": [],
         "disabled": "",
         "ao_field": false,
         "hide_from_edit": false,
+        "case_diary": true,
         "type": "checkbox",
-        "name": "checkbox",
         "formType": "Checkbox"
     },
     {
@@ -299,15 +325,16 @@
         "required": "",
         "history": "",
         "hide_from_ux": false,
-        "options": [],
+        "name": "",
         "table_display_content": true,
         "is_primary_field": false,
         "duplicateCheck": false,
+        "options": [],
         "disabled": "",
         "ao_field": false,
         "hide_from_edit": false,
+        "case_diary": true,
         "type": "radio",
-        "name": "radio",
         "formType": "Radio"
     },
     {
@@ -321,6 +348,10 @@
         "required": "",
         "history": "",
         "ao_field": false,
+        "name": "file",
+        "hide_from_ux": false,
+        "hide_from_edit": false,
+        "table_display_content": true,
         "supportedFormat": [
             {
                 "name": "PDF files",
@@ -329,6 +360,10 @@
             {
                 "name": "Doc files",
                 "ext": ".doc"
+            },
+            {
+                "name": "Docx files",
+                "ext": ".docx"
             },
             {
                 "name": "Excel sheets",
@@ -349,13 +384,9 @@
         ],
         "selectedSupportFormat": [],
         "type": "file",
-        "name": "file",
         "formType": "Attachments",
         "multiple": true,
-        "disabled": "",
-        "hide_from_ux": false,
-        "hide_from_edit": false,
-        "table_display_content": true
+        "disabled": ""
     },
     {
         "field_id": 15,
@@ -365,10 +396,10 @@
         "label": "",
         "kannada": "",
         "name": "",
-        "info": "",
         "required": "",
         "history": "",
         "table_display_content": true,
+        "info": "",
         "disabled": "",
         "ao_field": false,
         "type": "profilepicture",
@@ -380,9 +411,10 @@
         "created_at": "2025-01-29T06:27:17.102Z",
         "updated_at": "2025-02-19T11:30:17.756Z",
         "label": "",
+        "name": "tabs",
         "options": [],
         "type": "tabs",
-        "name": "tabs",
+        "tableTabs": false,
         "formType": "Tabs"
     },
     {
@@ -393,12 +425,55 @@
         "label": "",
         "kannada": "",
         "name": "",
-        "info": "",
         "required": "",
         "history": "",
         "table_display_content": true,
+        "info": "",
         "disabled": "",
+        "case_diary": true,
         "type": "texteditor",
-        "formType": "texteditor"
+        "formType": "Text Editor"
+    },
+    {
+        "field_id": 18,
+        "field_name": "dropdown_with_add",
+        "created_at": "2025-01-29T06:27:17.102Z",
+        "updated_at": "2025-02-19T11:30:17.756Z",
+        "label": "",
+        "kannada": "",
+        "heading": "",
+        "required": "",
+        "history": "",
+        "hide_from_ux": false,
+        "supportingText": "",
+        "table_display_content": true,
+        "is_primary_field": false,
+        "duplicateCheck": false,
+        "info": "",
+        "disabled": "",
+        "ao_field": false,
+        "hide_from_edit": false,
+        "name": "",
+        "particular_case_options": false,
+        "linkModule":false,
+        "case_diary": true,
+        "options": [],
+        "type": "dropdown_with_add",
+        "formType": "Dropdown With Add"
+    },
+    {
+        "field_id": 19,
+        "field_name": "table",
+        "created_at": "2025-01-29T06:27:17.102Z",
+        "updated_at": "2025-02-19T11:30:17.756Z",
+        "label": "",
+        "kannada": "",
+        "info": "",
+        "name": "",
+        "tableHeaders": [],
+        "disabled": "",
+        "hide_from_ux": false,
+        "type": "table",
+        "formType": "Table"
     }
 ]

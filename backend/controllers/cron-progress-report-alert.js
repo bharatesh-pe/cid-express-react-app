@@ -326,7 +326,7 @@ exports.runMonthlyAlertCronPR = async () => {
     } 
 };
 
-//cron for Action Plan
+//cron for Investigation Officer Allocation
 exports.runDailyAlertCronIO = async () => {
     try {
         const today = moment().startOf("day");
@@ -335,7 +335,18 @@ exports.runDailyAlertCronIO = async () => {
         const ioAlertsData = await CaseAlerts.findAll({
             where: { 
                 alert_type: "IO_ALLOCATION",
-                module: { [Op.in]: case_modules },
+                module: { [Op.in]: ["ui_case", "pt_case"] },
+                status: {
+                    [Op.iLike]: "%pending%" 
+                }
+            },
+            order: [["created_at", "DESC"]],
+        });
+
+        const eoAlertsData = await CaseAlerts.findAll({
+            where: { 
+                alert_type: "EO_ALLOCATION",
+                module: { [Op.in]: ["eq_case"] },
                 status: {
                     [Op.iLike]: "%pending%" 
                 }
@@ -355,6 +366,23 @@ exports.runDailyAlertCronIO = async () => {
                     {
                         where: {
                             alert_type: "IO_ALLOCATION",
+                            record_id: alert_record_id,
+                        },
+                    }
+                );
+            }
+        }
+
+        for (const eoCaseEntry of eoAlertsData) {
+            const alert_record_id = eoCaseEntry.record_id;
+            const ioDueDate = moment(eoCaseEntry.due_date).startOf("day");
+
+            if (ioDueDate.isBefore(today)) {
+                await CaseAlerts.update(
+                    { alert_level: "high" },
+                    {
+                        where: {
+                            alert_type: "EO_ALLOCATION",
                             record_id: alert_record_id,
                         },
                     }
@@ -474,11 +502,11 @@ exports.runDailyAlertCronIO = async () => {
             const isOlderThan1Days = today.diff(createdAt, "days") > 1;
             const isEqualToToday = today.isSame(createdAt, "day");
             var alertLevel = "low";
-            var alertMessage = "Please assign an IO to this case";
+            var alertMessage = "Please assign an EO to this case";
             if(isOlderThan1Days)
             {
                 alertLevel = "high";
-                alertMessage = "Please assign an IO to this case, it is overdue";
+                alertMessage = "Please assign an EO to this case, it is overdue";
             }
 
             if(field_io === null || field_io === "")
@@ -486,10 +514,10 @@ exports.runDailyAlertCronIO = async () => {
                 try{
                     const existingAlert = await CaseAlerts.findOne({
                         where: {
-                            module: "ui_case",
+                            module: "eq_case",
                             main_table: uiTableName,
                             record_id: eq_case_id,
-                            alert_type: "IO_ALLOCATION",
+                            alert_type: "EO_ALLOCATION",
                             alert_level: alertLevel,
                             alert_message: alertMessage,
                             status: {
@@ -504,7 +532,7 @@ exports.runDailyAlertCronIO = async () => {
                     } else {
                         console.log(`Creating new alert for case ${eq_case_id}`);
                         await CaseAlerts.create({
-                            module: "ui_case",
+                            module: "eq_case",
                             main_table: uiTableName,
                             record_id: eq_case_id,
                             alert_type: "IO_ALLOCATION",
@@ -524,7 +552,7 @@ exports.runDailyAlertCronIO = async () => {
             }
         }
 
-        console.log(`Daily Alert Cron completed for IO Assign. ${updatedCount} alerts updated.`);
+        console.log(`Daily Alert Cron completed for IO Assign and EO Assign. ${updatedCount} alerts updated.`);
     } catch (error) {
         console.error("Error running Daily Alert Cron for IO Assign:", error);
     }
@@ -631,6 +659,10 @@ exports.runDailyAlertCronAP = async () => {
             type: Sequelize.DataTypes.STRING,
             allowNull: true,
             },
+            // publickey: {
+            //     type: Sequelize.DataTypes.STRING,
+            //     allowNull: true,
+            // },
         };
 
         const EQAPmodelAttributes = {
@@ -877,6 +909,348 @@ exports.runDailyAlertCronAP = async () => {
     } 
 };
 
+
+const ensureIdIsPrimaryOrUnique = async (tableName) => {
+  const idColumn = await sequelize.query(
+    `SELECT column_name, is_nullable, column_default
+     FROM information_schema.columns
+     WHERE table_name = :tableName AND column_name = 'id'`,
+    {
+      type: Sequelize.QueryTypes.SELECT,
+      replacements: { tableName },
+    }
+  );
+
+  if (!idColumn.length) {
+    console.warn(`Table ${tableName} has no 'id' column.`);
+    return;
+  }
+
+  const { is_nullable } = idColumn[0];
+  if (is_nullable === "YES") {
+    console.warn(`id' column in ${tableName} is nullable, cannot be PK.`);
+    return;
+  }
+
+  const constraintCheck = await sequelize.query(
+    `SELECT c.constraint_type
+     FROM information_schema.constraint_column_usage u
+     JOIN information_schema.table_constraints c
+       ON c.constraint_name = u.constraint_name
+     WHERE u.table_name = :tableName AND u.column_name = 'id'
+       AND c.constraint_type IN ('PRIMARY KEY', 'UNIQUE')`,
+    {
+      type: Sequelize.QueryTypes.SELECT,
+      replacements: { tableName },
+    }
+  );
+
+  if (constraintCheck.length > 0) return;
+
+  const hasPrimary = await sequelize.query(
+    `SELECT constraint_name
+     FROM information_schema.table_constraints
+     WHERE table_name = :tableName AND constraint_type = 'PRIMARY KEY'`,
+    {
+      type: Sequelize.QueryTypes.SELECT,
+      replacements: { tableName },
+    }
+  );
+
+  try {
+    if (hasPrimary.length === 0) {
+      await sequelize.query(`ALTER TABLE "${tableName}" ADD PRIMARY KEY (id);`);
+    } else {
+      const uniqueName = `${tableName}_id_unique`;
+      await sequelize.query(`ALTER TABLE "${tableName}" ADD CONSTRAINT "${uniqueName}" UNIQUE (id);`);
+    }
+  } catch (err) {
+    if (err.message.includes("already exists")) {
+      console.warn(`Constraint already exists on ${tableName}.id`);
+    } else {
+      console.error(`Failed to add constraint on ${tableName}.id:`, err);
+    }
+  }
+};
+
+const defineModelIfNotExists = async (tableName) => {
+  if (sequelize.models[tableName]) return sequelize.models[tableName];
+
+  const tableExists = await sequelize.query(
+    `SELECT table_name FROM information_schema.tables
+     WHERE table_schema = 'public' AND table_name = :tableName`,
+    {
+      type: Sequelize.QueryTypes.SELECT,
+      replacements: { tableName },
+    }
+  );
+
+  if (!tableExists.length) return null;
+
+  const columns = await sequelize.query(
+    `SELECT column_name, data_type, is_nullable, column_default
+     FROM information_schema.columns
+     WHERE table_schema = 'public' AND table_name = :tableName`,
+    {
+      type: Sequelize.QueryTypes.SELECT,
+      replacements: { tableName },
+    }
+  );
+
+  if (!columns.length) return null;
+
+  await ensureIdIsPrimaryOrUnique(tableName);
+
+  const fieldDefinitions = {};
+  for (const col of columns) {
+    let type = Sequelize.STRING;
+    switch (col.data_type) {
+      case "integer":
+      case "smallint":
+      case "bigint":
+        type = Sequelize.INTEGER;
+        break;
+      case "boolean":
+        type = Sequelize.BOOLEAN;
+        break;
+      case "timestamp with time zone":
+      case "timestamp without time zone":
+      case "date":
+        type = Sequelize.DATE;
+        break;
+      case "text":
+        type = Sequelize.TEXT;
+        break;
+    }
+
+    if (col.column_name === "id") {
+      const autoIncrement = col.column_default && col.column_default.startsWith("nextval");
+      fieldDefinitions[col.column_name] = {
+        type,
+        primaryKey: true,
+        autoIncrement: !!autoIncrement,
+        allowNull: false,
+      };
+    } else {
+      fieldDefinitions[col.column_name] = {
+        type,
+        allowNull: col.is_nullable === "YES",
+      };
+    }
+  }
+
+  const hasCreatedAt = columns.some(col => col.column_name === "created_at");
+  const hasUpdatedAt = columns.some(col => col.column_name === "updated_at");
+
+  const model = sequelize.define(tableName, fieldDefinitions, {
+    tableName,
+    freezeTableName: true,
+    underscored: true,
+    timestamps: hasCreatedAt || hasUpdatedAt,
+    createdAt: hasCreatedAt ? "created_at" : false,
+    updatedAt: hasUpdatedAt ? "updated_at" : false,
+  });
+
+  return model;
+};
+
+exports.runChildTableMigrationCron = async () => {
+  try {
+
+    const templates = await Template.findAll({
+      where: {
+        [Op.or]: [{ sys_status: null }, { sys_status: "" }],
+      },
+    });
+
+    for (const template of templates) {
+      const table_name = template.table_name;
+      const model = await defineModelIfNotExists(table_name);
+      if (!model) {
+        continue;
+      }
+
+      let fields;
+      try {
+        fields = JSON.parse(template.fields || "[]");
+      } catch (err) {
+        console.warn(`Failed to parse fields for ${table_name}:`, err);
+        continue;
+      }
+
+      const tableFields = fields.filter(
+        field => field.type === "table" || field.formType === "Table"
+      );
+
+      if (!tableFields.length) {
+        continue;
+      }
+
+      const sanitizeColumnName = (name) =>
+        name
+          .toLowerCase()
+          .replace(/[^a-z0-9_]/gi, "_")
+          .replace(/_+/g, "_")
+          .replace(/^_+|_+$/g, "")
+          .slice(0, 63);
+
+      for (const field of tableFields) {
+        if (!field.name || !field.tableHeaders || field.tableHeaders.length === 0) {
+          continue;
+        }
+
+        const childTableName = sanitizeColumnName(`${table_name}_${field.name}`);
+        const parentKey = `${table_name}_id`;
+
+        const fullFields = {
+          [parentKey]: {
+            type: Sequelize.INTEGER,
+            allowNull: false,
+            references: { model: table_name, key: "id" },
+            onDelete: "CASCADE",
+          },
+          created_at: { type: Sequelize.DATE, allowNull: true },
+          updated_at: { type: Sequelize.DATE, allowNull: true },
+          sys_status: {
+            type: Sequelize.STRING,
+            allowNull: true,
+            defaultValue: "active",
+          },
+        };
+
+        for (const header of field.tableHeaders) {
+          const sanitized = sanitizeColumnName(header.header);
+          const fieldType = header.fieldType?.type || "short_text";
+          fullFields[sanitized] = {
+            type: fieldType === "short_text" ? Sequelize.STRING(255) : Sequelize.TEXT,
+            allowNull: true,
+          };
+        }
+
+        const childModel = sequelize.define(childTableName, fullFields, {
+          freezeTableName: true,
+          timestamps: true,
+          underscored: true,
+        });
+
+        try {
+          await childModel.sync({ alter: true });
+        } catch (err) {
+          console.error(`Failed to sync child table ${childTableName}:`, err);
+          continue;
+        }
+
+        sequelize.models[childTableName] = childModel;
+
+        if (!model.associations[`${field.name}_children`]) {
+          model.hasMany(childModel, {
+            foreignKey: parentKey,
+            as: `${field.name}_children`,
+          });
+        }
+
+        if (!childModel.associations[`${table_name}_parent`]) {
+          childModel.belongsTo(model, {
+            foreignKey: parentKey,
+            as: `${table_name}_parent`,
+          });
+        }
+
+        await migrateOldTableFieldData(model, childModel, field, table_name, childTableName);
+      }
+    }
+
+    console.log("Child table migration cron completed.");
+  } catch (err) {
+    console.error("Error running child table migration cron:", err);
+  }
+};
+
+
+async function migrateOldTableFieldData(model, childModel, field, table_name, childTableName) {
+  const parentKey = `${table_name}_id`;
+  const parentRows = await model.findAll({
+  attributes: { exclude: ['createdAt', 'updatedAt'] }
+});
+
+
+  const sanitizeColumnName = (name) => {
+    return name
+      .toLowerCase()
+      .replace(/[^a-z0-9_]/gi, "_")
+      .replace(/_+/g, "_")
+      .replace(/^_+|_+$/g, "");
+  };
+
+  for (const parent of parentRows) {
+    const parentId = parent.id;
+    const existingChildren = await childModel.count({ where: { [parentKey]: parentId } });
+
+    if (existingChildren > 0) {
+      continue;
+    }
+
+    const rawTableData = parent.get(field.name);
+
+    if (
+      !rawTableData ||
+      rawTableData === "[]" ||
+      rawTableData === "{}" ||
+      (typeof rawTableData === "object" && Object.keys(rawTableData).length === 0)
+    ) {
+      continue;
+    }
+
+    let parsedRows;
+    try {
+      parsedRows = typeof rawTableData === "string"
+        ? JSON.parse(rawTableData)
+        : rawTableData;
+    } catch (err) {
+      console.warn(`Invalid JSON in field '${field.name}' for row ID ${parentId}`, err);
+      continue;
+    }
+
+    if (!Array.isArray(parsedRows) || parsedRows.length === 0) {
+      continue;
+    }
+
+    const nonEmptyRows = parsedRows.filter(obj =>
+      Object.values(obj).some(val =>
+        val !== null && val !== undefined && val.toString().trim() !== ""
+      )
+    );
+
+    if (nonEmptyRows.length === 0) {
+      continue;
+    }
+
+    const rowsToInsert = [];
+
+    for (const row of nonEmptyRows) {
+      const insertRow = {};
+      for (const header of field.tableHeaders || []) {
+        const sanitized = sanitizeColumnName(header.header);
+        insertRow[sanitized] = row[header.header] ?? null;
+      }
+
+      insertRow[parentKey] = parentId;
+      insertRow.sys_status = "active";
+      rowsToInsert.push(insertRow);
+    }
+
+    try {
+      if (rowsToInsert.length > 0) {
+        await childModel.bulkCreate(rowsToInsert, { ignoreDuplicates: true });
+        console.log(`Inserted ${rowsToInsert.length} rows into ${childTableName} for parent ID ${parentId}`);
+      }
+    } catch (err) {
+      console.error(`Failed inserting into ${childTableName} for parent ID ${parentId}:`, err);
+    }
+  }
+}
+
+
 //cron for FSL_PF
 exports.runDailyAlertCronFSL_PF = async () => {
     try {
@@ -922,6 +1296,10 @@ exports.runDailyAlertCronFSL_PF = async () => {
             created_at: { type: Sequelize.DataTypes.DATE, allowNull: false },
             updated_at: { type: Sequelize.DataTypes.DATE, allowNull: false },
             created_by: { type: Sequelize.DataTypes.STRING, allowNull: true },
+            // publickey: {
+            //     type: Sequelize.DataTypes.STRING,
+            //     allowNull: true,
+            // },
         };
 
         for (const field of schema) {
@@ -1218,7 +1596,7 @@ for (const record of records) {
 };
 
 
-//cron for Action Plan
+//cron for Accused
 exports.runDailyAlertCronAccused = async () => {
     try {
         const today = moment();
@@ -1289,6 +1667,10 @@ exports.runDailyAlertCronAccused = async () => {
             type: Sequelize.DataTypes.STRING,
             allowNull: true,
             },
+            // publickey: {
+            //     type: Sequelize.DataTypes.STRING,
+            //     allowNull: true,
+            // },
         };
   
         for (const field of schema) {
@@ -1410,4 +1792,821 @@ exports.runDailyAlertCronAccused = async () => {
       console.error("Error running Daily Alert Cron for Action Plan:", error);
     } 
 };
+
+//cron for PT Hearing
+exports.runDailyAlertCronPTHearing = async () => {
+    try {
+        
+        const today = moment();
+    
+        console.log("Fetching CID Pending Trial template...");
+        const template = await Template.findOne({ where: { table_name: "cid_pending_trial" } });
+    
+        if (!template) {
+            console.error("Template not found.");
+            return;
+        }
+  
+        const tableName = template.table_name;
+        console.log(`Using table: ${tableName}`);
+    
+
+        // Run raw SQL query to fetch cases that are not in the list of childCaseIds
+        const allCases = await sequelize.query(
+            `SELECT id FROM ${tableName} WHERE id IS NOT NULL`,
+            {
+                type: sequelize.QueryTypes.SELECT,
+            }
+        );
+
+        const allIds = allCases.map(row => row.id);
+        console.log(`Found ${allIds.length} cases.`);
+    
+        // Fetch Trial Monitoring template metadata
+        const TrialMonitoringTableData = await Template.findOne({ where: { table_name: "cid_pt_case_trail_monitoring" } });
+    
+        if (!TrialMonitoringTableData) {
+            console.error(`Table PT Hearing does not exist.`);
+            return;
+        }
+    
+        // Parse schema and build model
+        const schema = typeof TrialMonitoringTableData.fields === "string" ? JSON.parse(TrialMonitoringTableData.fields) : TrialMonitoringTableData.fields;
+        schema.push({ name: "sys_status", data_type: "TEXT", not_null: false });
+  
+        const TrialMonitoringAttributes = {
+            id: {
+            type: Sequelize.DataTypes.INTEGER,
+            primaryKey: true,
+            autoIncrement: true,
+            },
+            created_at: {
+            type: Sequelize.DataTypes.DATE,
+            allowNull: false,
+            },
+            updated_at: {
+            type: Sequelize.DataTypes.DATE,
+            allowNull: false,
+            },
+            created_by: {
+            type: Sequelize.DataTypes.STRING,
+            allowNull: true,
+            },
+            // publickey: {
+            //     type: Sequelize.DataTypes.STRING,
+            //     allowNull: true,
+            // },
+        };
+
+        for (const field of schema) {
+            const { name, data_type, not_null, default_value } = field;
+            const sequelizeType = typeMapping[data_type?.toUpperCase()] || Sequelize.DataTypes.STRING;
+    
+            TrialMonitoringAttributes[name] = {
+            type: sequelizeType,
+            allowNull: !not_null,
+            defaultValue: default_value || null,
+            };
+        }
+
+        const TrialMonitoringModel = sequelize.define(TrialMonitoringTableData.table_name, TrialMonitoringAttributes, {
+            freezeTableName: true,
+            timestamps: true,
+            createdAt: "created_at",
+            updatedAt: "updated_at",
+        });
+
+        await TrialMonitoringModel.sync();
+
+        for (const caseEntry of allCases) {
+            const case_id = caseEntry.id;
+
+            const TrialMonitoringRecord = await TrialMonitoringModel.findOne({
+                where: { pt_case_id: case_id },
+            });
+
+            if (TrialMonitoringRecord) {
+               if(TrialMonitoringRecord.field_next_hearing_date) {
+
+                    const nextHearingDate = moment(TrialMonitoringRecord.field_next_hearing_date);
+        
+                    //if the next hearing date is today means set the trial_today to true
+                    if (nextHearingDate.isSame(moment(), 'day')) {
+                        //if there is already an alert for today then update the alert to pending
+                        const existingAlert = await CaseAlerts.findOne({
+                            where: {
+                                record_id: case_id,
+                                alert_type: "PT_HEARING",
+                                status: "Pending"
+                            }
+                        });
+                        if (existingAlert) {
+                            await CaseAlerts.update(
+                                { status: "Pending" },
+                                {
+                                    where: {
+                                        id: existingAlert.id
+                                    }
+                                }
+                            );
+                        } else {
+                            //if there is no alert for today then create a new alert
+                            await CaseAlerts.create({
+                                module: "pt_trail_case",
+                                main_table: "cid_pt_case_trail_monitoring",
+                                record_id: case_id,
+                                alert_type: "PT_HEARING",
+                                alert_level: "high",
+                                alert_message: `Trial for case ID ${case_id} is scheduled for today.`,
+                                triggered_on: new Date(),
+                                status: "Pending",
+                                created_by: 0,
+                            });
+                        }
+                    }
+                    else if (nextHearingDate.isSame(moment().add(1, 'day'), 'day')) {
+
+                        const existingAlert = await CaseAlerts.findOne({
+                            where: {
+                                record_id: case_id,
+                                alert_type: "PT_HEARING",
+                                status: "Pending"
+                            }
+                        });
+                        if (existingAlert) {
+                            await CaseAlerts.update(
+                                { status: "Pending" },
+                                {
+                                    where: {
+                                        id: existingAlert.id
+                                    }
+                                }
+                            );
+                        }
+                        else {
+                         //create a new alert for tomorrow
+                            await CaseAlerts.create({
+                                module: "pt_trail_case",
+                                main_table: "cid_pt_case_trail_monitoring",
+                                record_id: case_id,
+                                alert_type: "PT_HEARING",
+                                alert_level: "medium",
+                                alert_message: `Trial for case ID ${case_id} is scheduled for tomorrow.`,
+                                triggered_on: new Date(),
+                                status: "Pending",
+                                created_by: 0,
+                            });
+                        }
+                    }
+                    // need to check the hearing date is belongs to this current week except today and tomorrow
+                    else if ( nextHearingDate.isBetween(moment().startOf('isoWeek'), moment().endOf('isoWeek'), 'day', '[]') && !nextHearingDate.isSame(moment(), 'day') && !nextHearingDate.isSame(moment().add(1, 'day'), 'day')) {
+                        // Check if an alert already exists for tomorrow
+                        const existingAlert = await CaseAlerts.findOne({
+                            where: {
+                                record_id: case_id,
+                                alert_type: "PT_HEARING",
+                                status: "Pending"
+                            }
+                        });
+                        if (existingAlert) {
+                            await CaseAlerts.update(
+                                { status: "Pending" },
+                                {
+                                    where: {
+                                        id: existingAlert.id
+                                    }
+                                }
+                            );
+                        }
+                        else {
+                            // Create a new alert for tomorrow
+                            await CaseAlerts.create({
+                                module: "pt_trail_case",
+                                main_table: "cid_pt_case_trail_monitoring",
+                                record_id: case_id,
+                                alert_type: "PT_HEARING",
+                                alert_level: "low",
+                                alert_message: `Trial for case ID ${case_id} is scheduled this week.`,
+                                triggered_on: new Date(),
+                                status: "Pending",
+                                created_by: 0,
+                            });
+                        }
+                    }
+                    else if (nextHearingDate.isSame(moment().add(1, 'week'), 'week')) {
+                        // Check if an alert already exists for next week
+                        const existingAlert = await CaseAlerts.findOne({
+                            where: {
+                                record_id: case_id,
+                                alert_type: "PT_HEARING",
+                                status: "Pending"
+                            }
+                        });
+                        if (existingAlert) {
+                            await CaseAlerts.update(
+                                { status: "Pending" },
+                                {
+                                    where: {
+                                        id: existingAlert.id
+                                    }
+                                }
+                            );
+                        }
+                        else {
+                            // Create a new alert for next week
+                            await CaseAlerts.create({
+                                module: "pt_trail_case",
+                                main_table: "cid_pt_case_trail_monitoring",
+                                record_id: case_id,
+                                alert_type: "PT_HEARING",
+                                alert_level: "very_low",
+                                alert_message: `Trial for case ID ${case_id} is scheduled for next week.`,
+                                triggered_on: new Date(),
+                                status: "Pending",
+                                created_by: 0,
+                            });
+                        }
+                    }
+                    else if (nextHearingDate.isSame(moment().subtract(1, 'day'), 'day')) {
+                      //update the case alert to incomplete if the case_id and alert_type and status is pending
+                      await CaseAlerts.update(
+                        {
+                          status: "Incomplete"
+                        },
+                        {
+                          where: {
+                            record_id: case_id,
+                            alert_type: "PT_HEARING",
+                            status: "Pending"
+                          }
+                        });
+                    }
+                }
+            } 
+            else {
+                console.log(`No Trial Monitoring record found for case ID ${case_id}`);
+                continue;
+            }   
+        }
+    }
+    catch (error) {
+        console.error("Error running Daily Alert Cron for PT Hearing:", error);
+    }
+}
+
+//cron for Other Hearing
+exports.runDailyAlertCronOtherHearing = async () => {
+    try {
+        
+        const today = moment();
+    
+        console.log("Fetching CID Pending Trial template...");
+        const template = await Template.findOne({ where: { table_name: "cid_pending_trial" } });
+    
+        if (!template) {
+            console.error("Template not found.");
+            return;
+        }
+  
+        const tableName = template.table_name;
+        console.log(`Using table: ${tableName}`);
+    
+
+        // Run raw SQL query to fetch cases that are not in the list of childCaseIds
+        const allCases = await sequelize.query(
+            `SELECT id FROM ${tableName} WHERE id IS NOT NULL`,
+            {
+                type: sequelize.QueryTypes.SELECT,
+            }
+        );
+
+        const allIds = allCases.map(row => row.id);
+        console.log(`Found ${allIds.length} cases.`);
+    
+        // Fetch Trial Monitoring template metadata
+        const CasePetitionTableData = await Template.findOne({ where: { table_name: "cid_pt_case_petition" } });
+    
+        if (!CasePetitionTableData) {
+            console.error(`Table PT Hearing does not exist.`);
+            return;
+        }
+    
+        // Parse schema and build model
+        const schema = typeof CasePetitionTableData.fields === "string" ? JSON.parse(CasePetitionTableData.fields) : CasePetitionTableData.fields;
+        schema.push({ name: "sys_status", data_type: "TEXT", not_null: false });
+  
+        const CasePetitionAttributes = {
+            id: {
+            type: Sequelize.DataTypes.INTEGER,
+            primaryKey: true,
+            autoIncrement: true,
+            },
+            created_at: {
+            type: Sequelize.DataTypes.DATE,
+            allowNull: false,
+            },
+            updated_at: {
+            type: Sequelize.DataTypes.DATE,
+            allowNull: false,
+            },
+            created_by: {
+            type: Sequelize.DataTypes.STRING,
+            allowNull: true,
+            },
+        };
+
+        for (const field of schema) {
+            const { name, data_type, not_null, default_value } = field;
+            const sequelizeType = typeMapping[data_type?.toUpperCase()] || Sequelize.DataTypes.STRING;
+    
+            CasePetitionAttributes[name] = {
+            type: sequelizeType,
+            allowNull: !not_null,
+            defaultValue: default_value || null,
+            };
+        }
+
+        const CasePetitionModel = sequelize.define(CasePetitionTableData.table_name, CasePetitionAttributes, {
+            freezeTableName: true,
+            timestamps: true,
+            createdAt: "created_at",
+            updatedAt: "updated_at",
+        });
+
+        await CasePetitionModel.sync();
+
+        for (const caseEntry of allCases) {
+            const case_id = caseEntry.id;
+
+            const CasePetitionRecord = await CasePetitionModel.findOne({
+                where: { pt_case_id: case_id },
+            });
+
+            if (CasePetitionRecord) {
+               if(CasePetitionRecord.field_next_hearing_date) {
+
+                    const nextHearingDate = moment(CasePetitionRecord.field_next_hearing_date);
+        
+                    //if the next hearing date is today means set the trial_today to true
+                    if (nextHearingDate.isSame(moment(), 'day')) {
+                        //if there is already an alert for today then update the alert to pending
+                        const existingAlert = await CaseAlerts.findOne({
+                            where: {
+                                record_id: case_id,
+                                alert_type: "OTHER_HEARING",
+                                status: "Pending"
+                            }
+                        });
+                        if (existingAlert) {
+                            await CaseAlerts.update(
+                                { status: "Pending" },
+                                {
+                                    where: {
+                                        id: existingAlert.id
+                                    }
+                                }
+                            );
+                        } else {
+                            //if there is no alert for today then create a new alert
+                            await CaseAlerts.create({
+                                module: "pt_other_case",
+                                main_table: "cid_pending_trial",
+                                record_id: case_id,
+                                alert_type: "OTHER_HEARING",
+                                alert_level: "high",
+                                alert_message: `Trial for case ID ${case_id} is scheduled for today.`,
+                                triggered_on: new Date(),
+                                status: "Pending",
+                                created_by: 0,
+                            });
+                        }
+                    }
+                    else if (nextHearingDate.isSame(moment().add(1, 'day'), 'day')) {
+
+                        const existingAlert = await CaseAlerts.findOne({
+                            where: {
+                                record_id: case_id,
+                                alert_type: "OTHER_HEARING",
+                                status: "Pending"
+                            }
+                        });
+                        if (existingAlert) {
+                            await CaseAlerts.update(
+                                { status: "Pending" },
+                                {
+                                    where: {
+                                        id: existingAlert.id
+                                    }
+                                }
+                            );
+                        }
+                        else {
+                         //create a new alert for tomorrow
+                            await CaseAlerts.create({
+                                module: "pt_other_case",
+                                main_table: "cid_pending_trial",
+                                record_id: case_id,
+                                alert_type: "OTHER_HEARING",
+                                alert_level: "medium",
+                                alert_message: `Trial for case ID ${case_id} is scheduled for tomorrow.`,
+                                triggered_on: new Date(),
+                                status: "Pending",
+                                created_by: 0,
+                            });
+                        }
+                    }
+                    // need to check the hearing date is belongs to this current week except today and tomorrow
+                    else if ( nextHearingDate.isBetween(moment().startOf('isoWeek'), moment().endOf('isoWeek'), 'day', '[]') && !nextHearingDate.isSame(moment(), 'day') && !nextHearingDate.isSame(moment().add(1, 'day'), 'day')) {
+                        // Check if an alert already exists for tomorrow
+                        const existingAlert = await CaseAlerts.findOne({
+                            where: {
+                                record_id: case_id,
+                                alert_type: "OTHER_HEARING",
+                                status: "Pending"
+                            }
+                        });
+                        if (existingAlert) {
+                            await CaseAlerts.update(
+                                { status: "Pending" },
+                                {
+                                    where: {
+                                        id: existingAlert.id
+                                    }
+                                }
+                            );
+                        }
+                        else {
+                            // Create a new alert for tomorrow
+                            await CaseAlerts.create({
+                                module: "pt_other_case",
+                                main_table: "cid_pending_trial",
+                                record_id: case_id,
+                                alert_type: "OTHER_HEARING",
+                                alert_level: "low",
+                                alert_message: `Trial for case ID ${case_id} is scheduled this week.`,
+                                triggered_on: new Date(),
+                                status: "Pending",
+                                created_by: 0,
+                            });
+                        }
+                    }
+                    else if (nextHearingDate.isSame(moment().add(1, 'week'), 'week')) {
+                        // Check if an alert already exists for next week
+                        const existingAlert = await CaseAlerts.findOne({
+                            where: {
+                                record_id: case_id,
+                                alert_type: "OTHER_HEARING",
+                                status: "Pending"
+                            }
+                        });
+                        if (existingAlert) {
+                            await CaseAlerts.update(
+                                { status: "Pending" },
+                                {
+                                    where: {
+                                        id: existingAlert.id
+                                    }
+                                }
+                            );
+                        }
+                        else {
+                            // Create a new alert for next week
+                            await CaseAlerts.create({
+                                module: "pt_other_case",
+                                main_table: "cid_pending_trial",
+                                record_id: case_id,
+                                alert_type: "OTHER_HEARING",
+                                alert_level: "very_low",
+                                alert_message: `Trial for case ID ${case_id} is scheduled for next week.`,
+                                triggered_on: new Date(),
+                                status: "Pending",
+                                created_by: 0,
+                            });
+                        }
+                    }
+                    else if (nextHearingDate.isSame(moment().subtract(1, 'day'), 'day')) {
+                      //update the case alert to incomplete if the case_id and alert_type and status is pending
+                      await CaseAlerts.update(
+                        {
+                          status: "Incomplete"
+                        },
+                        {
+                          where: {
+                            record_id: case_id,
+                            alert_type: "OTHER_HEARING",
+                            status: "Pending"
+                          }
+                        });
+                    }
+                }
+            } 
+            else {
+                console.log(`No Case Petition record found for case ID ${case_id}`);
+                continue;
+            }   
+        }
+    }
+    catch (error) {
+        console.error("Error running Daily Alert Cron for Other Hearing:", error);
+    }
+}
+
+//cron for court stay 
+exports.runDailyAlertCronCourtStay = async () => {
+    try{
+        console.log("Fetching CID Pending Trial template...");
+        const template = await Template.findOne({ where: { table_name: "cid_pending_trial" } });
+    
+        if (!template) {
+            console.error("Template not found.");
+            return;
+        }
+  
+        const tableName = template.table_name;
+        console.log(`Using table: ${tableName}`);
+    
+
+        // Run raw SQL query to fetch cases that are not in the list of childCaseIds
+        const allCases = await sequelize.query(
+            `SELECT id FROM ${tableName} WHERE id IS NOT NULL`,
+            {
+                type: sequelize.QueryTypes.SELECT,
+            }
+        );
+
+        const allIds = allCases.map(row => row.id);
+        console.log(`Found ${allIds.length} cases.`);
+    
+        // Fetch Trial Monitoring template metadata
+        const CourtStayTableData = await Template.findOne({ where: { table_name: "cid_ui_case_court_stay" } });
+    
+        if (!CourtStayTableData) {
+            console.error(`Table PT Court Stay does not exist.`);
+            return;
+        }
+
+        // Parse schema and build model
+        const schema = typeof CourtStayTableData.fields === "string" ? JSON.parse(CourtStayTableData.fields) : CourtStayTableData.fields;
+        schema.push({ name: "sys_status", data_type: "TEXT", not_null: false });
+
+        const CourtStayAttributes = {
+            id: {
+            type: Sequelize.DataTypes.INTEGER,
+            primaryKey: true,
+            autoIncrement: true,
+            },
+            created_at: {
+            type: Sequelize.DataTypes.DATE,
+            allowNull: false,
+            },
+            updated_at: {
+            type: Sequelize.DataTypes.DATE,
+            allowNull: false,
+            },
+            created_by: {
+            type: Sequelize.DataTypes.STRING,
+            allowNull: true,
+            },
+            // publickey: {
+            //     type: Sequelize.DataTypes.STRING,
+            //     allowNull: true,
+            // },
+        };
+
+        for (const field of schema) {
+            const { name, data_type, not_null, default_value } = field;
+            const sequelizeType = typeMapping[data_type?.toUpperCase()] || Sequelize.DataTypes.STRING;
+    
+            CourtStayAttributes[name] = {
+            type: sequelizeType,
+            allowNull: !not_null,
+            defaultValue: default_value || null,
+            };
+        }
+
+        const CourtStayModel = sequelize.define(CourtStayTableData.table_name, CourtStayAttributes, {
+            freezeTableName: true,
+            timestamps: true,
+            createdAt: "created_at",
+            updatedAt: "updated_at",
+        });
+
+        await CourtStayModel.sync();
+
+        for (const caseEntry of allCases) {
+            const case_id = caseEntry.id;
+
+            const CourtStayRecord = await CourtStayModel.findAll({
+                where: { pt_case_id: case_id },
+            });
+
+            if (CourtStayRecord) {
+                
+                var ui_full = false ;
+                var ui_partial = false ;
+                var eq_full = false ;
+                var eq_partial = false ;
+                
+               // Iterate through each record to check the field_case_level
+                for (const stay of CourtStayRecord) {
+                    if (stay && stay.field_case_level) {
+                        const stay_level = stay.field_case_level.toLowerCase().trim();
+
+                        if (stay_level === 'ui full') {
+                            ui_full = true;
+                        } else if (stay_level === 'ui partial') {
+                            ui_partial = true;
+                        } else if (stay_level === 'eq full') {
+                            eq_full = true;
+                        } else if (stay_level === 'eq partial') {
+                            eq_partial = true;
+                        } else {
+                            console.warn(`Unknown case level '${stay.field_case_level}' for case ID ${case_id}`);
+                        }
+                    }
+                }
+                
+                if (ui_full) await otherCourtActionCreateOrUpdateAlert("UI_FULL", `Court Stay for case ID ${case_id} is in UI FULL.`,case_id);
+                if (ui_partial) await otherCourtActionCreateOrUpdateAlert("UI_PARTIAL", `Court Stay for case ID ${case_id} is in UI PARTIAL.`,case_id);
+                if (eq_full) await otherCourtActionCreateOrUpdateAlert("EQ_FULL", `Court Stay for case ID ${case_id} is in EQ FULL.`,case_id);
+                if (eq_partial) await otherCourtActionCreateOrUpdateAlert("EQ_PARTIAL", `Court Stay for case ID ${case_id} is in EQ PARTIAL.`,case_id);
+                
+
+                console.log(`Flags for case ID ${case_id} -> ui_full: ${ui_full}, ui_partial: ${ui_partial}, eq_full: ${eq_full}, eq_partial: ${eq_partial}`);
+            }
+        }
+    
+    }
+    catch (error) {
+        console.error("Error running Daily Alert Cron for Court Stay:", error);
+    }
+
+}
+
+//cron for petitions 
+exports.runDailyAlertCronPetition = async () => {
+    try{
+        console.log("Fetching CID Pending Trial template...");
+        const template = await Template.findOne({ where: { table_name: "cid_pending_trial" } });
+    
+        if (!template) {
+            console.error("Template not found.");
+            return;
+        }
+  
+        const tableName = template.table_name;
+        console.log(`Using table: ${tableName}`);
+    
+   
+        // Run raw SQL query to fetch cases that are not in the list of childCaseIds
+        const allCases = await sequelize.query(
+            `SELECT id , field_court_type FROM ${tableName} WHERE id IS NOT NULL AND field_court_type = 'High Court' OR field_court_type = 'Supreme Court'`,
+            {
+                type: sequelize.QueryTypes.SELECT,
+            }
+        );
+
+        const allIds = allCases.map(row => row.id);
+        console.log(`Found ${allIds.length} cases.`);
+    
+        // Fetch Trial Monitoring template metadata
+        const PetitionTableData = await Template.findOne({ where: { table_name: "cid_pt_case_petition" } });
+    
+        if (!PetitionTableData) {
+            console.error(`Table PT Court Stay does not exist.`);
+            return;
+        }
+
+        // Parse schema and build model
+        const schema = typeof PetitionTableData.fields === "string" ? JSON.parse(PetitionTableData.fields) : PetitionTableData.fields;
+        schema.push({ name: "sys_status", data_type: "TEXT", not_null: false });
+
+        const PetitionAttributes = {
+            id: {
+            type: Sequelize.DataTypes.INTEGER,
+            primaryKey: true,
+            autoIncrement: true,
+            },
+            created_at: {
+            type: Sequelize.DataTypes.DATE,
+            allowNull: false,
+            },
+            updated_at: {
+            type: Sequelize.DataTypes.DATE,
+            allowNull: false,
+            },
+            created_by: {
+            type: Sequelize.DataTypes.STRING,
+            allowNull: true,
+            },
+            // publickey: {
+            //     type: Sequelize.DataTypes.STRING,
+            //     allowNull: true,
+            // },
+        };
+
+        for (const field of schema) {
+            const { name, data_type, not_null, default_value } = field;
+            const sequelizeType = typeMapping[data_type?.toUpperCase()] || Sequelize.DataTypes.STRING;
+    
+            PetitionAttributes[name] = {
+            type: sequelizeType,
+            allowNull: !not_null,
+            defaultValue: default_value || null,
+            };
+        }
+
+        const PetitionModel = sequelize.define(PetitionTableData.table_name, PetitionAttributes, {
+            freezeTableName: true,
+            timestamps: true,
+            createdAt: "created_at",
+            updatedAt: "updated_at",
+        });
+
+        await PetitionModel.sync();
+
+        for (const caseEntry of allCases) {
+            const case_id = caseEntry.id;
+            const court_type = caseEntry.field_court_type;
+
+            const PetitionRecord = await PetitionModel.findAll({
+                where: { pt_case_id: case_id },
+            });
+
+            if (PetitionRecord) {
+                
+                var pending_quash_petitions = false ;
+                var pending_bail_petitions = false ;
+                var pending_anticipatory_bail_petitions  = false ;
+                
+               // Iterate through each record to check the field_case_level
+                for (const petitions of PetitionRecord) {
+                    if (petitions && petitions.field_pending_status) {
+                        const petitions_status = petitions.field_pending_status.toLowerCase().trim();
+
+                        if (petitions_status === 'pending quash petitions') {
+                            pending_quash_petitions = true;
+                        } else if (petitions_status === 'pending bail petitions') {
+                            pending_bail_petitions = true;
+                        } else if (petitions_status === 'pending anticipatory bail petitions') {
+                            pending_anticipatory_bail_petitions = true;
+                        }else {
+                            console.warn(`Unknown Petition status '${petitions.field_pending_status}' for case ID ${case_id}`);
+                        }
+                    }
+                }
+                
+                if(court_type === "High Court")
+                {
+                    if (pending_quash_petitions) await otherCourtActionCreateOrUpdateAlert("PENDING_QUASH_PETITIONS_HC", `The case ID ${case_id} is Pending Quash Petitions in High Court.`,case_id);
+                    if (pending_bail_petitions) await otherCourtActionCreateOrUpdateAlert("PENDING_BAIL_PETITIONS_HC", `The case ID ${case_id} is Pending Bail Petitions in High Court.`,case_id);
+                    if (pending_anticipatory_bail_petitions) await otherCourtActionCreateOrUpdateAlert("PENDING_ANTICIPATORY_BAIL_PETITIONS_HC", `The case ID ${case_id} is Pending Anticipatory Bail Petitions in High Court.`,case_id);
+                }
+                else{
+                    if (pending_quash_petitions) await otherCourtActionCreateOrUpdateAlert("PENDING_QUASH_PETITIONS_SC", `The case ID ${case_id} is Pending Quash Petitions in Supreme Court.`,case_id);
+                    if (pending_bail_petitions) await otherCourtActionCreateOrUpdateAlert("PENDING_BAIL_PETITIONS_SC", `The case ID ${case_id} is Pending Bail Petitions in Supreme Court.`,case_id);
+                    if (pending_anticipatory_bail_petitions) await otherCourtActionCreateOrUpdateAlert("PENDING_ANTICIPATORY_BAIL_PETITIONS_SC", `The case ID ${case_id} is Pending Anticipatory Bail Petitions in Supreme Court.`,case_id); 
+                }
+            }
+        }
+    
+    }
+    catch (error) {
+        console.error("Error running Daily Alert Cron for Petitions:", error);
+    }
+
+}
+
+
+const otherCourtActionCreateOrUpdateAlert = async (type, message , case_id) => {
+    const existingAlert = await CaseAlerts.findOne({
+        where: {
+            record_id: case_id,
+            alert_type: type,
+            status: "Pending"
+        }
+    });
+
+    if (existingAlert) {
+        await CaseAlerts.update(
+            { triggered_on: new Date() },
+            { where: { id: existingAlert.id } }
+        );
+    } else {
+        await CaseAlerts.create({
+            module: "pt_other_case",
+            main_table: "cid_ui_case_court_stay",
+            record_id: case_id,
+            alert_type: type,
+            alert_level: "high",
+            alert_message: message,
+            triggered_on: new Date(),
+            status: "Pending",
+            created_by: 0,
+        });
+        console.log(`create alert for ${type} DONE`)
+    }
+};
+
+
 

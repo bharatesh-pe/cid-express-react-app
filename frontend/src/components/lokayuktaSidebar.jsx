@@ -1,5 +1,12 @@
-import React, { useState } from "react";
-import { Box, CircularProgress, Collapse, Divider, List, ListItem, ListItemIcon, ListItemText, Paper, Tooltip, Typography } from "@mui/material";
+import React, { useState, useEffect } from "react";
+import { Box, CircularProgress, Collapse, Divider, List, ListItem, ListItemIcon, ListItemText, Paper, Tooltip, Typography,
+    Dialog,
+    DialogTitle,
+    DialogContent, 
+    IconButton,
+    TextField,
+} from "@mui/material";
+
 import { ExpandLess, ExpandMore } from "@mui/icons-material";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -11,8 +18,12 @@ import "react-toastify/dist/ReactToastify.css";
 import HomeIcon from '@mui/icons-material/Home';
 import DashboardCustomizeIcon from '@mui/icons-material/DashboardCustomize';
 import Navbar from "./navbar";
+import MenuBookIcon from '@mui/icons-material/MenuBook';
+import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import api from "../services/api";
+import CloseIcon from '@mui/icons-material/Close';
 
-const LokayuktaSidebar = ({contentArray, onClick, activeSidebar, templateName}) => {
+const LokayuktaSidebar = ({ui_case_id, pt_case_id, contentArray, onClick, activeSidebar, templateName, fromCDR, showMagazineView,tableCounts, setTableCounts, module, sysStatus}) => {
 
     const navigate = useNavigate();
     const location = useLocation();
@@ -21,9 +32,11 @@ const LokayuktaSidebar = ({contentArray, onClick, activeSidebar, templateName}) 
 
     const [loading, setLoading] = useState(false); // State for loading indicator
     const [openRegister, setOpenRegister] = useState(true);
-    const [openInvestigation, setOpenInvestigation] = useState(true);
+    const [openInvestigation, setOpenInvestigation] = useState(fromCDR ? true : true);
+    const [selectedInvestigationIndex, setSelectedInvestigationIndex] = useState(fromCDR ? 0 : null);
 
     const [notificationCount, setNotificationCount] = useState(localStorage.getItem("unreadNotificationCount") || 0);
+    // const [tableCounts, setTableCounts] = useState({});
 
     const handleLogout = async () => {
         const token = localStorage.getItem("auth_token");
@@ -106,12 +119,134 @@ const LokayuktaSidebar = ({contentArray, onClick, activeSidebar, templateName}) 
         }
     };
 
+    const [videoOpen, setVideoOpen] = useState(false);
+
+    const [videos, setVideos] = useState({});
+    const [searchQuery, setSearchQuery] = useState("");
+
+    const REACT_APP_SERVER_URL_FILE_VIEW = process.env.REACT_APP_SERVER_URL_FILE_VIEW;
+
+    const handleVideoOpen = async ()=>{
+
+        const pathname = window.location.pathname;
+        const segments = pathname.split('/').filter(Boolean);
+        const lastPath = segments[segments.length - 1];
+
+        const payload = {
+            data : [lastPath]
+        }
+
+        try {
+            setLoading(true);
+
+            const getAllVideosResponse = await api.post("/templateData/gettingAllHelpVideos", payload);
+            setLoading(false);
+
+            if (getAllVideosResponse && getAllVideosResponse.data && getAllVideosResponse.success) {
+
+                setVideos(getAllVideosResponse.data);
+                setVideoOpen(true);
+            
+            } else {
+                setVideos({});
+                const errorMessage = getAllVideosResponse?.data?.message || "Failed to get help videos.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+
+        } catch (error) {
+            setVideos({});
+            setLoading(false);
+
+            toast.error(error?.response?.data?.message || "Please Try Again!", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+        }
+    }
+
+    const handleVideoClose = () => setVideoOpen(false);
+
     const validSidebarItems = contentArray?.filter(item => (!item?.field && item?.table) || item?.viewAction) || [];
 
     const registerItemArray = ["UI Case", "PT Case", "Enquiries"];
 
     const registerItem = validSidebarItems.find(item => registerItemArray.includes(item.name));
     const investigationItems = validSidebarItems.filter(item => !registerItemArray.includes(item.name));
+
+    const cdrIndex = investigationItems.findIndex(item => item.name?.toLowerCase().includes("cdr"));
+
+    useEffect(() => {
+        const fetchCounts = async () => {
+            if (!ui_case_id && !pt_case_id) return;
+            const table_names = investigationItems.map(item => item.table).filter(Boolean);
+            try {
+                const serverURL = process.env.REACT_APP_SERVER_URL;
+                const response = await fetch(`${serverURL}/templateData/getTableCountsByCaseId`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ table_names, ui_case_id, pt_case_id, module, sysStatus })
+                });
+                const data = await response.json();
+                if (data.success) setTableCounts(data.data);
+            } catch (err) {
+                setTableCounts({});
+            }
+        };
+        fetchCounts();
+    }, [ui_case_id, pt_case_id]);
+
+    const filteredVideos = Object.entries(videos).flatMap(([moduleKey, videoList]) =>
+        videoList
+            .filter((videoUrl) =>
+                videoUrl.split("/").pop().toLowerCase().includes(searchQuery)
+            )
+            .map((videoUrl, idx) => {
+                const fileName = videoUrl.split("/").pop();
+
+                return (
+                    <div
+                        key={`${moduleKey}-${idx}`}
+                        style={{
+                            border: '1px solid #ccc',
+                            borderRadius: '8px',
+                            padding: '8px',
+                            boxShadow: '0 2px 6px rgba(0, 0, 0, 0.1)',
+                            backgroundColor: '#fafafa',
+                            overflow: 'hidden',
+                        }}
+                    >
+                        <video
+                            src={`${REACT_APP_SERVER_URL_FILE_VIEW}${videoUrl}`}
+                            width="100%"
+                            height="200"
+                            controls
+                            preload="metadata"
+                            style={{ borderRadius: "4px" }}
+                        />
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 1 }}>
+                            <Typography variant="body2" sx={{ wordBreak: 'break-all' }}>
+                                {fileName}
+                            </Typography>
+                        </Box>
+                    </div>
+                );
+            })
+    );
 
     return (
         <>
@@ -159,33 +294,33 @@ const LokayuktaSidebar = ({contentArray, onClick, activeSidebar, templateName}) 
 
                     
                     {/* Sidebar Content (Navigation Links) */}
-
                     <Box sx={{ position: "relative" }}>
-
-                            <List sx={{ padding: "4px", height: "100vh", overflow: "auto" }}>
+                        <List sx={{ padding: "4px", height: "100vh", overflow: "auto" }}>
                             <Box py={0.5} sx={{ display: "flex", flexDirection: "column", gap: "4px", paddingBottom: "150px" }}>
 
                                 {/* Register Dropdown */}
-                                <Tooltip title={"Registration of a Crime"} arrow placement="right" key={"Registration of a Crime"}>   
-                                    <ListItem sx={{background: '#1F1DAC', color: '#FFFFFF' ,mt: 1, borderRadius: '4px', cursor: 'pointer', overflow: 'hidden'}} onClick={() => setOpenRegister(!openRegister)}>
-                                            <ListItemIcon sx={{ color: '#FFFFFF', minWidth: '35px' }}>
-                                                <DashboardCustomizeIcon />
-                                            </ListItemIcon>
-                                            <ListItemText className="sidebarTextEllipsis" primary="Registration of a Crime" />
-                                            {openRegister ? <ExpandLess /> : <ExpandMore />}
-                                    </ListItem>
-                                </Tooltip>
+                                {!fromCDR && (
+                                    <Tooltip title={"Registration of a Crime"} arrow placement="right" key={"Registration of a Crime"}>   
+                                        <ListItem sx={{background: '#1F1DAC', color: '#FFFFFF' ,mt: 1, borderRadius: '4px', cursor: 'pointer', overflow: 'hidden'}} onClick={() => setOpenRegister(!openRegister)}>
+                                                <ListItemIcon sx={{ color: '#FFFFFF', minWidth: '35px' }}>
+                                                    <DashboardCustomizeIcon />
+                                                </ListItemIcon>
+                                                <ListItemText className="sidebarTextEllipsis" primary="Registration of a Crime" />
+                                                {openRegister ? <ExpandLess /> : <ExpandMore />}
+                                        </ListItem>
+                                    </Tooltip>
+                                )}
 
-                                <Collapse in={openRegister} timeout="auto" unmountOnExit>
-                                    <List component="div" disablePadding className="sidebarChildContainer">
-
-                                        {registerItem ? (
-                                            <Tooltip title={registerItem.name ? registerItem.name : "FIR"} arrow placement="right" key={registerItem.name ? registerItem.name : "FIR"}>
-                                                <ListItem
-                                                    sx={{ cursor: "pointer", borderRadius: '4px' }}
-                                                    className={`sidebarChildItem lokayuktaSidebarMenus menuColor_1 ${activeSidebar?.name === registerItem.name ? "active" : ""}`}
-                                                    onClick={() => onClick ? onClick(registerItem) : console.log("sidebar selected")}
-                                                >
+                                {!fromCDR && (
+                                    <Collapse in={openRegister} timeout="auto" unmountOnExit>
+                                        <List component="div" disablePadding className="sidebarChildContainer">
+                                            {registerItem ? (
+                                                <Tooltip title={registerItem.name ? registerItem.name : "FIR"} arrow placement="right" key={registerItem.name ? registerItem.name : "FIR"}>
+                                                    <ListItem
+                                                        sx={{ cursor: "pointer", borderRadius: '4px' }}
+                                                        className={`sidebarChildItem lokayuktaSidebarMenus menuColor_1 ${activeSidebar?.name === registerItem.name ? "active" : ""}`}
+                                                        onClick={() => onClick ? onClick(registerItem) : console.log("sidebar selected")}
+                                                    >
                                                     {registerItem?.icon && registerItem?.icon?.props && registerItem?.icon?.props.dangerouslySetInnerHTML ? (
                                                         <span
                                                             className="tableActionIcon"
@@ -204,17 +339,48 @@ const LokayuktaSidebar = ({contentArray, onClick, activeSidebar, templateName}) 
                                                             </svg>
                                                         </span>
                                                     )}
-                                                    <ListItemText primary={registerItem.name ? registerItem.name : "FIR"} />
-                                                </ListItem>
-                                            </Tooltip>
-                                        ) : (
-                                            <ListItem sx={{ cursor: "pointer", textAlign: "center", pl: 4 }} className="lokayuktaSidebarMenus menuColor_1">
-                                                <ListItemText primary="No Actions Found" />
-                                            </ListItem>
-                                        )}
+                                                    {/* <ListItemText primary={registerItem.name ? registerItem.name : "FIR"} /> */}
+                                                    <ListItemText
+                                                        primary={
+                                                            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                                                            <Box
+                                                                onClick={() => {
+                                                                if (onClick) onClick(registerItem);
+                                                                }}
+                                                                sx={{
+                                                                whiteSpace: 'nowrap',
+                                                                overflow: 'hidden',
+                                                                textOverflow: 'ellipsis',
+                                                                fontWeight: 500,
+                                                                fontSize: '14px',
+                                                                color: '#333',
+                                                                cursor: 'pointer'
+                                                                }}
+                                                            >
+                                                                {registerItem.name ?? "FIR"}
+                                                            </Box>
 
-                                    </List>
-                                </Collapse>
+                                                        <Tooltip title="Overview Docket" arrow placement="top">
+                                                        <MenuBookIcon
+                                                            sx={{ color: "#333", fontSize: 22, cursor: 'pointer' }}
+                                                            onClick={() => showMagazineView(true)}
+                                                        />
+                                                        </Tooltip>
+
+                                                            </Box>
+                                                        }
+                                                        />
+
+                                                    </ListItem>
+                                                </Tooltip>
+                                            ) : (
+                                                <ListItem sx={{ cursor: "pointer", textAlign: "center", pl: 4 }} className="lokayuktaSidebarMenus menuColor_1">
+                                                    <ListItemText primary="No Actions Found" />
+                                                </ListItem>
+                                            )}
+                                        </List>
+                                    </Collapse>
+                                )}
 
                                 {/* Investigation Dropdown */}
                                 <Tooltip title={"Investigations"} arrow placement="right" key={"Investigations"}>   
@@ -235,16 +401,26 @@ const LokayuktaSidebar = ({contentArray, onClick, activeSidebar, templateName}) 
                                                 <Tooltip title={element?.name} arrow placement="right" key={index}>
                                                     <ListItem
                                                         sx={{ cursor: "pointer", borderRadius: '4px' }}
-                                                        className={`sidebarChildItem lokayuktaSidebarMenus menuColor_${index + 2} ${activeSidebar?.name === element.name ? "active" : ""}`}
-                                                        onClick={() => onClick ? onClick(element) : console.log("sidebar selected")}
+                                                        className={`sidebarChildItem lokayuktaSidebarMenus menuColor_${index + 2} ${
+                                                            (fromCDR && cdrIndex === index) ? "active" : (activeSidebar?.name === element.name ? "active" : "")
+                                                        }`}
                                                     >
                                                         {element?.icon && element?.icon?.props && element?.icon?.props.dangerouslySetInnerHTML ? (
                                                             <span
+                                                                onClick={() => {
+                                                                    setSelectedInvestigationIndex(index);
+                                                                    if (onClick) onClick(element);
+                                                                }}
                                                                 className="tableActionIcon"
                                                                 dangerouslySetInnerHTML={{ __html: element?.icon?.props.dangerouslySetInnerHTML?.__html }}
                                                             />
                                                         ) : (
-                                                        <span className="tableActionIcon">
+                                                        <span
+                                                            onClick={() => {
+                                                                setSelectedInvestigationIndex(index);
+                                                                if (onClick) onClick(element);
+                                                            }}
+                                                            className="tableActionIcon">
                                                             <svg width="50" height="50" viewBox="0 0 34 34" fill="none" xmlns="http://www.w3.org/2000/svg">
                                                                 <circle cx="12" cy="12" r="12" fill="" />
                                                                 <mask id="mask0_1120_40651" style={{ maskType: 'alpha' }} maskUnits="userSpaceOnUse" x="4" y="4" width="16" height="16">
@@ -256,7 +432,60 @@ const LokayuktaSidebar = ({contentArray, onClick, activeSidebar, templateName}) 
                                                             </svg>
                                                         </span>
                                                         )}
-                                                        <ListItemText primary={element?.name} />
+                                                        <ListItemText
+                                                            primary={
+                                                                <Box sx={{ position: "relative", display: "flex", alignItems: "center", justifyContent: 'space-between' }}>
+                                                                    <Box   
+                                                                        onClick={() => {
+                                                                            setSelectedInvestigationIndex(index);
+                                                                            if (onClick) onClick(element);
+                                                                        }}
+                                                                        sx={{
+                                                                            width: '60%',
+                                                                            whiteSpace: 'nowrap',
+                                                                            overflow: 'hidden',
+                                                                            textOverflow: 'ellipsis',
+                                                                            fontWeight: 500,
+                                                                            fontSize: '14px',
+                                                                            color: '#333'
+                                                                        }}
+                                                                    >
+                                                                        {element?.name}
+                                                                    </Box>
+                                                                    {typeof tableCounts[element.table] === "number" && (
+                                                                        <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
+                                                                            <Tooltip title={'Overview Docket'} arrow placement="top">
+                                                                                {/* <AutoStoriesIcon sx={{ color: "#333", fontSize: 22 }} /> */}
+                                                                                <MenuBookIcon sx={{ color: "#333", fontSize: 22 }} onClick={()=> showMagazineView(false, element)} />
+                                                                                {/* <DescriptionIcon sx={{ color: "#333", fontSize: 22 }} /> */}
+                                                                                {/* <FolderOpenIcon sx={{ color: "#333", fontSize: 22 }} /> */}
+                                                                            </Tooltip>
+                                                                            <Box
+                                                                                onClick={() => {
+                                                                                    setSelectedInvestigationIndex(index);
+                                                                                    if (onClick) onClick(element);
+                                                                                }}
+                                                                                sx={{
+                                                                                    backgroundColor: activeSidebar?.name === element.name ? "#1F1DAC" : "#FFFFFF",
+                                                                                    color: activeSidebar?.name === element.name ? "#FFFFFF" : "#1F1DAC",
+                                                                                    border: activeSidebar?.name === element.name ? "1px solid #1F1DAC" : "1px solid #dfdfec",
+                                                                                    fontSize: "12px",
+                                                                                    fontWeight: "bold",
+                                                                                    borderRadius: "50%",
+                                                                                    width: 20,
+                                                                                    height: 20,
+                                                                                    display: "flex",
+                                                                                    alignItems: "center",
+                                                                                    justifyContent: "center",
+                                                                                }}
+                                                                            >
+                                                                                {tableCounts[element.table]}
+                                                                            </Box>
+                                                                        </Box>
+                                                                    )}
+                                                                </Box>
+                                                            }
+                                                        />
                                                     </ListItem>
                                                 </Tooltip>
                                             ))
@@ -333,10 +562,16 @@ const LokayuktaSidebar = ({contentArray, onClick, activeSidebar, templateName}) 
                                 fontWeight: "400",
                                 fontSize: "14px",
                                 lineHeight: "18px",
-                                color: "#98A2B3",
+                                color: "#1D2939",
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 1
                             }}
                         >
-                            <svg
+                            <Tooltip title="Click for help" onClick={handleVideoOpen}>
+                                <HelpOutlineIcon sx={{fontSize: '26px', cursor: 'pointer'}} />
+                            </Tooltip>
+                            {/* <svg
                                 style={{ cursor: "pointer" }}
                                 onClick={handleLogout}
                                 width="20"
@@ -352,12 +587,100 @@ const LokayuktaSidebar = ({contentArray, onClick, activeSidebar, templateName}) 
                                     strokeLinecap="round"
                                     strokeLinejoin="round"
                                 />
+                            </svg> */}
+                            <svg 
+                            style={{ cursor: "pointer" }}
+                            onClick={handleLogout}
+                            fill="#1D2939" 
+                            stroke="#1D2939" 
+                            stroke-width="14" 
+                            stroke-linecap="round" 
+                            stroke-linejoin="round" 
+                            height="20px" 
+                            width="20px" 
+                            version="1.1" 
+                            id="Capa_1" 
+                            xmlns="http://www.w3.org/2000/svg"  
+                            viewBox="0 0 471.2 471.2"
+                            >
+                            <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+                            <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+                            <g id="SVGRepo_iconCarrier">
+                                <g>
+                                <g>
+                                    <path d="M227.619,444.2h-122.9c-33.4,0-60.5-27.2-60.5-60.5V87.5c0-33.4,27.2-60.5,60.5-60.5h124.9c7.5,0,13.5-6,13.5-13.5 
+                                            s-6-13.5-13.5-13.5h-124.9c-48.3,0-87.5,39.3-87.5,87.5v296.2c0,48.3,39.3,87.5,87.5,87.5h122.9c7.5,0,13.5-6,13.5-13.5 
+                                            S235.019,444.2,227.619,444.2z"/>
+                                    <path d="M450.019,226.1l-85.8-85.8c-5.3-5.3-13.8-5.3-19.1,0c-5.3,5.3-5.3,13.8,0,19.1l62.8,62.8h-273.9
+                                            c-7.5,0-13.5,6-13.5,13.5s6,13.5,13.5,13.5h273.9l-62.8,62.8c-5.3,5.3-5.3,13.8,0,19.1c2.6,2.6,6.1,4,9.5,4
+                                            s6.9-1.3,9.5-4l85.8-85.8C455.319,239.9,455.319,231.3,450.019,226.1z"/>
+                                </g>
+                                </g>
+                            </g>
                             </svg>
+
                         </Typography>
                     </Box>
                     </Box>
                 </Paper>
             </Box>
+
+            <Dialog
+                open={videoOpen}
+                onClose={handleVideoClose}
+                fullWidth
+                maxWidth="2xl"
+                scroll="paper"
+            >
+                <DialogTitle sx={{ m: 0, p: 2 }}>
+                    <Box sx={{display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
+                        Videos
+                        <Box sx={{display: 'flex', alignItems: 'center'}}>
+                            <TextField
+                                fullWidth
+                                variant="outlined"
+                                placeholder="Search videos..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value.toLowerCase())}
+                                sx={{ width: 300 }}
+                            />
+                            <IconButton
+                                aria-label="close"
+                                onClick={handleVideoClose}
+                                sx={{
+                                    color: (theme) => theme.palette.grey[500],
+                                }}
+                            >
+                                <CloseIcon />
+                            </IconButton>
+                        </Box>
+                    </Box>
+                </DialogTitle>
+    
+                <DialogContent dividers>
+                    <Box
+                        sx={{
+                            display: 'grid',
+                            gridTemplateColumns: {
+                                xs: '1fr',
+                                sm: '1fr 1fr',
+                                md: '1fr 1fr 1fr 1fr',
+                            },
+                            mb: 3,
+                            gap: 2,
+                        }}
+                    >
+                        {filteredVideos.length > 0 ? (
+                            filteredVideos
+                        ) : (
+                            <Typography variant="body1" sx={{ gridColumn: '1 / -1', textAlign: 'center', mt: 4 }}>
+                                No videos found.
+                            </Typography>
+                        )}
+                    </Box>
+                </DialogContent>
+            </Dialog>
+
             {loading && (
                 <div className="parent_spinner" tabIndex="-1" aria-hidden="true">
                     <CircularProgress size={100} />

@@ -15,11 +15,16 @@ import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
 import SearchIcon from "@mui/icons-material/Search";
 import Swal from "sweetalert2";
+import * as XLSX from 'xlsx';
+import Link from "@mui/material/Link";
+import UploadFileIcon from '@mui/icons-material/UploadFile';
+import CloseIcon from '@mui/icons-material/Close';
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import InsertDriveFileIcon from "@mui/icons-material/InsertDriveFile";
 import pdfIcon from "../Images/pdfIcon.svg";
 import docIcon from "../Images/docIcon.svg";
+import docxIcon from "../Images/docxIcon.svg";
 import xlsIcon from "../Images/xlsIcon.svg";
 import pptIcon from "../Images/pptIcon.svg";
 import jpgIcon from "../Images/jpgIcon.svg";
@@ -27,12 +32,14 @@ import pngIcon from "../Images/pngIcon.svg";
 import FilterListIcon from "@mui/icons-material/FilterList";
 import MultiSelect from "../components/form/MultiSelect";
 import AutocompleteField from "../components/form/AutoComplete";
+import DateField from "../components/form/Date";
 import ShortText from "../components/form/ShortText";
 import WestIcon from '@mui/icons-material/West';
 import { Tabs, Tab } from '@mui/material';
 import { CircularProgress } from "@mui/material";
+import AddIcon from "@mui/icons-material/Add";
 
-const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedRowData, backNavigation }) => {
+const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedRowData, backNavigation, showMagazineView ,fetchCounts}) => {
 
   useEffect(() => {
     const fetchData = async () => {
@@ -123,7 +130,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
   const hoverTableOptionsRef = useRef([]);
   const [submissionDateDialogOpen, setSubmissionDateDialogOpen] = useState(false);
   const [submissionDate, setSubmissionDate] = useState(null);
-
+  const [childTables, setChildTables] = useState([]);
   const handleMonthwisePagination = (page) => {
     getMonthWiseFile(selectedRow, page);
   };
@@ -243,46 +250,69 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
             field.name !== "field_section"
         );
 
-        const briefFactField = response.data.fields.find((f) => f.name === "field_breif_fact");
+        const briefFactField = response.data.fields.find((f) => f.name === "field_brief_fact");
         const policeStationField = response.data.fields.find((f) => f.name === "field_investigation_carried_out_by_the_police_station");
 
         if (briefFactField && !aoOnlyFields.includes(briefFactField)) aoOnlyFields.push(briefFactField);
         if (policeStationField && !aoOnlyFields.includes(policeStationField)) aoOnlyFields.push(policeStationField);
 
-        for (const field of aoOnlyFields) {
-          if (field && field.api) {
-            const payloadApi = field.api;
-            const apiPayload = {}; // Define this as needed
+          for (const field of aoOnlyFields) {
+            if (field && field.api) {
+              const payloadApi = field.api;
+              const apiPayload = {};
 
-            try {
-              const res = await api.post(payloadApi, apiPayload);
-              if (!res.data) continue;
+              try {
+                  if (field.api === "/templateData/getTemplateData") {
+                  const table_name = field.table;
+                  apiPayload.table_name = table_name;
+                  const res = await api.post(payloadApi, apiPayload);
+                  if (!res.data) {
+                      field.options = [];
+                      continue;
+                  }
+                  let headerName = "name";
+                  let headerId = "id";
+                  const updatedOptions = res.data.map((item) => {
+                      headerName =
+                      Object.keys(item).find(
+                          (key) =>
+                          !["id", "created_at", "updated_at"].includes(key)
+                      ) || "name";
+                      headerId = "id";
+                      return {
+                      name: item[headerName],
+                      code: item[headerId],
+                      };
+                  });
+                  field.options = updatedOptions;
+                  continue;
+                  }
 
-              const updatedOptions = res.data.map((item) => {
-                const nameKey = Object.keys(item).find((key) => !["id", "created_at", "updated_at"].includes(key));
-                var headerName = nameKey;
-                var headerId = 'id';
-
-                if (field.table === "users") {
-                  headerName = "name"
-                  headerId = "user_id"
-                } else if (field.api !== "/templateData/getTemplateData") {
-                  headerName = field.table + "_name"
-                  headerId = field.table + "_id"
-                }
-
-                return {
+                  const res = await api.post(payloadApi, apiPayload);
+                  if (!res.data) {
+                  field.options = [];
+                  continue;
+                  }
+                  let headerName = "name";
+                  let headerId = "id";
+                  if (field.table === "users") {
+                  headerName = "name";
+                  headerId = "user_id";
+                  } else if (field.api !== "/templateData/getTemplateData") {
+                  headerName = field.table + "_name";
+                  headerId = field.table + "_id";
+                  }
+                  const updatedOptions = res.data.map((item) => ({
                   name: item[headerName],
                   code: item[headerId],
-                };
-              });
-
-              field.options = updatedOptions;
-            } catch (err) {
-              console.error(`Error loading options for field ${field.name}`, err);
-            }
+                  }));
+                  field.options = updatedOptions;
+              } catch (err) {
+                  console.error(`Error loading options for field ${field.name}`, err);
+                  field.options = [];
+              }
+              }
           }
-        }
 
         setAoFields(aoOnlyFields);
         loadValueField(aoFieldId, false, "cid_under_investigation");
@@ -321,6 +351,245 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
   }, [selectedTab, rowId, hasPdfEntry]);
 
 
+    // start --- bulk upload functions
+
+    const [bulkUploadShow, setBulkUploadShow] = useState(false);
+    const [selectedFile, setSelectedFile] = useState(null);
+
+    const showBulkUploadScreen = ()=>{
+        setBulkUploadShow(true);
+        setSelectedFile(null);
+    }
+    
+    const handleFileChange = (event) => {
+        setSelectedFile(event.target.files[0]);
+    };
+
+    const downloadExcelHeader = async ()=>{
+        
+        if(!options.table){
+            toast.error('Template Not Found !', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+
+        const downloadReport = {
+            "table_name": options.table,
+        }
+        setLoading(true);
+
+        try {
+            const downloadReportResponse = await api.post("templateData/downloadExcelData", downloadReport);
+            setLoading(false);
+
+            if (downloadReportResponse) {
+                const blob = new Blob([downloadReportResponse], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `${options.table}_Report.xlsx`;
+
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+
+                window.URL.revokeObjectURL(url);
+
+            } else {
+                const errorMessage = downloadReportResponse.message ? downloadReportResponse.message : "Failed to download report. Please try again.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response['data']) {
+                toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        }
+    }
+
+    const checkUploadedFile = async ()=> {
+
+        if(!options?.table){
+            toast.error('Template Not Found !', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+
+        if (!selectedFile) {
+            toast.error('Please upload a file !', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-warning",
+            });
+            return;
+        }
+
+        const allowedExtensions = ['.xlsx', '.xls'];
+        const fileName = selectedFile.name.toLowerCase();
+        const isValid = allowedExtensions.some(ext => fileName.endsWith(ext));
+
+        if (!isValid) {
+            toast.error('Invalid file format. Please upload a valid Excel file (.xls or .xlsx) !', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-warning",
+            });
+            return;
+        }
+
+        const reader = new FileReader();
+
+        reader.onload = async (e) => {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            
+            const sheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[sheetName];
+
+            const headerColumn = XLSX.utils.sheet_to_json(worksheet, {
+                header: 1,
+            })[0];
+            
+            const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+            // remove unwanted column
+
+            var ui_case_id = selectedRowData?.id;
+            var pt_case_id = selectedRowData?.pt_case_id;
+
+            if(module === "pt_case"){
+                ui_case_id = selectedRowData?.ui_case_id
+                pt_case_id = selectedRowData?.id
+            }
+
+            const rowExcelData = jsonData.map(({ __rowNum__, ...rest }) => ({...rest, ui_case_id, pt_case_id }));
+
+            if(rowExcelData.length === 0 || headerColumn.length === 0){
+                toast.error('Excel Data and Header is Empty', {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-warning",
+                });
+                return
+            }
+
+            var payloadData = {
+                "table_name" : options?.table,
+                "rowData" : rowExcelData,
+                "columnData": headerColumn
+            }
+
+            setLoading(true);
+            try {
+                const bulkInsertResponse = await api.post("templateData/bulkInsertData", payloadData);
+                setLoading(false);
+
+                if (bulkInsertResponse?.success) {
+                    toast.success(bulkInsertResponse.message || "Data Uploaded Successfully", {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-success",
+                        onOpen: () => { handleOtherTemplateActions(options, selectedRow) }
+                    });
+
+                    if(fetchCounts){
+                        fetchCounts();
+                    }
+                    setBulkUploadShow(false);
+                    setSelectedFile(null);
+
+                } else {
+                    toast.error(bulkInsertResponse.message || "Failed to Upload Data.", {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-error",
+                    });
+                }
+
+            } catch (error) {
+                setLoading(false);
+                if (error && error.response && error.response['data']) {
+                    toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-error",
+                    });
+                }
+            }
+
+        };
+
+        reader.readAsArrayBuffer(selectedFile);
+    }
+
+    // end --- bulk upload functions
+          
   const onSaveTemplateError = (error) => {
     setIsValid(false);
   };
@@ -405,8 +674,25 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
 
         const currentDate = meta?.currentDate;
         const dayOfMonth = new Date(currentDate).getDate();
-        const isSubmitAllowed = dayOfMonth >= 1 && dayOfMonth <= 5;
-        setIsSubmitAllowed(isSubmitAllowed);
+        // const isSubmitAllowed = dayOfMonth >= 24 && dayOfMonth <= 30;
+        // setIsSubmitAllowed(isSubmitAllowed);
+
+        
+      const isDateInRange = dayOfMonth >= 1 && dayOfMonth <= 5;
+
+      const submissionResponse = await api.post("/templateData/getMonthWiseByCaseId", {
+        ui_case_id: rowId,
+        page: 1,
+        limit: 1,
+      });
+
+      let hasCurrentMonthSubmission = false;
+      if (submissionResponse?.success) {
+        hasCurrentMonthSubmission = checkSubmissionExistsForCurrentMonth(submissionResponse.data || []);
+      }
+
+      setIsSubmitAllowed(isDateInRange && !hasCurrentMonthSubmission);
+
 
         const totalPages = meta?.meta?.totalPages;
         const totalItems = meta?.meta?.totalItems;
@@ -506,7 +792,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
                         sx={{ cursor: "pointer", color: "red", fontSize: 20 }}
                         onClick={(event) => {
                           event.stopPropagation();
-                          handleOthersDeleteTemplateData(params.row, options.table);
+                          handleOthersDeleteTemplateData(params.row, options.table,selectedRow.id || selectedRow);
                         }}
                       />
                     )}
@@ -812,6 +1098,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
             setOtherFormOpen(true);
             setOtherRowId(rowData.id);
             setOtherTemplateId(viewTemplateResponse["data"].template_id);
+            setChildTables(viewTemplateResponse?.["data"]?.["child_tables"] || []);
             if (
               viewTemplateResponse.data.no_of_sections &&
               viewTemplateResponse.data.no_of_sections > 0
@@ -954,7 +1241,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
     );
   };
 
-  const handleOthersDeleteTemplateData = (rowData, table_name) => {
+  const handleOthersDeleteTemplateData = (rowData, table_name, ui_case_id) => {
     Swal.fire({
       title: "Are you sure?",
       text: "Do you want to delete this profile ?",
@@ -967,6 +1254,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
         const deleteTemplateData = {
           table_name: table_name,
           where: { id: rowData.id },
+          ui_case_id:ui_case_id,
           transaction_id : "TXN_" + Date.now() + "_" + Math.floor(Math.random() * 1000000),
         };
         setLoading(true);
@@ -1002,6 +1290,9 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
                   ),
               }
             );
+            if (fetchCounts) {
+                fetchCounts();
+            }
           } else {
             const errorMessage = deleteTemplateDataResponse.message
               ? deleteTemplateDataResponse.message
@@ -1089,6 +1380,15 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
     }
   };
 
+  const checkSubmissionExistsForCurrentMonth = (data) => {
+  const now = new Date();
+  return data.some(item => {
+    const date = new Date(item.submission_date);
+    return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+  });
+};
+
+
   const getMonthWiseFile = async (ui_case_id, page = 1) => {
     if (!ui_case_id) {
       console.error("Invalid ui_case_id for file retrieval:", ui_case_id);
@@ -1096,12 +1396,14 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
     }
     try {
       const response = await api.post("/templateData/getMonthWiseByCaseId", {
-        ui_case_id,
+        ui_case_id:ui_case_id.id || ui_case_id,
         page,
         limit: PageSize,
       });
 
       if (response && response.success) {
+        // const submissionExists = checkSubmissionExistsForCurrentMonth(response.data || []);
+        // setIsSubmitAllowed(!submissionExists);
         setMonthwiseData(response.data || []);
         setMonthwiseTotalRecord(response.totalRecords || 0);
         setMonthwiseTotalPage(Math.ceil((response.totalRecords || 0) / PageSize));
@@ -1443,6 +1745,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
         setviewReadonly(false);
         setEditTemplateData(false);
         setOptionFormTemplateData(getCaseIdFields ? getCaseIdFields : []);
+        setChildTables(viewTemplateResponse?.["data"]?.["child_tables"] || []);
         if (
           viewTemplateResponse.data.no_of_sections &&
           viewTemplateResponse.data.no_of_sections > 0
@@ -1641,6 +1944,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
         return <img src={xlsIcon} />;
       case "csv":
       case "docx":
+        return <img src={docxIcon} />;
       case "doc":
         return <img src={docIcon} />;
       case "ppt":
@@ -1768,7 +2072,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
     let normalData = {};
 
     const allowedFields = [
-      "field_breif_fact",
+      "field_brief_fact",
       "field_investigation_carried_out_by_the_police_station"
     ];
 
@@ -1813,6 +2117,13 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
     }
   };
 
+  function sanitizeKey(str) {
+        return str
+            .toLowerCase()
+            .replace(/[^\w]/g, "_")
+            .replace(/_+/g, "_")
+            .replace(/^_+|_+$/g, "");
+        }
   const otherTemplateSaveFunc = async (data, saveNewAction) => {
 
     if ((!selectedOtherTemplate.table || selectedOtherTemplate.table === "")) {
@@ -1890,6 +2201,38 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
       }
     });
 
+    let childTableDataMap = {};
+
+    if (childTables && Array.isArray(childTables)) {
+        childTables.forEach(child => {
+            const childFieldName = child.field_name;
+
+            if (data[childFieldName]) {
+                let parsed;
+                try {
+                    parsed = typeof data[childFieldName] === "string"
+                        ? JSON.parse(data[childFieldName])
+                        : data[childFieldName];
+                } catch (err) {
+                    parsed = [];
+                }
+
+                if (Array.isArray(parsed)) {
+                    const normalizedRows = parsed.map(row => {
+                        let newRow = {};
+                        for (const key in row) {
+                            const sanitizedKey = sanitizeKey(key);
+                            newRow[sanitizedKey] = row[key];
+                        }
+                        return newRow;
+                    });
+
+                    childTableDataMap[child.child_table_name] = normalizedRows;
+                }
+            }
+        });
+    }
+
     if (selectedOtherTemplate.table === "cid_ui_case_progress_report") {
       normalData["field_pr_status"] = "No";
     }
@@ -1901,6 +2244,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
 
     formData.append("table_name", showPtCaseModal ? ptCaseTableName : selectedOtherTemplate.table);
     formData.append("data", JSON.stringify(normalData));
+    formData.append("child_tables", JSON.stringify(childTableDataMap));
     formData.append("others_data", JSON.stringify(othersData));
     formData.append("transaction_id", randomApprovalId);
     formData.append("user_designation_id", localStorage.getItem('designation_id') ? localStorage.getItem('designation_id') : null);
@@ -1925,6 +2269,9 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
           className: "toast-success",
         });
 
+        if (fetchCounts) {
+            fetchCounts();
+        }
         if (saveNewAction) {
           await handleOtherTemplateActions(selectedOtherTemplate, selectedRow);
           showOptionTemplate(selectedOtherTemplate.table);
@@ -2052,6 +2399,42 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
       }
     });
 
+    let childTableDataMap = {};
+
+    if (childTables && Array.isArray(childTables)) {
+        childTables.forEach(child => {
+            const childFieldName = child.field_name;
+
+            if (data[childFieldName]) {
+                let parsed;
+                try {
+                    parsed = typeof data[childFieldName] === "string"
+                        ? JSON.parse(data[childFieldName])
+                        : data[childFieldName];
+                } catch (err) {
+                    parsed = [];
+                }
+
+                if (Array.isArray(parsed)) {
+                    const normalizedRows = parsed.map(row => {
+                        let newRow = {};
+                        for (const key in row) {
+                            const sanitizedKey = sanitizeKey(key);
+                            newRow[sanitizedKey] = row[key];
+                        }
+                        return newRow;
+                    });
+
+                    childTableDataMap[child.child_table_name] = normalizedRows;
+                }
+            }
+        });
+    }
+
+    if (data.hasOwnProperty("ui_case_id")) {
+        normalData.ui_case_id = data.ui_case_id;
+    }
+
     if (selectedOtherTemplate.table === "cid_ui_case_progress_report") {
       normalData["field_pr_status"] = "No";
     }
@@ -2059,6 +2442,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
     formData.append("table_name", selectedOtherTemplate.table);
     formData.append("id", data.id);
     formData.append("data", JSON.stringify(normalData));
+    formData.append("child_tables", JSON.stringify(childTableDataMap));
     formData.append("transaction_id", randomApprovalId);
     formData.append("user_designation_id", localStorage.getItem("designation_id") || null);
 
@@ -2279,6 +2663,15 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
         limit: PageSize,
       });
 
+      if (!selectedIds || selectedIds.length === 0) {
+        toast.error("Please choose a record to append.", {
+          position: "top-right",
+          autoClose: 3000,
+          className: "toast-warning",
+        });
+        return;
+      }
+
       if (response?.success) {
         const hasCurrentMonthSubmission = isSubmissionForCurrentMonth(response.data || []);
         if (hasCurrentMonthSubmission) {
@@ -2306,14 +2699,14 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
       ui_case_id: rowId,
     };
 
-    if (!selectedIds || selectedIds.length === 0) {
-      toast.error("Please choose a record to append.", {
-        position: "top-right",
-        autoClose: 3000,
-        className: "toast-warning",
-      });
-      return;
-    }
+    // if (!selectedIds || selectedIds.length === 0) {
+    //   toast.error("Please choose a record to append.", {
+    //     position: "top-right",
+    //     autoClose: 3000,
+    //     className: "toast-warning",
+    //   });
+    //   return;
+    // }
 
     setLoading(true);
 
@@ -2428,6 +2821,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
         setOtherTemplateModalOpen(false);
         setSelectedIds([]);
         handleOtherTemplateActions("cid_ui_case_progress_report", selectedRow, true, true);
+        getUploadedFiles(selectedRow, options);
       } else {
         toast.error(saveTemplateData.message || "Failed to append data.", {
           position: "top-right",
@@ -2454,14 +2848,12 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
   return (
     <>
     <Box sx={{  overflow: 'auto' , height: '100vh'}}>
-        <Box pb={1} px={1} sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'start',}}>
+        <Box py={1} px={2} sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'start',}}>
             <Box
                 sx={{
                 width: '100%',
-                p: 2,
                 bgcolor: 'background.paper',
                 borderRadius: 2,
-                boxShadow: 2,
                 zIndex: 1,
                 }}
             >
@@ -2482,19 +2874,36 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
                     {selectedOtherTemplate?.name}
                     </Typography>
 
-                    {selectedRowData?.["field_cid_crime_no./enquiry_no"] && (
-                    <Chip
-                        label={selectedRowData["field_cid_crime_no./enquiry_no"]}
-                        color="primary"
-                        variant="outlined"
-                        size="small"
-                        sx={{ fontWeight: 500, mt: '2px' }}
-                    />
+                    {/* {selectedRowData?.["field_cid_crime_no./enquiry_no"] && ( */}
+                    {headerDetails && (
+                        <Tooltip title={headerDetails}>
+                        <Chip
+                            label={
+                            <Typography
+                                sx={{
+                                fontSize: '13px',
+                                maxWidth: 230,
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                fontWeight: 500, marginTop: '2px'
+                                }}
+                            >
+                                {headerDetails}
+                            </Typography>
+                            }
+                            color="primary"
+                            variant="outlined"
+                            size="small"
+                            sx={{ fontWeight: 500, marginTop: '2px' }}
+                        />
+                        </Tooltip>
                     )}
+                    {/* )} */}
 
-                    <Box className="totalRecordCaseStyle">
+                    {/* <Box className="totalRecordCaseStyle">
                     {otherTemplatesTotalRecord} Records
-                    </Box>
+                    </Box> */}
 
                     {/* {APIsSubmited && (
                     <Box className="notifyAtTopCaseStyle">
@@ -2503,7 +2912,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
                     )} */}
                 </Box>
 
-                {hasPdfEntry && (
+                {/* {hasPdfEntry && ( */}
                     <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
                     <Box
                         sx={{
@@ -2517,6 +2926,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
                     >
                         <Box sx={{ display: 'none' }}></Box>
 
+                    {selectedTab === 1 && (
                         <Box
                         sx={{
                             display: 'flex',
@@ -2532,22 +2942,22 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
                                 <SearchIcon sx={{ color: "#475467" }} />
                                 </InputAdornment>
                             ),
-                            endAdornment: (
-                                <Box sx={{ display: "flex", alignItems: "center" }}>
-                                <IconButton
-                                    sx={{ px: 1, borderRadius: 0 }}
-                                    onClick={() => handleOthersFilter(selectedOtherTemplate)}
-                                >
-                                    <FilterListIcon sx={{ color: "#475467" }} />
-                                </IconButton>
-                                </Box>
-                            ),
+                            // endAdornment: (
+                            //     <Box sx={{ display: "flex", alignItems: "center" }}>
+                            //     <IconButton
+                            //         sx={{ px: 1, borderRadius: 0 }}
+                            //         onClick={() => handleOthersFilter(selectedOtherTemplate)}
+                            //     >
+                            //         <FilterListIcon sx={{ color: "#475467" }} />
+                            //     </IconButton>
+                            //     </Box>
+                            // ),
                             }}
                             onInput={(e) => setOtherSearchValue(e.target.value)}
                             value={otherSearchValue}
                             id="tableSearch"
                             size="small"
-                            placeholder="Search anything"
+                            placeholder="Search"
                             variant="outlined"
                             className="profileSearchClass"
                             onKeyDown={(e) => {
@@ -2581,11 +2991,11 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
                                 textAlign: { xs: 'left', sm: 'right' },
                             }}
                             >
-                            Clear Filter
+                            Clear Search
                             </Typography>
                         )}
                         </Box>
-
+                      )}
                         <Box
                         sx={{
                             display: 'flex',
@@ -2596,19 +3006,24 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
                         }}
                         >
                         <Button
-                            variant="outlined"
-                            sx={{
-                            height: '40px',
-                            borderColor: '#1976d2',
-                            color: '#1976d2',
-                            textTransform: 'none',
-                            }}
+                            sx={{height: "38px",}}
+                            className="blueButton"
+                            startIcon={
+                                <AddIcon
+                                    sx={{
+                                        border: "1.3px solid #FFFFFF",
+                                        borderRadius: "50%",
+                                        background:"#4D4AF3 !important",
+                                    }}
+                                />
+                            }
+                            variant="contained"
                             onClick={() => showOptionTemplate(selectedOtherTemplate?.table)}
                         >
-                            Add
+                            Add New
                         </Button>
 
-                        {showReplacePdfButton && (
+                        {/* {showReplacePdfButton && (
                             <Button
                             variant="outlined"
                             component="label"
@@ -2627,31 +3042,53 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
                                 onChange={(event) => handleFileUpload(event)}
                             />
                             </Button>
-                        )}
+                        )} */}
 
                         <Button
                             onClick={handleSubmitClick}
                             variant="contained"
+                            color="success"
                             disabled={!isSubmitAllowed}
-                            sx={{
-                            height: '40px',
-                            backgroundColor: '#12B76A',
-                            color: 'white',
-                            textTransform: 'none',
-                            marginLeft: 'auto',
-                            mr: 3,
-                            }}
+                            // sx={{
+                            // height: '38px',
+                            // backgroundColor: '#12B76A',
+                            // color: 'white',
+                            // textTransform: 'none',
+                            // }}
                         >
                             Submit
                         </Button>
+                        {
+                            userPermissions && userPermissions?.[0]?.['bulk_upload'] === true &&
+                            <Button
+                                variant="contained"
+                                color="success"
+                                size="large"
+                                sx={{ height: "38px" }}
+                                onClick={showBulkUploadScreen}
+                            >
+                                Bulk Upload
+                            </Button>
+                        }
+                        
+                        {/* {
+                            showMagazineView && 
+                            <Button
+                                onClick={()=>showMagazineView(false)}
+                                sx={{height: "38px", textTransform: 'none'}}
+                                className="whiteBorderedBtn"
+                            >
+                                Case Docket
+                            </Button>
+                        } */}
                         </Box>
                     </Box>
                     </Box>
-                )}
+                {/* // )} */}
 
                 </Box>
 
-                {!hasPdfEntry ? (
+                {/* {!hasPdfEntry ? (
                 <Box
                     display="flex"
                     flexDirection="column"
@@ -2670,7 +3107,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
                     />
                     </Button>
                 </Box>
-                ) : (
+                ) : ( */}
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 2 }}>
                 <Box pt={1} sx={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
                   <Box className="parentFilterTabs">
@@ -2691,43 +3128,53 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, marginBottom: '10px', marginTop: '30px' }}>
                         {aoFields.length > 0 ? (
                         <Grid container spacing={2}>
-                            {aoFields.slice(0, 6).map((field, index) => (
-                            <Grid item xs={12} md={4} key={index}>
-                                {field.type === 'text' && (
-                                <ShortText
-                                    key={field.id}
-                                    field={field}
-                                    formData={filterAoValues}
-                                    disabled={true}
-                                />
-                                )}
-                                {field.type === 'multidropdown' && (
-                                <MultiSelect
-                                    key={field.id}
-                                    field={field}
-                                    formData={filterAoValues}
-                                    onChange={(name, selectedCode) => handleAutocomplete(field, selectedCode)}
-                                    disabled={true}
-                                />
-                                )}
-                                {(field.type === 'dropdown' || field.type === 'autocomplete') && (
-                                <AutocompleteField
-                                    key={field.id}
-                                    field={field}
-                                    formData={filterAoValues}
-                                    onChange={(name, selectedCode) => handleAutocomplete(field, selectedCode)}
-                                    value={(() => {
-                                    const fieldValue = filterAoValues?.[field.name];
-                                    const selectedOption = field.options.find(
-                                        (option) => String(option.code) === String(fieldValue)
-                                    );
-                                    return selectedOption || null;
-                                    })()}
-                                    disabled={true}
-                                />
-                                )}
-                            </Grid>
-                            ))}
+                            {aoFields.map((field, index) => (
+                              <Grid item xs={12} md={4} key={index}>
+                                  {field.type === 'text' && (
+                                  <ShortText
+                                      key={field.id}
+                                      field={field}
+                                      formData={filterAoValues}
+                                      disabled
+                                  />
+                                  )}
+
+                                  {field.type === 'multidropdown' && (
+                                  <MultiSelect
+                                      key={field.id}
+                                      field={field}
+                                      formData={filterAoValues}
+                                      onChange={(name, selectedCode) => handleAutocomplete(field, selectedCode)}
+                                      disabled
+                                  />
+                                  )}
+
+                                  {(field.type === 'dropdown' || field.type === 'autocomplete') && (
+                                  <AutocompleteField
+                                      key={field.id}
+                                      field={field}
+                                      formData={filterAoValues}
+                                      onChange={(name, selectedCode) => handleAutocomplete(field, selectedCode)}
+                                      value={(() => {
+                                      const fieldValue = filterAoValues?.[field.name];
+                                      return field.options.find(
+                                          (opt) => String(opt.code) === String(fieldValue)
+                                      ) || null;
+                                      })()}
+                                      disabled
+                                  />
+                                  )}
+
+                                  {field.type === 'date' && (
+                                  <DateField
+                                      field={field}
+                                      formData={filterAoValues}
+                                      readOnly={true}
+                                  />
+                                  )}
+                              </Grid>
+                              ))}
+                           
                             <Grid container item xs={12} spacing={2} alignItems="flex-start">
                             {aoFields
                                 .slice(4)
@@ -2779,7 +3226,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
                     </Box>
                     )}
                 </Box>
-                )}
+                {/* )} */}
 
                 {selectedTab === 1 && (
                 <Box>
@@ -2813,31 +3260,36 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
                 )}
 
                 {selectedTab === 3 && (
-                <Box
+                  <Box
                     display="flex"
                     flexDirection="column"
                     alignItems="center"
                     justifyContent="center"
                     marginTop="50px"
-                >
+                  >
                     <Typography variant="h6">Preview Uploaded PDF</Typography>
 
                     {uploadedFiles.length > 0 && uploadedFiles[0].file_path ? (
-                    <>
-                        <iframe
-                        src={`${process.env.REACT_APP_SERVER_URL_FILE_VIEW}/${uploadedFiles[0].file_path}`}
-                        width="100%"
-                        height="500px"
-                        style={{ border: 'none' }}
-                        />
-                    </>
+                      (() => {
+                        const filePath = uploadedFiles[0].file_path.replace(/\\/g, '/');
+                        const fullUrl = `${process.env.REACT_APP_SERVER_URL_FILE_VIEW}/${filePath}`;
+                        return (
+                          <iframe
+                            src={fullUrl}
+                            width="100%"
+                            height="500px"
+                            style={{ border: 'none' }}
+                            allow="fullscreen"
+                            title="Uploaded PDF Preview"
+                          />
+                        );
+                      })()
                     ) : (
-                    <>
-                        <Typography>No PDF found.</Typography>
-                    </>
+                      <Typography>No PDF found.</Typography>
                     )}
-                </Box>
+                  </Box>
                 )}
+
             </Box>
         </Box>
     </Box>
@@ -2936,6 +3388,79 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
         </div>
       )}
 
+      {
+        bulkUploadShow &&
+            <Dialog
+                open={bulkUploadShow}
+                onClose={()=>setBulkUploadShow(false)}
+                maxWidth="sm"
+                fullWidth
+                PaperProps={{ sx: { borderRadius: 3, p: 2} }}
+            >
+                <Box display="flex" justifyContent="space-between" alignItems="center">
+                    <DialogTitle sx={{ fontWeight: 600, fontSize: '20px', pb: 0  }}>Excel Upload</DialogTitle>
+                    <IconButton onClick={()=>setBulkUploadShow(false)}>
+                        <CloseIcon />
+                    </IconButton>
+                </Box>
+
+                <DialogContent>
+                    <Typography sx={{ mb: 2 }}>
+                        Please check Excel header before upload. If needed,&nbsp;
+                        <Link onClick={downloadExcelHeader} underline="hover" rel="noopener" sx={{cursor: 'pointer'}}>
+                            Download here
+                        </Link>
+                    </Typography>
+
+                    <Box
+                        component="label"
+                        htmlFor="excel-upload"
+                        sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexDirection: 'column',
+                            border: '2px dashed #1976d2',
+                            p: 5,
+                            textAlign: 'center',
+                            borderRadius: 2,
+                            backgroundColor: '#f9f9f9',
+                            cursor: 'pointer',
+                            '&:hover': { backgroundColor: '#f0f0f0' },
+                        }}
+                    >
+                        <UploadFileIcon sx={{ fontSize: 48, color: '#1976d2', mb: 1 }} />
+                        <Typography variant="h6" fontWeight={500} sx={{ color: '#555' }}>
+                            Click here to upload Excel file
+                        </Typography>
+                        <input
+                            type="file"
+                            accept=".xlsx, .xls"
+                            id="excel-upload"
+                            hidden
+                            onChange={handleFileChange}
+                        />
+                    </Box>
+
+                    {selectedFile && (
+                        <Box sx={{display: 'flex', justifyContent: 'space-between'}}>
+                            <Typography mt={2} color="blue">
+                                Selected File: {selectedFile.name}
+                            </Typography>
+                            <Button
+                                variant="contained"
+                                color="success"
+                                sx={{ mt: 2, textTransform: 'uppercase', fontWeight: 500 }}
+                                startIcon={<UploadFileIcon />}
+                                onClick={checkUploadedFile}
+                            >
+                                Upload
+                            </Button>
+                        </Box>
+                    )}
+                </DialogContent>
+            </Dialog>
+        }
 
     </>
   );

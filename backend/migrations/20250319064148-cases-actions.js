@@ -60,6 +60,14 @@ module.exports = {
             type: Sequelize.TEXT,
             allowNull: true
         },
+        icon: {
+            type: Sequelize.TEXT,
+            allowNull: true,
+        },
+        approval_steps: {
+            type: Sequelize.TEXT,
+            allowNull: true,
+        },
       }
     );
   },

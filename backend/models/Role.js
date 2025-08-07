@@ -372,7 +372,31 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.BOOLEAN,
       allowNull: true
     },
+    settings: {
+      type: DataTypes.BOOLEAN,
+      allowNull: true
+    },
     action_template: {
+      type: DataTypes.BOOLEAN,
+      allowNull: true
+    },
+    crime_intelligence: {
+      type: DataTypes.BOOLEAN,
+      allowNull: true
+    },
+    crime_analytics: {
+      type: DataTypes.BOOLEAN,
+      allowNull: true
+    },
+    repos_case: {
+      type: DataTypes.BOOLEAN,
+      allowNull: true
+    },
+    bulk_upload: {
+      type: DataTypes.BOOLEAN,
+      allowNull: true
+    },
+    videos: {
       type: DataTypes.BOOLEAN,
       allowNull: true
     },

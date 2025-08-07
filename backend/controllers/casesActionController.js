@@ -11,20 +11,39 @@ const path = require("path");
 // Get all actions
 exports.get_overall_actions = async (req, res) => {
   try {
+   
     const {
         page = 1,
         limit = 5,
         sort_by = "created_at",
         order = "DESC",
         search = "",
-        search_field = "",
-    } = req.query;
+        filter = {},
+        from_date = null,
+        to_date = null
+    } = req.body;
 
 
 
-    const { filter = {}, from_date = null, to_date = null } = req.body;
+
     const fields = {};
     const offset = (page - 1) * limit;
+
+    const validSortFields = [
+      "id",
+      "name",
+      "table",
+      "module",
+      "is_pdf",
+      "field",
+      "is_approval",
+      "permissions",
+      "is_view_action",
+      "approval_items",
+      "created_at",
+    ];
+    const finalSortBy = validSortFields.includes(sort_by) ? sort_by : "created_at";
+    const finalOrder = String(order).toUpperCase() === "ASC" ? "ASC" : "DESC";
 
     // // Validate sort order
     // const finalSortOrder =
@@ -41,31 +60,26 @@ exports.get_overall_actions = async (req, res) => {
         }
       : {};
 
-    // // Get total count for pagination
-    // const total = await CasesAction.count({
-    //   where: whereClause,
-    //   distinct: true,
-    // });
 
     // Get paginated and sorted data
     const { rows: actions, count: totalItems } = await CasesAction.findAndCountAll({
-      where: whereClause,
-      attributes: [
-        "id",
-        "name",
-        "table",
-        "module",
-        "is_pdf",
-        "field",
-        "is_approval",
-        "permissions",
-        "is_view_action",
-        "approval_items",
-        "created_at",
-      ],
-      order: [[sort_by, order]],
-      limit,
-      offset,
+        where: whereClause,
+        attributes: [
+            "id",
+            "name",
+            "table",
+            "module",
+            "is_pdf",
+            "field",
+            "is_approval",
+            "permissions",
+            "is_view_action",
+            "approval_items",
+            "created_at",
+        ],
+        order: [[finalSortBy, finalOrder]],
+        limit,
+        offset,
     });
 
     // const totalItems = records.count;
@@ -121,6 +135,7 @@ exports.get_actions = async (req, res) => {
         "created_at",
         "tab",
         "icon",
+        "approval_steps",
       ],
         order: [["created_at", "ASC"]],
     });
@@ -155,6 +170,7 @@ exports.insert_action = async (req, res) => {
     approval_items,
     tab,
     icon,
+    approval_steps,
     transaction_id,
   } = req.body;
   console.log(req.body, "Request body received in backend");
@@ -216,6 +232,7 @@ exports.insert_action = async (req, res) => {
       approval_items,
       tab,
       icon,
+      approval_steps
     });
 
     return res.status(201).json({

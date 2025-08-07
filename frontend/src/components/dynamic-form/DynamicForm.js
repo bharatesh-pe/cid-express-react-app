@@ -1,7 +1,8 @@
 // DynamicForm.js
 import React, { useState, useEffect, useRef } from "react";
+import isEqual from 'lodash.isequal';
 // import formConfig from './formConfig.json';
-import { Button, Grid, Box, Typography, IconButton } from "@mui/material";
+import { Button, Grid, Box, Typography, IconButton, FormControl, DialogActions } from "@mui/material";
 import { Stepper, Step, StepLabel } from "@mui/material";
 
 import ShortText from "../form/ShortText";
@@ -40,6 +41,9 @@ import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
 import CloseIcon from "@mui/icons-material/Close";
 import ActTable from './actSection';
+import DropdownWithAdd from "../form/DropdownWithAdd";
+import TableField from "../form/Table";
+import NormalViewForm from "./NormalViewForm";
 
 const DynamicForm = ({
   formConfig,
@@ -61,6 +65,7 @@ const DynamicForm = ({
 //     ? JSON.parse(localStorage.getItem(template_name + "-formData"))
 //     : {};
   //   console.log('template_name', template_name);
+
 
   var userPermissions = JSON.parse(localStorage.getItem("user_permissions")) || [];
 
@@ -95,8 +100,141 @@ const DynamicForm = ({
     { field: "date", headerName: "Date & Time", flex: 1 },
   ]);
 
-  const saveNewRef = useRef(false);
-  const orderCopyFieldMandatory = useRef(false);
+    // based on department get division options state
+
+    const [departmentDivisionField, setDepartmentDivisionField] = useState([]);
+    const [uiCaseOptions, setUiCaseOptions] = useState([]);
+
+    // --- end --- 
+
+    const saveNewRef = useRef(false);
+    const orderCopyFieldMandatory = useRef(false);
+    const changingFormField = useRef(false);
+
+    const [dropdownInputValue, setDropdownInputValue] = useState({});
+
+    const dropdownWithAddItem = async (field, value) => {
+
+        if(!value || value.trim() === ""){
+            toast.error('Please Check the Value Before Adding', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+       
+        const result = await Swal.fire({
+            title: 'Add Value?',
+            text: `Do you want to add "${value}" to the dropdown?`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, add it',
+            cancelButtonText: 'No, cancel'
+        });
+
+        if (!result.isConfirmed) {
+            return;
+        }
+
+        var alreadyExistOption = false;
+
+        if(field.options && field.options.length > 0){
+            field.options.map((element)=>{
+                if(element.name.trim() === value.trim()){
+                    alreadyExistOption = true;
+                }
+            });
+        }
+
+        if(alreadyExistOption){
+            toast.error('Option Already Exist', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+
+        var payloadData = {
+            table_name : field.table || null,
+            key: field?.attributes?.[0] || null,
+            value: value,
+            id : field?.id,
+            primaryTable : table_name || null
+        }
+
+        setLoading(true);
+        try {
+            const response = await api.post('/templateData/addDropdownSingleFieldValue', payloadData)
+
+            setLoading(false);
+
+            if (response && response.success && response.data) {
+
+                const {addingValue, options} = response.data;
+
+
+                setSelectedField(prev => ({
+                    ...prev,
+                    options: [...options]
+                }));
+
+                var updatedFormConfig = newFormConfig.map((data) => {
+                    if (data?.id === field?.id) {
+                        if (data.options) {
+                            return { ...data, options: [...options] };
+                        } else {
+                            return { ...data };
+                        }
+                    } else {
+                        return { ...data };
+                    }
+                });
+                setNewFormConfig(updatedFormConfig);
+
+                if(addingValue?.id){
+                    setFormData(prevData => ({
+                        ...prevData,
+                        [field.name]: addingValue?.id
+                    }));
+                }
+
+                setDropdownInputValue(prev => {
+                    if (!prev) return prev;
+                    const updated = { ...prev };
+                    delete updated[field.name];
+                    return updated;
+                });
+            }
+            
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response.data) {
+                toast.error(error.response.data['message'] ? error.response.data['message'] : 'Please try again!', {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+                return;
+            }
+        }
+    }
 
   useEffect(() => {
     if (initialData && Object.keys(initialData).length > 0) {
@@ -132,46 +270,61 @@ const DynamicForm = ({
     handleMaxDateChange(name,newValues);
   };
 
-    const handleMaxDateChange = (name, values)=>{
+  const originalFormConfigRef = useRef([]);
 
-        if(name && name === "field_date_of_registration_by_ps/range" && table_name === "cid_under_investigation"){
-            var formConfigData = (stepperData && stepperData.length > 0) ? stepperConfigData : newFormConfig;
-        
-            var wantUpdateDateFields = [
-                "field_date_of_entrustment_to_cid",
-                "field_date_of_taking_over_by_cid",
-                "field_date_of_taking_over_by_present_io",
-                "field_date_of_submission_of_fr_to_court"
-            ]
-        
-            var updatedFormConfigData = formConfigData.map((field) => {
-                if (wantUpdateDateFields.includes(field?.name)) {
-                    return {
-                        ...field,
-                        maxValue: values
-                    };
-                }
-                return field;
-            });
+  useEffect(() => {
+      if (newFormConfig && originalFormConfigRef.current.length === 0) {
+          originalFormConfigRef.current = JSON.parse(JSON.stringify(newFormConfig));
+      }
+  }, [newFormConfig]);
 
-            const updatedFormData = { ...formData };
+  const handleMaxDateChange = (name, values) => {
+    if (name === "field_date_of_registration_by_ps/range" && table_name === "cid_under_investigation") {
+        const formConfigData = (stepperData && stepperData.length > 0) ? stepperConfigData : newFormConfig;
 
-            wantUpdateDateFields.forEach((name) => {
-                delete updatedFormData[name];
-            });
+        const wantUpdateDateFields = [
+            "field_date_of_entrustment_to_cid",
+            "field_date_of_taking_over_by_cid",
+            "field_date_of_taking_over_by_present_io",
+            "field_date_of_submission_of_fr_to_court"
+        ];
 
-            updatedFormData[name] = values
+        const isBefore2015 = (() => {
+            const date = new Date(values);
+            return !isNaN(date.getTime()) && date.getFullYear() < 2015;
+        })();
 
-            setFormData(updatedFormData);
-    
-            setNewFormConfig(updatedFormConfigData);
-        }else{
-            setFormData({
-                ...formData,
-                [name]: values,
-            });
-        }
+        const updatedFormConfigData = formConfigData.map((field) => {
+            const originalField = originalFormConfigRef.current.find(f => f.name === field.name) || {};
+
+            let updatedField = { ...field };
+
+            if (wantUpdateDateFields.includes(field?.name)) {
+                updatedField.maxValue = values;
+            }
+
+            if (isBefore2015) {
+                updatedField.required = false;
+            } else {
+                updatedField.required = originalField.required || false;
+            }
+
+            return updatedField;
+        });
+
+        const updatedFormData = { ...formData };
+        wantUpdateDateFields.forEach((n) => delete updatedFormData[n]);
+        updatedFormData[name] = values;
+
+        setFormData(updatedFormData);
+        setNewFormConfig(updatedFormConfigData);
+    } else {
+        setFormData({
+            ...formData,
+            [name]: values,
+        });
     }
+  };
 
     useEffect(()=>{
 
@@ -221,6 +374,35 @@ const DynamicForm = ({
             });
 
         }
+
+        const initialIsEmpty = !initialData || Object.keys(initialData).length === 0;
+        const formHasValues = formData && Object.keys(formData).length > 0 && Object.values(formData).some(val => val !== "" && val !== null && val !== undefined);;
+
+        const checkInitialData = {};
+        const checkFormData = {};
+
+        newFormConfig.forEach((config) => {
+            const name = config.name;
+
+            if (initialData && initialData.hasOwnProperty(name)) {
+                checkInitialData[name] = Array.isArray(initialData[name]) ? initialData[name].join(',') : initialData[name];
+            }
+            if (formData.hasOwnProperty(name)) {
+                checkFormData[name] = Array.isArray(formData[name]) ? formData[name].join(',') : formData[name];
+            }
+        });
+
+        var changingFlag = false;
+
+        if (initialIsEmpty && formHasValues) {                        
+            changingFlag = true
+        } else if (!initialIsEmpty && !isEqual(checkInitialData, checkFormData)) {
+            changingFlag = true;
+        } else {
+            changingFlag = false;
+        }
+
+        changingFormField.current = changingFlag
 
     },[formData]);
 
@@ -298,30 +480,86 @@ const DynamicForm = ({
 
   const validate = () => {
     let tempErrors = {};
+      
+    const tabFields = newFormConfig.filter((field) => field.type === "tabs");
+
     newFormConfig.forEach((field) => {
 
         if(field?.hide_from_ux){
             return null
         }
 
-        if(table_name === "cid_under_investigation" || table_name === "cid_pending_trial" || table_name === "cid_enquiries"){
-            const roleTitle = JSON.parse(localStorage.getItem("role_title")?.toLowerCase().trim());
+        // if(table_name === "cid_under_investigation" || table_name === "cid_pending_trial" || table_name === "cid_enquiries"){
+        //     const roleTitle = JSON.parse(localStorage.getItem("role_title")?.toLowerCase().trim());
 
-            if (roleTitle === "admin organization") {
-                if (!field.ao_field) {
-                    field.disabled = true;
-                    if (field.required) {
-                        field.required = false;
-                    }
-                }
-            } else {
-                if (field.ao_field) {
-                    field.disabled = true;
-                    if (field.required) {
-                        field.required = false;
-                    }
+        //     if (roleTitle === "admin organization") {
+        //         if (!field.ao_field) {
+        //             field.disabled = true;
+        //             if (field.required) {
+        //                 field.required = false;
+        //             }
+        //         }
+        //     } else {
+        //         if (field.ao_field) {
+        //             field.disabled = true;
+        //             if (field.required) {
+        //                 field.required = false;
+        //             }
+        //         }
+        //     }
+        // }
+
+        if (field?.tabOption) {
+            const matchedTab = tabFields.find((tabField) =>
+                tabField?.options?.some((opt) => opt.code === field.tabOption)
+            );
+
+            if (!matchedTab) return null;
+
+            const selectedTabValue = formData?.[matchedTab?.name];
+
+            if (selectedTabValue !== field.tabOption) {
+                return null;
+            }
+        }
+
+        if(field.type === "table"){
+            let error = false;
+
+            let tableData = formData?.[field?.name];
+
+            if (typeof tableData === "string"){
+                try {
+                    tableData = JSON.parse(tableData);
+                } catch (e) {
+                    error = true;
                 }
             }
+
+            if (Array.isArray(tableData)) {
+                for (const row of tableData) {
+                    for (const headerObj of field.tableHeaders) {
+                        const key = headerObj?.header;
+
+                        if(headerObj?.fieldType?.required){
+                            const value = row?.[key];
+
+                            if (value === undefined || value === null || (typeof value === "string" && value.trim() === "") || (Array.isArray(value) && value.length === 0)) {
+                                error = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (error) break;
+                }
+            }
+
+            if(error){
+                return tempErrors[field.name] = `${field.label} is required`;
+            }
+
+            return null;
         }
 
         if (Boolean(field.required) && !formData[field.name]) {
@@ -356,6 +594,17 @@ const DynamicForm = ({
     const roleTitle = JSON.parse(localStorage.getItem("role_title")?.toLowerCase().trim());
 
     if(roleTitle === "admin organization" && table_name === "cid_under_investigation"){
+
+       const regDateStr = formData?.["field_date_of_registration_by_ps/range"];
+        let skipActValidation = false;
+
+        if (regDateStr) {
+            const regDate = new Date(regDateStr);
+            if (!isNaN(regDate.getTime()) && regDate.getFullYear() < 2015) {
+                skipActValidation = true;
+            }
+        }
+         if (!skipActValidation) {
         var errorActFlag = false;
     
         tableActRow.map((element)=>{
@@ -364,6 +613,7 @@ const DynamicForm = ({
             }
         });
     
+        
         if(errorActFlag){
             toast.error("Please Fill All Act & Section Data",{
                 position: "top-right",
@@ -377,6 +627,7 @@ const DynamicForm = ({
             });
             return
         }
+      }
     }
 
     if (roleTitle === "admin organization" && orderCopyFieldMandatory.current === true && !formData?.["field_order_copy_(_17a_done_)"]) {
@@ -517,9 +768,38 @@ const DynamicForm = ({
     }));
   };
 
+    const handleTableDataChange = (field, data)=>{
+        setFormData(prevData => {
+            return {
+                ...prevData,
+                [field.name]: JSON.stringify(data),
+            };
+        });
+    }
+
   const handleAutocomplete = (field, selectedValue) => {
-    let updatedFormData = { ...formData, [field.name]: selectedValue };
-    setSelectedField(field);
+      const selectedFullObject =
+          field.name === "field_ui_case" && typeof selectedValue === "number"
+            ? uiCaseOptions.find((opt) => opt.code === selectedValue)
+            : selectedValue;
+
+      let updatedFormData = {
+        ...formData,
+        [field.name]: selectedFullObject?.code || selectedValue,
+      };
+
+      setSelectedField(field);
+
+    if (
+      field.name === "field_ui_case" &&
+      field.table === "cid_under_investigation" &&
+      selectedFullObject &&
+      table_name === "cid_pending_trial"
+    ) {
+      updatedFormData["field_ps_crime_number"] = selectedFullObject.crime_number || "";
+      updatedFormData["field_cid_crime_no./enquiry_no"] = selectedFullObject.cid_enquiry_number || "";
+      updatedFormData["field_name_of_the_police_station"] = selectedFullObject.police_station?.id || "";
+    }
 
     if (field.table) {
       var updatedFormConfig = newFormConfig.map((data) => {
@@ -704,6 +984,214 @@ const DynamicForm = ({
             callApi();
             }
         }
+
+        if(selectedField && selectedField?.name === "field_io_name"){
+            
+            const gettingUserDetails = async () => {
+                if (formData["field_io_name"]) {
+                    try {
+                        const response = await api.post("cidMaster/getUserParticularDetails", {
+                            user_id: formData["field_io_name"]
+                        });
+
+                        const data = response?.data;
+                        if (!data) return;
+
+                        let updatedFormData = {};
+
+                        newFormConfig.forEach((field) => {
+                            if (field?.name === "field_io_code/kgid_number" && data?.kgid_id) {
+                                updatedFormData["field_io_code/kgid_number"] = data.kgid_id;
+                            }
+
+                            if (field?.name === "field_io_rank_(designation)") {
+                                if (field?.type === "multidropdown") {
+                                    updatedFormData["field_io_rank_(designation)"] = data?.designations || [];
+                                } else {
+                                    updatedFormData["field_io_rank_(designation)"] = data?.designations?.[0] || "";
+                                }
+                            }
+                        });
+
+                        setFormData((prevData) => ({
+                            ...prevData,
+                            ...updatedFormData
+                        }));
+
+                    } catch (error) {
+                        console.error("Error fetching user details:", error);
+                    }
+                }else{
+                    let updatedFormData = {};
+
+                    newFormConfig.forEach((field) => {
+                        if (field?.name === "field_io_code/kgid_number" && formData?.['field_io_code/kgid_number']) {
+                            updatedFormData["field_io_code/kgid_number"] = "";
+                        }
+
+                        if (field?.name === "field_io_rank_(designation)" && formData?.['field_io_rank_(designation)']) {
+                            if (field?.type === "multidropdown") {
+                                updatedFormData["field_io_rank_(designation)"] = [];
+                            } else {
+                                updatedFormData["field_io_rank_(designation)"] = "";
+                            }
+                        }
+                    });
+
+                    setFormData((prevData) => ({
+                        ...prevData,
+                        ...updatedFormData
+                    }));
+                }
+            };
+
+            gettingUserDetails();
+        }
+
+        if(selectedField && selectedField?.name && selectedField?.table === "department" && departmentDivisionField.length > 1){
+
+            var divisionField = departmentDivisionField.find((field)=>field.table === "division");
+
+            if(divisionField && divisionField?.name){
+
+                const gettingDivisionBasedOnDepartment = async ()=>{
+                    try {
+
+                        var departmentPayload = {
+                            "department_id" : formData[selectedField.name]
+                        }
+
+                        const response = await api.post("cidMaster/getDivisionBasedOnDepartment", departmentPayload);
+        
+                        const data = response?.data;
+
+                        if (!data){
+                            setNewFormConfig((prevFormConfig) => {
+                                const updatedFormConfig = prevFormConfig.map((configData) => {
+                                    if (configData?.name === divisionField?.name) {
+                                        return { ...configData, options: [] };
+                                    }
+                                    return configData;
+                                });
+                                return updatedFormConfig;
+                            });
+                            return;
+                        }
+
+                        var updatedOptions = data.map((divisionData) => {
+                                                return {
+                                                    name: divisionData["division_name"],
+                                                    code: divisionData["division_id"],
+                                                };
+                                            });
+
+                        setNewFormConfig((prevFormConfig) => {
+                            const updatedFormConfig = prevFormConfig.map((configData) => {
+                                if (configData?.name === divisionField?.name) {
+                                    return { ...configData, options: updatedOptions };
+                                }
+                                return configData;
+                            });
+                            return updatedFormConfig;
+                        });
+
+                        setFormData((prevData) => ({
+                            ...prevData,
+                            [divisionField.name] : ""
+                        }));
+                        
+                    } catch (error) {
+                        console.error("Error fetching division details:", error);
+                        setNewFormConfig((prevFormConfig) => {
+                            const updatedFormConfig = prevFormConfig.map((configData) => {
+                                if (configData?.name === divisionField?.name) {
+                                    return { ...configData, options: [] };
+                                }
+                                return configData;
+                            });
+                            return updatedFormConfig;
+                        });
+                    }
+                }
+
+                gettingDivisionBasedOnDepartment();
+
+            }
+        }
+
+       if (selectedField && selectedField?.name && selectedField?.table === "cid_district" && newFormConfig.some((field) => field.table === "cid_police_station")) {
+           const policeStationField = newFormConfig.find((field) => field.table === "cid_police_station");
+       
+           if (policeStationField && policeStationField?.name) {
+            const getPoliceStationsBasedOnDistrict = async () => {
+              try {
+                const districtIdValue = formData[selectedField.name];
+                if (!districtIdValue) {
+                  console.warn("District ID is empty or undefined. Aborting request.");
+                  return;
+                }
+       
+                const districtPayload = {
+                    district_id: districtIdValue,
+                };
+       
+                const response = await api.post("cidMaster/getPoliceStationsBasedOnDistrict", districtPayload);
+                const data = response?.data;
+       
+                console.log("Received response:", data);
+       
+                if (!Array.isArray(data) || data.length === 0) {
+                    console.warn("No police stations found or invalid response format.");
+
+                    setNewFormConfig((prevFormConfig) =>
+                        prevFormConfig.map((configData) => {
+                            if (configData?.name === policeStationField?.name) {
+                                return { ...configData, options: [] };
+                            }
+                            return configData;
+                        })
+                    );
+                    return;
+                }
+
+                const updatedOptions = data.map((psData) => ({
+                    name: psData["field_name_of_the_police_station"],
+                    code: psData["id"],
+                }));
+
+                console.log("Updated police station options:", updatedOptions);
+
+                setNewFormConfig((prevFormConfig) =>
+                    prevFormConfig.map((configData) => {
+                        if (configData?.name === policeStationField?.name) {
+                            return { ...configData, options: updatedOptions };
+                        }
+                        return configData;
+                    })
+                );
+
+                setFormData((prevData) => ({
+                    ...prevData,
+                    [policeStationField.name]: ""
+                }));
+            } catch (error) {
+                console.error("Error while fetching police stations:", error);
+       
+                setNewFormConfig((prevFormConfig) =>
+                    prevFormConfig.map((configData) => {
+                        if (configData?.name === policeStationField?.name) {
+                            return { ...configData, options: [] };
+                        }
+                        return configData;
+                    })
+                );
+            }
+        };
+        getPoliceStationsBasedOnDistrict();
+      }
+    }
+        
+
     }, [selectedField]);
 
     useEffect(() => {
@@ -772,7 +1260,7 @@ const DynamicForm = ({
                                 if (getOptionsValue && getOptionsValue.data) {                                
                                     updatedOptions = getOptionsValue.data.map((templateData) => {
 
-                                        const nameKey = Object.keys(templateData).find((key) => !["id", "created_at", "updated_at"].includes(key));
+                                        const nameKey = Object.keys(templateData).find((key) => !["id", "created_at", "updated_at", "field_approval_done_by"].includes(key));
 
                                         var headerName = nameKey;
                                         var headerId = 'id';
@@ -877,7 +1365,7 @@ const DynamicForm = ({
                                 if (getOptionsValue && getOptionsValue.data) {                                
                                     updatedOptions = getOptionsValue.data.map((templateData) => {
 
-                                        const nameKey = Object.keys(templateData).find((key) => !["id", "created_at", "updated_at"].includes(key));
+                                        const nameKey = Object.keys(templateData).find((key) => !["id", "created_at", "updated_at", "field_approval_done_by"].includes(key));
 
                                         var headerName = nameKey;
                                         var headerId = 'id';
@@ -996,11 +1484,28 @@ const DynamicForm = ({
     }
   };
 
-  const CloseFormModal = () => {
-    if (closeForm) {
-      closeForm(false);
+    const CloseFormModal = async () => {
+        if (closeForm) {
+
+            if(changingFormField.current === true){
+                const result = await Swal.fire({
+                    title: 'Unsaved Changes',
+                    text: 'You have unsaved changes. Are you sure you want to leave?',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Yes, Exit',
+                    cancelButtonText: 'No',
+                });
+        
+                if (result.isConfirmed) {
+                    closeForm(false);
+                }
+            }else{
+                closeForm(false);
+            }
+
+        }
     }
-  };
 
   useEffect(() => {
     if (stepperData && stepperData.length > 0) {
@@ -1181,94 +1686,280 @@ const DynamicForm = ({
         }
     };
 
-    useEffect(() => {
-        const fetchTemplateData = async () => {
-            try { 
-                const apiCalls = newFormConfig
-                .filter((field) =>  field?.api && field?.table && (!field?.is_dependent || field?.is_dependent == "false") )
-                .map(async (field) => {
-                    setLoading(true);
-                    try {
+    const fetchTemplateData = async () => {
+      try { 
+        const apiCalls = newFormConfig
+        .filter((field) =>  field?.api && field?.table && (!field?.is_dependent || field?.is_dependent == "false") )
+        .map(async (field) => {
+          setLoading(true);
+          try {
 
-                        var apiPayload = {};
+            var apiPayload = {};
 
-                        if(field.api === "/templateData/getTemplateData"){
-                            apiPayload = {
-                                table_name: field.table
-                            }
-                        }else if(field.table === "users"){
-                            apiPayload = {
-                                designation_id : localStorage.getItem('designation_id') ? localStorage.getItem('designation_id') : null,
-                                get_flag : field?.user_hierarchy || null
-                            }
-                        }
-
-                        const response = await api.post(field.api, apiPayload);
-
-                        setLoading(false);
-
-                        if (!response.data) return { id: field.id, options: [] };
-
-                        const updatedOptions = response.data.map((templateData) => {
-
-                            const nameKey = Object.keys(templateData).find((key) => !["id", "created_at", "updated_at"].includes(key));
-
-                            var headerName = nameKey;
-                            var headerId = 'id';
-    
-                            if(field.table === "users"){
-                                headerName = "name"
-                                headerId =  "user_id"
-                            }else if(field.api !== "/templateData/getTemplateData"){
-                                headerName = field.table + "_name"
-                                headerId =  field.table + "_id"
-                            }
-
-                            return {
-                                name: templateData[headerName],
-                                code: templateData[headerId],
-                            };
-                        });
-
-                        return { id: field.id, options: updatedOptions };
-
-                    } catch (error) {
-                        setLoading(false);
-                        return { id: field.id, options: [] };
-                    }
+            if (field.name === "field_ui_case") {
+              const response = await api.post("cidMaster/fetchUICaseDetails", {
+                allowedDepartmentIds : localStorage.getItem("allowedDepartmentIds") ,
+                allowedDivisionIds : localStorage.getItem("allowedDivisionIds") ,
+                allowedUserIds :  localStorage.getItem("allowedUserIds") 
+              });
+              const updatedOptions = response.data.map((data) => ({
+                ...data,
+                name: data.name,
+                code: data.code,
+              }));
+              setUiCaseOptions(updatedOptions);
+              setNewFormConfig((prevFormConfig) => {
+                return prevFormConfig.map((data) => {
+                  if (data.name === field.name) {
+                    return { ...data, options: updatedOptions };
+                  }
+                  return data;
                 });
+              });
+              return { id: field.id, options: updatedOptions };
+            }
 
-                const results = await Promise.all(apiCalls);
+            if(field.api === "/templateData/getTemplateData"){
+              apiPayload = {
+                table_name: field.table
+              }
+            }else if(field.table === "users"){
+              apiPayload = {
+                designation_id : localStorage.getItem('designation_id') ? localStorage.getItem('designation_id') : null,
+                get_flag : field?.user_hierarchy || null
+              }
+            }
 
-                var optionUpdateFields = []
+            const response = await api.post(field.api, apiPayload);
+
+            setLoading(false);
+
+            if (!response.data) return { id: field.id, options: [] };
+
+            const updatedOptions = response.data.map((templateData) => {
+
+              const nameKey = Object.keys(templateData).find((key) => !["id", "created_at", "updated_at", "created_by", "field_approval_done_by"].includes(key));
+
+              var headerName = nameKey;
+              var headerId = 'id';
+
+              if(field.table === "users"){
+                headerName = "name"
+                headerId =  "user_id"
+              }else if(field.api !== "/templateData/getTemplateData"){
+                headerName = field.table + "_name"
+                headerId =  field.table + "_id"
+              }
+
+              return {
+                name: templateData[headerName],
+                code: templateData[headerId],
+              };
+            });
+
+            return { id: field.id, options: updatedOptions };
+
+          } catch (error) {
+            setLoading(false);
+            return { id: field.id, options: [] };
+          }
+        });
+
+        const results = await Promise.all(apiCalls);
+
+        var optionUpdateFields = []
+
+        setNewFormConfig((prevFormConfig) => {
+          const updatedFormConfig = prevFormConfig.map((field) => {
+            const updatedField = results.find((res) => res.id === field.id);
+            if (updatedField) {
+              if (updatedField?.options.length === 1) {
+                const onlyOption = updatedField.options[0];
+
+                const gettingFormdata = Object.keys(formData).length === 0 ? (initialData || formData) : formData;
+
+                if(!gettingFormdata[field?.name] || gettingFormdata[field?.name] === ""){
+                  setFormData((prevData) => ({
+                    ...prevData,
+                    [field.name]: onlyOption.code
+                  }));
+                }
+
+                optionUpdateFields.push(field);
+              }
+              return { ...field, options: updatedField.options };
+            }
+            return field;
+          });
+          return updatedFormConfig;
+        });
+
+        gettingDependentedOptions(optionUpdateFields);
+
+        // Department/Division logic
+        const findDepartmentDivisionField = newFormConfig.filter((element)=>{
+          if(element?.table && (element?.table === "division" || element?.table === "department")){
+            return element
+          }
+        });
+
+        if(findDepartmentDivisionField?.length > 1){
+    
+          setDepartmentDivisionField(findDepartmentDivisionField);
+
+          var departmentField = findDepartmentDivisionField.find((field)=>field.table === "department");
+
+          if(departmentField && departmentField?.name && initialData[departmentField?.name]){
+
+            const gettingDivisionBasedOnDepartment = async ()=>{
+              try {
+
+                var departmentPayload = {
+                  "department_id" : initialData[departmentField.name]
+                }
+
+                const response = await api.post("cidMaster/getDivisionBasedOnDepartment", departmentPayload);
+        
+                const data = response?.data;
+
+                if (!data){
+                  setNewFormConfig((prevFormConfig) => {
+                    const updatedFormConfig = prevFormConfig.map((data) => {
+                      if (data?.table === "division") {
+                        return { ...data, options: [] };
+                      }
+                      return data;
+                    });
+                    return updatedFormConfig;
+                  });
+                  return;
+                }
+
+                var updatedOptions = data.map((divisionData) => {
+                            return {
+                              name: divisionData["division_name"],
+                              code: divisionData["division_id"],
+                            };
+                          });
 
                 setNewFormConfig((prevFormConfig) => {
-                    const updatedFormConfig = prevFormConfig.map((field) => {
-                        const updatedField = results.find((res) => res.id === field.id);
-                        if (updatedField) {
-                            if (updatedField?.options.length === 1) {
-                                const onlyOption = updatedField.options[0];
-                                setFormData((prevData) => ({
-                                    ...prevData,
-                                    [field.name]: onlyOption.code
-                                }));
+                  const updatedFormConfig = prevFormConfig.map((data) => {
+                    if (data?.table === "division") {
+                      return { ...data, options: updatedOptions };
+                    }
+                    return data;
+                  });
+                  return updatedFormConfig;
+                });
+                
+              } catch (error) {
+                console.error("Error fetching division details:", error);
+                setNewFormConfig((prevFormConfig) => {
+                  const updatedFormConfig = prevFormConfig.map((data) => {
+                    if (data?.table === "division") {
+                      return { ...data, options: [] };
+                    }
+                    return data;
+                  });
+                  return updatedFormConfig;
+                });
+              }
+            }
 
-                                optionUpdateFields.push(field);
-                            }
-                            return { ...field, options: updatedField.options };
+            gettingDivisionBasedOnDepartment();
+          }else{
+            setNewFormConfig((prevFormConfig) => {
+              const updatedFormConfig = prevFormConfig.map((data) => {
+                if (data?.table === "division") {
+                  return { ...data, options: [] };
+                }
+                return data;
+              });
+              return updatedFormConfig;
+            });
+          }
+
+        }else{
+          setDepartmentDivisionField([]);
+        }
+
+        const findDistrictPoliceStationField = newFormConfig.filter((element) => {
+            if (element?.table && (element?.table === "cid_district" || element?.table === "cid_police_station")) {
+                return element;
+            }
+        });
+        
+        if (findDistrictPoliceStationField?.length > 1) {
+            const districtField = findDistrictPoliceStationField.find((field) => field.table === "cid_district");
+            const policeStationField = findDistrictPoliceStationField.find((field) => field.table === "cid_police_station");
+
+            if (districtField && districtField?.column_name && initialData[districtField.column_name]) {
+                const getPoliceStationsBasedOnDistrict = async () => {
+                    try {
+                        const districtPayload = {
+                            district_id: initialData[districtField.column_name]
+                        };
+
+                        const response = await api.post("cidMaster/getPoliceStationsBasedOnDistrict", districtPayload);
+                        const data = response?.data;
+
+                        if (!data || data.length === 0) {
+                            setNewFormConfig((prevFormConfig) => {
+                                return prevFormConfig.map((field) => {
+                                    if (field?.table === "cid_police_station") {
+                                        return { ...field, options: [] };
+                                    }
+                                    return field;
+                                });
+                            });
+                            return;
+                        }
+
+                        const updatedOptions = data.map((psData) => ({
+                            name: psData["field_name_of_the_police_station"],
+                            code: psData["id"],
+                        }));
+
+                        setNewFormConfig((prevFormConfig) => {
+                            return prevFormConfig.map((field) => {
+                                if (field?.table === "cid_police_station") {
+                                    return { ...field, options: updatedOptions };
+                                }
+                                return field;
+                            });
+                        });
+                    } catch (error) {
+                        console.error("Error fetching police stations:", error);
+                        setNewFormConfig((prevFormConfig) => {
+                            return prevFormConfig.map((field) => {
+                                if (field?.table === "cid_police_station") {
+                                    return { ...field, options: [] };
+                                }
+                                return field;
+                            });
+                        });
+                    }
+                };
+
+                getPoliceStationsBasedOnDistrict();
+            } else {
+                setNewFormConfig((prevFormConfig) => {
+                    return prevFormConfig.map((field) => {
+                        if (field?.table === "cid_police_station") {
+                            return { ...field, options: [] };
                         }
                         return field;
                     });
-                    return updatedFormConfig;
                 });
-
-                gettingDependentedOptions(optionUpdateFields);
-
-            } catch (error) {
-                console.error("Error fetching template data:", error);
             }
-        };
+        }
 
+      } catch (error) {
+        console.error("Error fetching template data:", error);
+      }
+    };
+
+    useEffect(() => {
         if (newFormConfig.length > 0) {
             fetchTemplateData();
         }
@@ -1394,6 +2085,244 @@ const DynamicForm = ({
         }));
     };
 
+
+    // handle link template view
+
+    const [showLinkTemplate, setShowLinkTemplate] = useState(false);
+
+    const [linkTemplateName, setLinkTemplateName] = useState("");
+    const [linkTableName, setLinkTableName] = useState("");
+
+    const [linkTemplateRowId, setLinkTemplateRowId] = useState("");
+    const [linkTemplateId, setLinkTemplateId] = useState("");
+
+    const [linkTemplateFields, setLinkTemplateFields] = useState([]);
+    const [linkTemplateStepperData, setLinkTemplateStepperData] = useState([]);
+
+    const [linkTemplateInitialData, setLinkTemplateInitialData] = useState({});
+
+    const viewLinkedTemplate = async (field)=>{
+
+        if((!field?.table || field?.table === "") || (!field?.forign_key || field?.forign_key === "")){
+            toast.error("Template Not Found !", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+
+        if(!formData?.[field?.name] || formData?.[field?.name] === ""){
+            toast.error("Please Select Value Before Getting Data !", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+
+        var payload = {
+            table_name : field?.table,
+            key : field?.forign_key,
+            value : formData?.[field?.name]
+        }
+
+        try {
+            
+            const gettingDetailedData = await api.post('/templateData/getTemplateAlongWithData', payload);
+            
+            if(gettingDetailedData?.success && gettingDetailedData?.data){
+
+                const { data, template } = gettingDetailedData?.data
+
+                setLinkTemplateName(template?.template_name);
+                setLinkTableName(template?.table_name);
+
+                setLinkTemplateRowId(data?.id);
+                setLinkTemplateId(template?.template_id);
+
+                setLinkTemplateFields(template?.fields);
+                setLinkTemplateStepperData(template?.sections ? template?.sections : []);
+
+                setLinkTemplateInitialData(data);
+
+                setShowLinkTemplate(true);
+
+            }
+
+
+
+        } catch (error) {
+            if (error && error.response && error.response.data) {
+                toast.error( error.response?.data?.message || "Need dependent Fields", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+                return;
+            }
+        }
+
+    }
+
+    const closeLinkTemplateModal = ()=>{
+        setLinkTemplateName("");
+        setLinkTableName("");
+
+        setLinkTemplateRowId("");
+        setLinkTemplateId("");
+
+        setLinkTemplateFields([]);
+        setLinkTemplateStepperData([]);
+
+        setLinkTemplateInitialData({});
+
+        setShowLinkTemplate(false);
+    }
+
+    const linkTemplateUpdateFunc = async (data)=>{
+
+        if (!linkTableName || linkTableName === "") {
+            toast.warning("Please Check The Template", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-warning",
+            });
+            return;
+        }
+
+        if (Object.keys(data).length === 0) {
+            toast.warning("Data Is Empty Please Check Once", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-warning",
+            });
+            return;
+        }
+
+        const formData = new FormData();
+
+        formData.append("table_name", linkTableName);
+        var normalData = {}; 
+
+        linkTemplateFields.forEach((field) => {
+            if (data[field.name]) {
+                if (field.type === "file" || field.type === "profilepicture") {
+                    if (field.type === "file") {
+                        if (Array.isArray(data[field.name])) {
+                            const hasFileInstance = data[field.name].some(
+                                (file) => file.filename instanceof File
+                            );
+                            var filteredArray = data[field.name].filter(
+                                (file) => file.filename instanceof File
+                            );
+                            if (hasFileInstance) {
+                                data[field.name].forEach((file) => {
+                                    if (file.filename instanceof File) {
+                                        formData.append(field.name, file.filename);
+                                    }
+                                });
+
+                                filteredArray = filteredArray.map((obj) => {
+                                    return {
+                                        ...obj,
+                                        filename: obj.filename["name"],
+                                    };
+                                });
+                                formData.append("folder_attachment_ids", JSON.stringify(filteredArray));
+                            }
+                        }
+                    } else {
+                        formData.append(field.name, data[field.name]);
+                    }
+                } else {
+                    normalData[field.name] = Array.isArray(data[field.name]) ? data[field.name].join(",") : data[field.name]
+                }
+            }
+        });
+        normalData["id"] = data.id;
+        formData.append("id", data.id);
+        setLoading(true);
+        formData.append("data", JSON.stringify(normalData));
+
+        try {
+            const saveTemplateData = await api.post("/templateData/updateTemplateData", formData);
+            setLoading(false);
+
+            if (saveTemplateData && saveTemplateData.success) {
+                toast.success(saveTemplateData.message || "Data Updated Successfully", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-success",
+                });
+
+                closeLinkTemplateModal();
+                fetchTemplateData();
+
+            } else {
+                const errorMessage = saveTemplateData.message ? saveTemplateData.message : "Failed to create the profile. Please try again.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response["data"]) {
+                toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !",{
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        }
+    }
+
+    const linkTemplateErrorFunc = async (data)=>{
+        console.log(data,"data");
+    }
+
   //   console.log(stepperConfigData, "stepperConfigData stepperConfigData")
   //   console.log(stepperData, "stepperData stepperData")    
   return (
@@ -1406,7 +2335,7 @@ const DynamicForm = ({
           right: "0",
           bottom: "0",
           background: "rgba(0, 0, 0, 0.5)",
-          zIndex: "100",
+          zIndex: "98",
         }}
       />
       <Box
@@ -1417,7 +2346,7 @@ const DynamicForm = ({
           left: "50px",
           height: "100%",
           background: "#F5F5F5",
-          zIndex: "100",
+          zIndex: "98",
           borderRadius: "12px 0 0 12px",
           overflow: "hidden",
         }}
@@ -1665,71 +2594,24 @@ const DynamicForm = ({
           mx={2}
           mt={2}
         >
-          <Box
-            sx={{
-              borderBottom: "1px solid #636B744D",
-              padding: "16px",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <Box
-              sx={{ display: "inline-flex", gap: "12px", alignItems: "center" }}
-            >
-              {stepperData && stepperData.length > 0 && (
-                <Typography className="HighlightedSquare">
-                  {activeStep + 1}
-                </Typography>
-              )}
-              <Typography className="HighlightedText">
-                {stepperData && stepperData[activeStep] ? stepperData[activeStep] : "General Detail"}
-              </Typography>
-            </Box>
+            {stepperData && stepperData.length > 0 && 
+                <Box sx={{ borderBottom: '1px solid #636B744D', padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
 
-            {stepperData && stepperData.length > 0 && (
-              <Box sx={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                <Button
-                  onClick={stepperPrevNavigation}
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    minWidth: "16px",
-                  }}
-                >
-                  {" "}
-                  <ArrowBackIosIcon
-                    sx={{
-                      height: "16px",
-                      width: "16px",
-                      color: "rgba(0, 0, 0, 0.56)",
-                      cursor: "pointer",
-                    }}
-                  />{" "}
-                </Button>
-                <Button
-                  onClick={stepperNextNavigation}
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    minWidth: "16px",
-                  }}
-                >
-                  {" "}
-                  <ArrowForwardIosIcon
-                    sx={{
-                      height: "16px",
-                      width: "16px",
-                      color: "rgba(0, 0, 0, 0.56)",
-                      cursor: "pointer",
-                    }}
-                  />{" "}
-                </Button>
-              </Box>
-            )}
-          </Box>
+                    <Box sx={{ display: 'inline-flex', gap: '12px', alignItems: 'center' }}>
+                        <Typography className='HighlightedSquare'>
+                            {activeStep + 1}
+                        </Typography>
+                        <Typography className='HighlightedText'>
+                            {stepperData && stepperData[activeStep] ? stepperData[activeStep] : 'General Detail'}
+                        </Typography>
+                    </Box>
+
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <Button onClick={stepperPrevNavigation} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '16px' }} > <ArrowBackIosIcon sx={{ height: '16px', width: '16px', color: 'rgba(0, 0, 0, 0.56)', cursor: 'pointer' }} /> </Button>
+                        <Button onClick={stepperNextNavigation} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '16px' }} > <ArrowForwardIosIcon sx={{ height: '16px', width: '16px', color: 'rgba(0, 0, 0, 0.56)', cursor: 'pointer' }} /> </Button>
+                    </Box>
+                </Box>
+            }
 
           <form onSubmit={handleSubmit} noValidate style={{ margin: 0 }}>
             <Grid container sx={{ alignItems: "start" }}>
@@ -1769,25 +2651,32 @@ const DynamicForm = ({
 
                 var readOnlyData = readOnlyTemplate
 
-                if(table_name === "cid_under_investigation" || table_name === "cid_pending_trial" || table_name === "cid_enquiries"){
-                    const roleTitle = JSON.parse(localStorage.getItem("role_title")?.toLowerCase().trim());
+                if(table_name === "cid_pending_trial" ){
+                  if(field.name === "field_ps_crime_number" || field.name === "field_cid_crime_no./enquiry_no" || field.name === "field_name_of_the_police_station" ){
+                      readOnlyData = true;
+                  }
 
-                    if (roleTitle === "admin organization") {
-                        if (!field.ao_field) {
-                            readOnlyData = true
-                            if (field.required) {
-                                field.required = false;
-                            }
-                        }
-                    } else {
-                        if (field.ao_field) {
-                            readOnlyData = true
-                            if (field.required) {
-                                field.required = false;
-                            }
-                        }
-                    }
                 }
+
+                // if(table_name === "cid_under_investigation" || table_name === "cid_pending_trial" || table_name === "cid_enquiries"){
+                //     const roleTitle = JSON.parse(localStorage.getItem("role_title")?.toLowerCase().trim());
+
+                //     if (roleTitle === "admin organization") {
+                //         if (!field.ao_field) {
+                //             readOnlyData = true
+                //             if (field.required) {
+                //                 field.required = false;
+                //             }
+                //         }
+                //     } else {
+                //         if (field.ao_field) {
+                //             readOnlyData = true
+                //             if (field.required) {
+                //                 field.required = false;
+                //             }
+                //         }
+                //     }
+                // }
 
                 if(field?.table?.toLowerCase() === "act" && table_name === "cid_under_investigation"){
                     return (
@@ -1948,6 +2837,7 @@ const DynamicForm = ({
                               handleAutocomplete(field, value.target.value)
                             }
                             readOnly={readOnlyData}
+                            viewLinkedTemplate={viewLinkedTemplate}
                           />
                         </div>
                       </Grid>
@@ -1966,6 +2856,8 @@ const DynamicForm = ({
                             handleAutocomplete(field, selectedCode)
                           }
                           readOnly={readOnlyData}
+                            viewLinkedTemplate={viewLinkedTemplate}
+
                         />
                       </Grid>
                     );
@@ -1983,6 +2875,7 @@ const DynamicForm = ({
                             handleAutocomplete(field, selectedCode)
                           }
                           readOnly={readOnlyData}
+                            viewLinkedTemplate={viewLinkedTemplate}
                         />
                       </Grid>
                     );
@@ -2073,6 +2966,39 @@ const DynamicForm = ({
                         />
                       </Grid>
                     );
+                    case "dropdown_with_add":
+                        return (
+                            <Grid item xs={12} md={field.col ? field.col : 12} p={2}>
+                                <DropdownWithAdd
+                                    key={field.id}
+                                    field={field}
+                                    formData={formData}
+                                    errors={errors}
+                                    onChange={(selectedCode) => handleAutocomplete(field, selectedCode)}
+                                    onAdd={(value)=>dropdownWithAddItem(field, value)}
+                                    onChangeDropdownInputValue={(value) => 
+                                        setDropdownInputValue({ ...dropdownInputValue, [field.name]: value })
+                                    }
+                                    onHistory={() => showHistory(field.name)}
+                                    dropdownInputValue={dropdownInputValue}
+                                    readOnly={readOnlyData}
+                                    viewLinkedTemplate={viewLinkedTemplate}
+                                />
+                            </Grid>
+                        );
+                    case "table":
+                        return (
+                            <Grid item xs={12} md={field.col ? field.col : 12} p={2}>
+                                <TableField
+                                    field={field}
+                                    formData={formData}
+                                    onChange={handleTableDataChange}
+                                    readOnly={readOnlyData}
+                                    errors={errors}
+                                />
+                            </Grid>
+                        );
+                        
                   case "divider":
                     return (
                       <div
@@ -2191,6 +3117,44 @@ const DynamicForm = ({
           </DialogContent>
         </Dialog>
       )}
+
+        {showLinkTemplate && (
+            <Dialog
+                open={showLinkTemplate}
+                onClose={() => closeLinkTemplateModal}
+                aria-labelledby="alert-dialog-title"
+                aria-describedby="alert-dialog-description"
+                maxWidth="xl"
+                fullWidth
+            >
+                <DialogContent sx={{ minWidth: "400px", padding: '0'}}>
+                    <DialogContentText id="alert-dialog-description">
+                        <FormControl fullWidth>
+                            <NormalViewForm
+                                table_row_id={linkTemplateRowId}
+                                template_id={linkTemplateId}
+                                template_name={linkTemplateName}
+                                table_name={linkTableName}
+                                readOnly={true}
+                                editData={false}
+                                initialData={linkTemplateInitialData}
+                                formConfig={linkTemplateFields}
+                                stepperData={linkTemplateStepperData}
+                                onUpdate={linkTemplateUpdateFunc}
+                                onError={linkTemplateErrorFunc}
+                                closeForm={closeLinkTemplateModal}
+                            />
+                        </FormControl>
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions sx={{ padding: "12px 24px" }}>
+                    <Button onClick={()=>closeLinkTemplateModal}>
+                        Cancel
+                    </Button>
+                </DialogActions>
+            </Dialog>
+        )}
+
     </>
   );
 };

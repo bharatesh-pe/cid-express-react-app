@@ -1,11 +1,12 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
-import { Box, Button, Chip, CircularProgress, IconButton, InputAdornment, Stack, Tooltip, Typography } from "@mui/material";
+import { Box, Button, Chip, CircularProgress, IconButton, InputAdornment, Stack, Tooltip, Typography, Tabs, Tab, Checkbox } from "@mui/material";
 import LokayuktaSidebar from "../components/lokayuktaSidebar";
 import { West } from "@mui/icons-material";
 import DeleteIcon from '@mui/icons-material/Delete';
 import TextFieldInput from "@mui/material/TextField";
+import { Menu, MenuItem } from '@mui/material';
 
 import NormalViewForm from "../components/dynamic-form/NormalViewForm";
 import TableView from "../components/table-view/TableView";
@@ -23,16 +24,39 @@ import ActionPlan from "./ActionPlan";
 import ProgressReport from "./ProgressReport";
 import ChargeSheetInvestigation from "./ChargeSheetInvestigation";
 import PropertyForm from "./PropertyForm";
+import Mahazars from './Mahazars';
 import CDR from "./CDR";
 import Report41A from "./Report41A";
 import PlanOfAction from "./PlanOfAction";
 import EqProgressReport from "./EqProgressReport";
 import ClosureReport from "./ClosureReport";
+import dayjs from "dayjs";
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import * as XLSX from 'xlsx';
+import ArrowRightIcon from '@mui/icons-material/ArrowRight';
+
+
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  Link,
+} from '@mui/material';
+import UploadFileIcon from '@mui/icons-material/UploadFile';
+import CloseIcon from '@mui/icons-material/Close';
+
+import AccusedSplitScreen from './accusedSplitScreen';
+import CaseDairy from "./CaseDairy";
+
+
 const LokayuktaView = () => {
 
     const navigate = useNavigate();
-    const { state } = useLocation();
-    const { contentArray, headerDetails, backNavigation, paginationCount, sysStatus, rowData, tableFields, stepperData, template_id, template_name, table_name, module, overAllReadonly, dashboardName, record_id, caseExtension} = state || {};
+    const location = useLocation();
+    const { state } = location;
+    const { contentArray, actionKey, headerDetails, backNavigation, paginationCount, sysStatus, rowData, tableFields, stepperData, template_id, template_name, table_name, module, overAllReadonly, dashboardName, record_id, caseExtension, activeSidebarObj } = state || {};
+
+    const fromCDR = location.state?.fromCDR || false;
 
     useEffect(()=>{
         if(!rowData){
@@ -40,7 +64,89 @@ const LokayuktaView = () => {
         }
     },[]);
 
+    
+    const [splitScreenArray, setSplitScreenArray] = useState([
+        'cid_ui_case_accused',
+        'cid_pt_case_witness',
+    ]);
+
+    const [currentTableName, setCurrentTableName] = useState(null);
+    const [secondTableName, setSecondTableName] = useState(null);
+
+    const [splitScreenNavTabs, setsplitScreenNavTabs] = useState([]);
+
+    const [splitScreenActiveTab, setSplitScreenActiveTab] = useState(null);
+
+    const [showSplitScreenForm, setShowSplitScreenForm] = useState(false);
+
+
+    const selectedSplitScreenRef = useRef([]);
+    const directAddNewRef = useRef(false);
+
+    const [selectedSplitScreenRows, setSelectedSplitScreenRows] = useState([]);
+
+    useEffect(() => {
+        selectedSplitScreenRef.current = selectedSplitScreenRows;
+    }, [selectedSplitScreenRows]);
+
+    const handleSplitScreenCheckbox = async (row, table) => {
+
+        try {
+            const viewTemplatePayload = { table_name: table, id: row.id };
+            const viewTemplateData = await api.post("/templateData/viewTemplateData", viewTemplatePayload);
+
+            const dataToAdd = viewTemplateData?.success && viewTemplateData?.data ? viewTemplateData.data : row;
+
+            setSelectedSplitScreenRows((prev) => {
+                const isSelected = prev.some(item => item.id === row.id);
+
+                if (isSelected) {
+                    return prev.filter(item => item.id !== row.id);
+                }
+
+                return [...prev, dataToAdd];
+            });
+
+        } catch (error) {
+            console.log(error,"error");
+        }
+
+    };
+
+    const closeSplitScreenForm = ()=>{
+        setSplitScreenActiveTab(null);
+        setShowSplitScreenForm(false);
+        setSelectedSplitScreenRows([]);
+        directAddNewRef.current = false;
+    }
+
+    const handleOpenSplitScreen = async (row, obj, table) => {
+
+        try {
+            const viewTemplatePayload = { table_name: table, id: row.id };
+            const viewTemplateData = await api.post("/templateData/viewTemplateData", viewTemplatePayload);
+
+            const dataToAdd = viewTemplateData?.success && viewTemplateData?.data ? viewTemplateData.data : row;
+
+            setSplitScreenActiveTab(obj);
+            setShowSplitScreenForm(true);
+            setSelectedSplitScreenRows([dataToAdd]);
+
+        } catch (error) {
+            console.log(error,"error");
+        }
+
+    };
+
+
+    const handleOverAllAccused = async (obj) => {
+        setSplitScreenActiveTab(obj);
+        setShowSplitScreenForm(true);
+        directAddNewRef.current = true
+    };
+
     const [loading, setLoading] = useState(false);
+    const [reloadForm, setReloadForm] = useState(false);
     
     const [activeSidebar, setActiveSidebar] = useState(null);
 
@@ -93,6 +199,7 @@ const LokayuktaView = () => {
     const [formFields, setFormFields] = useState([]);
     const [initalFormData, setInitialFormData] = useState({});
     const [formStepperData, setFormStepperData] = useState([]);
+    const [childTables, setChildTables] = useState([]);
 
     // for approval data
 
@@ -106,15 +213,122 @@ const LokayuktaView = () => {
     const [reOpenAddCase, setReOpenAddCase] = useState(false);
     const [approvalSource, setApprovalSource] = useState(null);
 
+    const editedForm = useRef(false);
+    const [enableSubmit, setEnableSubmit] = useState(false);
+    const [approvalDone, setApprovalDone] = useState(false);
+    const [approvalFieldArray, setApprovalFieldArray] = useState([]);
+    const [approvalStepperArray, setApprovalStepperArray] = useState([]);
+
+    var roleTitle = JSON.parse(localStorage.getItem("role_title")) || "";
+    var designationName = localStorage.getItem("designation_name") || "";
+    var gettingDesignationName = ""
+
+    if(roleTitle.toLowerCase() === "investigation officer"){
+        gettingDesignationName = "io";
+    }else{
+        var splitingValue = designationName.split(" ");
+        if(splitingValue?.[0]){
+            gettingDesignationName = splitingValue[0].toLowerCase();
+        }
+    }
+
+    const userDesignationName = useRef(gettingDesignationName);
+
     var userPermissions = JSON.parse(localStorage.getItem("user_permissions")) || [];
 
-    const backToForm = ()=>{
+    const [tableTabs, setTableTabs] = useState([]);
+    const [selectedTableTabs, setSelectedTableTabs] = useState("all");
 
-        if(backNavigation){
+    const NatureOfDisposalAlert = () => (
+        <Box
+            sx={{
+                mt: 3,
+                mb: 3,
+                mx: 'auto',
+                maxWidth: 500,
+                p: 3,
+                background: '#fffbe6',
+                border: '1px solid #ffe58f',
+                borderRadius: 2,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 2,
+            }}
+        >
+            <WarningAmberIcon sx={{ color: '#faad14', fontSize: 40, mr: 1 }} />
+            <Box>
+                <Typography variant="h6" sx={{ color: '#ad6800', fontWeight: 600 }}>
+                    Nature of Disposal Required
+                </Typography>
+                <Typography sx={{ color: '#ad6800', mt: 0.5 }}>
+                    Please take action by updating Nature of Disposal.
+                </Typography>
+            </Box>
+        </Box>
+    );
+
+    const [overAllReadonlyCases, setOverAllReadonlyCases] = useState(overAllReadonly ? overAllReadonly : false);
+    const [caseFieldArray, setCaseFieldArray] = useState([]);
+    const [caseFieldStepperArray, setCaseFieldStepperArray] = useState([]);
+
+    const [caseAction, setCaseAction] = useState([]);
+    const [showCaseActionBtn, setShowCaseActionBtn] = useState(false);
+
+    useEffect(()=>{
+
+        sidebarContentArray.map((element)=>{
+            if(element.name.toLowerCase() === "assign to io"){
+
+                setCaseFieldArray(initialRowData?.["field_approval_done_by"] ? [initialRowData?.["field_approval_done_by"]] : [] );
+
+                var fieldArray = initialRowData?.["field_approval_done_by"] ? [initialRowData?.["field_approval_done_by"]] : [];
+                var stepperArray = (element?.is_approval && element?.approval_steps) ? JSON.parse(element.approval_steps) : [];
+
+                const userRole = userDesignationName.current.toUpperCase();
+
+                const lastApprovedRole = fieldArray[0];
+                const lastApprovedIndex = stepperArray.indexOf(lastApprovedRole);
+
+                const approvedStages = stepperArray.slice(0, lastApprovedIndex + 1);
+
+                setShowCaseActionBtn(approvedStages.includes(userRole));
+
+                if(!initialRowData?.["field_approval_done_by"] || initialRowData?.["field_approval_done_by"] !== "DIG"){
+                    setCaseAction(element);
+                    setCaseFieldStepperArray((element?.is_approval && element?.approval_steps) ? JSON.parse(element.approval_steps) : []);
+
+                    if(approvedStages.includes(userRole)){
+                        setFormEditFlag(false);
+                        setFormReadFlag(true);
+                        setOverAllReadonlyCases(false);
+                    }else{
+                        setFormEditFlag(false);
+                        setFormReadFlag(true);
+                        setOverAllReadonlyCases(true);
+                    }
+                }else if(initialRowData?.["field_approval_done_by"] === "DIG"){
+                    setFormEditFlag(false);
+                    setFormReadFlag(true);
+                    setOverAllReadonlyCases(false);
+                }
+
+            }
+        });
+
+    },[initialRowData, tableViewFlag]);
+
+
+    const backToForm = ()=>{
+        if ( currentTableName === "cid_ui_case_old_cms_data" || secondTableName === "cid_pt_case_cnr") {
+            if (activeSidebar) {
+                sidebarActive(activeSidebar, true);
+            }
+        } else if(backNavigation){
 
             var stateObj = {
                 pageCount: paginationCount,
-                systemStatus: sysStatus
+                systemStatus: sysStatus,
+                actionKey: actionKey ? actionKey : null,
             }
 
             if(dashboardName){
@@ -127,15 +341,32 @@ const LokayuktaView = () => {
 
             navigate(backNavigation, {state : stateObj});
         }
+        setCurrentTableName(null); 
+        setSecondTableName(null);
     }
 
-    const sidebarActive = (item)=>{
+    const sidebarActive = async (item, ignored)=>{
 
         if(!item){
             return false;
         }
+
+        if(editedForm.current && !ignored){
+            const result = await Swal.fire({
+                title: 'Unsaved Changes',
+                text: 'You have unsaved changes. Are you sure you want to leave?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, Exit',
+                cancelButtonText: 'No',
+            });
+    
+            if (!result.isConfirmed) {
+                return;
+            }
+        }
                 
-        if (overAllReadonly) {
+        if (overAllReadonlyCases) {
 
             const registerItemArray = ["UI Case", "PT Case", "Enquiries"];
 
@@ -143,6 +374,8 @@ const LokayuktaView = () => {
                 return;
             }
 
+            console.log("overAllReadonlyCases", overAllReadonlyCases);
+            console.log("item.name", item.name);
             Swal.fire({
                 text: 'IO not found. You are not allowed to perform any actions.',
                 icon: 'warning',
@@ -166,8 +399,12 @@ const LokayuktaView = () => {
             return;
         }
 
+        closeSplitScreenForm();
+
+        setSelectedSplitScreenRows([]);
         setActiveSidebar(item);
         setFormOpen(false);
+        setSelectedTableTabs('all');
         if(item?.viewAction){
             setTableViewFlag(false);
             setTemplateId(template_id);
@@ -175,13 +412,16 @@ const LokayuktaView = () => {
             setTemplateName(template_name);
             setTableName(table_name);
             setStepperConfig(stepperData);
-            setInitialRowData(rowData);
             setTemplateFields(tableFields);
             setFormEditFlag(false);
             setFormReadFlag(true);
+            setCurrentTableName(null);
+            setSecondTableName(null);
             return;
         }else{
             setTableViewFlag(true);
+            setCurrentTableName(null);
+            setSecondTableName(null);
             getTableData(item);
         }
     }
@@ -243,7 +483,7 @@ const LokayuktaView = () => {
                     onClick={onClickHandler}
                     className={`tableValueTextView Roboto`}
                 >
-                    {value || "-"}
+                    {value || "----"}
                 </span>
             </Tooltip>
         );
@@ -284,6 +524,7 @@ const LokayuktaView = () => {
                     setFormFields(viewTemplateResponse.data.fields || []);
                     setFormStepperData(viewTemplateResponse.data.sections || []);
                     setInitialFormData(viewTemplateData.data || {});
+                    setChildTables(viewTemplateResponse?.["data"]?.["child_tables"] || []);
                     setReadonlyForm(true);
                     setEditOnlyForm(editData || false);
                     setFormOpen(true);
@@ -327,12 +568,190 @@ const LokayuktaView = () => {
         }
     };
 
+    const [anchorEl, setAnchorEl] = useState(null);
+    const open = Boolean(anchorEl);
+
+    const handleMenuClick = (event) => {
+        setAnchorEl(event.currentTarget);
+    };
+
+    const handleMenuClose = () => {
+        setAnchorEl(null);
+    };
+
+    const defaultMenuItems = [
+        { label: 'Notices', table_name: 'cid_ui_case_notices' },
+        { label: 'Court matters', table_name: 'cid_pt_case_petition' },
+        { label: 'Petition', table_name: 'cid_pt_case_petition' },
+        { label: 'Trial Monitoring', table_name: 'cid_pt_case_trial_monitoring' },
+        { label: 'Recording of Statement', table_name: 'cid_ui_case_recording_of_statements' },
+    ];
+
+    let parsedContentArray = [];
+
+    try {
+        if (typeof contentArray === "string") {
+            parsedContentArray = JSON.parse(contentArray);
+        } else if (Array.isArray(contentArray)) {
+            parsedContentArray = contentArray;
+        } else {
+            parsedContentArray = Object.values(contentArray || {});
+        }
+    } catch (e) {
+        console.error("Failed to parse contentArray:", e);
+    }
+
+    const contentTables = parsedContentArray
+        .filter(item => typeof item.table === 'string')
+        .map(item => item.table);
+
+    const menuItems = defaultMenuItems.filter(item => {
+        if (module === "ui_case" && item.label === "Petition") return false;
+        if (module === "pt_case" && item.label === "Court matters") return false;
+        return contentTables.includes(item.table_name);
+    });
+
+
+
+    useEffect(()=>{
+        if(tableTabs.length > 0){
+            getTableData(activeSidebar);
+        }
+    },[selectedTableTabs]);
+
+      const mappingCases = async () => {
+        let resolvedTableName = table_name;
+
+        if (module === "pt_case" || module === "pt_trail_case") {
+            resolvedTableName = "cid_under_investigation";
+        } else if (module === "ui_case") {
+            resolvedTableName = "cid_pending_trial";
+        }
+
+        if (!resolvedTableName) {
+            console.warn("Missing resolvedTableName in mappingCases");
+            toast.warning("Please Check Table Name");
+            return;
+        }
+
+
+        let ui_case_id = "";
+        let pt_case_id = "";
+        let selectedId = "";
+
+        if (module === "pt_case" || module === "pt_trail_case") {
+            ui_case_id = rowData?.ui_case_id;
+            selectedId = ui_case_id;
+        } else if (module === "ui_case") {
+            pt_case_id = rowData?.pt_case_id;
+            selectedId = pt_case_id;
+        }
+
+        if (!selectedId || selectedId === null) {
+            toast.warning("No data found.", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-warning",
+            });
+        return;
+    }
+
+        setSelectedRowId(selectedId);
+
+        const viewTemplatePayload = {
+            table_name: resolvedTableName,
+            id: selectedId
+        };
+
+        setLoading(true);
+        try {
+            const viewTemplateData = await api.post("/templateData/viewTemplateData", viewTemplatePayload);
+            setLoading(false);
+
+            if (viewTemplateData?.success) {
+                const viewTemplateResponse = await api.post("/templates/viewTemplate", { table_name: resolvedTableName });
+                if (viewTemplateResponse?.success) {
+                    setSelectedTemplateId(viewTemplateResponse.data.template_id);
+                    setSelectedTemplateName(viewTemplateResponse.data.template_name);
+                    setSelectedTableName(resolvedTableName);
+                    setFormFields(viewTemplateResponse.data.fields || []);
+                    setFormStepperData(viewTemplateResponse.data.sections || []);
+                    setInitialFormData(viewTemplateData.data || {});
+                    setReadonlyForm(true);
+                    setEditOnlyForm(false);
+                    setFormOpen(true);
+                    setRowValueId(rowData);
+                } else {
+                    toast.error(viewTemplateResponse.message || "Failed to fetch template.", { position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error", });
+                }
+            } else {
+                toast.error(viewTemplateData.message || "Failed to fetch data.", { position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error", });
+            }
+        } catch (error) {
+            setLoading(false);
+            toast.error(error?.response?.data?.message || "Please Try Again!", { position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error", });
+        }
+    };
+
+
+    const handleViewOldCase = () => {
+        const oldCaseTable = {
+            table: "cid_ui_case_old_cms_data",
+            is_approval: false,
+        };
+        setCurrentTableName("cid_ui_case_old_cms_data"); 
+        setSecondTableName("")
+        setTableViewFlag(true);
+
+        getTableData(oldCaseTable);
+    };
+
+    const handleViewCNR = () => {
+        const oldCaseTable = {
+            table: "cid_pt_case_cnr",
+            is_approval: false,
+        };
+        setCurrentTableName(""); 
+        setSecondTableName("cid_pt_case_cnr")
+        setTableViewFlag(true);
+
+        getTableData(oldCaseTable);
+    };
+
+
     const getTableData = async (options, reOpen, noFilters) => {
 
+        console.log("getTableData", options);
         var ui_case_id = rowData?.id;
         var pt_case_id = rowData?.pt_case_id;
 
-        if(module === "pt_case"){
+        if(module === "pt_case" || module === "pt_trail_case"){
             ui_case_id = rowData?.ui_case_id
             pt_case_id = rowData?.id
         }
@@ -349,7 +768,10 @@ const LokayuktaView = () => {
             to_date: noFilters ? null : tableFilterToDate,
             filter: noFilters ? {} : tableFilterOtherFilters,
             module: module ? module : 'ui_case',
-            tab: sysStatus
+            tab: sysStatus,
+            checkRandomColumn : "field_approval_done_by",
+            checkTabs : true,
+            tableTab : selectedTableTabs
         };
 
         setLoading(true);
@@ -360,10 +782,14 @@ const LokayuktaView = () => {
 
             if (getTemplateResponse && getTemplateResponse.success) {
 
+                editedForm.current = false;
+
                 const { meta, data } = getTemplateResponse;
             
                 const totalPages = meta?.meta?.totalPages;
                 const totalItems = meta?.meta?.totalItems;
+                const checkRandomColumnValues = meta?.meta?.checkRandomColumnValues;
+                const templateJson = meta?.meta?.template_json;
                 
                 if (totalPages !== null && totalPages !== undefined) {
                     setTableTotalPage(totalPages);
@@ -372,26 +798,130 @@ const LokayuktaView = () => {
                 if (totalItems !== null && totalItems !== undefined) {
                     setTableTotalRecord(totalItems);
                 }
+                if (checkRandomColumnValues) {
+                    setApprovalFieldArray(checkRandomColumnValues);
+                }else{
+                    setApprovalFieldArray([]);
+                }
+
+                var tabFields = [];
+
+                if(templateJson && templateJson.length > 0){
+                    var gettingTableTabs = templateJson.filter((element)=>{
+                        if(element?.tableTabs === true){
+                            return element
+                        }
+                    });
+
+                    if(gettingTableTabs?.[0] && gettingTableTabs?.[0]?.options?.length > 0){
+                        var defaultOptions = gettingTableTabs?.[0]?.options;
+                        defaultOptions = [
+                            {name : "All", code: "all"},
+                            ...defaultOptions
+                        ];
+
+                        if (gettingTableTabs?.[0]?.name) {
+
+                            if(selectedTableTabs !== "all"){
+                                
+                                tabFields = templateJson.filter((element)=>{        
+ 
+                                    const isSelected = selectedTableTabs === element.tabOption && !element?.hide_from_ux;
+                                    
+                                    if(isSelected){
+                                        return element
+                                    }
+    
+                                });
+                                
+                            }
+                        }
+
+                        setTableTabs(defaultOptions)
+                    }else{
+                        setTableTabs([]);
+                    }
+                }else{
+                    setTableTabs([]);
+                }
+
+                const generateReadableHeader = (key) =>key.replace(/^field_/, "").replace(/_/g, " ").toLowerCase().replace(/^\w|\s\w/g, (c) => c.toUpperCase());
+                
+                const renderCellFunc = (key, count) => (params) => tableCellRender(key, params, params.value, count, options.table || options);
+
+                if (tabFields.length > 0) {
+                    tabFields = tabFields.map((key, index) => {
+                        return {
+                            field: key?.name,
+                            headerName: generateReadableHeader(key?.name),
+                            width: generateReadableHeader(key?.name).length < 15 ? 100 : 200,
+                            resizable: true,
+                            renderHeader: (params) => tableHeaderRender(params, key?.name),
+                            renderCell: renderCellFunc(key?.name, index),
+                        };
+                    });
+
+                    tabFields = [
+                        {
+                            field: "sl_no",
+                            headerName: "S.No",
+                            resizable: false,
+                            width: splitScreenArray.includes((options?.table || '').toLowerCase()) ? 90 : 65,
+                            renderCell: (params) => (
+                                <Box
+                                    sx={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "end",
+                                        gap: "8px",
+                                    }}
+                                >
+                                    {splitScreenArray.includes((options?.table || '').toLowerCase()) && (
+                                        <Checkbox
+                                            size="small"
+                                            sx={{padding: 0}}
+                                            checked={selectedSplitScreenRows.some(item => item.id === params.row.id)}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleSplitScreenCheckbox(params.row, options?.table);
+                                            }}
+                                        />
+                                    )}
+                                    {params.value}
+                                    <DeleteIcon
+                                        sx={{ cursor: "pointer", color: "red", fontSize: 20 }}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleActionDelete(params.row, options);
+                                        }}
+                                    />
+                                </Box>
+                            ),
+                        },
+                        ...tabFields,
+                    ];
+                }
+
+                setApprovalStepperArray((options?.is_approval && options?.approval_steps) ? JSON.parse(options.approval_steps) : []);
 
                 if (data?.length > 0) {
 
                     const excludedKeys = [
                         "created_at", "updated_at", "id", "deleted_at", "attachments",
                         "Starred", "ReadStatus", "linked_profile_info",
-                        "ui_case_id", "pt_case_id", "sys_status", "task_unread_count" , "field_cid_crime_no./enquiry_no","field_io_name" , "field_io_name_id"
+                        "ui_case_id", "pt_case_id", "sys_status", "task_unread_count" , "field_cid_crime_no./enquiry_no","field_io_name" , "field_io_name_id", "field_approval_done_by"
                     ];
-
-                    const generateReadableHeader = (key) =>key.replace(/^field_/, "").replace(/_/g, " ").toLowerCase().replace(/^\w|\s\w/g, (c) => c.toUpperCase());
-
-                    const renderCellFunc = (key, count) => (params) => tableCellRender(key, params, params.value, count, options.table);
 
                     const updatedHeader = [
                         {
                             field: "sl_no",
                             headerName: "S.No",
                             resizable: false,
-                            width: 65,
+                            width: splitScreenArray.includes((options?.table || '').toLowerCase()) ? 90 : 65,
                             renderCell: (params) => {
+
+                                const checkedFlag = selectedSplitScreenRef.current.some(item => item.id === params.row.id);
+
                                 return (
                                     <Box
                                         sx={{
@@ -401,14 +931,28 @@ const LokayuktaView = () => {
                                             gap: "8px",
                                         }}
                                     >
+                                        {splitScreenArray.includes((options?.table || '').toLowerCase()) && (
+                                            <Checkbox
+                                                size="small"
+                                                sx={{padding: 0}}
+                                                checked={checkedFlag}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleSplitScreenCheckbox(params.row, options?.table);
+                                                }}
+                                            />
+                                        )}
                                         {params.value}
-                                        <DeleteIcon
-                                            sx={{ cursor: "pointer", color: "red", fontSize: 20 }}
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleActionDelete(params.row, options);
-                                            }}
-                                        />
+                                        {
+                                            !approvalDone &&
+                                            <DeleteIcon
+                                                sx={{ cursor: "pointer", color: "red", fontSize: 20 }}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleActionDelete(params.row, options);
+                                                }}
+                                            />
+                                        }
                                     </Box>
                                 );
                             }
@@ -417,13 +961,44 @@ const LokayuktaView = () => {
                         .map((key, index) => ({
                             field: key,
                             headerName: generateReadableHeader(key),
-                            width: generateReadableHeader(key).length < 15 ? 100 : 200,
+                            width: index === 0 ? 150 : generateReadableHeader(key).length < 15 ? 100 : 200,
                             resizable: true,
                             renderHeader: (params) => (
                                 tableHeaderRender(params, key)
                             ),
                             renderCell: renderCellFunc(key, index),
                         })),
+                         ...(splitScreenArray.includes((options?.table || "").toLowerCase()) ? [
+                            { label: "Notices", table_name: "cid_ui_case_notices", field: "notices", width: 100 },
+                            { label: "Petition", table_name: "cid_pt_case_petition", field: "petition", width: 110 },
+                            { label: "Court Matters", table_name: "cid_pt_case_petition", field: "court_matters", width: 160 },
+                            { label: "Trial Monitoring", table_name: "cid_pt_case_trial_monitoring", field: "trial_monitoring", width: 180 },
+                            { label: "Recording of Statement", table_name: "cid_ui_case_recording_of_statements", field: "recording_of_statement", width: 240 },
+                        ]
+                            .filter(item => {
+                                if (module === "ui_case" && item.label === "Petition") return false;
+                                if (module === "pt_case" && item.label === "Court Matters") return false;
+                                return contentTables.includes(item.table_name);
+                            })
+                            .map(item => ({
+                                field: item.field,
+                                headerName: item.label,
+                                width: item.width,
+                                resizable: false,
+                                renderCell: (params) => (
+                                    <Button
+                                        variant="contained"
+                                        size="small"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleOpenSplitScreen(params.row, { label: item.label, table_name: item.table_name }, options?.table);
+                                        }}
+                                        className="newStyleButton"
+                                    >
+                                        {item.label}
+                                    </Button>
+                                )
+                            })) : []),
                     ]
 
                     const formatDate = (value) => {
@@ -432,12 +1007,52 @@ const LokayuktaView = () => {
                         return new Date(parsed).toLocaleDateString("en-GB");
                     };
 
+                    const formatTime = (value) => {
+                        const parsed = Date.parse(value);
+                        if (isNaN(parsed)) return value;
+                        return new Date(parsed).toLocaleTimeString("en-GB", {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            second: '2-digit',
+                            hour12: true, 
+                        });
+                    };
+
+                    const formatDateTime = (value) => {
+                        const parsed = Date.parse(value);
+                        if (isNaN(parsed)) return value;
+                        return new Date(parsed).toLocaleString("en-GB", {
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            second: "2-digit",
+                            hour12: true,
+                        });
+                    };
+
                     const updatedTableData = getTemplateResponse.data.map((field, index) => {
 
                         const updatedField = {};
 
                         Object.keys(field).forEach((key) => {
-                            if (field[key] && key !== 'id' && isValidISODate(field[key])) {
+
+                            const templateField = templateJson && templateJson.find((element)=> element.name === key);
+
+                            if(templateField){
+
+                                if (templateField?.type === "date") {
+                                    updatedField[key] = formatDate(field[key]);
+                                } else if (templateField?.type === "time") {
+                                    updatedField[key] = formatTime(field[key]);
+                                } else if (templateField?.type === "datetime") {
+                                    updatedField[key] = formatDateTime(field[key]);
+                                } else {
+                                    updatedField[key] = field[key];
+                                }
+
+                            }else if (field[key] && key !== 'id' && isValidISODate(field[key])) {
                                 updatedField[key] = formatDate(field[key]);
                             } else {
                                 updatedField[key] = field[key];
@@ -451,7 +1066,7 @@ const LokayuktaView = () => {
                         };
                     });
 
-                    setTableColumnData(updatedHeader);
+                    setTableColumnData(tabFields.length > 0 ? tabFields : updatedHeader);
                     setTableRowData(updatedTableData);
                 }else{
                     setTableColumnData([]);
@@ -470,6 +1085,8 @@ const LokayuktaView = () => {
 
         } catch (error) {
             setLoading(false);
+            setTableColumnData([]);
+            setTableRowData([]);
             if (error && error.response && error.response["data"]) {
                 toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !", {
                     position: "top-right",
@@ -486,8 +1103,48 @@ const LokayuktaView = () => {
     }
 
     useEffect(()=>{
-        setActiveSidebar(sidebarContentArray?.[0] || null);
-    },[]);
+        if (userDesignationName?.current) {
+            const userRole = userDesignationName.current.toUpperCase();
+
+            setEnableSubmit(userRole === editableStage);
+
+            const lastApprovedRole = approvalFieldArray[0];
+            const lastApprovedIndex = approvalStepperArray.indexOf(lastApprovedRole);
+
+            const approvedStages = approvalStepperArray.slice(0, lastApprovedIndex + 1);
+
+            setApprovalDone(approvedStages.includes(userRole));
+        }
+    },[approvalFieldArray, approvalStepperArray]);
+
+    useEffect(() => {
+        if (fromCDR) {
+            const cdrSidebarItem = {
+                name: "CDR/IPDR",
+                table: "cid_ui_case_cdr_ipdr",
+            };
+            setSidebarContentArray([cdrSidebarItem]);
+            setActiveSidebar(cdrSidebarItem);
+        } else {
+
+            let activeSidebarArray = [];
+            
+            try {
+                if (activeSidebarObj) {
+                    activeSidebarArray = Array.isArray(activeSidebarObj) ? activeSidebarObj : [activeSidebarObj];
+                }
+            } catch (error) {
+                activeSidebarArray = [];
+            }
+
+            if(activeSidebarArray?.[0]){
+                sidebarActive(activeSidebarArray?.[0], true)
+            }else{
+                setActiveSidebar(sidebarContentArray?.[0] || null);
+            }
+
+        }
+    }, []);
 
     const handleClear = () => {
         tablePaginationCount.current = 1;
@@ -537,6 +1194,9 @@ const LokayuktaView = () => {
                 const deleteTemplateData = {
                     table_name: options?.table,
                     where: { id: data.id },
+                    transaction_id: `delete_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
+                    ui_case_id : rowData?.id,
+                    pt_case_id : rowData?.pt_case_id,
                 };
 
                 setLoading(true);
@@ -555,7 +1215,10 @@ const LokayuktaView = () => {
                             draggable: true,
                             progress: undefined,
                             className: "toast-success",
-                            onOpen: () => {getTableData(options)}
+                            onOpen: () => {
+                                  fetchCounts();
+                                  getTableData(options)
+                                }
                         });
                     } else {
                         const errorMessage = deleteTemplateDataResponse.message ? deleteTemplateDataResponse.message : "Failed to delete the template. Please try again.";
@@ -591,13 +1254,32 @@ const LokayuktaView = () => {
         });
     }
 
-    const closeAddForm = ()=>{
-        setFormOpen(false);
+    const closeAddForm = async ()=>{
+        if(editedForm.current){
+            const result = await Swal.fire({
+                title: 'Unsaved Changes',
+                text: 'You have unsaved changes. Are you sure you want to leave?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, Exit',
+                cancelButtonText: 'No',
+            });
+    
+            if (result.isConfirmed) {
+                setFormOpen(false);
+                editedForm.current = false;
+            }
+
+        }else{
+            setFormOpen(false);
+            editedForm.current = false;
+        }
+
     }
 
     const showAddNewForm = async ()=>{
         
-        if(!activeSidebar?.table){
+        if (!currentTableName && !secondTableName  && (!activeSidebar?.table || activeSidebar?.table === "")) {
             toast.error("Please Check The Template !", {
                 position: "top-right",
                 autoClose: 3000,
@@ -612,7 +1294,7 @@ const LokayuktaView = () => {
         }
 
         const viewTableData = {
-            table_name: activeSidebar.table,
+            table_name: currentTableName || secondTableName || activeSidebar?.table,
         };
 
         setLoading(true);
@@ -634,6 +1316,8 @@ const LokayuktaView = () => {
                 
                 setFormFields(viewTemplateResponse?.["data"]?.["fields"] || []);
                 setInitialFormData({});
+                setChildTables(viewTemplateResponse?.["data"]?.["child_tables"] || []);
+
                 if (viewTemplateResponse?.["data"]?.no_of_sections && viewTemplateResponse?.["data"]?.no_of_sections > 0) {
                     setFormStepperData(viewTemplateResponse?.["data"]?.sections ? viewTemplateResponse?.["data"]?.sections: []);
                 }else{
@@ -677,7 +1361,7 @@ const LokayuktaView = () => {
     
     const formSubmit = async (data, formOpen)=>{
 
-        if (!activeSidebar.table || activeSidebar.table === "") {
+        if ((!currentTableName || currentTableName === "") && (!secondTableName || secondTableName === "") && (!activeSidebar?.table || activeSidebar.table === "")) {
             toast.warning("Please Check The Template", {
                 position: "top-right",
                 autoClose: 3000,
@@ -705,14 +1389,14 @@ const LokayuktaView = () => {
             return;
         }
 
-        setApprovalSaveCaseData(data);
-        if (activeSidebar?.is_approval === true) {
-            setReOpenAddCase(formOpen);
-            setApprovalSource('submit');
-            showCaseApprovalPage(true);
-        } else {
+        // setApprovalSaveCaseData(data);
+        // if (activeSidebar?.is_approval === true) {
+        //     setReOpenAddCase(formOpen);
+        //     setApprovalSource('submit');
+        //     showCaseApprovalPage(true);
+        // } else {
             handleDirectCaseSave(data, formOpen);
-        }
+        // }
         return;
     }
 
@@ -1037,6 +1721,57 @@ const LokayuktaView = () => {
             }
         }
     }
+    const [tableCounts, setTableCounts] = useState({});
+
+const ui_case_id = module === "pt_case" ? rowData?.ui_case_id : rowData?.id;
+const pt_case_id = module === "pt_case" ? rowData?.id : rowData?.pt_case_id;
+
+let normalizedSidebarItems = [];
+try {
+    if (typeof contentArray === "string") {
+        normalizedSidebarItems = JSON.parse(contentArray);
+    } else if (Array.isArray(contentArray)) {
+        normalizedSidebarItems = contentArray;
+    } else {
+        normalizedSidebarItems = Object.values(contentArray || {});
+    }
+} catch (e) {
+    console.error("Failed to parse contentArray:", e);
+}
+
+const fetchCounts = async () => {
+    if (!ui_case_id && !pt_case_id) return;
+
+    const tableNamesForCount = normalizedSidebarItems.map(item => item.table).filter(Boolean);
+
+    try {
+        const serverURL = process.env.REACT_APP_SERVER_URL;
+        const response = await fetch(`${serverURL}/templateData/getTableCountsByCaseId`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ table_names: tableNamesForCount, ui_case_id, pt_case_id, module, sysStatus }),
+        });
+
+        const data = await response.json();
+        if (data.success) {
+            setTableCounts(data.data);
+        } else {
+            setTableCounts({});
+        }
+    } catch (err) {
+        console.error("Error fetching table counts:", err);
+        setTableCounts({});
+    }
+};
+
+
+    function sanitizeKey(str) {
+        return str
+            .toLowerCase()
+            .replace(/[^\w]/g, "_")
+            .replace(/_+/g, "_")
+            .replace(/^_+|_+$/g, "");
+        }
 
     const handleDirectCaseSave = async (data, formOpen) => {
         const formData = new FormData();
@@ -1060,8 +1795,57 @@ const LokayuktaView = () => {
             }
         });
 
-        normalData.sys_status = module ? module : "ui_case";
+        let childTableDataMap = {};
 
+        if (childTables && Array.isArray(childTables)) {
+            childTables.forEach(child => {
+                const childFieldName = child.field_name;
+
+                if (data[childFieldName]) {
+                    let parsed;
+                    try {
+                        parsed = typeof data[childFieldName] === "string"
+                            ? JSON.parse(data[childFieldName])
+                            : data[childFieldName];
+                    } catch (err) {
+                        parsed = [];
+                    }
+
+                    if (Array.isArray(parsed)) {
+                        const normalizedRows = parsed.map(row => {
+                            let newRow = {};
+                            for (const key in row) {
+                                const sanitizedKey = sanitizeKey(key);
+                                newRow[sanitizedKey] = row[key];
+                            }
+                            return newRow;
+                        });
+
+                        childTableDataMap[child.child_table_name] = normalizedRows;
+                    }
+                }
+            });
+        }
+
+        if (activeSidebar?.table === "cid_eq_case_enquiry_order_copy") {
+            normalData["sys_status"] = data?.field_status || "eq_case";
+            if (data?.field_status && rowData?.id) {
+            try {
+                await api.post("/templateData/updateDataWithApprovalToTemplates", {
+                table_name: "cid_enquiry",
+                data: JSON.stringify({ sys_status: data.field_status }),
+                id: String(rowData.id),
+                transaction_id: `pt_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
+                user_designation_id: localStorage.getItem("designation_id") || null,
+                others_data: JSON.stringify({}),
+                });
+            } catch (err) {
+                console.error("Failed to update cid_enquiry sys_status", err);
+            }
+            }
+        }else {
+            normalData.sys_status = module ? module : "ui_case";
+        }
         var ui_case_id = rowData?.id;
         var pt_case_id = rowData?.pt_case_id;
 
@@ -1074,8 +1858,9 @@ const LokayuktaView = () => {
         normalData["pt_case_id"] = pt_case_id;
 
         var othersData = {};
-        formData.append("table_name", activeSidebar.table);
+        formData.append("table_name", activeSidebar.table || currentTableName || secondTableName);
         formData.append("data", JSON.stringify(normalData));
+        formData.append("child_tables", JSON.stringify(childTableDataMap));
         formData.append("transaction_id", `pt_${Date.now()}_${Math.floor(Math.random() * 10000)}`);
         formData.append("user_designation_id", localStorage.getItem('designation_id') || null);
         formData.append("others_data", JSON.stringify(othersData));
@@ -1097,7 +1882,16 @@ const LokayuktaView = () => {
                     progress: undefined,
                     className: "toast-success",
                     onOpen: () => {
-                        getTableData(activeSidebar, formOpen);
+                        fetchCounts();
+                        if (activeSidebar?.table === "cid_eq_case_enquiry_order_copy") {
+                            navigate("/case/enquiry");
+                        }else if (currentTableName === 'cid_ui_case_old_cms_data') {
+                            getTableData({table:"cid_ui_case_old_cms_data"}, formOpen);
+                        }else if (secondTableName === 'cid_pt_case_cnr'){
+                            getTableData({table:"cid_pt_case_cnr"}, formOpen);
+                        }else {
+                            getTableData(activeSidebar, formOpen);
+                        }
                     }
                 });
             } else {
@@ -1129,7 +1923,11 @@ const LokayuktaView = () => {
     };
 
     const formUpdate = async (data, formOpen) => {
-    if (!activeSidebar.table || activeSidebar.table === "") {
+        console.log("formSubmit", data, formOpen);
+
+        console.log("selectedTableName", selectedTableName)
+
+    if ((!currentTableName || currentTableName === "") && (!secondTableName || secondTableName === "") && (!selectedTableName || selectedTableName === "") && (!activeSidebar?.table || activeSidebar.table === "")) {
         toast.warning("Please Check The Template", {
             position: "top-right",
             autoClose: 3000,
@@ -1347,7 +2145,57 @@ const LokayuktaView = () => {
             }
         });
 
-        normalData.sys_status = module ? module : "ui_case";
+        let childTableDataMap = {};
+
+        if (childTables && Array.isArray(childTables)) {
+            childTables.forEach(child => {
+                const childFieldName = child.field_name;
+
+                if (data[childFieldName]) {
+                    let parsed;
+                    try {
+                        parsed = typeof data[childFieldName] === "string"
+                            ? JSON.parse(data[childFieldName])
+                            : data[childFieldName];
+                    } catch (err) {
+                        parsed = [];
+                    }
+
+                    if (Array.isArray(parsed)) {
+                        const normalizedRows = parsed.map(row => {
+                            let newRow = {};
+                            for (const key in row) {
+                                const sanitizedKey = sanitizeKey(key);
+                                newRow[sanitizedKey] = row[key];
+                            }
+                            return newRow;
+                        });
+
+                        childTableDataMap[child.child_table_name] = normalizedRows;
+                    }
+                }
+            });
+        }
+
+        if (activeSidebar?.table === "cid_eq_case_enquiry_order_copy") {
+            normalData["sys_status"] = data?.field_status || "eq_case";
+            if (data?.field_status && rowData?.id) {
+            try {
+                await api.post("/templateData/updateDataWithApprovalToTemplates", {
+                table_name: "cid_enquiry",
+                data: JSON.stringify({ sys_status: data.field_status }),
+                id: String(rowData.id),
+                transaction_id: `pt_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
+                user_designation_id: localStorage.getItem("designation_id") || null,
+                others_data: JSON.stringify({}),
+                });
+            } catch (err) {
+                console.error("Failed to update cid_enquiry sys_status", err);
+            }
+            }
+        }else {
+            normalData.sys_status = module ? module : "ui_case";
+        }
         
         var ui_case_id = rowData?.id;
         var pt_case_id = rowData?.pt_case_id;
@@ -1360,10 +2208,17 @@ const LokayuktaView = () => {
         normalData["ui_case_id"] = ui_case_id;
         normalData["pt_case_id"] = pt_case_id;
 
-        formData.append("table_name", activeSidebar.table);
+        const tableName = activeSidebar.table || currentTableName || secondTableName || selectedTableName;
+ 
+        formData.append("table_name", tableName);
         formData.append("data", JSON.stringify(normalData));
-        formData.append("id",rowValueId.id);
+        if (tableName === selectedTableName) {
+            formData.append("id", selectedRowId);
+        } else {
+            formData.append("id", rowValueId?.id);
+        }
         formData.append("transaction_id", `pt_${Date.now()}_${Math.floor(Math.random() * 10000)}`);
+        formData.append("child_tables", JSON.stringify(childTableDataMap));
         formData.append("user_designation_id", localStorage.getItem("designation_id") || null);
         formData.append("others_data", JSON.stringify({}));
 
@@ -1382,15 +2237,45 @@ const LokayuktaView = () => {
                     draggable: true,
                     progress: undefined,
                     className: "toast-success",
-                    onOpen: () => { getTableData(activeSidebar, reOpenAddCase) }
+                    onOpen: () => {
+                        if (activeSidebar?.table === "cid_eq_case_enquiry_order_copy") {
+                            navigate("/case/enquiry");
+                        }else if (currentTableName === 'cid_ui_case_old_cms_data') {
+                            getTableData({table:"cid_ui_case_old_cms_data"});
+                        }else if (secondTableName === 'cid_pt_case_cnr') {
+                            getTableData({table:"cid_pt_case_cnr"});
+                        }else if(selectedTableName){
+                            getTableData(selectedTableName)
+                        }else {
+                            getTableData(activeSidebar);
+                        }
+                    }
                 });
                 setRowValueId({});
             } else {
-                toast.error(updateResponse.message || "Failed to update case.");
+                toast.error(updateResponse.message || "Failed to update case.", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
             }
         } catch (error) {
             setLoading(false);
-            toast.error(error?.response?.data?.message || "Please Try Again !");
+            toast.error(error?.response?.data?.message || "Please Try Again !", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
         }
     };
 
@@ -1550,10 +2435,18 @@ const LokayuktaView = () => {
                     position: "top-right",
                     autoClose: 3000,
                     className: "toast-success",
-                    onOpen: () => { getTableData(table_name, reOpenAddCase); }
                 });
                 setApprovalSource(null);
                 setRowValueId({});
+
+                setFormOpen(false);
+                setShowApprovalModal(false);
+                setShowCaseApprovalModal(false);
+
+                setInitialRowData((prev) => ({ ...prev, ...normalData }));
+                editedForm.current = false;
+                setReloadForm((prev)=>!prev);
+
             } else {
                 toast.error(response.message || "Failed to update case.", {
                     position: "top-right",
@@ -1564,11 +2457,50 @@ const LokayuktaView = () => {
         } catch (error) {
             setLoading(false);
             console.error("Error while updating:", error);
-            toast.error(error?.response?.data?.message || "Please Try Again !", {
-                position: "top-right",
-                autoClose: 3000,
-                className: "toast-error",
-            });
+                          if (
+                            error &&
+                            error.response &&
+                            error.response.status === 400 &&
+                            typeof error.response.data?.message === "string" &&
+                            error.response.data.message.includes("Duplicate constraint: The combination of")
+                          ) {
+                            // Extract the field names from the error message
+                            const match = error.response.data.message.match(/Duplicate constraint: The combination of (.+) is already present/);
+                            let fields = "";
+                            if (match && match[1]) {
+                              fields = match[1]
+                                .split(",")
+                                .map(f =>
+                                  f
+                                    .replace(/field_/g, "")
+                                    .replace(/\./g, "")
+                                    .replace(/_/g, " ")
+                                    .replace(/\s+/g, " ")
+                                    .replace(/\b\w/g, c => c.toUpperCase())
+                                    .trim()
+                                )
+                                .join(", ");
+                            }
+                            toast.error(
+                              `Duplicate entry: The combination of ${fields} is already present.`,
+                              {
+                                position: "top-right",
+                                autoClose: 3000,
+                                hideProgressBar: false,
+                                closeOnClick: true,
+                                pauseOnHover: true,
+                                draggable: true,
+                                progress: undefined,
+                                className: "toast-error",
+                              }
+                            );
+                          } else {
+                            toast.error(error?.response?.data?.message || "Please Try Again !", {
+                                position: "top-right",
+                                autoClose: 3000,
+                                className: "toast-error",
+                            });
+                          }
         }
     };
 
@@ -1576,16 +2508,486 @@ const LokayuktaView = () => {
         console.log(error,"error");
     }
 
+    const editedFormFlag = (edited)=>{
+        editedForm.current = edited;
+    }
+
+    
+    const [selectedApprovalSteps, setSelectedApprovalSteps] = useState({});
+
+    const handleApprovalStepperClick = (stepValue) => {
+        
+        var selected = Array.isArray(selectedApprovalSteps.approval_steps)
+            ? [...selectedApprovalSteps.approval_steps]
+            : [];
+
+        if (selected.includes(stepValue)) {
+            selected = selected.filter((v) => v !== stepValue);
+        } else {
+            selected.push(stepValue);
+        }
+
+        setSelectedApprovalSteps({
+            ...selectedApprovalSteps,
+            approval_steps: selected
+        });
+    };
+
+    const approvalOverAllSubmit = async ()=>{
+
+        const userId = localStorage.getItem("designation_id");
+
+        if(!activeSidebar?.table){
+            toast.error("Template Not Found !", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+        if(!activeSidebar?.approval_items){
+            toast.error("Approval Items Not Found !", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+        if(!userId){
+            toast.error("User Not Found !", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+
+        const designation = userDesignationName.current?.toUpperCase();
+
+        var ui_case_id = rowData?.id;
+        var pt_case_id = rowData?.pt_case_id;
+
+        if(module === "pt_case"){
+            ui_case_id = rowData?.ui_case_id
+            pt_case_id = rowData?.id
+        }
+
+        var payload = {
+            value : designation,
+            table_name : activeSidebar.table,
+            column:  "field_approval_done_by",
+            ui_case_id: ui_case_id,
+            pt_case_id: pt_case_id,
+            Referenceid: rowData?.id,
+            approvalDate: dayjs()?.$d,
+            approvalItem: activeSidebar?.approval_items,
+            approvedBy: userId,
+            remarks: activeSidebar?.name + " Investigation Submitted By " + designation,
+            module: template_name
+        }
+
+        setLoading(true);    
+        try {
+            const response = await api.post("/templateData/bulkUpdateColumn", payload);
+            setLoading(false);
+
+            if (response?.success) {
+                toast.success(response.message || "Success", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-success",
+                    onOpen: () => { getTableData(activeSidebar); }
+                });
+            } else {
+                setLoading(false);
+                toast.error(response.message || "Something Went Wrong !", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        } catch (error) {
+            setLoading(false);
+            toast.error(error?.response?.data?.message || "Please Try Again!", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+        }
+    }
+
+    const editableStage = (() => {
+        if(approvalStepperArray.length === 0) return ""
+        if (!approvalFieldArray || approvalFieldArray.length === 0) return approvalStepperArray?.[0];
+        
+        const lastStage = approvalFieldArray[approvalFieldArray.length - 1];
+        const nextIndex = approvalStepperArray.indexOf(lastStage) + 1;
+
+        return approvalStepperArray[nextIndex] || null;
+    })();
+
+    useEffect(()=>{
+        if (userDesignationName?.current) {
+            const userRole = userDesignationName.current.toUpperCase();
+
+            setEnableSubmit(userRole === editableStage);
+
+            const lastApprovedRole = approvalFieldArray[0];
+            const lastApprovedIndex = approvalStepperArray.indexOf(lastApprovedRole);
+
+            const approvedStages = approvalStepperArray.slice(0, lastApprovedIndex + 1);
+
+            setApprovalDone(approvedStages.includes(userRole));
+        }
+    },[approvalFieldArray, approvalStepperArray]);
+
+    const reloadApproval = (data)=>{
+        setInitialRowData(data);
+    }
+
+    // start --- bulk upload functions
+
+    const [bulkUploadShow, setBulkUploadShow] = useState(false);
+    const [selectedFile, setSelectedFile] = useState(null);
+
+    const showBulkUploadScreen = ()=>{
+        setBulkUploadShow(true);
+        setSelectedFile(null);
+    }
+    
+    const handleFileChange = (event) => {
+        setSelectedFile(event.target.files[0]);
+    };
+
+    const downloadExcelHeader = async ()=>{
+        
+        if(!activeSidebar?.table){
+            toast.error('Template Not Found !', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+
+        const downloadReport = {
+            "table_name": activeSidebar.table,
+        }
+        setLoading(true);
+
+        try {
+            const downloadReportResponse = await api.post("templateData/downloadExcelData", downloadReport);
+            setLoading(false);
+
+            if (downloadReportResponse) {
+                const blob = new Blob([downloadReportResponse], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `${activeSidebar.table}_Report.xlsx`;
+
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+
+                window.URL.revokeObjectURL(url);
+
+            } else {
+                const errorMessage = downloadReportResponse.message ? downloadReportResponse.message : "Failed to download report. Please try again.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response['data']) {
+                toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        }
+    }
+
+    const checkUploadedFile = async ()=> {
+
+        if(!activeSidebar?.table){
+            toast.error('Template Not Found !', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+
+        if (!selectedFile) {
+            toast.error('Please upload a file !', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-warning",
+            });
+            return;
+        }
+
+        const allowedExtensions = ['.xlsx', '.xls'];
+        const fileName = selectedFile.name.toLowerCase();
+        const isValid = allowedExtensions.some(ext => fileName.endsWith(ext));
+
+        if (!isValid) {
+            toast.error('Invalid file format. Please upload a valid Excel file (.xls or .xlsx) !', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-warning",
+            });
+            return;
+        }
+
+        const reader = new FileReader();
+
+        reader.onload = async (e) => {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            
+            const sheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[sheetName];
+
+            const headerColumn = XLSX.utils.sheet_to_json(worksheet, {
+                header: 1,
+            })[0];
+            
+            const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+            // remove unwanted column
+
+            var ui_case_id = rowData?.id;
+            var pt_case_id = rowData?.pt_case_id;
+
+            if(module === "pt_case"){
+                ui_case_id = rowData?.ui_case_id
+                pt_case_id = rowData?.id
+            }
+
+            const rowExcelData = jsonData.map(({ __rowNum__, ...rest }) => ({...rest, ui_case_id, pt_case_id }));
+
+            if(rowExcelData.length === 0 || headerColumn.length === 0){
+                toast.error('Excel Data and Header is Empty', {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-warning",
+                });
+                return
+            }
+
+            var payloadData = {
+                "table_name" : activeSidebar?.table,
+                "rowData" : rowExcelData,
+                "columnData": headerColumn
+            }
+
+            setLoading(true);
+            try {
+                const bulkInsertResponse = await api.post("templateData/bulkInsertData", payloadData);
+                setLoading(false);
+
+                if (bulkInsertResponse?.success) {
+                    toast.success(bulkInsertResponse.message || "Data Uploaded Successfully", {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-success",
+                        onOpen: () => { getTableData(activeSidebar) }
+                    });
+
+                    setBulkUploadShow(false);
+                    setSelectedFile(null);
+
+                } else {
+                    toast.error(bulkInsertResponse.message || "Failed to Upload Data.", {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-error",
+                    });
+                }
+
+            } catch (error) {
+                setLoading(false);
+                if (error && error.response && error.response['data']) {
+                    toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-error",
+                    });
+                }
+            }
+
+        };
+
+        reader.readAsArrayBuffer(selectedFile);
+    }
+
+    // end --- bulk upload functions
+
+
+    // start magazine view 
+
+    const showMagazineView = (overAllAction, element) => {
+
+        var actionArray = [];
+
+        if(overAllAction){     
+            actionArray = sidebarContentArray
+                .filter(item => (item.table && !item?.field))
+                .map(item => ({
+                    table: item.table,
+                    name: item.name
+                }));
+        }else{
+            actionArray = sidebarContentArray
+                .filter(item => item.table === (element?.table || activeSidebar.table))
+                .map(item => ({
+                    table: item.table,
+                    name: item.name
+                }));
+        }
+
+
+        if(actionArray.length === 0){
+            toast.error('No Template Action Was Found !', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+        
+
+        var overAllObj = {
+            ...state,
+            actionArray : actionArray,
+            ui_case_id: module === "pt_case" ? rowData?.ui_case_id :  rowData?.id,
+            pt_case_id: module === "pt_case" ? rowData?.id :  rowData?.pt_case_id,
+            headerDetails,
+            overAllAction,
+        }
+        
+        navigate("/magazine-view", { state: overAllObj });
+
+    };
+
     return (
         <Stack direction="row" justifyContent="space-between">
 
-            <LokayuktaSidebar contentArray={sidebarContentArray} onClick={sidebarActive} activeSidebar={activeSidebar} templateName={template_name} />
+            <LokayuktaSidebar showMagazineView={showMagazineView} ui_case_id={module === "pt_case" ? rowData?.ui_case_id :  rowData?.id}  pt_case_id={module === "pt_case" ? rowData?.id :  rowData?.pt_case_id} contentArray={sidebarContentArray} onClick={sidebarActive} activeSidebar={activeSidebar} templateName={template_name} fromCDR={fromCDR} 
+            tableCounts={tableCounts}
+            setTableCounts={setTableCounts} 
+            module={module} 
+            sysStatus={sysStatus}
+                />
 
             <Box flex={4} sx={{ overflow: "hidden" }}>
 
-                {activeSidebar?.table === "cid_ui_case_action_plan" ? (
+                {fromCDR ? (
+                    <CDR
+                        templateName={template_name}
+                        headerDetails={headerDetails}
+                        rowId={tableRowId}
+                        options={state?.options}
+                        selectedRowData={rowData}
+                        backNavigation={backToForm}
+                        showMagazineView={showMagazineView}
 
-                    
+                    />
+                ) : activeSidebar?.table === "cid_ui_case_action_plan" ? (
+
                     <ActionPlan
                         templateName={template_name}
                         headerDetails={headerDetails}
@@ -1593,20 +2995,61 @@ const LokayuktaView = () => {
                         options={activeSidebar}
                         selectedRowData={rowData}
                         backNavigation={backToForm}
+                        showMagazineView={showMagazineView}
+                        fetchCounts={fetchCounts}
+                        module={module}
                     />
-               ) : activeSidebar?.chargeSheet === true ? (
+                ) : activeSidebar?.caseDairy === true ? (
 
-                     <ChargeSheetInvestigation
-                        overAllTemplateActions={contentArray}
-                        template_name={template_name}
+                    <CaseDairy
+                        actionArray={sidebarContentArray}
+                        showMagazineView={showMagazineView}
                         headerDetails={headerDetails}
-                        tableRowId={tableRowId}
-                        options={activeSidebar}
+                        backToForm={backToForm}
                         rowData={rowData}
                         module={module}
-                        backNavigation={backToForm}
                     />
 
+                ) : activeSidebar?.chargeSheet === true ? (
+                    sysStatus === "disposal" ? (
+                        <ChargeSheetInvestigation
+                            overAllTemplateActions={contentArray}
+                            template_name={template_name}
+                            headerDetails={headerDetails}
+                            tableRowId={tableRowId}
+                            options={activeSidebar}
+                            rowData={rowData}
+                            module={module}
+                            backNavigation={backToForm}
+                            showMagazineView={showMagazineView}
+
+                        />
+                    ) : (
+                        <Box>
+                            <Box pb={1} px={1} sx={{display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', marginTop: '24px'}}>
+                                <Typography
+                                    sx={{ fontSize: "19px", fontWeight: "500", color: "#171A1C", display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
+                                    className="Roboto"
+                                    onClick={backToForm}
+                                >
+                                    <West />
+                                    <Typography sx={{ fontSize: '19px', fontWeight: '500', color: '#171A1C' }} className='Roboto'>
+                                        {activeSidebar.name ? activeSidebar.name : 'Form'}
+                                    </Typography>
+                                    {headerDetails && (
+                                        <Chip
+                                            label={headerDetails}
+                                            color="primary"
+                                            variant="outlined"
+                                            size="small"
+                                            sx={{ fontWeight: 500, marginTop: '2px' }}
+                                        />
+                                    )}
+                                </Typography>
+                            </Box>
+                            <NatureOfDisposalAlert />
+                        </Box>
+                    )
                 ) : activeSidebar?.table === "cid_ui_case_progress_report" ? (
 
 
@@ -1617,6 +3060,9 @@ const LokayuktaView = () => {
                         options={activeSidebar}
                         selectedRowData={rowData}
                         backNavigation={backToForm}
+                        showMagazineView={showMagazineView}
+                        fetchCounts={fetchCounts}
+                        module={module}
                     />
                 ) : activeSidebar?.table === "cid_ui_case_property_form" ? (
 
@@ -1628,7 +3074,24 @@ const LokayuktaView = () => {
                         options={activeSidebar}
                         selectedRowData={rowData}
                         backNavigation={backToForm}
+                        showMagazineView={showMagazineView}
+                        fetchCounts={fetchCounts}
+                        module={module}
                     />
+                ) : activeSidebar?.table === "cid_ui_case_mahazars" ? (
+
+
+                     <Mahazars
+                        templateName={template_name}
+                        headerDetails={headerDetails}
+                        rowId={tableRowId}
+                        options={activeSidebar}
+                        selectedRowData={rowData}
+                        backNavigation={backToForm}
+                        showMagazineView={showMagazineView}
+                        fetchCounts={fetchCounts}
+                        module={module}
+                    />    
                 ) : activeSidebar?.table === "cid_ui_case_cdr_ipdr" ? (
 
 
@@ -1639,6 +3102,9 @@ const LokayuktaView = () => {
                         options={activeSidebar}
                         selectedRowData={rowData}
                         backNavigation={backToForm}
+                        module={module}
+                        showMagazineView={showMagazineView}
+                        fetchCounts={fetchCounts}
                     />
                     
                 ) : activeSidebar?.table === "cid_ui_case_41a_notices" ? (
@@ -1652,6 +3118,8 @@ const LokayuktaView = () => {
                         selectedRowData={rowData}
                         backNavigation={backToForm}
                         case_table_name = {table_name}
+                        showMagazineView={showMagazineView}
+
                     />
                     
                 ) : activeSidebar?.table === "cid_eq_case_plan_of_action" ? (
@@ -1664,6 +3132,8 @@ const LokayuktaView = () => {
                         options={activeSidebar}
                         selectedRowData={rowData}
                         backNavigation={backToForm}
+                        showMagazineView={showMagazineView}
+
                     />
                 ) : activeSidebar?.table === "cid_eq_case_progress_report" ? (
 
@@ -1675,6 +3145,8 @@ const LokayuktaView = () => {
                         options={activeSidebar}
                         selectedRowData={rowData}
                         backNavigation={backToForm}
+                        showMagazineView={showMagazineView}
+
                     />
                 ) : activeSidebar?.table === "cid_eq_case_closure_report" ? (
 
@@ -1685,6 +3157,8 @@ const LokayuktaView = () => {
                         options={activeSidebar}
                         selectedRowData={rowData}
                         backNavigation={backToForm}
+                        showMagazineView={showMagazineView}
+
                     />
 
                     
@@ -1692,6 +3166,156 @@ const LokayuktaView = () => {
                     
                     !tableViewFlag ?
                     <Box sx={{overflow: 'auto', height: '100vh'}}>
+
+                        {
+                            caseAction && caseAction?.is_approval && caseAction?.approval_steps && JSON.parse(caseAction?.approval_steps)?.length > 0 && 
+                            <Box sx={{ display: "flex", justifyContent: 'center', alignItems: 'center', mt: 2 }}>
+                                {
+                                    JSON.parse(caseAction?.approval_steps).map((step, index) => {
+
+                                        var selected = false;
+
+                                        var roleTitle = JSON.parse(localStorage.getItem("role_title")) || "";
+                                        var designationName = localStorage.getItem("designation_name") || "";
+
+                                        var stepperValue = ""
+
+                                        if(roleTitle.toLowerCase() === "investigation officer"){
+                                            stepperValue = "io";
+                                        }else{
+                                            var splitingValue = designationName.split(" ");
+                                            if(splitingValue?.[0]){
+                                                stepperValue = splitingValue[0].toLowerCase();
+                                            }
+                                        }
+
+                                        var alreadySubmited = false;
+                                        var nextStageStep = false;
+
+                                        const lastApprovedRole = caseFieldArray[0];
+                                        const lastApprovedIndex = caseFieldStepperArray.indexOf(lastApprovedRole);
+
+                                        const approvedStages = caseFieldStepperArray.slice(0, lastApprovedIndex + 1);
+
+                                        const nextStepIndex = lastApprovedIndex + 1;
+                                        const nextStep = caseFieldStepperArray[nextStepIndex];
+
+                                        let statusLabel = "Not Approved";
+                                        let statusClass = "submissionNotAssigned";
+
+                                        if (approvedStages.includes(step)) {
+                                            alreadySubmited = true;
+                                            statusLabel = "Submitted";
+                                            statusClass = "submissionCompleted";
+                                        } else if (step === nextStep) {
+                                            nextStageStep = true;
+                                            statusLabel = "Pending";
+                                            statusClass = "submissionPending";
+                                        }
+
+                                        if(step.toLowerCase() === stepperValue){
+                                            selected = true;
+                                        }
+
+                                        var StepperTitle = ""
+                                        switch (step.toLowerCase()) {
+                                            case "io":
+                                                StepperTitle = "Investigation Officer";
+                                                break;
+                                            case "la":
+                                                StepperTitle = "Legal Advisor";
+                                                break;
+                                            case "sp":
+                                                StepperTitle = "Superintendent of Police";
+                                                break;
+                                            case "dig":
+                                                StepperTitle = "Deputy Inspector General";
+                                                break;
+                                            default:
+                                                StepperTitle = ""
+                                                break;
+                                        }
+
+                                        return (
+                                            <React.Fragment key={step}>
+                                                <Button
+                                                    variant="contained"
+                                                    onClick={() => handleApprovalStepperClick(step)}
+                                                    sx={() => {
+                                                        var backgroundColor = "#f0f0f0";
+                                                        var color = "#333";
+                                                        var boxShadow = "0 2px 6px rgba(0, 0, 0, 0.1)";
+
+                                                        if (alreadySubmited) {
+                                                            backgroundColor = "#27ae60";
+                                                            color = "#fff";
+                                                            boxShadow = "0 0 0 5px #d4f7e8";
+                                                        }else if(nextStageStep){
+                                                            backgroundColor = "#ffd230";
+                                                            color = "#333";
+                                                            boxShadow = "0 0 0 5px #fff4cc ";
+                                                        } else if (selected) {
+                                                            backgroundColor = "#1570ef";
+                                                            color = "#fff";
+                                                            boxShadow = "0 0 0 5px #dcebff ";
+                                                        }
+
+                                                        return {
+                                                            backgroundColor,
+                                                            color,
+                                                            minWidth: 52,
+                                                            height: 50,
+                                                            borderRadius: '50%',
+                                                            padding: '16px',
+                                                            fontWeight: 600,
+                                                            boxShadow,
+                                                            transition: "all 0.3s ease-in-out",
+                                                            transform: selected ? "translateY(-2px)" : "none",
+                                                            "&:hover": {
+                                                                backgroundColor: alreadySubmited
+                                                                    ? "#219150"
+                                                                    : nextStageStep
+                                                                    ? "#e6c200"
+                                                                    : selected
+                                                                    ? "#2980b9"
+                                                                    : "#dcdcdc",
+                                                                boxShadow: alreadySubmited
+                                                                    ? "0 8px 16px rgba(39, 174, 96, 0.5)"
+                                                                    : nextStageStep
+                                                                    ? "0 8px 16px rgba(255, 210, 48, 0.5)"
+                                                                    : selected
+                                                                    ? "0 8px 16px rgba(52, 152, 219, 0.5)"
+                                                                    : "0 4px 10px rgba(0, 0, 0, 0.15)",
+                                                                transform: "translateY(-3px)",
+                                                            }
+                                                        };
+                                                    }}
+                                                >
+                                                    {step}
+                                                </Button>
+                                                <Box px={2}>        
+                                                    <div className="investigationStepperTitle" style={{marginBottom: '4px'}}>
+                                                        {StepperTitle}
+                                                    </div>
+                                                    <div className={`stepperCompletedPercentage ${statusClass}`}>
+                                                        {statusLabel}
+                                                    </div>
+                                                </Box>
+
+                                                {index < JSON.parse(caseAction?.approval_steps)?.length - 1 && (
+                                                    <Box
+                                                        sx={{
+                                                            width: 60,
+                                                        }}
+                                                        className="divider"
+                                                    />
+                                                )}
+                                            </React.Fragment>
+                                        );
+                                    })}
+                            </Box>
+                        }
+
                         <NormalViewForm 
                             table_row_id={tableRowId}
                             template_id={templateId}
@@ -1699,6 +3323,13 @@ const LokayuktaView = () => {
                             table_name={tableName}
                             readOnly={formReadFlag}
                             editData={formEditFlag}
+                            editName={true}
+                            oldCase = {true}
+                            CNR = {true}
+                            onViewCNR ={handleViewCNR}
+                            onViewOldCase={handleViewOldCase} 
+                            mappingCase = {true}
+                            onMappingCase = {mappingCases}
                             initialData={initialRowData}
                             formConfig={templateFields}
                             stepperData={stepperConfig}
@@ -1707,12 +3338,169 @@ const LokayuktaView = () => {
                             onError={formError}
                             headerDetails={headerDetails || "Case Details"}
                             closeForm={backToForm}
-                            overAllReadonly={overAllReadonly}
+                            overAllReadonly={overAllReadonlyCases}
                             noPadding={true}
+                            editedForm={editedFormFlag}
+                            showAssignIo={true}
+                            investigationAction={caseAction}
+                            reloadApproval={reloadApproval}
+                            showCaseActionBtn={showCaseActionBtn}
+                            reloadForm={reloadForm}
+                            showMagazineView={showMagazineView}
                         />
                     </Box>
                     :
                     <Box p={2}>
+
+                        {
+                            activeSidebar?.is_approval && activeSidebar?.approval_steps && JSON.parse(activeSidebar?.approval_steps)?.length > 0 && 
+                            <Box sx={{ display: "flex", justifyContent: 'center', alignItems: 'center', mb: 2 }}>
+                                {
+                                    JSON.parse(activeSidebar?.approval_steps).map((step, index) => {
+
+                                        var selected = false;
+
+                                        var roleTitle = JSON.parse(localStorage.getItem("role_title")) || "";
+                                        var designationName = localStorage.getItem("designation_name") || "";
+
+                                        var stepperValue = ""
+
+                                        if(roleTitle.toLowerCase() === "investigation officer"){
+                                            stepperValue = "io";
+                                        }else{
+                                            var splitingValue = designationName.split(" ");
+                                            if(splitingValue?.[0]){
+                                                stepperValue = splitingValue[0].toLowerCase();
+                                            }
+                                        }
+
+                                        var alreadySubmited = false;
+                                        var nextStageStep = false;
+
+                                        const lastApprovedRole = approvalFieldArray[0];
+                                        const lastApprovedIndex = approvalStepperArray.indexOf(lastApprovedRole);
+
+                                        const approvedStages = approvalStepperArray.slice(0, lastApprovedIndex + 1);
+
+                                        const nextStepIndex = lastApprovedIndex + 1;
+                                        const nextStep = approvalStepperArray[nextStepIndex];
+
+                                        let statusLabel = "Not Approved";
+                                        let statusClass = "submissionNotAssigned";
+
+                                        if (approvedStages.includes(step)) {
+                                            alreadySubmited = true;
+                                            statusLabel = "Submitted";
+                                            statusClass = "submissionCompleted";
+                                        } else if (step === nextStep) {
+                                            nextStageStep = true;
+                                            statusLabel = "Pending";
+                                            statusClass = "submissionPending";
+                                        }
+
+                                        if(step.toLowerCase() === stepperValue){
+                                            selected = true;
+                                        }
+
+                                        var StepperTitle = ""
+                                        switch (step.toLowerCase()) {
+                                            case "io":
+                                                StepperTitle = "Investigation Officer";
+                                                break;
+                                            case "la":
+                                                StepperTitle = "Legal Advisor";
+                                                break;
+                                            case "sp":
+                                                StepperTitle = "Superintendent of Police";
+                                                break;
+                                            case "dig":
+                                                StepperTitle = "Deputy Inspector General";
+                                                break;
+                                            default:
+                                                StepperTitle = ""
+                                                break;
+                                        }
+
+                                        return (
+                                            <React.Fragment key={step}>
+                                                <Button
+                                                    variant="contained"
+                                                    onClick={() => handleApprovalStepperClick(step)}
+                                                    sx={() => {
+                                                        var backgroundColor = "#f0f0f0";
+                                                        var color = "#333";
+                                                        var boxShadow = "0 2px 6px rgba(0, 0, 0, 0.1)";
+
+                                                        if (alreadySubmited) {
+                                                            backgroundColor = "#27ae60";
+                                                            color = "#fff";
+                                                            boxShadow = "0 0 0 5px #d4f7e8";
+                                                        }else if(nextStageStep){
+                                                            backgroundColor = "#ffd230";
+                                                            color = "#333";
+                                                            boxShadow = "0 0 0 5px #fff4cc ";
+                                                        } else if (selected) {
+                                                            backgroundColor = "#1570ef";
+                                                            color = "#fff";
+                                                            boxShadow = "0 0 0 5px #dcebff ";
+                                                        }
+
+                                                        return {
+                                                            backgroundColor,
+                                                            color,
+                                                            minWidth: 52,
+                                                            height: 50,
+                                                            borderRadius: '50%',
+                                                            padding: '16px',
+                                                            fontWeight: 600,
+                                                            boxShadow,
+                                                            transition: "all 0.3s ease-in-out",
+                                                            transform: selected ? "translateY(-2px)" : "none",
+                                                            "&:hover": {
+                                                                backgroundColor: alreadySubmited
+                                                                    ? "#219150"
+                                                                    : nextStageStep
+                                                                    ? "#e6c200"
+                                                                    : selected
+                                                                    ? "#2980b9"
+                                                                    : "#dcdcdc",
+                                                                boxShadow: alreadySubmited
+                                                                    ? "0 8px 16px rgba(39, 174, 96, 0.5)"
+                                                                    : nextStageStep
+                                                                    ? "0 8px 16px rgba(255, 210, 48, 0.5)"
+                                                                    : selected
+                                                                    ? "0 8px 16px rgba(52, 152, 219, 0.5)"
+                                                                    : "0 4px 10px rgba(0, 0, 0, 0.15)",
+                                                                transform: "translateY(-3px)",
+                                                            }
+                                                        };
+                                                    }}
+                                                >
+                                                    {step}
+                                                </Button>
+                                                <Box px={2}>        
+                                                    <div className="investigationStepperTitle" style={{marginBottom: '4px'}}>
+                                                        {StepperTitle}
+                                                    </div>
+                                                    <div className={`stepperCompletedPercentage ${statusClass}`}>
+                                                        {statusLabel}
+                                                    </div>
+                                                </Box>
+                                                
+                                                {index < JSON.parse(activeSidebar?.approval_steps)?.length - 1 && (
+                                                    <Box
+                                                        sx={{
+                                                            width: 60,
+                                                        }}
+                                                        className="divider"
+                                                    />
+                                                )}
+                                            </React.Fragment>
+                                        );
+                                    })}
+                            </Box>
+                        }
+
                         <Box pb={1} px={1} sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'start'}}>
                             <Typography
                                 sx={{ fontSize: "19px", fontWeight: "500", color: "#171A1C", display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
@@ -1721,16 +3509,36 @@ const LokayuktaView = () => {
                             >
                                 <West />
                                 <Typography sx={{ fontSize: '19px', fontWeight: '500', color: '#171A1C' }} className='Roboto'>
-                                    {activeSidebar.name ? activeSidebar.name : 'Form'}
+                                    {currentTableName === "cid_ui_case_old_cms_data"
+                                        ? "Old CMS Data"
+                                        : secondTableName === "cid_pt_case_cnr"
+                                        ? "CNR"
+                                        : (activeSidebar?.name || "Form")}
+
                                 </Typography>
                                 {headerDetails && (
+                                    <Tooltip title={headerDetails}>
                                     <Chip
-                                        label={headerDetails}
+                                        label={
+                                        <Typography
+                                            sx={{
+                                            fontSize: '13px',
+                                            maxWidth: 230,
+                                            whiteSpace: 'nowrap',
+                                            overflow: 'hidden',
+                                            textOverflow: 'ellipsis',
+                                            fontWeight: 500, marginTop: '2px'
+                                            }}
+                                        >
+                                            {headerDetails}
+                                        </Typography>
+                                        }
                                         color="primary"
                                         variant="outlined"
                                         size="small"
                                         sx={{ fontWeight: 500, marginTop: '2px' }}
                                     />
+                                    </Tooltip>
                                 )}
                             </Typography>
 
@@ -1743,21 +3551,21 @@ const LokayuktaView = () => {
                                                     <SearchIcon sx={{ color: '#475467' }} />
                                                 </InputAdornment>
                                             ),
-                                            endAdornment: (
-                                                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                                                    <IconButton
-                                                        sx={{ padding: "0 5px", borderRadius: "0" }}
-                                                    >
-                                                        <FilterListIcon sx={{ color: "#475467" }} />
-                                                    </IconButton>
-                                                </Box>
-                                            )
+                                            // endAdornment: (
+                                            //     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                            //         <IconButton
+                                            //             sx={{ padding: "0 5px", borderRadius: "0" }}
+                                            //         >
+                                            //             <FilterListIcon sx={{ color: "#475467" }} />
+                                            //         </IconButton>
+                                            //     </Box>
+                                            // )
                                         }}
                                         onInput={(e) => setTableSearchValue(e.target.value)}
                                         value={tableSearchValue}
                                         id="tableSearch"
                                         size="small"
-                                        placeholder='Search..'
+                                        placeholder='Search'
                                         variant="outlined"
                                         className="profileSearchClass"
                                         onKeyDown={(e) => {
@@ -1767,7 +3575,7 @@ const LokayuktaView = () => {
                                             }
                                         }}
                                         sx={{
-                                            width: '400px', borderRadius: '6px', outline: 'none',
+                                            width: '300px', borderRadius: '6px', outline: 'none',
                                             '& .MuiInputBase-input::placeholder': {
                                                 color: '#475467',
                                                 opacity: '1',
@@ -1789,40 +3597,139 @@ const LokayuktaView = () => {
                                             }}
                                             mt={1}
                                         >
-                                            Clear Filter
+                                            Clear Search
                                         </Typography>
                                     )}
                                 </Box>
 
-                                <Button
-                                    onClick={showAddNewForm}
-                                    sx={{height: "38px",}}
-                                    className="blueButton"
-                                    startIcon={
-                                        <AddIcon
-                                            sx={{
-                                                border: "1.3px solid #FFFFFF",
-                                                borderRadius: "50%",
-                                                background:"#4D4AF3 !important",
-                                            }}
-                                        />
-                                    }
-                                    variant="contained"
+                                {
+                                    !approvalDone &&
+                                    <Button
+                                        onClick={showAddNewForm}
+                                        sx={{height: "38px",}}
+                                        className="blueButton"
+                                        startIcon={
+                                            <AddIcon
+                                                sx={{
+                                                    border: "1.3px solid #FFFFFF",
+                                                    borderRadius: "50%",
+                                                    background:"#4D4AF3 !important",
+                                                }}
+                                            />
+                                        }
+                                        variant="contained"
+                                    >
+                                        Add New
+                                    </Button>
+                                }
+
+                                {
+                                    activeSidebar?.is_approval && enableSubmit &&
+                                    <Button
+                                        variant="contained"
+                                        color="success"
+                                        size="large"
+                                        sx={{ height: "38px" }}
+                                        onClick={approvalOverAllSubmit}
+                                    >
+                                        Submit
+                                    </Button>
+                                }
+
+                                {
+                                    userPermissions && userPermissions?.[0]?.['bulk_upload'] === true && !approvalDone &&
+                                    <Button
+                                        variant="contained"
+                                        color="success"
+                                        size="large"
+                                        sx={{ height: "38px" }}
+                                        onClick={showBulkUploadScreen}
+                                    >
+                                        Bulk Upload
+                                    </Button>
+                                }
+
+                                {/* <Button
+                                    onClick={()=>showMagazineView(false)}
+                                    sx={{height: "38px", textTransform: 'none'}}
+                                    className="whiteBorderedBtn"
                                 >
-                                    Add New
-                                </Button>
+                                    Case Docket
+                                </Button> */}
+
                             </Box>
                         </Box>
 
-                        <Box sx={{overflow: 'auto'}}>
-                            <TableView
-                                rows={tableRowData}
-                                columns={tableColumnData}
-                                totalPage={tableTotalPage}
-                                totalRecord={tableTotalRecord}
-                                paginationCount={tablePaginationCount.current}
-                                handlePagination={handlePagination}
-                            />
+
+                            <Box sx={{ display: "flex", alignItems: 'start', justifyContent: 'space-between'}} pl={1}>
+
+                                <Box>
+                                    {
+                                        tableTabs.length > 0 &&                     
+                                        <Box className="parentFilterTabs">
+                                            {
+                                                tableTabs.map((element)=>{
+                                                    return (
+                                                        <Box
+                                                            onClick={() => {
+                                                                setSelectedTableTabs(element.code);
+                                                            }}
+                                                            className={`filterTabs ${selectedTableTabs === element.code ? "Active" : ""}`}
+                                                            sx={{padding: '0px 20px'}}
+                                                        >
+                                                            {element?.name}
+                                                        </Box>
+                                                    )
+                                                })
+                                            }
+                                        </Box>
+                                    }
+                                </Box>
+
+                                {selectedSplitScreenRows.length > 0 && (
+                                <>
+                                <Button
+                                    variant="contained"
+                                    className="blueButton"
+                                    size="large"
+                                    sx={{ height: '38px' }}
+                                    onClick={handleMenuClick}
+                                >
+                                    Create
+                                </Button>
+                                <Menu
+                                    anchorEl={anchorEl}
+                                    open={open}
+                                    onClose={handleMenuClose}
+                                >
+                                    {menuItems.map((item) => (
+                                    <MenuItem
+                                        key={item.table_name}
+                                        onClick={() => {
+                                        handleOverAllAccused(item);
+                                        handleMenuClose();
+                                        }}
+                                    >
+                                        {`${item.label}`}
+                                    </MenuItem>
+                                    ))}
+                                </Menu>
+                                </>
+                                )}                            
+                                </Box>
+
+                        <Box sx={{ display: 'flex', gap: 2, width: '100%' }}>
+                            
+                            <Box sx={{ width: '100%' }}>
+                                <TableView
+                                    rows={tableRowData}
+                                    columns={tableColumnData}
+                                    totalPage={tableTotalPage}
+                                    totalRecord={tableTotalRecord}
+                                    paginationCount={tablePaginationCount.current}
+                                    handlePagination={handlePagination}
+                                />
+                            </Box>
                         </Box>
                     </Box>
                 )}
@@ -1848,6 +3755,8 @@ const LokayuktaView = () => {
                         noPadding={true}
                         selectedRow={rowData}
                         investigationViewTable={table_name}
+                        editedForm={editedFormFlag}
+                        disableEditButton={approvalDone}
                     />
                 </Box>
             )}
@@ -1890,6 +3799,121 @@ const LokayuktaView = () => {
                     <CircularProgress size={100} />
                 </div>
             )}
+
+            {
+                bulkUploadShow &&
+
+                <Dialog
+                    open={bulkUploadShow}
+                    onClose={()=>setBulkUploadShow(false)}
+                    maxWidth="sm"
+                    fullWidth
+                    PaperProps={{ sx: { borderRadius: 3, p: 2} }}
+                >
+                    <Box display="flex" justifyContent="space-between" alignItems="center">
+                        <DialogTitle sx={{ fontWeight: 600, fontSize: '20px', pb: 0  }}>Excel Upload</DialogTitle>
+                        <IconButton onClick={()=>setBulkUploadShow(false)}>
+                            <CloseIcon />
+                        </IconButton>
+                    </Box>
+
+                    <DialogContent>
+                        <Typography sx={{ mb: 2 }}>
+                            Please check Excel header before upload. If needed,&nbsp;
+                            <Link onClick={downloadExcelHeader} underline="hover" rel="noopener" sx={{cursor: 'pointer'}}>
+                                Download here
+                            </Link>
+                        </Typography>
+
+                        <Box
+                            component="label"
+                            htmlFor="excel-upload"
+                            sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                flexDirection: 'column',
+                                border: '2px dashed #1976d2',
+                                p: 5,
+                                textAlign: 'center',
+                                borderRadius: 2,
+                                backgroundColor: '#f9f9f9',
+                                cursor: 'pointer',
+                                '&:hover': { backgroundColor: '#f0f0f0' },
+                            }}
+                        >
+                            <UploadFileIcon sx={{ fontSize: 48, color: '#1976d2', mb: 1 }} />
+                            <Typography variant="h6" fontWeight={500} sx={{ color: '#555' }}>
+                                Click here to upload Excel file
+                            </Typography>
+                            <input
+                                type="file"
+                                accept=".xlsx, .xls"
+                                id="excel-upload"
+                                hidden
+                                onChange={handleFileChange}
+                            />
+                        </Box>
+                            {selectedFile && (
+                                <Box
+                                    sx={{
+                                        display: 'flex',
+                                        flexDirection: 'row',
+                                        alignItems: 'center',
+                                        justifyContent: 'space-between', 
+                                        gap: 2,
+                                        mt: 2,
+                                        flexWrap: 'wrap',
+                                    }}
+                                >
+                                    <Typography
+                                        sx={{
+                                            color: 'blue',
+                                            wordBreak: 'break-word',
+                                            fontSize: '14px',
+                                            flexGrow: 1,
+                                            minWidth: 0,
+                                            maxWidth: '70%',
+                                        }}
+                                    >
+                                        Selected File: {selectedFile.name}
+                                    </Typography>
+
+                                    <Button
+                                        variant="contained"
+                                        color="success"
+                                        sx={{
+                                            textTransform: 'uppercase',
+                                            fontWeight: 500,
+                                            whiteSpace: 'nowrap',
+                                        }}
+                                        startIcon={<UploadFileIcon />}
+                                        onClick={checkUploadedFile}
+                                    >
+                                        Upload
+                                    </Button>
+                                </Box>
+                            )}
+                    </DialogContent>
+                </Dialog>
+            }
+
+            {
+                showSplitScreenForm &&
+                <AccusedSplitScreen
+                    tableObj={splitScreenActiveTab}
+                    selectedAccused={selectedSplitScreenRows}
+                    closeForm={closeSplitScreenForm}
+                    ui_case_id={module === "pt_case" ? rowData?.ui_case_id :  rowData?.id}
+                    pt_case_id={module === "pt_case" ? rowData?.id :  rowData?.pt_case_id}
+                    module={module}
+                    mainTableName={activeSidebar?.table}
+                    directAddNew={directAddNewRef.current}
+                    fetchCounts={fetchCounts}
+                />
+            }
+
+
         </Stack>
     );
 };

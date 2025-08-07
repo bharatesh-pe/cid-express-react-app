@@ -5,7 +5,7 @@ import DynamicForm from '../components/dynamic-form/DynamicForm';
 import TableView from "../components/table-view/TableView";
 import api from '../services/api';
 
-import { Box, Button, FormControl, InputAdornment, Typography, IconButton, Checkbox, Grid } from "@mui/material";
+import { Box, Button, FormControl, InputAdornment, Typography, IconButton, Checkbox, Grid, Link } from "@mui/material";
 import TextFieldInput from '@mui/material/TextField';
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
@@ -26,6 +26,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import pdfIcon from '../Images/pdfIcon.svg'
 import docIcon from '../Images/docIcon.svg'
+import docxIcon from "../Images/docxIcon.svg";
 import xlsIcon from '../Images/xlsIcon.svg'
 import pptIcon from '../Images/pptIcon.svg'
 import jpgIcon from '../Images/jpgIcon.svg'
@@ -41,6 +42,8 @@ import trash from "../Images/tableTrash.svg";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs from "dayjs";
+import * as XLSX from 'xlsx';
+import UploadFileIcon from '@mui/icons-material/UploadFile';
 
 const ProfileData = () => {
     const location = useLocation();
@@ -90,7 +93,9 @@ const ProfileData = () => {
 
     const [totalPage, setTotalPage] = useState(0);
     const [totalRecord, setTotalRecord] = useState(0);
-    
+        
+    const [saveNew, setSaveNew] = useState(null);
+     
     const handlePagination = (page) => {
         setPaginationCount(page)
     }
@@ -466,6 +471,8 @@ const ProfileData = () => {
 
                     const totalPages = meta?.totalPages || 1;
                     const totalItems = meta?.totalItems || 0;
+
+                    const templateConfig = meta?.template || []
                     
                     if (totalPages !== null && totalPages !== undefined) {
                         setTotalPage(totalPages);
@@ -518,7 +525,7 @@ const ProfileData = () => {
                                 .filter((key) => !excludedKeys.includes(key))
                                 .map((key) => {
                                     var updatedKeyName = key.replace(/^field_/, "").replace(/_/g, " ").toLowerCase().replace(/^\w|\s\w/g, (c) => c.toUpperCase())
-                                    const fieldData = (selectedFields || []).find((data) => data.name === key);
+                                    const fieldData = (templateConfig || []).find((data) => data.name === key);
                                     console.log("updatedKeyName",updatedKeyName)
                                     return {
                                         field: key,
@@ -647,28 +654,52 @@ const ProfileData = () => {
 
                     var updatedTableData = getTemplateResponse.data['data'].map((field, index) => {
 
-                        const formatDate = (fieldValue) => {
-                            if (!fieldValue || typeof fieldValue !== "string") return fieldValue;
+                        const formatTime = (value) => {
+                            const parsed = Date.parse(value);
+                            if (isNaN(parsed)) return value;
+                            
+                            const date = new Date(parsed);
+                            let hours = date.getHours();
+                            const ampm = hours >= 12 ? 'PM' : 'AM';
+                            
+                            hours = hours % 12;
+                            hours = hours ? hours : 12;
+                            
+                            return `${hours.toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}:${date.getSeconds().toString().padStart(2, '0')} ${ampm}`;
+                        };
 
-                            var dateValue = new Date(fieldValue);
+                        const formatDateTime = (value) => {
+                            const parsed = Date.parse(value);
+                            if (isNaN(parsed)) return value;
+                            
+                            const date = new Date(parsed);
+                            let hours = date.getHours();
+                            const ampm = hours >= 12 ? 'PM' : 'AM';
+                            
+                            hours = hours % 12;
+                            hours = hours ? hours : 12;
+                            
+                            return `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()} ${hours.toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}:${date.getSeconds().toString().padStart(2, '0')} ${ampm}`;
+                        };
 
-                            if (isNaN(dateValue.getTime()) || !fieldValue.includes("-") && !fieldValue.includes("/")) {
-                                return fieldValue;
-                            }
-
-                            if (isNaN(dateValue.getTime())) return fieldValue;
-
-                            var dayValue = String(dateValue.getDate()).padStart(2, "0");
-                            var monthValue = String(dateValue.getMonth() + 1).padStart(2, "0");
-                            var yearValue = dateValue.getFullYear();
-                            return `${dayValue}/${monthValue}/${yearValue}`;
+                        const formatDate = (value) => {
+                            const parsed = Date.parse(value);
+                            if (isNaN(parsed)) return value;
+                            return new Date(parsed).toLocaleDateString("en-GB");
                         };
 
                         const updatedField = {};
 
                         Object.keys(field).forEach((key) => {
-                            if (field[key] && key !== 'id' && !isNaN(new Date(field[key]).getTime())) {
+
+                            const fieldData = (templateConfig || []).find((data) => data.name === key);
+
+                            if (fieldData?.type === "time"){
+                                updatedField[key] = formatTime(field[key]);
+                            }else if(fieldData?.type === "date"){
                                 updatedField[key] = formatDate(field[key]);
+                            }else if (fieldData?.type === "datetime") {
+                                updatedField[key] = formatDateTime(field[key]);
                             } else {
                                 updatedField[key] = field[key];
                             }
@@ -882,6 +913,7 @@ const ProfileData = () => {
                 return <img src={xlsIcon} />;
             case 'csv':
             case 'docx':
+                return <img src={docxIcon} />;
             case 'doc':
                 return <img src={docIcon} />;
             case 'ppt':
@@ -1028,6 +1060,7 @@ const ProfileData = () => {
                 if (viewTemplateResponse.data.no_of_sections && viewTemplateResponse.data.no_of_sections > 0) {
                     setstepperData(viewTemplateResponse.data.sections ? viewTemplateResponse.data.sections : []);
                 }
+                setSaveNew(null);
 
             } else {
                 const errorMessage = viewTemplateResponse.message ? viewTemplateResponse.message : "Failed to delete the template. Please try again.";
@@ -1061,7 +1094,7 @@ const ProfileData = () => {
 
     }
 
-    const onSaveTemplateData = async (data) => {
+    const onSaveTemplateData = async (data, saveNew) => {
 
         if (!table_name || table_name === '') {
             toast.warning('Please Check The Template', {
@@ -1134,6 +1167,7 @@ const ProfileData = () => {
         });
 
         formData.append("data", JSON.stringify(normalData));
+        setSaveNew(saveNew);
         setLoading(true);
 
         try {
@@ -1152,7 +1186,15 @@ const ProfileData = () => {
                     draggable: true,
                     progress: undefined,
                     className: "toast-success",
-                    onOpen: () => loadTableData(paginationCount)
+                    onOpen: () => {
+                        if (saveNew === true) {
+                        getTemplate(table_name);
+                        setFormOpen(false);
+                        return;
+                        }else {
+                        loadTableData(paginationCount);
+                        }
+                    },
                 });
 
             } else {
@@ -1258,6 +1300,7 @@ const ProfileData = () => {
 
         formData.append("data", JSON.stringify(normalData));
         formData.append("id", data.id);
+        formData.append("transaction_id" , "UPDATETEMPLATE" + Date.now() + "_" + Math.floor(Math.random() * 1000000),)
         setLoading(true);
 
         try {
@@ -1482,6 +1525,233 @@ const ProfileData = () => {
     };
 
 
+    // start --- bulk upload functions
+    
+    const [bulkUploadShow, setBulkUploadShow] = useState(false);
+    const [selectedFile, setSelectedFile] = useState(null);
+
+    const showBulkUploadScreen = ()=>{
+        setBulkUploadShow(true);
+        setSelectedFile(null);
+    }
+    
+    const handleFileChange = (event) => {
+        setSelectedFile(event.target.files[0]);
+    };
+
+    const downloadExcelHeader = async ()=>{
+        
+        if(!table_name){
+            toast.error('Template Not Found !', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+
+        const downloadReport = {
+            "table_name": table_name,
+        }
+        setLoading(true);
+
+        try {
+            const downloadReportResponse = await api.post("templateData/downloadExcelData", downloadReport);
+            setLoading(false);
+
+            if (downloadReportResponse) {
+                const blob = new Blob([downloadReportResponse], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `${table_name}_Report.xlsx`;
+
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+
+                window.URL.revokeObjectURL(url);
+
+            } else {
+                const errorMessage = downloadReportResponse.message ? downloadReportResponse.message : "Failed to download report. Please try again.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response['data']) {
+                toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        }
+    }
+
+    const checkUploadedFile = async ()=> {
+
+        if(!table_name){
+            toast.error('Template Not Found !', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+
+        if (!selectedFile) {
+            toast.error('Please upload a file !', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-warning",
+            });
+            return;
+        }
+
+        const allowedExtensions = ['.xlsx', '.xls'];
+        const fileName = selectedFile.name.toLowerCase();
+        const isValid = allowedExtensions.some(ext => fileName.endsWith(ext));
+
+        if (!isValid) {
+            toast.error('Invalid file format. Please upload a valid Excel file (.xls or .xlsx) !', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-warning",
+            });
+            return;
+        }
+
+        const reader = new FileReader();
+
+        reader.onload = async (e) => {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            
+            const sheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[sheetName];
+
+            const headerColumn = XLSX.utils.sheet_to_json(worksheet, {
+                header: 1,
+            })[0];
+            
+            const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+            const rowExcelData = jsonData.map(({ __rowNum__, ...rest }) => ({...rest }));
+
+            if(rowExcelData.length === 0 || headerColumn.length === 0){
+                toast.error('Excel Data and Header is Empty', {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-warning",
+                });
+                return
+            }
+
+            var payloadData = {
+                "table_name" : table_name,
+                "rowData" : rowExcelData,
+                "columnData": headerColumn,
+            }
+
+            setLoading(true);
+            try {
+                const bulkInsertResponse = await api.post("templateData/bulkInsertData", payloadData);
+                setLoading(false);
+
+                if (bulkInsertResponse?.success) {
+                    toast.success(bulkInsertResponse.message || "Data Uploaded Successfully", {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-success",
+                        onOpen: () => { loadTableData(paginationCount) }
+                    });
+
+                    setBulkUploadShow(false);
+                    setSelectedFile(null);
+
+                } else {
+                    toast.error(bulkInsertResponse.message || "Failed to Upload Data.", {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-error",
+                    });
+                }
+
+            } catch (error) {
+                setLoading(false);
+                if (error && error.response && error.response['data']) {
+                    toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-error",
+                    });
+                }
+            }
+
+        };
+
+        reader.readAsArrayBuffer(selectedFile);
+    }
+
+    // end --- bulk upload functions
+
+
     return (
         <Box p={2} inert={loading ? true : false}>
             <>
@@ -1524,7 +1794,7 @@ const ProfileData = () => {
                                 value={searchValue}
                                 id="tableSearch"
                                 size="small"
-                                placeholder="Search anything"
+                                placeholder="Search"
                                 variant="outlined"
                                 className="profileSearchClass"
                                 onKeyDown={(e) => {
@@ -1589,6 +1859,16 @@ const ProfileData = () => {
                             </Button>
                         }
 
+                        <Button
+                            variant="contained"
+                            color="success"
+                            size="large"
+                            sx={{ height: "38px" }}
+                            onClick={showBulkUploadScreen}
+                        >
+                            Bulk Upload
+                        </Button>
+
                     </Box>
                 </Box>
                 {
@@ -1628,7 +1908,7 @@ const ProfileData = () => {
                         value={searchValue}
                         id="tableSearch"
                         size="small"
-                        placeholder='Search anything'
+                        placeholder='Search'
                         variant="outlined"
                         onKeyDown={(e) => {
                             if (e.key === "Enter") {
@@ -1677,7 +1957,11 @@ const ProfileData = () => {
                     initialData={initialData}
                     onSubmit={onSaveTemplateData}
                     onError={onSaveTemplateError}
-                    closeForm={setFormOpen} />
+                    closeForm={() => {
+                        setFormOpen(false);
+                        setSaveNew(null);
+                    }}
+                />
             }
 
             {showOptionModal &&
@@ -1875,6 +2159,81 @@ const ProfileData = () => {
                     </DialogActions>
                 </Dialog>
             )}
+
+            {
+                bulkUploadShow &&
+
+                <Dialog
+                    open={bulkUploadShow}
+                    onClose={()=>setBulkUploadShow(false)}
+                    maxWidth="sm"
+                    fullWidth
+                    PaperProps={{ sx: { borderRadius: 3, p: 2} }}
+                >
+                    <Box display="flex" justifyContent="space-between" alignItems="center">
+                        <DialogTitle sx={{ fontWeight: 600, fontSize: '20px', pb: 0  }}>Excel Upload</DialogTitle>
+                        <IconButton onClick={()=>setBulkUploadShow(false)}>
+                            <CloseIcon />
+                        </IconButton>
+                    </Box>
+
+                    <DialogContent>
+                        <Typography sx={{ mb: 2 }}>
+                            Please check Excel header before upload. If needed,
+                            <Link onClick={downloadExcelHeader} underline="hover" sx={{cursor: 'pointer'}}>
+                                Download here
+                            </Link>
+                        </Typography>
+
+                        <Box
+                            component="label"
+                            htmlFor="excel-upload"
+                            sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                flexDirection: 'column',
+                                border: '2px dashed #1976d2',
+                                p: 5,
+                                textAlign: 'center',
+                                borderRadius: 2,
+                                backgroundColor: '#f9f9f9',
+                                cursor: 'pointer',
+                                '&:hover': { backgroundColor: '#f0f0f0' },
+                            }}
+                        >
+                            <UploadFileIcon sx={{ fontSize: 48, color: '#1976d2', mb: 1 }} />
+                            <Typography variant="h6" fontWeight={500} sx={{ color: '#555' }}>
+                                Click here to upload Excel file
+                            </Typography>
+                            <input
+                                type="file"
+                                accept=".xlsx, .xls"
+                                id="excel-upload"
+                                hidden
+                                onChange={handleFileChange}
+                            />
+                        </Box>
+
+                        {selectedFile && (
+                            <Box sx={{display: 'flex', justifyContent: 'space-between'}}>
+                                <Typography mt={2} color="blue">
+                                    Selected File: {selectedFile.name}
+                                </Typography>
+                                <Button
+                                    variant="contained"
+                                    color="success"
+                                    sx={{ mt: 2, textTransform: 'uppercase', fontWeight: 500 }}
+                                    startIcon={<UploadFileIcon />}
+                                    onClick={checkUploadedFile}
+                                >
+                                    Upload
+                                </Button>
+                            </Box>
+                        )}
+                    </DialogContent>
+                </Dialog>
+            }
 
         </Box>
     )

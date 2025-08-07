@@ -29,12 +29,13 @@ import OrdersRepository from './pages/repository'
 import UIView from './pages/cases/UIView';
 import Trail from './pages/trail';
 import Annexure from './pages/annexure'
-import { AuthProvider, useAuth } from "./context/AuthContext";
+import { AuthProvider } from "./context/AuthContext";
 import SessionTimeoutHandler from './components/SessionTimeoutHandler';
 
 import UnderInvestigation from './pages/UnderInvestigation';
 import PendingTrail from './pages/PendingTrail';
 import Enquiries from './pages/Enquiries';
+import CDRPage from './pages/cdrpage';
 import CrimeIntelligence from './pages/CrimeIntelligence';
 import MastersView from './pages/Masters';
 import Designation from './pages/designation';
@@ -50,9 +51,14 @@ import TemplateMastersView from './pages/templateMasters';
 import LokayuktaView from './pages/lokayuktaView';
 import ActionPlan from './pages/ActionPlan';
 import IframePage from './pages/IframePage';
+import SettingsPage from './pages/SettingsPage';
+import ImportOldData from './pages/ImportOldData';
+import MagazineView from './pages/MagazineView';
+import VideoListViewer from './pages/HelpVideos'
 
 import { ToastContainer } from 'react-toastify';
 function App() {
+//   const { isAdmin } = useAuth ? useAuth() : { isAdmin: false };
   return (
     <Router>
       <AuthProvider>
@@ -241,6 +247,16 @@ function App() {
                 }
             />
             <Route
+                path="/videos"
+                element={
+                    <ProtectedRoute>
+                        <Layout>
+                            <VideoListViewer />
+                        </Layout>
+                    </ProtectedRoute>
+                }
+            />
+            <Route
                 path="/case/pt_case"
                 element={
                     <ProtectedRoute>
@@ -256,6 +272,16 @@ function App() {
                     <ProtectedRoute>
                         <Layout>
                             <Enquiries />
+                        </Layout>
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/case/cdr_case"
+                element={
+                    <ProtectedRoute>
+                        <Layout>
+                            <CDRPage />
                         </Layout>
                     </ProtectedRoute>
                 }
@@ -473,6 +499,16 @@ function App() {
             />
 
             <Route
+                path="/magazine-view"
+                element={
+                    <ProtectedRoute>
+                        <MagazineView />
+                    </ProtectedRoute>
+                }
+            />
+
+
+            <Route
                 path="/action_plan"
                 element={
                 <ProtectedRoute>
@@ -493,6 +529,29 @@ function App() {
                     </ProtectedRoute>
                 }
             />
+
+            <Route
+                path="/settings"
+                element={
+                    <ProtectedRoute>
+                        <Layout>
+                            <SettingsPage />
+                        </Layout>
+                    </ProtectedRoute>
+                }
+            />
+            {/* {isAdmin && ( */}
+              <Route
+                path="/importDB"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <ImportOldData />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+            {/* )} */}
 
           <Route path="*" element={<Login />} />
         </Routes>

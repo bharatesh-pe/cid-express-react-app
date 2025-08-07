@@ -4,6 +4,8 @@ const db = require("../models");
 const { Department, Designation, Division, UsersDepartment,  UsersDivision,  UserDesignation,  Users, Role , KGID ,UsersHierarchyNew,DesignationDivision , Act , Section} = require("../models");
 const { Op, where } = require("sequelize");
 const e = require("express");
+const Sequelize = require("sequelize");
+const sequelize = db.sequelize;
 
 const getAllDepartments = async (req, res) => {
 
@@ -51,7 +53,7 @@ const getAllDepartments = async (req, res) => {
         return adminSendResponse(res, 200, true, "Departments retrieved successfully", [ ...departments ]);
     } catch (error) {
         console.error("Error fetching departments:", error.message);
-        return adminSendResponse(res, 500, false, "Internal Server Error");
+        return adminSendResponse(res, 500, false, "Failed to fetch departments: " + error.message || "Internal Server Error");
     }
 };
 
@@ -69,9 +71,10 @@ const getAllDesignations = async (req, res) => {
         return adminSendResponse(res, 200, true, "Designations retrieved successfully", [ ...designations ]);
     } catch (error) {
         console.error("Error fetching designations:", error.message);
-        return adminSendResponse(res, 500, false, "Internal Server Error");
+        return adminSendResponse(res, 500, false, "Failed to fetch designations: " + error.message || "Internal Server Error");
     }
 };
+
 const getAllDivisions = async (req, res) => {
     try {
 
@@ -111,7 +114,7 @@ const getAllDivisions = async (req, res) => {
         return adminSendResponse(res, 200, true, "Divisions retrieved successfully", [ ...divisions ]);
     } catch (error) {
         console.error("Error fetching divisions:", error.message);
-        return adminSendResponse(res, 500, false, "Internal Server Error");
+        return adminSendResponse(res, 500, false, "Failed to fetch divisions: " + error.message || "Internal Server Error");
     }
 };
 
@@ -131,9 +134,9 @@ const getIoUsers = async (req, res) => {
                 attributes: ["supervisor_designation_id"],
                 raw: true,
             });
-            if (!userHierarchy || userHierarchy.length === 0) {
-                return res.status(200).json({ data: [] });
-            }
+            // if (!userHierarchy || userHierarchy.length === 0) {
+            //     return res.status(200).json({ data: [] });
+            // }
             const superivisors = [];
 
              if(division_id)
@@ -148,14 +151,18 @@ const getIoUsers = async (req, res) => {
                     raw: true,
                 });
 
-                if (!designation_division || designation_division.length === 0) {
-                    return res.status(200).json({ data: [] });
-                }
+                // if (!designation_division || designation_division.length === 0) {
+                //     return res.status(200).json({ data: [] });
+                // }
                 const designationIds = designation_division.map(user => user.designation_id);
                 superivisors.push(...designationIds);
+                // Add the current designation_id to the supervisors list
+                superivisors.push(designation_id);
             }
             else{
                  superivisors = userHierarchy.map(user => user.supervisor_designation_id);
+                // Add the current designation_id to the supervisors list
+                superivisors.push(designation_id);
             }
             // Fetch users based on the userIds from the userDesignations table
             userDesignations = await UserDesignation.findAll({
@@ -223,9 +230,9 @@ const getIoUsers = async (req, res) => {
                 attributes: ["officer_designation_id"],
                 raw: true,
             });
-            if (!userHierarchy || userHierarchy.length === 0) {
-                return res.status(200).json({ data: [] });
-            }
+            // if (!userHierarchy || userHierarchy.length === 0) {
+            //     return res.status(200).json({ data: [] });
+            // }
 
             var officersIds = [];
 
@@ -241,14 +248,18 @@ const getIoUsers = async (req, res) => {
                     raw: true,
                 });
 
-                if (!designation_division || designation_division.length === 0) {
-                    return res.status(200).json({ data: [] });
-                }
+                // if (!designation_division || designation_division.length === 0) {
+                //     return res.status(200).json({ data: [] });
+                // }
                 const designationIds = designation_division.map(user => user.designation_id);
                 officersIds.push(...designationIds);
+                // Add the current designation_id to the officers list
+                officersIds.push(designation_id);
             }
             else{
                  officersIds = userHierarchy.map(user => user.officer_designation_id);
+                // Add the current designation_id to the officers list
+                officersIds.push(designation_id);
             }
 
             userDesignations = await UserDesignation.findAll({
@@ -263,6 +274,7 @@ const getIoUsers = async (req, res) => {
             if (!userDesignations || userDesignations.length === 0) {
                 return res.status(200).json({ data: [] });
             }
+
             userIds = userDesignations.map(user => user.user_id && user.user_id !== null ? user.user_id : null).filter(userId => userId !== null);
             
             usersData = await Users.findAll({
@@ -553,6 +565,45 @@ const getIoUsersBasedOnDivision = async (req, res) => {
     }
 };
 
+const getSpecificIoUsersCases = async (req, res) => {
+    const { user_id, template_module } = req.body;
+
+    try {
+        if (!user_id || user_id === "") {
+            return res.status(400).json({ message: "User ID is required." });
+        }
+
+        if (!template_module || template_module === "") {
+            return res.status(400).json({ message: "Template module is required." });
+        }
+
+        let table_name = "";
+        if (template_module === "ui_case") {
+            table_name = "cid_under_investigation";
+        } else if (template_module === "pt_case") {
+            table_name = "cid_pending_trial";
+        } else if (template_module === "eq_case") {
+            table_name = "cid_enquiry";
+        } else {
+            return res.status(400).json({ message: "Invalid template module." });
+        }
+
+        const cases = await sequelize.query(
+            `SELECT * FROM ${table_name} WHERE field_io_name = :userID`,
+            {
+                replacements: { userID: user_id },
+                type: sequelize.QueryTypes.SELECT
+            }
+        );
+
+        return res.status(200).json({ cases });
+
+    } catch (error) {
+        console.error("Error fetching cases based on user ID:", error);
+        return res.status(500).json({ message: "Failed to fetch cases", error: error.message });
+    }
+};
+
 const getAllKGID = async (req, res) => {
     try {
 
@@ -584,7 +635,7 @@ const getAllKGID = async (req, res) => {
         return adminSendResponse(res, 200, true, "KGID retrieved successfully", [ ...kgids ]);
     } catch (error) {
         console.error("Error fetching kgids:", error.message);
-        return adminSendResponse(res, 500, false, "Internal Server Error");
+        return adminSendResponse(res, 500, false, "Failed to fetch kgids: " + error.message || "Internal Server Error");
     }
 };
 
@@ -662,7 +713,7 @@ const getAllAct = async (req, res) => {
         return adminSendResponse(res, 200, true, "Act retrieved successfully", [ ...acts ]);
     } catch (error) {
         console.error("Error fetching act's:", error.message);
-        return adminSendResponse(res, 500, false, "Internal Server Error");
+        return adminSendResponse(res, 500, false, "Failed to fetch act's: " + error.message || "Internal Server Error");
     }
 };
 
@@ -684,9 +735,19 @@ const getAllSectionAndActBasedSection = async (req, res) => {
             // if(!act_id || act_id === ""){
             //     return res.status(400).json({ message: "Act ID is required." });
             // }
-           
+
+            let actIdArray = [];
+
+            if (typeof act_id === 'string') {
+                actIdArray = act_id.split(',').map(Number);
+            } else if (Array.isArray(act_id)) {
+                actIdArray = act_id.map(Number);
+            } else if (typeof act_id === 'number') {
+                actIdArray = [act_id];
+            }
+
             sections = await Section.findAll({
-                where: { act_id : act_id },
+                where: { act_id : actIdArray },
                 order: [["section_name", "ASC"]]
             });
             
@@ -699,7 +760,7 @@ const getAllSectionAndActBasedSection = async (req, res) => {
         return adminSendResponse(res, 200, true, "Section's retrieved successfully", [ ...sections ]);
     } catch (error) {
         console.error("Error fetching section's:", error.message);
-        return adminSendResponse(res, 500, false, "Internal Server Error");
+        return adminSendResponse(res, 500, false, "Failed to fetch sections: " + error.message || "Internal Server Error");
     }
 };
 
@@ -721,9 +782,164 @@ const getDivisionBasedOnDepartment = async (req, res) => {
         return adminSendResponse(res, 200, true, "Divisions retrieved successfully", [ ...divisions ]);
     } catch (error) {
         console.error("Error fetching divisions:", error.message);
-        return adminSendResponse(res, 500, false, "Internal Server Error");
+        return adminSendResponse(res, 500, false, "Failed to fetch divisions: " + error.message || "Internal Server Error");
     }
 };
+
+const getPoliceStationsBasedOnDistrict = async (req, res) => {
+    try {
+        const { district_id } = req.body;
+
+        if (!district_id || district_id === "") {
+            return res.status(400).json({ message: "District ID is required." });
+        }
+
+        const districtResult = await sequelize.query(
+            `SELECT field_district FROM cid_district WHERE id = :district_id`,
+            {
+                replacements: { district_id },
+                type: sequelize.QueryTypes.SELECT,
+            }
+        );
+
+        if (!districtResult || districtResult.length === 0) {
+            return adminSendResponse(res, 404, false, "District not found with the given ID", []);
+        }
+
+
+        const policeStations = await sequelize.query(
+            `SELECT id, field_name_of_the_police_station 
+             FROM cid_police_station 
+             WHERE field_district = :district_id 
+             ORDER BY field_name_of_the_police_station ASC`,
+            {
+                replacements: { district_id: String(district_id) },
+                type: sequelize.QueryTypes.SELECT,
+            }
+        );
+        
+        if (!policeStations || policeStations.length === 0) {
+            return adminSendResponse(res, 200, true, "Please create police stations and try again.", []);
+        }
+
+        return adminSendResponse(res, 200, true, "Police stations retrieved successfully", policeStations);
+    } catch (error) {
+        console.error("Error fetching police stations:", error.message);
+        return adminSendResponse(res, 500, false, "Failed to fetch police stations: " + error.message || "Internal Server Error");
+    }
+};
+
+function normalizeValues(values, expectedType) {
+  return values
+    .filter((v) => v !== null && v !== undefined)
+    .map((v) => {
+      if (expectedType === 'string') return String(v);
+      if (expectedType === 'int') return Number(v);
+      return v;
+    });
+}
+
+
+const fetchUICaseDetails = async (req, res) => {
+    try {
+        const {
+            allowedDepartmentIds = [],
+            allowedDivisionIds = [],
+            allowedUserIds = [],
+        } = req.body;
+
+        if (allowedDepartmentIds.length === 0 && allowedDivisionIds.length === 0) {
+            return res.status(200).json({
+                success: true,
+                message: "No department or division provided, so no data returned.",
+                data: [],
+            });
+        }
+        const normalizedDepartmentIds = normalizeValues(allowedDepartmentIds, 'number');
+        const normalizedDivisionIds = normalizeValues(allowedDivisionIds, 'number');
+
+        const departmentNames = normalizedDepartmentIds.length
+            ? (await sequelize.query(
+                `SELECT department_id FROM department WHERE department_id IN (:ids)`,
+                {
+                    replacements: { ids: normalizedDepartmentIds },
+                    type: Sequelize.QueryTypes.SELECT,
+                }
+            )).map(d => String(d.department_id)) 
+            : [];
+
+            const divisionNames = normalizedDivisionIds.length
+                ? (await sequelize.query(
+                    `SELECT division_id FROM division WHERE division_id IN (:ids)`,
+                    {
+                        replacements: { ids: normalizedDivisionIds },
+                        type: Sequelize.QueryTypes.SELECT,
+                    }
+                )).map(d => String(d.division_id))
+                : [];
+
+                let conditions = [];
+                let replacements = {};
+
+                if (departmentNames.length) {
+                    conditions.push(`field_dept_unit IN (:deptNames)`);
+                    replacements.deptNames = departmentNames;
+                }
+
+                if (divisionNames.length) {
+                    conditions.push(`field_division IN (:divisionNames)`);
+                    replacements.divisionNames = divisionNames;
+                }
+
+                const whereSQL = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+
+                const results = await sequelize.query(`
+                    SELECT 
+                        cui.id,
+                        cui.field_crime_number_of_ps,
+                        cui."field_cid_crime_no./enquiry_no" AS cid_enquiry_no,
+                        cps.id AS police_station_id,
+                        cps.field_name_of_the_police_station AS police_station_name
+                    FROM cid_under_investigation cui
+                    LEFT JOIN cid_police_station cps
+                    ON CASE 
+                            WHEN cui.field_name_of_the_police_station ~ '^[0-9]+$' 
+                            THEN CAST(cui.field_name_of_the_police_station AS INTEGER)
+                            ELSE NULL
+                        END = cps.id
+                    ${whereSQL}
+                `, {
+                    replacements,
+                    type: Sequelize.QueryTypes.SELECT,
+                });
+
+                const transformedResults = results.map(record => ({
+                    name: `${record.field_crime_number_of_ps || ''} - ${record.cid_enquiry_no || ''} - ${record.police_station_name || ''}`,
+                    code: record.id,
+                    crime_number: record.field_crime_number_of_ps || '',
+                    cid_enquiry_number: record.cid_enquiry_no || '',
+                    police_station: {
+                        id: record.police_station_id || null,
+                        name: record.police_station_name || ''
+                    }
+                }));
+
+                return res.status(200).json({
+                    success: true,
+                    message: "UICase details fetched successfully",
+                    data: transformedResults,
+                });
+
+            } catch (error) {
+                console.error("Error:", error);
+                return res.status(500).json({
+                    success: false,
+                    message: "An error occurred while fetching UICase details",
+                    error: error.message,
+                });
+            }
+        };
+
 
 module.exports = {
     getAllDepartments,
@@ -736,4 +952,7 @@ module.exports = {
     getAllAct,
     getAllSectionAndActBasedSection,
     getDivisionBasedOnDepartment,
+    getSpecificIoUsersCases,
+    fetchUICaseDetails,
+    getPoliceStationsBasedOnDistrict
 };

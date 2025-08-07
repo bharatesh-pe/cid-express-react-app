@@ -45,6 +45,7 @@ import "react-toastify/dist/ReactToastify.css";
 import InsertDriveFileIcon from "@mui/icons-material/InsertDriveFile";
 import pdfIcon from "../Images/pdfIcon.svg";
 import docIcon from "../Images/docIcon.svg";
+import docxIcon from "../Images/docxIcon.svg";
 import xlsIcon from "../Images/xlsIcon.svg";
 import pptIcon from "../Images/pptIcon.svg";
 import jpgIcon from "../Images/jpgIcon.svg";
@@ -438,7 +439,7 @@ const UnderInvestigation = () => {
     const hoverTableOptionsRef = useRef([]);
     
     useEffect(() => {
-        var filteredActions =  hoverTableOptions?.filter(item => (!item?.field && item?.table) || item?.viewAction) || [];
+        var filteredActions =  hoverTableOptions || [];
         hoverTableOptionsRef.current = filteredActions;
     }, [hoverTableOptions]);
 
@@ -1202,7 +1203,8 @@ const UnderInvestigation = () => {
                             module : "pt_case",
                             overAllReadonly : !viewTemplateData?.["data"]?.field_io_name ? true : false,
                             record_id : dashboardRecordId ? JSON.stringify(dashboardRecordId) : [],
-                            dashboardName : dashboardTileName
+                            dashboardName : dashboardTileName,
+                            actionKey: actionKey
                         }
 
                         navigate("/caseView", {state: stateObj});
@@ -1768,6 +1770,7 @@ const UnderInvestigation = () => {
         return <img src={xlsIcon} />;
       case "csv":
       case "docx":
+        return <img src={docxIcon} />;
       case "doc":
         return <img src={docIcon} />;
       case "ppt":
@@ -7138,7 +7141,7 @@ const UnderInvestigation = () => {
                 value={searchValue}
                 id="tableSearch"
                 size="small"
-                placeholder="Search anything"
+                placeholder="Search"
                 variant="outlined"
                 className="profileSearchClass"
                 onKeyDown={(e) => {
@@ -7259,6 +7262,7 @@ const UnderInvestigation = () => {
                   closeForm={setOtherFormOpen}
                   headerDetails={selectedRowData?.["field_cc_no./sc_no"]}
                   selectedRow={selectedRowData}
+                  showCaseLog={true}
                 />
               </FormControl>
             </DialogContentText>
@@ -7498,7 +7502,7 @@ const UnderInvestigation = () => {
                         value={otherSearchValue}
                         id="tableSearch"
                         size="small"
-                        placeholder='Search anything'
+                        placeholder='Search'
                         variant="outlined"
                         className="profileSearchClass"
                         onKeyDown={(e) => {
@@ -7576,7 +7580,7 @@ const UnderInvestigation = () => {
                         value={otherSearchValue}
                         id="tableSearch"
                         size="small"
-                        placeholder='Search anything'
+                        placeholder='Search'
                         variant="outlined"
                         className="profileSearchClass"
                         onKeyDown={(e) => {
@@ -8261,7 +8265,7 @@ const UnderInvestigation = () => {
                                         value={listApprovalSearchValue}
                                         id="tableSearch"
                                         size="small"
-                                        placeholder='Search anything'
+                                        placeholder='Search'
                                         variant="outlined"
                                         className="profileSearchClass"
                                         onKeyDown={(e) => {

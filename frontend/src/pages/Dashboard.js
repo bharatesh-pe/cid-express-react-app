@@ -19,6 +19,7 @@ import {
     CircularProgress,
     IconButton,
     Button,
+    TextField,
 } from "@mui/material";
 import { styled } from "@mui/system";
 import LogoText from "../Images/cid_logo.png";
@@ -34,63 +35,210 @@ import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import CloseIcon from '@mui/icons-material/Close';
 
-    const tabLabels = [
-        { label: "UI Module", route: "/case/ui_case", key: "ui_case", name: "UI Case" },
-        {   label: "Court Module", 
-            route: "/case/pt_case", 
-            key: "pt_case",
-            options : [
-                {label: "Trial Courts", route: "/case/pt_case", key: "pt_trail_case", actionKey: "pt_trail_case", name: "PT Case"},
-                {label: "Other Courts", route: "/case/pt_case", key: "pt_other_case", actionKey: "pt_other_case", name: "PT Case"},
-            ]
-        },
-        { label: "Crime Intelligence", route: "/case/ci_case", key: "crime_intelligence" },
-        { label: "Enquiries", route: "/case/enquiry", key: "eq_case", name: "Enquiries" },
-        { label: "Crime Analytics", route: "/iframe", key: "crime_analytics" },
-        { label: "Orders & Repository", route: "/case/repos_case", key: "repos_case" },
-        // { 
-        //     label: "Orders & Circulars", 
-        //     route: "/repository/judgements", 
-        //     key: "order_circulars",
-        //     options : [
-        //         {label: "Goverment Order", route: "/repository/gn_order", key: "gn_order", directLoad : true},
-        //         {label: "Judgement", route: "/repository/judgements", key: "judgements", directLoad : true},
-        //         {label: "Circular", route: "/repository/circular", key: "circular", directLoad : true},
-        //     ]
-        // },
-    ];
-
-    const days = [
-        "Hearing Today", "Hearing Tomorrow", "Hearing in 2 Days",
-        "Hearing in 3 Days", "Hearing in 4 Days", "Hearing in 5 Days",
-        "Hearing in 6-10 Days"
-    ];
-
-    // const gradients = [
-    //     "#2196F3", "#3f51b5", "#673ab7",
-    //     "#00bcd4", "#4caf50", "#ff9800",
-    //     "#f44336"
-    // ];
-
-    const gradients = [
-    'linear-gradient(135deg, #2196F3, #673ab7b5)',       // Blue to Purple (Day 1)
-    'linear-gradient(135deg, #00c6ff, #0072ff)',         // Light Blue to Deep Blue (Day 2)
-    'linear-gradient(135deg, #f7971e, #ffd200)',         // Orange to Yellow (Day 3)
-    'linear-gradient(135deg, #00b09b, #96c93d)',         // Teal to Green (Day 4)
-    'linear-gradient(135deg, #ff416c, #ff4b2b)',         // Pink to Red (Day 5)
-    'linear-gradient(135deg, #654ea3, #eaafc8)',         // Purple to Light Pink (Day 6)
-    'linear-gradient(135deg, #43cea2, #185a9d)',         // Aqua Green to Blue (Day 7–10)
-    ];
+import video1 from "../videos/UI_Introduction.mp4"
+import video2 from "../videos/UI_All_Cases.mp4"
+import video3 from "../videos/UI_FIR Form.mp4"
 
 
-    //   clipPath: 'polygon(0 0, 85% 0, 100% 50%, 85% 100%, 0 100%)',
+const allTabs = [
+    { label: "UI Module", route: "/case/ui_case", key: "ui_case", name: "UI Case" },
+    {   label: "Court Module", 
+        route: "/case/pt_case", 
+        key: "pt_case",
+        options : [
+            {label: "Trial Courts", route: "/case/pt_case", key: "pt_trail_case", actionKey: "pt_trail_case", name: "PT Case"},
+            {label: "Other Courts", route: "/case/pt_case", key: "pt_other_case", actionKey: "pt_other_case", name: "PT Case"},
+        ]
+    },
+    { label: "Crime Intelligence", route: "/case/ci_case", key: "crime_intelligence" },
+    { label: "Enquiries", route: "/case/enquiry", key: "eq_case", name: "Enquiries" },
+    { label: "Crime Analytics", route: "/iframe", key: "crime_analytics" },
+    { label: "Orders & Repository", route: "/case/repos_case", key: "repos_case" },
+    // { 
+    //     label: "Orders & Circulars", 
+    //     route: "/repository/judgements", 
+    //     key: "order_circulars",
+    //     options : [
+    //         {label: "Goverment Order", route: "/repository/gn_order", key: "gn_order", directLoad : true},
+    //         {label: "Judgement", route: "/repository/judgements", key: "judgements", directLoad : true},
+    //         {label: "Circular", route: "/repository/circular", key: "circular", directLoad : true},
+    //     ]
+    // },
+];
 
-    const SkewedCard = ({ label, bgGradient, isFirst, number }) => (
+const Dashboard = () => {
+    const [activeTab, setActiveTab] = useState(0);
+    const navigate = useNavigate();
+
+    const userId = localStorage.getItem("user_id");
+    
+    const location = useLocation();
+    
+    const { tabActiveKey } = location.state || {};
+
+    const [userOverallDesignation, setUserOverallDesignation] = useState(localStorage.getItem("userOverallDesignation") ? JSON.parse(localStorage.getItem("userOverallDesignation")) : []);
+    const [openUserDesignationDropdown, setOpenUserDesignationDropdown] = useState(false);
+    const userName = localStorage.getItem("username");
+    const designationName = localStorage.getItem("designation_name");
+    const [notificationCount, setNotificationCount] = useState(localStorage.getItem("unreadNotificationCount") || 0);
+    
+    const [loading, setLoading] = useState(false);
+    const [dashboardMenu, setDashboardMenu] = useState({});
+    const [hearingMenu, setHearingMenu] = useState({});
+
+    const [videoOpen, setVideoOpen] = useState(false);
+
+    const [videos, setVideos] = useState({});
+    const [searchQuery, setSearchQuery] = useState("");
+
+    const REACT_APP_SERVER_URL_FILE_VIEW = process.env.REACT_APP_SERVER_URL_FILE_VIEW;
+
+    const handleVideoOpen = async ()=>{
+
+        const pathname = window.location.pathname;
+        const segments = pathname.split('/').filter(Boolean);
+        const lastPath = segments[segments.length - 1];
+
+        const payload = {
+            data : [lastPath]
+        }
+
+        try {
+            setLoading(true);
+
+            const getAllVideosResponse = await api.post("/templateData/gettingAllHelpVideos", payload);
+            setLoading(false);
+
+            if (getAllVideosResponse && getAllVideosResponse.data && getAllVideosResponse.success) {
+
+                setVideos(getAllVideosResponse.data);
+                setVideoOpen(true);
+            
+            } else {
+                setVideos({});
+                const errorMessage = getAllVideosResponse?.data?.message || "Failed to get help videos.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+
+        } catch (error) {
+            setVideos({});
+            setLoading(false);
+
+            toast.error(error?.response?.data?.message || "Please Try Again!", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+        }
+    }
+
+    const handleVideoClose = () => setVideoOpen(false);
+
+    const isCDR = localStorage.getItem("designation_name") === "CDR";
+
+    const userPermissions = localStorage.getItem("user_permissions") ? JSON.parse(localStorage.getItem("user_permissions")) : {};
+    const sortedTabs = [];
+
+    if(userPermissions?.[0]){
+        const permissionObj = userPermissions?.[0];
+
+        if(permissionObj?.ui_case === true){
+            sortedTabs.push(
+                { label: "UI Module", route: "/case/ui_case", key: "ui_case", name: "UI Case" }
+            )
+        }
+
+        if(permissionObj?.pt_case === true){
+            sortedTabs.push(
+                {   
+                    label: "Court Module", 
+                    route: "/case/pt_case", 
+                    key: "pt_case",
+                    options : [
+                        {label: "Trial Courts", route: "/case/pt_case", key: "pt_trail_case", actionKey: "pt_trail_case", name: "PT Case"},
+                        {label: "Other Courts", route: "/case/pt_case", key: "pt_other_case", actionKey: "pt_other_case", name: "PT Case"},
+                    ]
+                }
+            )
+        }
+
+        if(permissionObj?.crime_intelligence === true){
+            sortedTabs.push(
+                { label: "Crime Intelligence", route: "/case/ci_case", key: "crime_intelligence" }
+            )
+        }
+        
+        if(permissionObj?.enquiry === true){
+            sortedTabs.push(
+                { label: "Enquiries", route: "/case/enquiry", key: "eq_case", name: "Enquiries" }
+            )
+        }
+        
+        if(permissionObj?.crime_analytics === true){
+            sortedTabs.push(
+                { label: "Crime Analytics", route: "/iframe", key: "crime_analytics" }
+            )
+        }
+
+        if(permissionObj?.repos_case === true){
+            sortedTabs.push(
+                { label: "Orders & Repository", route: "/case/repos_case", key: "repos_case" }
+            )
+        }
+
+    }
+
+
+    const tabLabels = isCDR 
+        ? [{ label: "CDR", route: "/case/cdr_case", key: "ui_case" }] 
+        : sortedTabs;
+
+    var preSelectTabLabels = tabLabels?.[0]
+    
+    if(tabActiveKey && (tabActiveKey !== "crime_intelligence" && tabActiveKey !== "crime_analytics" && tabActiveKey !== "repos_case")){
+        
+        tabLabels.forEach((tab) => {
+            const isMainMatch = tabActiveKey === tab.key;
+            
+            const matchedOption = tab.options?.find(
+                (opt) => (opt?.actionKey ?? opt?.key) === tabActiveKey
+            );
+
+            if (isMainMatch && !tab.directLoad) {
+                preSelectTabLabels = tab;
+            } else if (matchedOption && !matchedOption.directLoad) {
+                preSelectTabLabels = matchedOption;
+            }
+        });
+    }
+
+    const selectedTab = useRef(preSelectTabLabels?.options ? preSelectTabLabels?.options?.[0] : preSelectTabLabels);
+    const selectedActiveKey = useRef(preSelectTabLabels?.options ? preSelectTabLabels?.options?.[0]?.key : preSelectTabLabels?.key);
+    const [submenuAnchorEl, setSubmenuAnchorEl] = useState(null);
+    const [submenuItems, setSubmenuItems] = useState([]);
+    const [selectedSubKey, setSelectedSubKey] = useState("");
+
+    const SkewedCard = ({ label, element, isFirst, number }) => (
+        <Tooltip title={"click here"} arrow>
         <Box
             sx={{
                 width: isFirst ? 150 : 180,
                 height: 70,
-                background: bgGradient,
+                background: 'linear-gradient(135deg, #00796B, #26A69A)',
                 color: '#fff',
                 display: 'flex',
                 flexDirection: 'column',
@@ -107,6 +255,7 @@ import CloseIcon from '@mui/icons-material/Close';
                     boxShadow: '0 6px 16px rgba(0,0,0,0.3)',
                 }
             }}
+            onClick={()=>navigateRouter(element)}
         >
             <Typography sx={{ fontWeight: 'bold', fontSize: '0.9rem' }}>
                 {label}
@@ -128,145 +277,8 @@ import CloseIcon from '@mui/icons-material/Close';
                 {number || 0}
             </Typography>
         </Box>
+        </Tooltip>
     );
-
-    // const SkewedCard = ({ label, bgGradient }) => (
-    //     <Card
-    //         sx={{
-    //         width: 150,
-    //         height: 70,
-    //         transform: 'skew(-10deg)',
-    //         background: bgGradient,
-    //         color: '#fff',
-    //         display: 'flex',
-    //         alignItems: 'center',
-    //         justifyContent: 'center',
-    //         borderRadius: 2,
-    //         boxShadow: '0 3px 8px rgba(0,0,0,0.2)',
-    //         transition: 'all 0.3s ease',
-    //         cursor: 'pointer',
-    //         '&:hover': {
-    //             transform: 'skew(-10deg) scale(1.05)',
-    //             boxShadow: '0 6px 16px rgba(0,0,0,0.3)',
-    //         }
-    //         }}
-    //     >
-    //         <Typography
-    //         sx={{
-    //             transform: 'skew(10deg)', // undo skew for text
-    //             fontWeight: 'bold',
-    //             fontSize: '0.9rem',
-    //         }}
-    //         >
-    //         {label}
-    //         </Typography>
-    //     </Card>
-    // );
-
-    const GradientBadge = styled(Box)(({ gradient }) => ({
-        background: gradient,
-        color: '#fff',
-        fontSize: 13,
-        fontWeight: 600,
-        padding: '4px 8px',
-        borderRadius: '999px',
-        display: 'inline-block',
-        minWidth: 32,
-        textAlign: 'center',
-        boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
-    }));
-
-    const cardBackgrounds = [
-        "linear-gradient(135deg, #569bd0, #5c5ee0)",  // 1 - darker blue
-        "linear-gradient(135deg, #a5a6d9, #8a4fd1)",  // 2 - darker lavender
-        "linear-gradient(135deg, #8c8dc7, #2c38c4)",  // 3 - deeper indigo
-        "linear-gradient(135deg, #a5a6d9, #3d3fd0)",  // 4 - deeper violet
-        "linear-gradient(135deg, #65bda3, #4a8c73)",  // 5 - teal green
-        "linear-gradient(135deg, #e2a37e, #cf5d3f)",  // 6 - burnt orange
-        "linear-gradient(135deg, #dc87b1, #b24f91)",  // 7 - rose pink
-        "linear-gradient(135deg, #f0c95e, #e09826)",  // 8 - amber gold
-        "linear-gradient(135deg, #9fa3b0, #727681)",  // 9 - slate grey
-        "linear-gradient(135deg, #97a7f7, #5c6be5)",  // 10 - soft periwinkle
-        "linear-gradient(135deg, #7cc6fe, #3b95e4)"   // 11 - sky blue
-    ];
-
-    const cardHoverBackgrounds = [
-        "linear-gradient(135deg, #467fb0, #484ad0)",  // 1
-        "linear-gradient(135deg, #8e8fc2, #743ebf)",  // 2
-        "linear-gradient(135deg, #6f70a9, #1f2cae)",  // 3
-        "linear-gradient(135deg, #8e8fc2, #2d2fbf)",  // 4
-        "linear-gradient(135deg, #519c8c, #35775f)",  // 5
-        "linear-gradient(135deg, #cb8d6c, #b04c30)",  // 6
-        "linear-gradient(135deg, #c27399, #94396e)",  // 7
-        "linear-gradient(135deg, #deb648, #c37d15)",  // 8
-        "linear-gradient(135deg, #868b9b, #5a5f6a)",  // 9
-        "linear-gradient(135deg, #7b8cdd, #4553d1)",  // 10
-        "linear-gradient(135deg, #66b1f0, #2a7fd1)"   // 11
-    ];
-
-    const cardTitleBackgrounds = [
-        "#6b9ddf",  // 1 - bright blue
-        "#b5aaf0",  // 2 - soft lavender
-        "#9295dc",  // 3 - light indigo
-        "#a2a5f2",  // 4 - light violet
-        "#7ecdb7",  // 5 - mint green
-        "#ee9f76",  // 6 - orange coral
-        "#e58fb4",  // 7 - rose pink
-        "#f5d97b",  // 8 - warm yellow
-        "#adb2c0",  // 9 - slate grey
-        "#a2b4fc",  // 10 - pastel periwinkle
-        "#8dcfff"   // 11 - light sky blue
-    ];
-
-const Dashboard = () => {
-    const [activeTab, setActiveTab] = useState(0);
-    const navigate = useNavigate();
-
-    const userId = localStorage.getItem("user_id");
-    
-    const location = useLocation();
-    
-    const { tabActiveKey } = location.state || {};
-
-    const [userOverallDesignation, setUserOverallDesignation] = useState(localStorage.getItem("userOverallDesignation") ? JSON.parse(localStorage.getItem("userOverallDesignation")) : []);
-    const [openUserDesignationDropdown, setOpenUserDesignationDropdown] = useState(false);
-    const userName = localStorage.getItem("username");
-    const designationName = localStorage.getItem("designation_name");
-    const [notificationCount, setNotificationCount] = useState(localStorage.getItem("unreadNotificationCount") || 0);
-    
-    const [loading, setLoading] = useState(false);
-    const [dashboardMenu, setDashboardMenu] = useState({});
-
-    const [videoOpen, setVideoOpen] = useState(false);
-
-    const handleVideoOpen = () => setVideoOpen(true);
-    const handleVideoClose = () => setVideoOpen(false);
-
-    var preSelectTabLabels = tabLabels[0]
-    
-    if(tabActiveKey && (tabActiveKey !== "crime_intelligence" && tabActiveKey !== "crime_analytics" && tabActiveKey !== "repos_case")){
-        
-        tabLabels.forEach((tab) => {
-            const isMainMatch = tabActiveKey === tab.key;
-            
-            const matchedOption = tab.options?.find(
-                (opt) => (opt?.actionKey ?? opt?.key) === tabActiveKey
-            );
-
-            if (isMainMatch && !tab.directLoad) {
-                preSelectTabLabels = tab;
-            } else if (matchedOption && !matchedOption.directLoad) {
-                preSelectTabLabels = matchedOption;
-            }
-        });
-
-    }
-
-    const selectedTab = useRef(preSelectTabLabels);
-    const selectedActiveKey = useRef(preSelectTabLabels.key);
-    const [submenuAnchorEl, setSubmenuAnchorEl] = useState(null);
-    const [submenuItems, setSubmenuItems] = useState([]);
-    const [selectedSubKey, setSelectedSubKey] = useState("");
 
     const handleTabClick = (event, tab) => {
 
@@ -298,7 +310,14 @@ const Dashboard = () => {
         setSelectedSubKey(option.key);
         setSubmenuAnchorEl(null);
         selectedActiveKey.current = option.key;
-        getDashboardTiles();
+        var subMenuKey = ""
+        if(option?.key === "pt_trail_case"){
+            subMenuKey = "trial_court";
+        }else if(option?.key === "pt_other_case"){
+            subMenuKey = "high_court";
+        }
+        getDashboardTiles(subMenuKey);
+        setCourtTab(0);
     };
 
     const handleMenuClose = () => {
@@ -306,9 +325,28 @@ const Dashboard = () => {
     };
     
     const [courtTab, setCourtTab] = useState(0);
+    const [courtTabs, setCourtTabs] = useState([]);
+
+    useEffect(() => {
+        if (selectedActiveKey.current === "pt_trail_case") {
+            setCourtTabs([
+                { label: "Trial Court", key: 0, sub_court: "trial_court" },
+                { label: "Sessions Court", key: 1, sub_court: "sessions_court" }
+            ]);
+        } else if (selectedActiveKey.current === "pt_other_case") {
+            setCourtTabs([
+                { label: "High Court", key: 0, sub_court: "high_court" },
+                { label: "Supreme Court", key: 1, sub_court: "supreme_court" }
+            ]);
+        } else {
+            setCourtTabs([]);
+        }
+    }, [selectedActiveKey.current]);
 
     const handleCourtTabChange = (event, newValue) => {
         setCourtTab(newValue);
+        var subMenuKey = courtTabs[newValue]?.sub_court || "";
+        getDashboardTiles(subMenuKey);
     };
 
     const handleLogout = async () => {
@@ -418,7 +456,12 @@ const Dashboard = () => {
     }, [selectedActiveKey]);
 
 
-    const getDashboardTiles = async () => {
+    const getDashboardTiles = async (subMenuKey) => {
+
+        if(!selectedActiveKey?.current){
+            return;
+        }
+
         const userDesignationId = localStorage.getItem('designation_id');
         const userDesignationName = localStorage.getItem('designation_name');
         const userRole = localStorage.getItem('role_title');
@@ -437,11 +480,17 @@ const Dashboard = () => {
             }
         }
 
+        var subCourt = "";
+
+        if (subMenuKey) {
+            subCourt = subMenuKey
+        }
         
         const payload = {
             user_designation_id: userDesignationId || null,
             user_designation : userDesignation ,
-            case_modules: selectedActiveKey.current
+            case_modules: selectedActiveKey.current,
+            sub_court: subCourt
         };
 
         setLoading(true);
@@ -453,8 +502,14 @@ const Dashboard = () => {
             if (response?.success) {
                 if(response?.data){
                     setDashboardMenu(response.data);
+                    if(response.hearingTemplates){
+                        setHearingMenu(response.hearingTemplates);
+                    }else{
+                        setHearingMenu({});
+                    }
                 }else{
                     setDashboardMenu({});
+                    setHearingMenu({});
                 }
             } else {
                 const errorMessage = response?.message || "Failed to fetch dashboard data. Please try again.";
@@ -469,6 +524,7 @@ const Dashboard = () => {
                     className: "toast-error"
                 });
                 setDashboardMenu({});
+                setHearingMenu({});
             }
         } catch (error) {
             setLoading(false);
@@ -484,6 +540,7 @@ const Dashboard = () => {
                 className: "toast-error"
             });
             setDashboardMenu({});
+            setHearingMenu({});
         }
     }
 
@@ -589,6 +646,50 @@ const Dashboard = () => {
     }
 
     const storedTime = localStorage.getItem("refreshData");
+
+
+    const days = [
+        "Today", "Tomorrow", "This Week", "Next Week"
+    ];
+
+    const filteredVideos = Object.entries(videos).flatMap(([moduleKey, videoList]) =>
+        videoList
+            .filter((videoUrl) =>
+                videoUrl.split("/").pop().toLowerCase().includes(searchQuery)
+            )
+            .map((videoUrl, idx) => {
+                const fileName = videoUrl.split("/").pop();
+
+                return (
+                    <div
+                        key={`${moduleKey}-${idx}`}
+                        style={{
+                            border: '1px solid #ccc',
+                            borderRadius: '8px',
+                            padding: '8px',
+                            boxShadow: '0 2px 6px rgba(0, 0, 0, 0.1)',
+                            backgroundColor: '#fafafa',
+                            overflow: 'hidden',
+                        }}
+                    >
+                        <video
+                            src={`${REACT_APP_SERVER_URL_FILE_VIEW}${videoUrl}`}
+                            width="100%"
+                            height="200"
+                            controls
+                            preload="metadata"
+                            style={{ borderRadius: "4px" }}
+                        />
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 1 }}>
+                            <Typography variant="body2" sx={{ wordBreak: 'break-all' }}>
+                                {fileName}
+                            </Typography>
+                        </Box>
+                    </div>
+                );
+            })
+    );
+
 
     if (userId === "1") return null;
     return (
@@ -707,7 +808,7 @@ const Dashboard = () => {
                         </Box>
     
                         <Box onClick={handleLogout} sx={{ cursor: "pointer" }}>
-                            <svg
+                            {/* <svg
                             width="20"
                             height="20"
                             viewBox="0 0 20 20"
@@ -721,6 +822,34 @@ const Dashboard = () => {
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
                             />
+                            </svg> */}
+                            <svg 
+                            fill="#1D2939" 
+                            stroke="#1D2939" 
+                            stroke-width="14" 
+                            stroke-linecap="round" 
+                            stroke-linejoin="round" 
+                            height="20px" 
+                            width="20px" 
+                            version="1.1" 
+                            id="Capa_1" 
+                            xmlns="http://www.w3.org/2000/svg"  
+                            viewBox="0 0 471.2 471.2"
+                            >
+                            <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+                            <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+                            <g id="SVGRepo_iconCarrier">
+                                <g>
+                                <g>
+                                    <path d="M227.619,444.2h-122.9c-33.4,0-60.5-27.2-60.5-60.5V87.5c0-33.4,27.2-60.5,60.5-60.5h124.9c7.5,0,13.5-6,13.5-13.5 
+                                            s-6-13.5-13.5-13.5h-124.9c-48.3,0-87.5,39.3-87.5,87.5v296.2c0,48.3,39.3,87.5,87.5,87.5h122.9c7.5,0,13.5-6,13.5-13.5 
+                                            S235.019,444.2,227.619,444.2z"/>
+                                    <path d="M450.019,226.1l-85.8-85.8c-5.3-5.3-13.8-5.3-19.1,0c-5.3,5.3-5.3,13.8,0,19.1l62.8,62.8h-273.9
+                                            c-7.5,0-13.5,6-13.5,13.5s6,13.5,13.5,13.5h273.9l-62.8,62.8c-5.3,5.3-5.3,13.8,0,19.1c2.6,2.6,6.1,4,9.5,4
+                                            s6.9-1.3,9.5-4l85.8-85.8C455.319,239.9,455.319,231.3,450.019,226.1z"/>
+                                </g>
+                                </g>
+                            </g>
                             </svg>
                         </Box>
     
@@ -728,20 +857,53 @@ const Dashboard = () => {
                 </Box>
             </Box>
 
-            <Typography
-                sx={{
-                    fontSize: '18px',
-                    fontWeight: '600',
-                    color: '#0B5ED7',
-                    mt: 1,
-                    textAlign: 'center',
-                    letterSpacing: '0.5px',
-                    textTransform: 'uppercase',
-                }}
-                className="Roboto"
-            >
-                {selectedTab?.current?.label || ""}
-            </Typography>
+            <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 12}}>
+                
+                <Box
+                    sx={{
+                        backgroundColor: '#E3F2FD',
+                        borderLeft: '4px solid #42A5F5',
+                        padding: '12px 16px',
+                        borderRadius: 2,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 1.5,
+                        my: 2,
+                    }}
+                >
+                    <InfoOutlinedIcon sx={{ color: '#1976d2' }} />
+                    <Typography sx={{ fontSize: 14, color: '#0F172A' }}>
+                        Click on the numbers in the tiles below to view detailed {selectedTab?.current?.label || ""}.
+                    </Typography>
+                </Box>
+
+                <Typography
+                    sx={{
+                        fontSize: '18px',
+                        fontWeight: '600',
+                        color: '#0B5ED7',
+                        mt: 1,
+                        textAlign: 'center',
+                        letterSpacing: '0.5px',
+                        textTransform: 'uppercase',
+                    }}
+                    className="Roboto"
+                >
+                    {selectedTab?.current?.label || ""}
+                </Typography>
+
+                <Box sx={{ display: 'flex', alignItems: 'center', marginLeft: '250px'}}>
+                    <Typography sx={{ fontWeight: 400, color: '#009688', fontSize: '14px' }}>
+                        Last Updated On: {storedTime ? formatDateTime(storedTime) : "Not Available"}
+                    </Typography>
+                    <Tooltip title="Refresh Dashboard" onClick={getDashboardData}>
+                        <IconButton>
+                            <RefreshIcon sx={{color: '#009688', fontWeight: 400}} />
+                        </IconButton>
+                    </Tooltip>
+                </Box>
+
+            </Box>
 
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center',px: 10, py: 0.5}}>
 
@@ -776,7 +938,7 @@ const Dashboard = () => {
             </Box>
 
             {
-                (selectedTab?.current?.key === "pt_trail_case" || selectedTab?.current?.key === "pt_other_case") && 
+                (selectedActiveKey.current === "pt_trail_case" || selectedActiveKey.current === "pt_other_case") &&
                 <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
                     <Tabs
                         value={courtTab}
@@ -785,84 +947,28 @@ const Dashboard = () => {
                         indicatorColor="primary"
                         sx={{ mb: 1 }}
                     >
-                        <Tab label="Trial Court" />
-                        <Tab label="Sessions Court" />
+                        {
+                            courtTabs.map((tab) => (
+                                <Tab key={tab.key} label={tab.label} />
+                            ))
+                        }
                     </Tabs>
                 </Box>
             }
 
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', px: 4, py: 0.5}}>
+            <Box sx={{display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                <Box className="divider" sx={{width: '50%', margin: '10px'}}></Box>
+            </Box>
+            {/* second section */}
+
+            { Object.keys(dashboardMenu).length > 0 &&
+            <>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', px: 4, pb: 2, pt: 0.5}}>
                 <Box>
                     <Typography sx={{ fontWeight: 600, fontSize: 20, color: '#1D2939'}}>
                         PENDENCY Alerts/Notifications of {selectedTab?.current?.label || ""}
                     </Typography>
                 </Box>
-
-                {/* <Box sx={{display: 'flex', alignItems: 'end', flexDirection: 'column', }}>
-                    <Button
-                        variant="outlined"
-                        size="medium"
-                        endIcon={<ArrowForwardIcon />}
-                        sx={{
-                            textTransform: 'none',
-                            fontWeight: 500,
-                            fontSize: '0.875rem',
-                            borderRadius: 1,
-                            color: '#fff',
-                            border: 'none',
-                            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-                            px: 2.5,
-                            mr: 1.5,
-                            background: '#FF7043',
-                            '&:hover': {
-                                filter: 'brightness(1.1)',
-                            }
-                        }}
-                        onClick={ViewAllCases}
-                    >
-                        View All Cases
-                    </Button>
-                </Box> */}
-            </Box>
-
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 12, py: 1}}>
-                <Box
-                    sx={{
-                        backgroundColor: '#F0F4FF',
-                        border: '1px solid #90CAF9',
-                        borderRadius: 2,
-                        padding: 1,
-                        display: 'flex',
-                        alignItems: 'flex-start',
-                        gap: 1,
-                    }}
-                >
-                    <InfoOutlinedIcon sx={{ color: '#1976d2' }} />
-                    <Box>
-                        <Typography
-                            sx={{
-                                fontWeight: 400,
-                                fontSize: 13,
-                                color: '#344054',
-                                mt: 0.5
-                            }}
-                        >
-                            Please <strong style={{ color: '#1976d2' }}> click on statistics (numbers)</strong> in the below tiles to navigate to the particular {selectedTab?.current?.label || ""}.
-                        </Typography>
-                    </Box>
-                </Box>
-
-                <Box sx={{ display: 'flex', alignItems: 'center'}}>
-                    <Typography sx={{ fontWeight: 400, color: '#009688', fontSize: '14px' }}>
-                        Last Updated On: {storedTime ? formatDateTime(storedTime) : "Not Available"}
-                    </Typography>
-                    <Tooltip title="Refresh Dashboard" onClick={getDashboardData}>
-                        <IconButton>
-                            <RefreshIcon sx={{color: '#009688', fontWeight: 400}} />
-                        </IconButton>
-                    </Tooltip>
-                </Box>
-
             </Box>
 
             <Box
@@ -885,7 +991,7 @@ const Dashboard = () => {
                         display: 'flex',
                         flexDirection: 'column',
                         justifyContent: 'space-between',
-                        background: `linear-gradient(135deg, #2196F3, #673ab7b5)`,
+                        background: 'linear-gradient(135deg, #1976D2, #2196F3)',
                         color: '#fff',
                         cursor: 'pointer',
                         boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
@@ -929,6 +1035,7 @@ const Dashboard = () => {
                     {value.divider_details && Object.keys(value.divider_details).length > 0 ? (
                         <Box sx={{ display: 'flex', gap: 1}}>
                             {Object.entries(value.divider_details).map(([dividerKey, dividerValue], idx) => (
+                                <Tooltip title={"click here"} arrow>
                                 <Box
                                     key={dividerKey}
                                     onClick={(e) => {
@@ -952,46 +1059,57 @@ const Dashboard = () => {
                                         },
                                     }}
                                 >
-                                    <Typography 
-                                        variant="body2" 
-                                        sx={{ 
-                                            width: 30, 
-                                            height: 30,
-                                            borderRadius: "50%",
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            fontWeight: 600, 
-                                            background: getAvatarColor(idx, Object.keys(value.divider_details).length) 
-                                        }}
-                                    >
-                                        {dividerValue.count}
-                                    </Typography>
-                                    <Typography variant="caption" sx={{ fontSize: '0.7rem' }}>
-                                        {dividerValue.name}
-                                    </Typography>
+                                        <Typography 
+                                            variant="body2" 
+                                            sx={{ 
+                                                width: 30, 
+                                                height: 30,
+                                                borderRadius: "50%",
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                fontWeight: 600, 
+                                                background: getAvatarColor(idx, Object.keys(value.divider_details).length) 
+                                            }}
+                                        >
+                                                {dividerValue.count}
+                                        </Typography>
+                                        <Typography variant="caption" sx={{ fontSize: '0.7rem' }}>
+                                                {dividerValue.name}
+                                        </Typography>
                                 </Box>
+                                </Tooltip>
                             ))}
                         </Box>
                     ) : (
-                        <Box sx={{ textAlign: 'center', mb: 2 }} onClick={()=>navigateRouter(value)}>
-                            <Typography variant="h4" sx={{ fontWeight: 700 }}>
-                                {value.total_count}
-                            </Typography>
-                        </Box>
+                        <Tooltip title={"click here"} arrow>
+                            <Box sx={{ textAlign: 'center', mb: 2 }} onClick={()=>navigateRouter(value)}>
+                                <Typography variant="h4" sx={{ fontWeight: 700 }}>
+                                        {value.total_count}
+                                </Typography>
+                            </Box>
+                        </Tooltip>
                     )}
                 </Card>
                 ))}
             </Box>
+            </>
+            }
 
             {
                 (selectedTab?.current?.key === "pt_trail_case" || selectedTab?.current?.key === "pt_other_case") && 
                 <Box>
+                    {
+                        selectedTab?.current?.key === "pt_other_case" &&
+                        <Box sx={{display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                            <Box className="divider" sx={{width: '50%', margin: '10px'}}></Box>
+                        </Box>
+                    }
                     <Box>
                         <Typography sx={{ fontWeight: 600, fontSize: 20, color: '#1D2939', textAlign: 'center'}}>
                             Hearing Date Alerts
                         </Typography>
-                    </Box>                    
+                    </Box>
                     <Box
                         sx={{
                             display: 'flex',
@@ -1000,18 +1118,60 @@ const Dashboard = () => {
                             mt: 2,
                         }}
                         >
-                        {days.map((day, index) => (
+                        {Object.keys(hearingMenu).map((element, index)=>(
                             <SkewedCard
-                                key={day}
-                                label={day}
+                                key={element}
+                                label={hearingMenu[element].label}
+                                element={hearingMenu[element]}
                                 bgGradient={`linear-gradient(135deg, #43cea2, #185a9d)`}
                                 isFirst={index === 0}
-                                number={index + 1}
+                                number={hearingMenu[element].total_count}
                             />
                         ))}
                     </Box>
                 </Box>
             }
+
+
+            {/* <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 12, py: 1}}>
+                <Box
+                    sx={{
+                        backgroundColor: '#F0F4FF',
+                        border: '1px solid #90CAF9',
+                        borderRadius: 2,
+                        padding: 1,
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: 1,
+                    }}
+                >
+                    <InfoOutlinedIcon sx={{ color: '#1976d2' }} />
+                    <Box>
+                        <Typography
+                            sx={{
+                                fontWeight: 400,
+                                fontSize: 13,
+                                color: '#344054',
+                                mt: 0.5
+                            }}
+                        >
+                            Please <strong style={{ color: '#1976d2' }}> click on statistics (numbers)</strong> in the below tiles to navigate to the particular {selectedTab?.current?.label || ""}.
+                        </Typography>
+                    </Box>
+                </Box>
+
+                <Box sx={{ display: 'flex', alignItems: 'center'}}>
+                    <Typography sx={{ fontWeight: 400, color: '#009688', fontSize: '14px' }}>
+                        Last Updated On: {storedTime ? formatDateTime(storedTime) : "Not Available"}
+                    </Typography>
+                    <Tooltip title="Refresh Dashboard" onClick={getDashboardData}>
+                        <IconButton>
+                            <RefreshIcon sx={{color: '#009688', fontWeight: 400}} />
+                        </IconButton>
+                    </Tooltip>
+                </Box>
+
+            </Box> */}
 
             {openUserDesignationDropdown && userOverallDesignation?.length > 0 && (
                 <Dialog
@@ -1127,6 +1287,8 @@ const Dashboard = () => {
                                                 localStorage.setItem("getDataBasesOnUsers",JSON.stringify(responseData.getDataBasesOnUsers));
                                             }else{
                                                 localStorage.setItem("allowedUserIds",JSON.stringify(responseData.allowedUserIds));
+                                                localStorage.setItem("allowedDepartmentIds",JSON.stringify(responseData.allowedDepartmentIds));
+                                                localStorage.setItem("allowedDivisionIds",JSON.stringify(responseData.allowedDivisionIds));
                                                 localStorage.setItem("getDataBasesOnUsers",JSON.stringify(responseData.getDataBasesOnUsers));
                                             }
 
@@ -1177,72 +1339,61 @@ const Dashboard = () => {
                 </Dialog>
             )}
 
-            <Dialog
-                open={videoOpen}
-                onClose={handleVideoClose}
-                fullWidth
-                maxWidth="2xl"
-                scroll="paper"
-            >
-                <DialogTitle sx={{ m: 0, p: 2 }}>
+        <Dialog
+            open={videoOpen}
+            onClose={handleVideoClose}
+            fullWidth
+            maxWidth="2xl"
+            scroll="paper"
+        >
+            <DialogTitle sx={{ m: 0, p: 2 }}>
+                <Box sx={{display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
                     Videos
-                    <IconButton
-                        aria-label="close"
-                        onClick={handleVideoClose}
-                        sx={{
-                            position: 'absolute',
-                            right: 8,
-                            top: 8,
-                            color: (theme) => theme.palette.grey[500],
-                        }}
-                    >
-                        <CloseIcon />
-                    </IconButton>
-                </DialogTitle>
-
-                <DialogContent dividers>
-                    <Box
-                        sx={{
-                            display: 'grid',
-                            gridTemplateColumns: {
-                                xs: '1fr',
-                                sm: '1fr 1fr',
-                                md: '1fr 1fr 1fr',
-                            },
-                            gap: 2,
-                        }}
-                    >
-                        <iframe 
-                            width="100%"
-                            height="350"
-                            src="https://www.youtube.com/embed/K4TOrB7at0Y?si=TwoP9V0PB-i1_fpV" 
-                            title="YouTube video player" 
-                            frameborder="0" 
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-                            referrerpolicy="strict-origin-when-cross-origin" 
-                            allowfullscreen>    
-                        </iframe>
-                        <iframe
-                            width="100%"
-                            height="350"
-                            src="https://www.youtube.com/embed/b9hBHt317mw?si=PE7AmSJ_7GHiSNIp"
-                            title="Video 2"
-                            frameBorder="0"
-                            allow="autoplay; encrypted-media"
-                            allowFullScreen
-                        ></iframe>
-                        <iframe
-                            width="100%"
-                            height="350"
-                            src="https://www.youtube.com/embed/wDchsz8nmbo?si=od6PA4Xdw33cZd7Y"
-                            title="Video 3"
-                            frameBorder="0"
-                            allow="autoplay; encrypted-media"
-                            allowFullScreen
-                        ></iframe>
+                    <Box sx={{display: 'flex', alignItems: 'center'}}>
+                        <TextField
+                            fullWidth
+                            variant="outlined"
+                            placeholder="Search videos..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value.toLowerCase())}
+                            sx={{ width: 300 }}
+                        />
+                        <IconButton
+                            aria-label="close"
+                            onClick={handleVideoClose}
+                            sx={{
+                                color: (theme) => theme.palette.grey[500],
+                            }}
+                        >
+                            <CloseIcon />
+                        </IconButton>
                     </Box>
-                </DialogContent>
-            </Dialog>
+                </Box>
+            </DialogTitle>
+
+            <DialogContent dividers>
+                <Box
+                    sx={{
+                        display: 'grid',
+                        gridTemplateColumns: {
+                            xs: '1fr',
+                            sm: '1fr 1fr',
+                            md: '1fr 1fr 1fr 1fr',
+                        },
+                        mb: 3,
+                        gap: 2,
+                    }}
+                >
+                    {filteredVideos.length > 0 ? (
+                        filteredVideos
+                    ) : (
+                        <Typography variant="body1" sx={{ gridColumn: '1 / -1', textAlign: 'center', mt: 4 }}>
+                            No videos found.
+                        </Typography>
+                    )}
+                </Box>
+            </DialogContent>
+        </Dialog>
 
             {loading && (
                 <div className="parent_spinner" tabIndex="-1" aria-hidden="true">

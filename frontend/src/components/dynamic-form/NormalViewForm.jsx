@@ -1,9 +1,20 @@
 // DynamicForm.js
 import React, { useState, useEffect, useRef } from 'react';
-// import formConfig from './formConfig.json';
-import { Button, Grid, Box, Typography, IconButton, Chip } from '@mui/material';
-import { Stepper, Step, StepLabel } from '@mui/material';
+import isEqual from 'lodash.isequal';
 
+import Accordion from '@mui/material/Accordion';
+import AccordionSummary from '@mui/material/AccordionSummary';
+import AccordionDetails from '@mui/material/AccordionDetails';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import SearchIcon from "@mui/icons-material/Search";
+import {InputAdornment} from "@mui/material";
+import TextFieldInput from "@mui/material/TextField";
+import FilterListIcon from "@mui/icons-material/FilterList";
+
+// import formConfig from './formConfig.json';
+import { Button, Grid, Box, Typography, IconButton, Chip, FormControl, Autocomplete, DialogActions, TextField, Tooltip } from '@mui/material';
+import { Stepper, Step, StepLabel } from '@mui/material';
+import WestIcon from '@mui/icons-material/West';
 import ShortText from '../form/ShortText';
 import DateField from '../form/Date';
 import SelectField from '../form/Select';
@@ -27,6 +38,7 @@ import NumberField from '../form/NumberField';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 
+import InfoIcon from '@mui/icons-material/Info';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Swal from 'sweetalert2';
@@ -43,8 +55,20 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
 import ActTable from './actSection';
 import RichTextEditor from '../form/RichTextEditor';
+import DropdownWithAdd from '../form/DropdownWithAdd';
+import dayjs from 'dayjs';
+import TableField from '../form/Table';
 
-const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperData, closeForm, table_name, template_name, readOnly, editData, onUpdate, template_id, table_row_id, headerDetails, selectedRow, noPadding, disableEditButton, disableSaveNew, overAllReadonly, investigationViewTable }) => {
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+
+const NormalViewForm = ({ 
+    formConfig, initialData, onSubmit, onError, stepperData, closeForm, table_name, template_name, readOnly, editData, onUpdate, template_id, table_row_id, headerDetails, selectedRow, noPadding, disableEditButton, disableSaveNew, overAllReadonly, investigationViewTable, editedForm
+    , showAssignIo, investigationAction, reloadApproval, showCaseActionBtn, reloadForm , showCaseLog, reloadFormConfig , onSkip , skip , editName ,  oldCase , onViewOldCase, showMagazineView, caseDiary, caseDiaryArray, caseDairy_pt_case_id, caseDairy_ui_case_id, disabledDates, mappingCase, onMappingCase
+    ,CNR,onViewCNR
+ }) => {
+
 //   let storageFormData = localStorage.getItem(template_name + '-formData') ? JSON.parse(localStorage.getItem(template_name + '-formData')) : {};
 
   const [formData, setFormData] = useState({});
@@ -56,6 +80,7 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
   const [stepperPercentage, setStepperPercentage] = useState({});
   const [loading, setLoading] = useState(false); // State for loading indicator
   const [selectedField, setSelectedField] = useState({});
+  const userrole = JSON.parse(localStorage.getItem("role_title")?.toLowerCase().trim()) || "";
 
   const [historyModal, setHistoryModal] = useState(false)
   const [historyData, setHistoryData] = useState([])
@@ -64,12 +89,47 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
     { field: 'updated_value', headerName: 'Updated Value', flex: 1 },
     { field: 'old_value', headerName: 'Old Value', flex: 1 },
     { field: 'username', headerName: 'Edited User', flex: 1 },
-    { field: 'date', headerName: 'Date & Time', flex: 1 }
+    { field: 'date', headerName: 'Date & Time', flex: 1.5 }
   ]);
 
-  const saveNewActionRef = useRef(false);
+    const saveNewActionRef = useRef(false);
     const orderCopyFieldMandatory = useRef(false);
-  
+    const changingFormField = useRef(false);
+    const [uiCaseOptions, setUiCaseOptions] = useState([]);
+
+    const [showActionModal, setShowActionModal] = useState(false);
+    const [caseActionOptions, setCaseActionOptions] = useState([]);
+    const [caseActionSelectedValue, setCaseActionSelectedValue] = useState(null);
+    const [actionCases, setActionCases] = useState([]);
+    const [actionCasesPage, setActionCasesPage] = useState(0);
+    const actionCasesPageSize = 10;
+
+    const [caseHistoryModal, setCaseHistoryModal] = useState(false);
+    const [caseHistoryData, setCaseHistoryData] = useState([]);
+    const [caseHistoryHeaderData, setCasehistoryHeaderData] = useState([
+        { field: "sl_no", headerName: "SL No" , width: 70 },
+        { field: "action", headerName: "Action",flex: 2,
+            renderCell: (params) => (
+                <span dangerouslySetInnerHTML={{ __html: params.value }} />
+            ),
+        },        
+        { field: "actor_name", headerName: "User", flex: 1 },
+        { field: "date", headerName: "Date & Time", flex: 1 },
+    ]);
+    const [paginationCount, setPaginationCount] = useState(1);
+    const [totalPage, setTotalPage] = useState(0);
+    const [totalRecord, setTotalRecord] = useState(0);
+    const [searchValue, setSearchValue] = useState("");
+    const [searchTerm, setSearchTerm] = useState("");
+    const [page, setPage] = useState(1);
+    const [hideClearFilter, setHideClearFilter] = useState(false);
+
+
+    // based on department get division options state
+
+    const [departmentDivisionField, setDepartmentDivisionField] = useState([]);
+
+    // --- end --- 
   
   useEffect(() => {
     if (initialData && Object.keys(initialData).length > 0) {
@@ -86,6 +146,20 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
         setReadonlyTemplate((prev)=>!prev);
         setEditDataTemplate((prev)=>!prev);
     }
+
+    useEffect(()=>{
+        if(table_row_id && (reloadForm !== null && reloadForm !== undefined)){
+            setReadonlyTemplate(true);
+            setEditDataTemplate(false);  
+            editedForm(false);
+        }
+    },[reloadForm]);
+
+    useEffect(()=>{
+        if(reloadFormConfig !== null && reloadFormConfig !== undefined){
+            setNewFormConfig(formConfig);
+        }
+    },[reloadFormConfig]);
 
   const [dateUpdateFlag, setDateUpdateFlag] = useState(false);
 
@@ -127,9 +201,6 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
 
         orderCopyFieldMandatory.current = value
 
-        if (value) {
-            delete formData["field_order_copy_(_17a_done_)"];
-        }
     };
 
 //   useEffect(() => {
@@ -138,6 +209,131 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
 //     }
 //   }, [formData]);
 
+    const [dropdownInputValue, setDropdownInputValue] = useState({});
+
+    const dropdownWithAddItem = async (field, value) => {
+
+        if(!value || value.trim() === ""){
+            toast.error('Please Check the Value Before Adding', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+
+        const result = await Swal.fire({
+            title: 'Add Value?',
+            text: `Do you want to add "${value}" to the dropdown?`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, add it',
+            cancelButtonText: 'No, cancel'
+        });
+
+        if (!result.isConfirmed) {
+            return;
+        }
+
+        var alreadyExistOption = false;
+
+        if(field.options && field.options.length > 0){
+            field.options.map((element)=>{
+                if(element.name.trim() === value.trim()){
+                    alreadyExistOption = true;
+                }
+            });
+        }
+
+        if(alreadyExistOption){
+            toast.error('Option Already Exist', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+
+        var payloadData = {
+            table_name : field.table || null,
+            key: field?.attributes?.[0] || null,
+            value: value,
+            id : field?.id,
+            primaryTable : table_name || null
+        }
+
+        setLoading(true);
+        try {
+            const response = await api.post('/templateData/addDropdownSingleFieldValue', payloadData)
+
+            setLoading(false);
+
+            if (response && response.success && response.data) {
+
+                const {addingValue, options} = response.data;
+
+
+                setSelectedField(prev => ({
+                    ...prev,
+                    options: [...options]
+                }));
+
+                var updatedFormConfig = newFormConfig.map((data) => {
+                    if (data?.id === field?.id) {
+                        if (data.options) {
+                            return { ...data, options: [...options] };
+                        } else {
+                            return { ...data };
+                        }
+                    } else {
+                        return { ...data };
+                    }
+                });
+                setNewFormConfig(updatedFormConfig);
+
+                if(addingValue?.id){
+                    setFormData(prevData => ({
+                        ...prevData,
+                        [field.name]: addingValue?.id
+                    }));
+                }
+
+                setDropdownInputValue(prev => {
+                    if (!prev) return prev;
+                    const updated = { ...prev };
+                    delete updated[field.name];
+                    return updated;
+                });
+            }
+            
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response.data) {
+                toast.error(error.response.data['message'] ? error.response.data['message'] : 'Please try again!', {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+                return;
+            }
+        }
+    }
+
   const handleChangeDate = (name, newValues) => {
     // setFormData({
     //   ...formData,
@@ -145,6 +341,14 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
     // });
     handleMaxDateChange(name,newValues);
   }
+
+    const originalFormConfigRef = useRef([]);
+  
+    useEffect(() => {
+        if (newFormConfig && originalFormConfigRef.current.length === 0) {
+            originalFormConfigRef.current = JSON.parse(JSON.stringify(newFormConfig));
+        }
+    }, [newFormConfig]);
 
     const handleMaxDateChange = (name, values)=>{
 
@@ -158,27 +362,36 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
                 "field_date_of_submission_of_fr_to_court"
             ]
         
-            var updatedFormConfigData = formConfigData.map((field) => {
+            const isBefore2015 = (() => {
+                const date = new Date(values);
+                return !isNaN(date.getTime()) && date.getFullYear() < 2015;
+            })();
+
+            const updatedFormConfigData = formConfigData.map((field) => {
+                const originalField = originalFormConfigRef.current.find(f => f.name === field.name) || {};
+
+                let updatedField = { ...field };
+
                 if (wantUpdateDateFields.includes(field?.name)) {
-                    return {
-                        ...field,
-                        maxValue: values
-                    };
+                    updatedField.minValue = values;
                 }
-                return field;
+
+                if (isBefore2015) {
+                    updatedField.required = false;
+                } else {
+                    updatedField.required = originalField.required || false;
+                }
+
+                return updatedField;
             });
 
             const updatedFormData = { ...formData };
-
-            wantUpdateDateFields.forEach((name) => {
-                delete updatedFormData[name];
-            });
-
-            updatedFormData[name] = values
+            wantUpdateDateFields.forEach((n) => delete updatedFormData[n]);
+            updatedFormData[name] = values;
 
             setFormData(updatedFormData);
-
             setNewFormConfig(updatedFormConfigData);
+
         }else{
             setFormData({
                 ...formData,
@@ -235,6 +448,80 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
             });
         }
 
+        const initialIsEmpty = !initialData || Object.keys(initialData).length === 0;
+        const formHasValues = formData && Object.keys(formData).length > 0 && Object.values(formData).some(val => val !== "" && val !== null && val !== undefined);;
+
+        const checkInitialData = {};
+        const checkFormData = {};
+
+        // newFormConfig.forEach((config) => {
+        //     const name = config.name;
+
+        //     if (initialData && initialData.hasOwnProperty(name)) {
+        //         checkInitialData[name] = Array.isArray(initialData[name]) ? initialData[name].join(',') : initialData[name];
+        //     }
+        //     if (formData.hasOwnProperty(name)) {
+        //         checkFormData[name] = Array.isArray(formData[name]) ? formData[name].join(',') : formData[name];
+        //     }
+        // });  
+
+
+        newFormConfig.forEach((config) => {
+            const name = config.name;
+
+            const initVal = initialData?.[name];
+            const formVal = formData?.[name];
+
+            const normalizeValue = (val) => {
+                if (typeof val === "string") {
+                    try {
+                        val = JSON.parse(val);
+                    } catch {
+                        return val.trim();
+                    }
+                }
+
+                if (val === null || val === undefined) return "";
+
+                if (Array.isArray(val)) {
+                    if (
+                        val.length === 0 ||
+                        (val.length === 1 && typeof val[0] === "object" && Object.keys(val[0] || {}).length === 0)
+                    ) {
+                        return "";
+                    }
+                    return val.map(normalizeValue).join(", ");
+                }
+
+                if (typeof val === "object") {
+                    if (Object.keys(val).length === 0) return "";
+                    return JSON.stringify(val);
+                }
+
+                return String(val).trim();
+            };
+
+            checkInitialData[name] = normalizeValue(initVal);
+            checkFormData[name] = normalizeValue(formVal);
+        });
+
+
+
+        var changingFlag = false;
+
+        if (initialIsEmpty && formHasValues) {                        
+            changingFlag = true
+        } else if (!initialIsEmpty && !isEqual(checkInitialData, checkFormData)) {
+            changingFlag = true;
+        } else {
+            changingFlag = false;
+        }  
+
+        changingFormField.current = changingFlag
+
+        if(editedForm){
+            editedForm(changingFlag);
+        }
 
     },[formData]);
 
@@ -266,33 +553,100 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
 
     const validate = () => {
         let tempErrors = {};
+  
+        const tabFields = newFormConfig.filter((field) => field.type === "tabs");
+
+        const regDateStr = formData?.["field_date_of_registration_by_ps/range"];
+        let isBefore2015 = false;
+
+        if (regDateStr) {
+            const regDate = new Date(regDateStr);
+            if (!isNaN(regDate.getTime()) && regDate.getFullYear() < 2015) {
+                isBefore2015 = true;
+            }
+        }
+
         newFormConfig.forEach((field) => {
 
             if(field?.hide_from_ux){
                 return null
             }
 
-            if(table_name === "cid_under_investigation" || table_name === "cid_pending_trial" || table_name === "cid_enquiries"){
-                const roleTitle = JSON.parse(localStorage.getItem("role_title")?.toLowerCase().trim());
+            // if(table_name === "cid_under_investigation" || table_name === "cid_pending_trial" || table_name === "cid_enquiries"){
+            //     const roleTitle = JSON.parse(localStorage.getItem("role_title")?.toLowerCase().trim());
 
-                if (roleTitle === "admin organization") {
-                    if (!field.ao_field) {
-                        field.disabled = true;
-                        if (field.required) {
-                            field.required = false;
-                        }
-                    }
-                } else {
-                    if (field.ao_field) {
-                        field.disabled = true;
-                        if (field.required) {
-                            field.required = false;
-                        }
-                    }
+            //     if (roleTitle === "admin organization") {
+            //         if (!field.ao_field) {
+            //             field.disabled = true;
+            //             if (field.required) {
+            //                 field.required = false;
+            //             }
+            //         }
+            //     } else {
+            //         if (field.ao_field) {
+            //             field.disabled = true;
+            //             if (field.required) {
+            //                 field.required = false;
+            //             }
+            //         }
+            //     }
+            // }
+
+            if (field?.tabOption) {
+                const matchedTab = tabFields.find((tabField) =>
+                    tabField?.options?.some((opt) => opt.code === field.tabOption)
+                );
+
+                if (!matchedTab) return null;
+
+                const selectedTabValue = formData?.[matchedTab?.name];
+
+                if (selectedTabValue !== field.tabOption) {
+                    return null;
                 }
             }
 
-            if (Boolean(field.required) && !formData[field.name]) {
+            if(field.type === "table"){
+                if (isBefore2015) return null;
+                let error = false;
+
+                let tableData = formData?.[field?.name];
+
+                if (typeof tableData === "string"){
+                    try {
+                        tableData = JSON.parse(tableData);
+                    } catch (e) {
+                        error = true;
+                    }
+                }
+
+                if (Array.isArray(tableData)) {
+                    for (const row of tableData) {
+                        for (const headerObj of field.tableHeaders) {
+                            const key = headerObj?.header;
+
+                            if(headerObj?.fieldType?.required){
+                                const value = row?.[key];
+    
+                                if (value === undefined || value === null || (typeof value === "string" && value.trim() === "") || (Array.isArray(value) && value.length === 0)) {
+                                    error = true;
+                                    break;
+                                }
+                            }
+
+                        }
+                        if (error) break;
+                    }
+                }
+
+                if(error){
+                    return tempErrors[field.name] = `${field.label} is required`;
+                }
+
+                return null;
+            }
+
+            if (Boolean(field.required) && !formData[field.name] && !isBefore2015) {
                 tempErrors[field.name] = `${field.label} is required`;
             } else if (field.minLength && formData[field.name] !== "" && formData[field.name]?.length < field.minLength) {
                 tempErrors[field.name] = `${field.label} must be at least ${field.minLength} characters long`;
@@ -324,6 +678,17 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
     const roleTitle = JSON.parse(localStorage.getItem("role_title")?.toLowerCase().trim());
 
     if(roleTitle === "admin organization" && table_name === "cid_under_investigation"){
+
+        const regDateStr = formData?.["field_date_of_registration_by_ps/range"];
+        let skipActValidation = false;
+
+        if (regDateStr) {
+            const regDate = new Date(regDateStr);
+            if (!isNaN(regDate.getTime()) && regDate.getFullYear() < 2015) {
+                skipActValidation = true;
+            }
+        }
+        if (!skipActValidation) {
         var errorActFlag = false;
     
         tableActRow.map((element)=>{
@@ -345,6 +710,7 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
             });
             return
         }
+    }
     }
 
     if (roleTitle === "admin organization" && orderCopyFieldMandatory.current === true && !formData?.["field_order_copy_(_17a_done_)"]) {
@@ -480,10 +846,111 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
     }));
   };
 
+const handleTableDataChange = (field, data) => {
+  setFormData(prevData => ({
+    ...prevData,
+    [field.name]: JSON.stringify(data),
+  }));
+
+   if (field.name === "field_property_details") {
+    setTimeout(() => {
+        const hasAnyNoEvidence = (data || []).some(
+        row => row["Used as Evidence"] === "No"
+        );
+
+        const shouldHideReason = !hasAnyNoEvidence;
+
+        const updatedFormConfig = (Array.isArray(newFormConfig) ? newFormConfig : []).map(fld => {
+        if (fld.name === "field_property_details" && Array.isArray(fld.tableHeaders)) {
+            let updatedHeaders = [...fld.tableHeaders];
+
+            const hasReason = updatedHeaders.some(
+            header => header.header?.toLowerCase() === "reason"
+            );
+
+            if (shouldHideReason && hasReason) {
+            updatedHeaders = updatedHeaders.filter(
+                header => header.header?.toLowerCase() !== "reason"
+            );
+
+            const updatedData = (data || []).map(row => {
+                const newRow = { ...row };
+                delete newRow["Reason"];
+                return newRow;
+            });
+
+            setFormData(prev => ({
+                ...prev,
+                [field.name]: JSON.stringify(updatedData)
+            }));
+            }
+
+            else if (!shouldHideReason && !hasReason) {
+            const usedAsEvidenceIndex = updatedHeaders.findIndex(
+                header => header.header?.toLowerCase() === "used as evidence"
+            );
+
+            const newHeader = {
+                header: "Reason",
+                fieldType: {
+                type: "text_area",
+                required: true
+                },
+            };
+
+            if (usedAsEvidenceIndex !== -1) {
+                updatedHeaders.splice(usedAsEvidenceIndex + 1, 0, newHeader);
+            } else {
+                updatedHeaders.push(newHeader);
+            }
+            }
+
+            return {
+            ...fld,
+            tableHeaders: updatedHeaders,
+            };
+        }
+
+        return fld;
+        });
+
+        setNewFormConfig(updatedFormConfig);
+    }, 100);
+   }
+
+};
+
+
+
   const handleAutocomplete = (field, selectedValue) => {
+
+    // const selectedFullObject =
+    //       field.name === "field_ui_case" && typeof selectedValue === "number"
+    //         ? uiCaseOptions.find((opt) => opt.code === selectedValue)
+    //         : selectedValue;
+
+    //         console.log("selectedFullObjectselectedFullObject",selectedFullObject)
+    //   let updatedFormData = {
+    //     ...formData,
+    //     [field.name]: selectedFullObject?.code || selectedValue,
+    //   };
+
+    //   setSelectedField(field);
+
+    // if (
+    //   field.name === "field_ui_case" &&
+    //   field.table === "cid_under_investigation" &&
+    //   selectedFullObject &&
+    //   table_name === "cid_pending_trial"
+    // ) {
+    //   updatedFormData["field_ps_crime_number"] = selectedFullObject.crime_number || "";
+    //   updatedFormData["field_cid_crime_no./enquiry_no"] = selectedFullObject.cid_enquiry_number || "";
+    //   updatedFormData["field_name_of_the_police_station"] = selectedFullObject.police_station?.id || "";
+    // }
 
     let updatedFormData = { ...formData, [field.name]: selectedValue };
     setSelectedField(field);
+    
 
     if (field.table) {
       var updatedFormConfig = newFormConfig.map((data) => {
@@ -520,9 +987,64 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
       setNewFormConfig(updatedFormConfig);
     }
 
-    setFormData(updatedFormData);
+    if (field.name === "field_mahajar_type") {
+      const updatedFormConfig = newFormConfig.map((fld) => {
+        if (fld.name === "field_is_nill_mahazar_applicable") {
+          if (selectedValue === "Seizure Mahazar") {
+            return { ...fld, hide_from_ux: false, required: true };
+          } else {
+            return { ...fld, hide_from_ux: true, required: false };
+          }
+        }
+        return fld;
+      });
+      setNewFormConfig(updatedFormConfig);
+    }
 
-  }
+    if (table_name === "cid_ui_case_notices" && field.tabOption === "41A") {
+        if (field.name === "field_whether_fir_&_complaint_copy_enclosed") {
+            if (selectedValue === "Yes" || selectedValue === "No") {
+            const updatedFormConfig = newFormConfig.map((fld) => {
+                if (fld.name === "field_fir_copy" || fld.name === "field_complaint_copy") {
+                if (selectedValue === "Yes") {
+                    return { ...fld, hide_from_ux: false, required: true };
+                } else {
+                    return { ...fld, hide_from_ux: true, required: false };
+                }
+                }
+                return fld;
+            });
+
+            setNewFormConfig(updatedFormConfig);
+            }
+        }
+    }
+
+    if (table_name === "cid_pt_case_petition") {
+        if (field.name === "field_stay_status") {
+            const updatedFormConfig = newFormConfig.map((fld) => {
+                if (fld.name === "field_accused_name") {
+                    return {
+                        ...fld,
+                        required: selectedValue === "Partial" ? true : false,
+                    };
+                }
+
+                if (fld.name === "field_stay_status") {
+                    return {
+                        ...fld,
+                        hide_from_ux: selectedValue === "Stay" ? false : true,
+                        required: selectedValue === "Stay" ? true : false,
+                    };
+                }
+                return fld;
+            });
+            setNewFormConfig(updatedFormConfig);
+        }
+    }
+
+    setFormData(updatedFormData);
+}
 
   const handleCheckBoxChange = (fieldName, fieldCode, selectedValue) => {
     setFormData(prevData => {
@@ -669,6 +1191,217 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
             callApi();
             }
         }
+
+        if(selectedField && selectedField?.name === "field_io_name"){
+            
+            const gettingUserDetails = async () => {
+                if (formData["field_io_name"]) {
+                    try {
+                        const response = await api.post("cidMaster/getUserParticularDetails", {
+                            user_id: formData["field_io_name"]
+                        });
+
+                        const data = response?.data;
+                        if (!data) return;
+
+                        let updatedFormData = {};
+
+                        newFormConfig.forEach((field) => {
+                            if (field?.name === "field_io_code/kgid_number" && data?.kgid_id) {
+                                updatedFormData["field_io_code/kgid_number"] = data.kgid_id;
+                            }
+
+                            if (field?.name === "field_io_rank_(designation)") {
+                                if (field?.type === "multidropdown") {
+                                    updatedFormData["field_io_rank_(designation)"] = data?.designations || [];
+                                } else {
+                                    updatedFormData["field_io_rank_(designation)"] = data?.designations?.[0] || "";
+                                }
+                            }
+                        });
+
+                        setFormData((prevData) => ({
+                            ...prevData,
+                            ...updatedFormData
+                        }));
+
+                    } catch (error) {
+                        console.error("Error fetching user details:", error);
+                    }
+                }else{
+                    let updatedFormData = {};
+
+                    newFormConfig.forEach((field) => {
+                        if (field?.name === "field_io_code/kgid_number" && formData?.['field_io_code/kgid_number']) {
+                            updatedFormData["field_io_code/kgid_number"] = "";
+                        }
+
+                        if (field?.name === "field_io_rank_(designation)" && formData?.['field_io_rank_(designation)']) {
+                            if (field?.type === "multidropdown") {
+                                updatedFormData["field_io_rank_(designation)"] = [];
+                            } else {
+                                updatedFormData["field_io_rank_(designation)"] = "";
+                            }
+                        }
+                    });
+
+                    setFormData((prevData) => ({
+                        ...prevData,
+                        ...updatedFormData
+                    }));
+                }
+            };
+
+            gettingUserDetails();
+        }
+
+        if(selectedField && selectedField?.name && selectedField?.table === "department" && departmentDivisionField.length > 1){
+
+            var divisionField = departmentDivisionField.find((field)=>field.table === "division");
+
+            if(divisionField && divisionField?.name){
+
+                const gettingDivisionBasedOnDepartment = async ()=>{
+                    try {
+
+                        var departmentPayload = {
+                            "department_id" : formData[selectedField.name]
+                        }
+
+                        const response = await api.post("cidMaster/getDivisionBasedOnDepartment", departmentPayload);
+        
+                        const data = response?.data;
+
+                        if (!data){
+                            setNewFormConfig((prevFormConfig) => {
+                                const updatedFormConfig = prevFormConfig.map((configData) => {
+                                    if (configData?.name === divisionField?.name) {
+                                        return { ...configData, options: [] };
+                                    }
+                                    return configData;
+                                });
+                                return updatedFormConfig;
+                            });
+                            return;
+                        }
+
+                        var updatedOptions = data.map((divisionData) => {
+                                                return {
+                                                    name: divisionData["division_name"],
+                                                    code: divisionData["division_id"],
+                                                };
+                                            });
+
+                        setNewFormConfig((prevFormConfig) => {
+                            const updatedFormConfig = prevFormConfig.map((configData) => {
+                                if (configData?.name === divisionField?.name) {
+                                    return { ...configData, options: updatedOptions };
+                                }
+                                return configData;
+                            });
+                            return updatedFormConfig;
+                        });
+
+                        setFormData((prevData) => ({
+                            ...prevData,
+                            [divisionField.name] : ""
+                        }));
+                        
+                    } catch (error) {
+                        console.error("Error fetching division details:", error);
+                        setNewFormConfig((prevFormConfig) => {
+                            const updatedFormConfig = prevFormConfig.map((configData) => {
+                                if (configData?.name === divisionField?.name) {
+                                    return { ...configData, options: [] };
+                                }
+                                return configData;
+                            });
+                            return updatedFormConfig;
+                        });
+                    }
+                }
+
+                gettingDivisionBasedOnDepartment();
+            }
+        }
+
+        if ( selectedField && selectedField?.name && selectedField?.table === "cid_district" && newFormConfig.some((field) => field.table === "cid_police_station")) {
+            const policeStationField = newFormConfig.find((field) => field.table === "cid_police_station");
+
+            if (policeStationField && policeStationField?.name) {
+                const getPoliceStationsBasedOnDistrict = async () => {
+                    try {
+                const districtIdValue = formData[selectedField.name];
+
+                if (!districtIdValue) {
+                    console.warn("District ID is empty or undefined. Aborting request.");
+                    return;
+                }
+
+                const districtPayload = {
+                    district_id: districtIdValue,
+                };
+
+                console.log("Sending districtPayload to backend:", districtPayload);
+
+                const response = await api.post("cidMaster/getPoliceStationsBasedOnDistrict", districtPayload);
+                const data = response?.data;
+
+                console.log("Received response:", data);
+
+                if (!Array.isArray(data) || data.length === 0) {
+                    console.warn("No police stations found or invalid response format.");
+
+                    setNewFormConfig((prevFormConfig) =>
+                        prevFormConfig.map((configData) => {
+                            if (configData?.name === policeStationField?.name) {
+                                return { ...configData, options: [] };
+                            }
+                            return configData;
+                        })
+                    );
+                    return;
+                }
+
+                const updatedOptions = data.map((psData) => ({
+                    name: psData["field_name_of_the_police_station"],
+                    code: psData["id"],
+                }));
+
+
+                console.log("Updated police station options:", updatedOptions);
+
+                setNewFormConfig((prevFormConfig) =>
+                    prevFormConfig.map((configData) => {
+                        if (configData?.name === policeStationField?.name) {
+                            return { ...configData, options: updatedOptions };
+                        }
+                        return configData;
+                    })
+                );
+
+                setFormData((prevData) => ({
+                    ...prevData,
+                    [policeStationField.name]: ""
+                }));
+            } catch (error) {
+                console.error("Error while fetching police stations:", error);
+
+                setNewFormConfig((prevFormConfig) =>
+                    prevFormConfig.map((configData) => {
+                        if (configData?.name === policeStationField?.name) {
+                            return { ...configData, options: [] };
+                        }
+                        return configData;
+                    })
+                );
+            }
+        };
+
+        getPoliceStationsBasedOnDistrict();
+    }
+        }
+
     }, [selectedField]);
 
        useEffect(() => {
@@ -733,7 +1466,7 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
                                    if (getOptionsValue && getOptionsValue.data) {                                
                                        updatedOptions = getOptionsValue.data.map((templateData) => {
    
-                                           const nameKey = Object.keys(templateData).find((key) => !["id", "created_at", "updated_at"].includes(key));
+                                           const nameKey = Object.keys(templateData).find((key) => !["id", "created_at", "updated_at", "field_approval_done_by"].includes(key));
    
                                            var headerName = nameKey;
                                            var headerId = 'id';
@@ -834,7 +1567,7 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
                                    if (getOptionsValue && getOptionsValue.data) {                                
                                        updatedOptions = getOptionsValue.data.map((templateData) => {
    
-                                           const nameKey = Object.keys(templateData).find((key) => !["id", "created_at", "updated_at"].includes(key));
+                                           const nameKey = Object.keys(templateData).find((key) => !["id", "created_at", "updated_at", "field_approval_done_by"].includes(key));
    
                                            var headerName = nameKey;
                                            var headerId = 'id';
@@ -958,9 +1691,29 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
     }
   }
 
-  const CloseFormModal = () => {
+  const CloseFormModal = async () => {
     if (closeForm) {
-      closeForm(false);
+
+        if(changingFormField.current === true){
+            const result = await Swal.fire({
+                title: 'Unsaved Changes',
+                text: 'You have unsaved changes. Are you sure you want to leave?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, Exit',
+                cancelButtonText: 'No',
+            });
+    
+            if (result.isConfirmed) {
+                if(editedForm){
+                    editedForm(false);
+                }
+                closeForm(false);
+            }
+        }else{
+            closeForm(false);
+        }
+
     }
   }
 
@@ -1010,17 +1763,47 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
             }
 
             const readableDate = new Date(data.updated_at).toLocaleString('en-US', {
-              year: 'numeric',
-              month: 'long',
-              day: '2-digit'
+              year: "numeric",
+                month: "long",
+                day: "2-digit",
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit",
+                hour12: true,
             });
 
-            return {
-              ...data,
-              id: data.profile_history_id,
-              sl_no: index + 1,
-              username: fullname,
-              date: readableDate
+            if(payload.field_name === "field_io_name"){
+
+                sethistoryHeaderData([
+                    { field: 'sl_no', headerName: 'Sl. No.' },
+                    { field: 'updated_user', headerName: 'New IO', flex: 4 },
+                    { field: 'updated_user_mobile', headerName: 'New IO Mobile', flex: 4 },
+                    { field: 'old_user', headerName: 'Old IO', flex: 4 },
+                    { field: 'old_user_mobile', headerName: 'Old IO Mobile', flex: 4 },
+                    { field: 'username', headerName: 'Updated By', flex: 4 },
+                    { field: 'date', headerName: 'Updated At', flex: 4 }
+                  ]);
+                return {
+                  ...data,
+                  id: data.profile_history_id,
+                  sl_no: index + 1,
+                  username: fullname,
+                  date: readableDate,
+                  old_user: data.old_value_details &&  data.old_value_details.name || "",
+                  old_user_mobile: data.old_value_details &&  data.old_value_details.mobile || "",
+                  updated_user: data.updated_value_details &&  data.updated_value_details.name || "",
+                  updated_user_mobile: data.updated_value_details &&  data.updated_value_details.mobile || "",
+                }
+             
+            }
+            else{
+                return {
+                  ...data,
+                  id: data.profile_history_id,
+                  sl_no: index + 1,
+                  username: fullname,
+                  date: readableDate
+                }
             }
           });
 
@@ -1057,113 +1840,304 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
   }
 
 
-    useEffect(() => {
-        const fetchTemplateData = async () => {
-            try { 
-                const apiCalls = newFormConfig
-                .filter((field) => field?.api && field?.table && (!field?.is_dependent || field?.is_dependent == "false"))
-                .map(async (field) => {
-                    try {
+    const fetchTemplateData = async () => {
+        try { 
+            const apiCalls = newFormConfig
+            .filter((field) => field?.api && field?.table && (!field?.is_dependent || field?.is_dependent == "false"))
+            .map(async (field) => {
+                try {
 
-                        var apiPayload = {};
+                    var apiPayload = {};
 
-                        if(field.api === "/templateData/getTemplateData"){
-                            apiPayload = {
-                                table_name: field.table
-                            }
-                        }else if(field.table === "users"){
-                            apiPayload = {
-                                designation_id : localStorage.getItem('designation_id') ? localStorage.getItem('designation_id') : null,
-                                get_flag : field?.user_hierarchy || null
-                            }
-                        }
-
-                        var payloadApi = field.api
-
-                        if((field.table === "cid_ui_case_accused" || field.table === "cid_ui_case_witness") && selectedRow && field?.particular_case_options){
-
-                            payloadApi = "templateData/getAccusedWitness"
-
-
-                            if(table_name === "cid_under_investigation" || investigationViewTable === "cid_under_investigation"){
-                                apiPayload = {
-                                    "table_name": field.table,
-                                    "ui_case_id": selectedRow?.['id'] || "",
-                                    "pt_case_id": selectedRow?.['pt_case_id'] || "",
-                                }
-                            }else if(table_name === "cid_pending_trial" || investigationViewTable === "cid_pending_trial"){
-                                apiPayload = {
-                                    "table_name": field.table,
-                                    "ui_case_id": selectedRow?.['ui_case_id'] || "",
-                                    "pt_case_id": selectedRow?.['id'] || "",
-                                }
-                            }
-
-                        }
-
-                        const response = await api.post(payloadApi, apiPayload);
-
-                        if (!response.data) return { id: field.id, options: [] };
-
-                        const updatedOptions = response.data.map((templateData) => {
-
-                            const nameKey = Object.keys(templateData).find((key) => !["id", "created_at", "updated_at"].includes(key));
-
-                            var headerName = nameKey;
-                            var headerId = 'id';
-
-                            if(field.table === "users"){
-                                headerName = "name"
-                                headerId =  "user_id"
-                            }else if(field.api !== "/templateData/getTemplateData"){
-                                headerName = field.table + "_name"
-                                headerId =  field.table + "_id"
-                            }
-
-                            return {
-                                name: templateData[headerName],
-                                code: templateData[headerId],
-                            };
+                    if (field.name === "field_ui_case") {
+                        const response = await api.post("cidMaster/fetchUICaseDetails", {
+                            allowedDepartmentIds : localStorage.getItem("allowedDepartmentIds") ,
+                            allowedDivisionIds : localStorage.getItem("allowedDivisionIds") ,
+                            allowedUserIds :  localStorage.getItem("allowedUserIds") 
                         });
-
+                        const updatedOptions = response.data.map((data) => ({
+                            ...data,
+                            name: data.name,
+                            code: data.code,
+                        }));
+                        setUiCaseOptions(updatedOptions);
+                        setNewFormConfig((prevFormConfig) => {
+                            return prevFormConfig.map((data) => {
+                                if (data.name === field.name) {
+                                    return { ...data, options: updatedOptions };
+                                }
+                                return data;
+                            });
+                        });
                         return { id: field.id, options: updatedOptions };
-
-                    } catch (error) {
-                        return { id: field.id, options: [] };
                     }
-                });
+                    
+                    if(field.api === "/templateData/getTemplateData"){
+                        apiPayload = {
+                            table_name: field.table
+                        }
+                    }else if(field.table === "users"){
+                        apiPayload = {
+                            designation_id : localStorage.getItem('designation_id') ? localStorage.getItem('designation_id') : null,
+                            get_flag : field?.user_hierarchy || null
+                        }
+                    }
 
-                const results = await Promise.all(apiCalls);
+                    var payloadApi = field.api
 
-                var optionUpdateFields = []
+                    if((field.table === "cid_ui_case_accused" || field.table === "cid_pt_case_witness") && selectedRow && field?.particular_case_options){
 
-                setNewFormConfig((prevFormConfig) => {
-                    const updatedFormConfig = prevFormConfig.map((field) => {
-                        const updatedField = results.find((res) => res.id === field.id);
-                        if (updatedField) {
-                            if (updatedField?.options.length === 1) {
-                                const onlyOption = updatedField.options[0];
+                        payloadApi = "templateData/getAccusedWitness"
+
+                        if(table_name === "cid_under_investigation" || investigationViewTable === "cid_under_investigation"){
+                            apiPayload = {
+                                "table_name": field.table,
+                                "ui_case_id": selectedRow?.['id'] || "",
+                                "pt_case_id": selectedRow?.['pt_case_id'] || "",
+                            }
+                        }else if(table_name === "cid_pending_trial" || investigationViewTable === "cid_pending_trial"){
+                            apiPayload = {
+                                "table_name": field.table,
+                                "ui_case_id": selectedRow?.['ui_case_id'] || "",
+                                "pt_case_id": selectedRow?.['id'] || "",
+                            }
+                        }
+                        else
+                        {
+                            apiPayload = {
+                                "table_name": field.table,
+                                "ui_case_id": selectedRow?.['ui_case_id'] || "",
+                                "pt_case_id": selectedRow?.['pt_case_id'] || "",
+                            }
+                        }
+
+                    }
+
+                    const response = await api.post(payloadApi, apiPayload);
+
+                    if (!response.data) return { id: field.id, options: [] };
+
+                    const updatedOptions = response.data.map((templateData) => {
+
+                        const nameKey = Object.keys(templateData).find((key) => !["id", "created_at", "updated_at", "created_by", "field_approval_done_by"].includes(key));
+
+                        var headerName = nameKey;
+                        var headerId = 'id';
+
+                        if(field.table === "users"){
+                            headerName = "name"
+                            headerId =  "user_id"
+                        }else if(field.api !== "/templateData/getTemplateData"){
+                            headerName = field.table + "_name"
+                            headerId =  field.table + "_id"
+                        }
+
+                        return {
+                            name: templateData[headerName],
+                            code: templateData[headerId],
+                        };
+                    });
+
+                    return { id: field.id, options: updatedOptions };
+
+                } catch (error) {
+                    return { id: field.id, options: [] };
+                }
+            });
+
+            const results = await Promise.all(apiCalls);
+
+            var optionUpdateFields = []
+
+            setNewFormConfig((prevFormConfig) => {
+                const updatedFormConfig = prevFormConfig.map((field) => {
+                    const updatedField = results.find((res) => res.id === field.id);
+                    if (updatedField) {
+                        if (updatedField?.options.length === 1) {
+                            const onlyOption = updatedField.options[0];
+
+                            const gettingFormdata = Object.keys(formData).length === 0 ? (initialData || formData) : formData;
+
+                            if(!gettingFormdata[field?.name] || gettingFormdata[field?.name] === ""){
                                 setFormData((prevData) => ({
                                     ...prevData,
                                     [field.name]: onlyOption.code
                                 }));
-
-                                optionUpdateFields.push(field);
                             }
-                            return { ...field, options: updatedField.options };
+
+                            optionUpdateFields.push(field);
                         }
-                        return field;
-                    });
-                    return updatedFormConfig;
+                        return { ...field, options: updatedField.options };
+                    }
+                    return field;
                 });
+                return updatedFormConfig;
+            });
 
-                gettingDependentedOptions(optionUpdateFields);
+            gettingDependentedOptions(optionUpdateFields);
+            
+            const findDepartmentDivisionField = newFormConfig.filter((element)=>{
+                if(element?.table && (element?.table === "division" || element?.table === "department")){
+                    return element
+                }
+            });
 
-            } catch (error) {
-                console.error("Error fetching template data:", error);
+            if(findDepartmentDivisionField?.length > 1){
+    
+                setDepartmentDivisionField(findDepartmentDivisionField);
+
+                var departmentField = findDepartmentDivisionField.find((field)=>field.table === "department");
+
+                if(departmentField && departmentField?.name && initialData[departmentField?.name]){
+
+                    const gettingDivisionBasedOnDepartment = async ()=>{
+                        try {
+
+                            var departmentPayload = {
+                                "department_id" : initialData[departmentField.name]
+                            }
+
+                            const response = await api.post("cidMaster/getDivisionBasedOnDepartment", departmentPayload);
+            
+                            const data = response?.data;
+
+                            if (!data){
+                                setNewFormConfig((prevFormConfig) => {
+                                    const updatedFormConfig = prevFormConfig.map((data) => {
+                                        if (data?.table === "division") {
+                                            return { ...data, options: [] };
+                                        }
+                                        return data;
+                                    });
+                                    return updatedFormConfig;
+                                });
+                                return;
+                            }
+
+                            var updatedOptions = data.map((divisionData) => {
+                                                    return {
+                                                        name: divisionData["division_name"],
+                                                        code: divisionData["division_id"],
+                                                    };
+                                                });
+
+                            setNewFormConfig((prevFormConfig) => {
+                                const updatedFormConfig = prevFormConfig.map((data) => {
+                                    if (data?.table === "division") {
+                                        return { ...data, options: updatedOptions };
+                                    }
+                                    return data;
+                                });
+                                return updatedFormConfig;
+                            });
+                            
+                        } catch (error) {
+                            console.error("Error fetching division details:", error);
+                            setNewFormConfig((prevFormConfig) => {
+                                const updatedFormConfig = prevFormConfig.map((data) => {
+                                    if (data?.table === "division") {
+                                        return { ...data, options: [] };
+                                    }
+                                    return data;
+                                });
+                                return updatedFormConfig;
+                            });
+                        }
+                    }
+
+                    gettingDivisionBasedOnDepartment();
+                }else{
+                    setNewFormConfig((prevFormConfig) => {
+                        const updatedFormConfig = prevFormConfig.map((data) => {
+                            if (data?.table === "division") {
+                                return { ...data, options: [] };
+                            }
+                            return data;
+                        });
+                        return updatedFormConfig;
+                    });
+                }
+
+            }else{
+                setDepartmentDivisionField([]);
             }
-        };
 
+            const findDistrictPoliceStationField = newFormConfig.filter((element) => {
+                if (element?.table && (element?.table === "cid_district" || element?.table === "cid_police_station")) {
+                    return element;
+                }
+            });
+
+            if (findDistrictPoliceStationField?.length > 1) {
+                const districtField = findDistrictPoliceStationField.find((field) => field.table === "cid_district");
+                const policeStationField = findDistrictPoliceStationField.find((field) => field.table === "cid_police_station");
+
+                if (districtField && districtField?.column_name && initialData[districtField.column_name]) {
+                    const getPoliceStationsBasedOnDistrict = async () => {
+                        try {
+                            const districtPayload = {
+                                district_id: initialData[districtField.column_name]
+                            };
+
+                            const response = await api.post("cidMaster/getPoliceStationsBasedOnDistrict", districtPayload);
+                            const data = response?.data;
+
+                            if (!data || data.length === 0) {
+                                setNewFormConfig((prevFormConfig) => {
+                                    return prevFormConfig.map((field) => {
+                                        if (field?.table === "cid_police_station") {
+                                            return { ...field, options: [] };
+                                        }
+                                        return field;
+                                    });
+                                });
+                                return;
+                            }
+
+                            const updatedOptions = data.map((psData) => ({
+                                name: psData["field_name_of_the_police_station"],
+                                code: psData["id"],
+                            }));
+
+                            setNewFormConfig((prevFormConfig) => {
+                                return prevFormConfig.map((field) => {
+                                    if (field?.table === "cid_police_station") {
+                                        return { ...field, options: updatedOptions };
+                                    }
+                                    return field;
+                                });
+                            });
+                        } catch (error) {
+                            console.error("Error fetching police stations:", error);
+                            setNewFormConfig((prevFormConfig) => {
+                                return prevFormConfig.map((field) => {
+                                    if (field?.table === "cid_police_station") {
+                                        return { ...field, options: [] };
+                                    }
+                                    return field;
+                                });
+                            });
+                        }
+                    };
+
+                    getPoliceStationsBasedOnDistrict();
+                } else {
+                    setNewFormConfig((prevFormConfig) => {
+                        return prevFormConfig.map((field) => {
+                            if (field?.table === "cid_police_station") {
+                                return { ...field, options: [] };
+                            }
+                            return field;
+                        });
+                    });
+                }
+            }
+        } catch (error) {
+            console.error("Error fetching template data:", error);
+        }
+    };
+
+    useEffect(() => {
         if (newFormConfig.length > 0) {
             fetchTemplateData();
         }
@@ -1285,8 +2259,998 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
         }));
     };
 
-//   console.log(stepperConfigData, "stepperConfigData stepperConfigData")
-//   console.log(stepperData, "stepperData stepperData")
+    const showTransferToOtherDivision = async (options, selectedRow, selectedFieldValue) => {
+        
+        const selectedFieldData = selectedRow[selectedFieldValue];
+
+        const viewTableData = {
+            table_name: options.table,
+        };
+        
+        setLoading(true);
+        try {
+
+            const viewTemplateResponse = await api.post("/templates/viewTemplate",viewTableData);
+            setLoading(false);
+        
+            if (viewTemplateResponse && viewTemplateResponse.success && viewTemplateResponse["data"]) {
+                
+                if (viewTemplateResponse["data"].fields) {
+            
+                    const getSelectedField = viewTemplateResponse["data"].fields.filter(
+                        (data) => data.name === options.field
+                    );
+
+                    if (getSelectedField.length > 0) {
+
+                        var newPayload = {};
+
+                        if(getSelectedField[0].table === "users"){
+                            if(selectedRow['field_division']){
+                                newPayload['division_id'] = selectedRow['field_division']
+                                newPayload['designation_id'] = localStorage.getItem('designation_id') || null
+                            }
+                        }
+                        
+                        if (getSelectedField[0].api) {
+            
+                            var payloadApi = {
+                                table_name: getSelectedField[0].table,
+                            };
+
+                            if(getSelectedField[0].table === "users"){
+                                payloadApi = {
+                                    ...payloadApi,
+                                    ...newPayload,
+                                    get_flag : getSelectedField[0]?.user_hierarchy || "lower"
+                                }
+                            }
+
+                            setLoading(true);
+
+                            try {
+                                const getOptionsValue = await api.post(getSelectedField[0].api, payloadApi);
+                                setLoading(false);
+                
+                                var updatedOptions = [];
+
+                                if (getSelectedField[0].api === "/templateData/getTemplateData") {
+                                    updatedOptions = getOptionsValue.data.map((templateData) => {
+                                        const nameKey = Object.keys(templateData).find(
+                                            (key) => !["id", "created_at", "updated_at", "field_approval_done_by"].includes(key)
+                                        );
+                                        return {
+                                            name: nameKey ? templateData[nameKey] : "",
+                                            code: templateData.id,
+                                        };
+                                    });
+                                } else {
+                                    updatedOptions = getOptionsValue.data.map((field) => ({
+                                        name: getSelectedField[0].table === "users" ? field.name : field[getSelectedField[0].table + "_name"],
+                                        code: getSelectedField[0].table === "users" ? field.user_id: field[getSelectedField[0].table + "_id"],
+                                    }));
+                                }
+
+                                setShowActionModal(true);
+                                setCaseActionOptions(updatedOptions);
+                                setCaseActionSelectedValue(selectedFieldData ? selectedFieldData : null);
+
+
+                            } catch (error) {
+                                setLoading(false);
+                                if (error?.response?.data) {
+                                    toast.error(error.response.data.message || "selected field not found",{
+                                        position: "top-right",
+                                        autoClose: 3000,
+                                        hideProgressBar: false,
+                                        closeOnClick: true,
+                                        pauseOnHover: true,
+                                        draggable: true,
+                                        progress: undefined,
+                                        className: "toast-error",
+                                    });
+                                }
+                            }
+                        }
+                    } else {
+                        toast.error("Can't able to find selected field", {
+                            position: "top-right",
+                            autoClose: 3000,
+                            hideProgressBar: false,
+                            closeOnClick: true,
+                            pauseOnHover: true,
+                            draggable: true,
+                            progress: undefined,
+                            className: "toast-error",
+                        });
+                    }
+                }
+            } else {
+                toast.error(viewTemplateResponse.message || "Failed to get Template. Please try again.",{
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        } catch (error) {
+            setLoading(false);
+            if (error?.response?.data) {
+                toast.error(error.response.data.message || "Please Try Again!",{
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        }
+    };
+
+    const updateCaseActions = async ()=>{
+
+        if(!investigationAction.field){
+            toast.error("Can't able to find fields !",{
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+
+        if(!caseActionSelectedValue || caseActionSelectedValue === ""){
+            toast.error("Please Select Any value before submit !",{
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+
+        const userId = localStorage.getItem("designation_id");
+
+        if(!userId){
+            toast.error("User Not Found !", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+
+        var roleTitle = JSON.parse(localStorage.getItem("role_title")) || "";
+        var designationName = localStorage.getItem("designation_name") || "";
+        var gettingDesignationName = ""
+
+        if(roleTitle.toLowerCase() === "investigation officer"){
+            gettingDesignationName = "IO";
+        }else{
+            var splitingValue = designationName.split(" ");
+            if(splitingValue?.[0]){
+                gettingDesignationName = splitingValue[0].toUpperCase();
+            }
+        }
+
+        var payload = {
+            fields : {
+                [investigationAction.field]: caseActionSelectedValue,
+                "field_approval_done_by": gettingDesignationName,
+            },
+            "table_name": table_name,
+            "id": initialData?.id,
+            "Referenceid": initialData?.id,
+            "approvalDate": dayjs()?.$d,
+            "approvalItem": investigationAction?.approval_items,
+            "approvedBy": userId,
+            "remarks": investigationAction?.name + " Submitted By " + gettingDesignationName,
+            "module": template_name,
+            designation_id: localStorage.getItem("designation_id") || null,
+        }
+
+        setLoading(true);    
+        try {
+            const response = await api.post("/templateData/updateFieldsWithApproval", payload);
+            setLoading(false);
+
+            if (response?.success) {
+                toast.success(response.message || "Success", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-success",
+                });
+
+                setShowActionModal(false);
+                setCaseActionOptions([]);
+                setCaseActionSelectedValue(null);
+
+                if(reloadApproval && response.data){
+                    reloadApproval(response.data);
+                }
+
+            } else {
+                setLoading(false);
+                toast.error(response.message || "Something Went Wrong !", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        } catch (error) {
+            setLoading(false);
+            toast.error(error?.response?.data?.message || "Please Try Again!", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+        }
+    }
+
+    useEffect(() => {
+        if (caseHistoryModal && template_id && table_row_id) {
+        CaseLogs();
+        }
+    }, [page, searchTerm, caseHistoryModal]);
+
+    const CaseLogs = async () => {
+        setLoading(true);
+        const payload = {
+        template_id,
+        table_row_id,
+        page,
+        limit: 10,
+        search: searchTerm,
+        };
+
+        try {
+        const response = await api.post("/profileHistories/getCaseHistory", payload);
+        setLoading(false);
+
+        if (response?.success) {
+            const { logs, total_pages, total } = response.data;
+
+            const updatedData = logs.map((data, index) => {
+            const readableDate = new Date(data.updated_at).toLocaleString("en-US", {
+                year: "numeric",
+                month: "long",
+                day: "2-digit",
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit",
+                hour12: true,
+            });
+
+            return {
+                ...data,
+                id: data.log_id,
+                sl_no: (page - 1) * 10 + index + 1,
+                action: data.action,
+                actor_name: data.actor_name,
+                date: readableDate,
+            };
+            });
+
+            setCaseHistoryData(updatedData);
+            setPaginationCount(total_pages);
+            setTotalPage(total_pages);
+            setTotalRecord(total);
+        } else {
+            setCaseHistoryData([]);
+        }
+        } catch (error) {
+        setLoading(false);
+        toast.error(error?.response?.data?.message || "Please Try Again!", {
+            position: "top-right",
+            autoClose: 3000,
+            className: "toast-error",
+        });
+        }
+    };
+
+    const handlePagination = (newPage) => {
+        setPage(newPage);
+    };
+
+    const handleSearch = () => {
+        setPage(1);
+        setSearchTerm(searchValue);
+    };
+
+    const handleCloseCaseHistoryModal = () => {
+        setCaseHistoryModal(false);
+        setSearchValue("");
+        setSearchTerm("");
+        setPage(1);
+    };
+
+    const handleClear = () => {
+        setSearchValue("");
+        setSearchTerm("");
+        setPage(1);
+    };
+
+    useEffect(() => {
+  if (showActionModal && caseActionSelectedValue && caseActionOptions.length > 0) {
+    // Only fetch if actionCases is empty (avoid refetch on every render)
+    if (actionCases.length === 0) {
+      const selected = caseActionOptions.find(
+        (option) => String(option.code) === String(caseActionSelectedValue)
+      );
+      if (selected) {
+        api
+          .post("cidMaster/getSpecificIoUsersCases", {
+            user_id: String(selected.code),
+            template_module: "ui_case",
+          })
+          .then((response) => {
+            let cases = [];
+            if (Array.isArray(response.cases)) {
+              cases = response.cases;
+            } else if (response?.cases && typeof response.cases === "object") {
+              cases = [response.cases];
+            }
+            setActionCases(cases);
+          })
+          .catch(() => setActionCases([]));
+      }
+    }
+  }
+  // eslint-disable-next-line
+}, [showActionModal, caseActionSelectedValue, caseActionOptions]);
+
+    // handle link template view
+
+    const [showLinkTemplate, setShowLinkTemplate] = useState(false);
+
+    const [linkTemplateName, setLinkTemplateName] = useState("");
+    const [linkTableName, setLinkTableName] = useState("");
+
+    const [linkTemplateRowId, setLinkTemplateRowId] = useState("");
+    const [linkTemplateId, setLinkTemplateId] = useState("");
+
+    const [linkTemplateFields, setLinkTemplateFields] = useState([]);
+    const [linkTemplateStepperData, setLinkTemplateStepperData] = useState([]);
+
+    const [linkTemplateInitialData, setLinkTemplateInitialData] = useState({});
+
+    const viewLinkedTemplate = async (field)=>{
+
+        if((!field?.table || field?.table === "") || (!field?.forign_key || field?.forign_key === "")){
+            toast.error("Template Not Found !", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+
+        if(!formData?.[field?.name] || formData?.[field?.name] === ""){
+            toast.error("Please Select Value Before Getting Data !", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+
+        var payload = {
+            table_name : field?.table,
+            key : field?.forign_key,
+            value : formData?.[field?.name]
+        }
+
+        try {
+            
+            const gettingDetailedData = await api.post('/templateData/getTemplateAlongWithData', payload);
+            
+            if(gettingDetailedData?.success && gettingDetailedData?.data){
+
+                const { data, template } = gettingDetailedData?.data
+
+                setLinkTemplateName(template?.template_name);
+                setLinkTableName(template?.table_name);
+
+                setLinkTemplateRowId(data?.id);
+                setLinkTemplateId(template?.template_id);
+
+                setLinkTemplateFields(template?.fields);
+                setLinkTemplateStepperData(template?.sections ? template?.sections : []);
+
+                setLinkTemplateInitialData(data);
+
+                setShowLinkTemplate(true);
+
+                disabledEditBtn.current = false;
+
+            }
+
+        } catch (error) {
+            if (error && error.response && error.response.data) {
+                toast.error( error.response?.data?.message || "Need dependent Fields", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+                return;
+            }
+        }
+    }
+
+    const closeLinkTemplateModal = ()=>{
+        setLinkTemplateName("");
+        setLinkTableName("");
+
+        setLinkTemplateRowId("");
+        setLinkTemplateId("");
+
+        setLinkTemplateFields([]);
+        setLinkTemplateStepperData([]);
+
+        setLinkTemplateInitialData({});
+
+        setShowLinkTemplate(false);
+    }
+
+    const linkTemplateUpdateFunc = async (data)=>{
+
+        if (!linkTableName || linkTableName === "") {
+            toast.warning("Please Check The Template", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-warning",
+            });
+            return;
+        }
+
+        if (Object.keys(data).length === 0) {
+            toast.warning("Data Is Empty Please Check Once", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-warning",
+            });
+            return;
+        }
+
+        const formData = new FormData();
+
+        formData.append("table_name", linkTableName);
+        var normalData = {}; 
+
+        linkTemplateFields.forEach((field) => {
+            if (data[field.name]) {
+                if (field.type === "file" || field.type === "profilepicture") {
+                    if (field.type === "file") {
+                        if (Array.isArray(data[field.name])) {
+                            const hasFileInstance = data[field.name].some(
+                                (file) => file.filename instanceof File
+                            );
+                            var filteredArray = data[field.name].filter(
+                                (file) => file.filename instanceof File
+                            );
+                            if (hasFileInstance) {
+                                data[field.name].forEach((file) => {
+                                    if (file.filename instanceof File) {
+                                        formData.append(field.name, file.filename);
+                                    }
+                                });
+
+                                filteredArray = filteredArray.map((obj) => {
+                                    return {
+                                        ...obj,
+                                        filename: obj.filename["name"],
+                                    };
+                                });
+                                formData.append("folder_attachment_ids", JSON.stringify(filteredArray));
+                            }
+                        }
+                    } else {
+                        formData.append(field.name, data[field.name]);
+                    }
+                } else {
+                    normalData[field.name] = Array.isArray(data[field.name]) ? data[field.name].join(",") : data[field.name]
+                }
+            }
+        });
+        normalData["id"] = data.id;
+        formData.append("id", data.id);
+        setLoading(true);
+        formData.append("data", JSON.stringify(normalData));
+
+        try {
+            const saveTemplateData = await api.post("/templateData/updateTemplateData", formData);
+            setLoading(false);
+
+            if (saveTemplateData && saveTemplateData.success) {
+                toast.success(saveTemplateData.message || "Data Updated Successfully", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-success",
+                });
+
+                closeLinkTemplateModal();
+                fetchTemplateData();
+
+            } else {
+                const errorMessage = saveTemplateData.message ? saveTemplateData.message : "Failed to create the profile. Please try again.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response["data"]) {
+                toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !",{
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        }
+    }
+
+    const linkTemplateErrorFunc = async (data)=>{
+        console.log(data,"data");
+    }
+
+    // case diary actions
+
+    const [templateActions, setTemplateActions] = useState([]);
+
+    useEffect(()=>{
+
+        if(caseDiary === true && caseDiaryArray.length > 0){
+
+            const getTemplateActions = caseDiaryArray
+                .filter(item => item.table && !item.field)
+                .map(item => {
+                    return { table: item.table, name: item.name };
+                });
+            
+            setTemplateActions(getTemplateActions);
+        }
+
+    },[caseDiary, caseDiaryArray]);
+
+    const [selectedDates, setSelectedDates] = useState([]);
+    const [isAccordionOpen, setIsAccordionOpen] = useState(true);
+
+    const handleDateChange = (index, date) => {
+        const updated = [...selectedDates];
+
+        updated[index] = {
+            table: templateActions[index].table,
+            date: date ? date.format("YYYY-MM-DDT00:00:00") : null
+        };
+        setSelectedDates(updated);
+    };
+
+
+    useEffect(()=>{
+
+        if(caseDiary === true && caseDiaryArray.length > 0){
+            if(formData['field_each_action_date_entries']){
+                try {
+                    const dateFields = JSON.parse(formData['field_each_action_date_entries']);
+                    setSelectedDates(dateFields);
+                } catch (error) {
+                    console.log(error,"date data parsing issue");   
+                }
+            }
+        }
+
+    },[formData])
+
+    const handleFetch = async () => {
+
+        if(formData['field_description']){
+            const result = await Swal.fire({
+                title: 'Do You Want Replace Investigations Content ?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Yes',
+                cancelButtonText: 'No',
+            });
+    
+            if (!result.isConfirmed) {
+                return;
+            }
+        }
+
+        try {
+
+            const dateArray = selectedDates.filter(item => item !== null && item !== undefined)
+
+            const payload = {
+                data : dateArray,
+                ui_case_id: caseDairy_ui_case_id,
+                pt_case_id: caseDairy_pt_case_id,
+            }
+
+            const response = await api.post("/templateData/getTemplateDataWithDate", payload);
+
+            if (response?.success && response?.data) {
+                const { data } = response;
+
+                 let html = "";
+
+                    Object.entries(data).forEach(([key, items]) => {
+                        const matchedItem = caseDiaryArray.find((item) => item.table === key);
+                        if (!matchedItem || !Array.isArray(items) || items.length === 0) return;
+
+                        const headers = Object.keys(items[0]);
+
+                        html += `
+                            <div style="margin-bottom: 20px;">
+                                <p class="Roboto ProfileViewHeading" style="font-weight: bold; text-decoration: underline;">${matchedItem.name}</p>
+                                <table style="width: 100%; border-collapse: collapse; border: 1px solid #000; margin-top: 10px;">
+                                    <thead>
+                                        <tr>
+                                            <th style="text-align: left; border: 1px solid #000; padding: 8px;">Sl. No</th>
+                        `;
+
+                        headers.forEach(header => {
+                            html += `<th style="text-align: left; border: 1px solid #000; padding: 8px;">${header}</th>`;
+                        });
+
+                        html += `
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                        `;
+
+                        items.forEach((item, index) => {
+                            html += `<tr>`;
+                            html += `<td style="padding: 8px; font-weight: 400; border: 1px solid #000;">${index + 1}</td>`; // Sl. No
+                            headers.forEach(header => {
+                                html += `<td style="padding: 8px; font-weight: 400; border: 1px solid #000;">${item[header] ?? ''}</td>`;
+                            });
+                            html += `</tr>`;
+                        });
+
+                        html += `
+                                    </tbody>
+                                </table>
+                            </div>
+                        `;
+                    });
+
+                setFormData((prevData) => ({
+                    ...prevData,
+                    'field_description' : html,
+                    'field_each_action_date_entries' : JSON.stringify(selectedDates)
+                }));
+
+                setIsAccordionOpen(false);
+
+            }else{
+    
+                toast.error(response.message || "Failed to fetch data.", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+
+            
+        } catch (error) {
+
+            toast.error(error?.response?.data?.message || "Please Try Again!", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+        }
+    };
+
+
+    const [caseDiaryHistoryLog, setCaseDiaryHistoryLog] = useState(false);
+    const [caseDiaryHistoryData, setCaseDiaryHistoryData] = useState([]);
+    const [caseDiaryHistoryHeaderData, setCaseDiaryHistoryHeaderData] = useState({});
+    const disabledEditBtn = useRef(false);
+
+    const handleIndividualCaseDiaryLog = async (index)=>{
+
+        const getPerticularCaseDiary = selectedDates?.[index] || {}
+
+        if(!getPerticularCaseDiary?.table){
+            toast.error("Please Select Date Before Getting Log!", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+        
+        if(!getPerticularCaseDiary?.date){
+            toast.error("Please Select Date Before Getting Log!", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+
+        const payload = {
+            "table_name": getPerticularCaseDiary?.table,
+            "date": getPerticularCaseDiary?.date,
+            "ui_case_id": caseDairy_ui_case_id,
+            "pt_case_id": caseDairy_pt_case_id
+        }
+
+        setLoading(true);
+            
+        try {
+            const getActionsDetails = await api.post("/templateData/getSingleTemplateDataWithDate", payload);
+
+            setLoading(false);
+
+            if (getActionsDetails && getActionsDetails.success) {
+
+                const tableKey = getPerticularCaseDiary?.table;
+                const tableData = getActionsDetails.data?.[tableKey];
+
+                if (Array.isArray(tableData) && tableData.length > 0) {
+
+                    const rowsWithId = tableData.map((row, index) => ({
+                        sno: index + 1,
+                        ...row
+                    }));
+
+                    setCaseDiaryHistoryData(rowsWithId);
+
+                    const headerKeys = Object.keys(tableData[0] || {});
+
+                    const excludedKeys = ['id']
+
+                    const filteredKeys = headerKeys.filter(key => !excludedKeys.includes(key));
+                    const firstDataKey = filteredKeys[0];
+
+                    const headers = [
+                        {
+                            field: 'sno',
+                            headerName: 'S.No',
+                            width: 80
+                        },  
+                        {
+                            field: firstDataKey,
+                            headerName: firstDataKey,
+                            width: 200,
+                            renderCell: (params) => (
+                            <span
+                                style={{ color: '#1976d2', cursor: 'pointer', textDecoration: 'underline' }}
+                                onClick={() => handleViewCaseData(params.row, getPerticularCaseDiary?.table)}
+                            >
+                                {params.value}
+                            </span>
+                            )
+                        },
+                        ...filteredKeys.slice(1).map((key) => ({
+                            field: key,
+                            headerName: key,
+                            width: 200
+                        }))
+                    ];
+
+                    setCaseDiaryHistoryHeaderData(headers);
+                    
+                    setCaseDiaryHistoryLog(true);
+
+                }else{
+                    closeCaseDiaryLogModal()
+                    toast.error('No Data Found',{
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-error",
+                    });  
+                }
+                
+            }else{
+                closeCaseDiaryLogModal()
+                toast.error('Cant Able to Get Log !',{
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });    
+            }
+
+        } catch (error) {
+            closeCaseDiaryLogModal()
+            setLoading(false);
+            if (error && error.response && error.response['data']) {
+                toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !',{
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+                return false
+            }
+        }
+    }
+
+    const closeCaseDiaryLogModal = ()=>{
+        setCaseDiaryHistoryData([]);
+        setCaseDiaryHistoryHeaderData({});
+        setCaseDiaryHistoryLog(false);
+        disabledEditBtn.current = false;
+    }
+
+    const handleViewCaseData = async (row, tableName)=>{
+
+        if(!row.id){
+            toast.error("ID not found !", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+
+        const payload = {
+            table_name : tableName,
+            key : 'id',
+            value : row.id
+        }
+
+        try {
+            
+            const gettingDetailedData = await api.post('/templateData/getTemplateAlongWithData', payload);
+            
+            if(gettingDetailedData?.success && gettingDetailedData?.data){
+
+                const { data, template } = gettingDetailedData?.data
+
+                setLinkTemplateName(template?.template_name);
+                setLinkTableName(template?.table_name);
+
+                setLinkTemplateRowId(data?.id);
+                setLinkTemplateId(template?.template_id);
+
+                setLinkTemplateFields(template?.fields);
+                setLinkTemplateStepperData(template?.sections ? template?.sections : []);
+
+                setLinkTemplateInitialData(data);
+
+                setShowLinkTemplate(true);
+
+                disabledEditBtn.current = true;
+
+            }
+
+        } catch (error) {
+            if (error && error.response && error.response.data) {
+                toast.error( error.response?.data?.message || "Please Try Again! ", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+                return;
+            }
+        }
+    }
+
   return (
     <>
       <Box inert={loading ? true : false} p={noPadding ? 0 : 2} px={2}>
@@ -1305,28 +3269,171 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
           </Box>
         )}
 
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', background: '#FFFFFF', position: 'sticky', top: '0', zIndex: '99' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', background: '#FFFFFF', position: 'sticky', top: '0', zIndex: '98' }}>
           <Box onClick={CloseFormModal} sx={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer', gap: '4px' }}>
             <ArrowBackIcon sx={{ fontSize: '22px', fontWeight: '500', color: '#171A1C' }} />
             <Typography sx={{ fontSize: '19px', fontWeight: '500', color: '#171A1C' }} className='Roboto'>
               {template_name ? template_name : 'Form'}
             </Typography>
             {headerDetails && (
+                <Tooltip title={headerDetails}>
                 <Chip
-                    label={headerDetails}
+                    label={
+                    <Typography
+                        sx={{
+                        fontSize: '13px',
+                        maxWidth: 230,
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        fontWeight: 500, marginTop: '2px'
+                        }}
+                    >
+                        {headerDetails}
+                    </Typography>
+                    }
                     color="primary"
                     variant="outlined"
                     size="small"
                     sx={{ fontWeight: 500, marginTop: '2px' }}
                 />
+                </Tooltip>
             )}
-          </Box>
+            </Box>
 
           <Box sx={{ display: 'flex', alignItems: 'center', }}>
 
-            {!readOnlyTemplate && editDataTemplate && onUpdate ?
+            {mappingCase && (
+                <Button
+                    variant="outlined"
+                    onClick={() => {
+                        if (onMappingCase) {
+                            onMappingCase();
+                        }
+                    }}
+                    sx={{marginLeft: "10px", marginRight: "4px", height: '40px'}}
+                >
+                    {table_name === "cid_under_investigation" ? "PT" : "UI"}
+                </Button>
+             )}
 
-              <Button onClick={() => formButtonRef && formButtonRef.current && formButtonRef.current.click()} sx={{ background: '#0167F8', borderRadius: '8px', fontSize: '14px', fontWeight: '500', color: '#FFFFFF', padding: '6px 16px' }} className="Roboto blueButton">
+
+            {/* {
+                showMagazineView && 
+                <Button
+                variant="outlined"
+                    onClick={()=>showMagazineView(true)}
+                    sx={{marginLeft: "10px", marginRight: "4px", height: '40px'}}
+                    // sx={{height: "38px", textTransform: 'none'}}
+                    // className="whiteBorderedBtn"
+                >
+                    Case Docket
+                </Button>
+            } */}
+            {CNR &&  (table_name === 'cid_under_investigation' || table_name === 'cid_pending_trial') && (
+                <Button
+                    variant="outlined"
+                    onClick={() => {
+                        if (onViewCNR) {
+                            onViewCNR();
+                        }
+                    }}
+                    sx={{marginLeft: "10px", marginRight: "4px", height: '40px'}}
+                >
+                    CNR
+                </Button>
+            )}
+
+            {oldCase &&  table_name === 'cid_under_investigation' && (
+            <Button
+                variant="outlined"
+                onClick={() => {
+                    if (onViewOldCase) {
+                        onViewOldCase();
+                    }
+                }}
+                sx={{marginLeft: "10px", marginRight: "4px", height: '40px'}}
+            // sx={{
+            //     borderColor: "#390c93",
+            //     color: "#370d8d",
+            //     height: "38px",
+            //     textTransform: 'none',
+            //     fontSize: "14px",
+            //     marginLeft: "10px",
+            //     marginRight: "4px",
+            //     '&:hover': {
+            //         borderColor: "#4527a0",
+            //         backgroundColor: "rgba(94,53,177,0.04)",
+            //     }
+            // }}
+            >
+                View Old Case
+            </Button>
+
+            )}
+
+            {
+                table_row_id && showAssignIo &&
+                <Button
+                    variant="outlined"
+                    sx={{marginLeft: "10px", marginRight: "10px", height: '40px'}}
+                    onClick={() => setCaseHistoryModal(true)}
+                >
+                    Case Log
+                </Button>
+            }
+
+            {
+                showAssignIo && investigationAction && investigationAction?.field && !showCaseActionBtn && userrole !== "investigation officer" &&
+                <Button
+                    onClick={()=>showTransferToOtherDivision(investigationAction, initialData, investigationAction?.field)}
+                    sx={{
+                        background: "#0167F8",
+                        borderRadius: "8px",
+                        fontSize: "14px",
+                        fontWeight: "500",
+                        color: "#FFFFFF",
+                        padding: "6px 16px",
+                    }}
+                    className="Roboto blueButton"
+                >
+                    {investigationAction?.name}
+                </Button>
+            }
+
+
+            {typeof onSkip === 'function' && (
+            <Button
+                onClick={() => { skip(); }}
+                sx={{
+                border: "1.5px solid #E53935",
+                background: "transparent",
+                fontSize: "14px",
+                fontWeight: "500",
+                color: "#E53935",
+                padding: "6px 16px",
+                marginLeft: "10px",
+                marginRight: "10px",
+                boxShadow: "none",
+                borderRadius: "8px",
+                transition: "background 0.2s, color 0.2s, border-color 0.2s",
+                "&:hover": {
+                    background: "#FFEBEE",
+                    borderColor: "#B71C1C",
+                    color: "#B71C1C",
+                },
+                }}
+                className="Roboto"
+                variant="outlined"
+            >
+                Skip PF & Save
+            </Button>
+            )}
+
+              
+              {!readOnlyTemplate && editDataTemplate && onUpdate ?
+
+              <Button onClick={() => formButtonRef && formButtonRef.current && formButtonRef.current.click()} sx={{ background: '#0167F8', fontSize: '14px', fontWeight: '500', color: '#FFFFFF', padding: '6px 16px' }} className="Roboto blueButton">
                 Update
               </Button>
 
@@ -1339,16 +3446,26 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
                       formButtonRef.current &&
                       formButtonRef.current.click()
                   }}
-                    sx={{ background: '#0167F8', borderRadius: '8px', fontSize: '14px', fontWeight: '500', color: '#FFFFFF', padding: '6px 16px', marginRight: '8px' }}
+                    sx={{ background: '#0167F8', fontSize: '14px', fontWeight: '500', color: '#FFFFFF', padding: '8px 16px',lineHeight: '1.5', marginRight: '8px', textTransform: 'none',height: '40px !important' }}
                     className="Roboto blueButton"
                   >
-                    Save
+                    {table_name === "cid_ui_case_mahazars" ? "Next" : "Save"}
                   </Button>
             
                     {
-                        !disableSaveNew && table_name !== "cid_eq_case_closure_report" &&
+                        !disableSaveNew && table_name !== "cid_eq_case_closure_report" && table_name !== "cid_ui_case_extension_form" && table_name !== "cid_eq_case_enquiry_order_copy" &&
+                        table_name !== "cid_eq_case_extension_form" && table_name !== "cid_ui_case_mahazars" && table_name !== "cid_ui_case_property_form" &&
                         <Button
                             variant="contained" color="success"
+                            sx={{
+                                fontSize: '14px',
+                                fontWeight: 500,
+                                color: '#FFFFFF',
+                                padding: '8px 16px',
+                                lineHeight: '1.5',
+                                textTransform: 'none',
+                                height: '40px !important' 
+                            }}
                             onClick={() =>{
                                 saveNewActionRef.current = true;
                                 formButtonRef &&
@@ -1369,7 +3486,6 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
                     onClick={templateEdit}
                     sx={{
                         background: "#0167F8",
-                        borderRadius: "8px",
                         fontSize: "14px",
                         fontWeight: "500",
                         color: "#FFFFFF",
@@ -1377,7 +3493,7 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
                     }}
                     className="Roboto blueButton"
                 >
-                    Edit Case
+                  {editName ? "Edit Case" : "Edit"}
                 </Button>
             }
 
@@ -1385,26 +3501,131 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
         </Box>
         <Box sx={{ height: `calc(99% - ${stepperData && stepperData.length > 0 ? '150px' : '100px'})`, overflow: 'auto', background: '#FFFFFF', border: '1px solid #636B744D', borderRadius: '8px' }} mx={1} mt={1}>
 
-          <Box sx={{ borderBottom: '1px solid #636B744D', padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            {stepperData && stepperData.length > 0 && 
+                <Box sx={{ borderBottom: '1px solid #636B744D', padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
 
-            <Box sx={{ display: 'inline-flex', gap: '12px', alignItems: 'center' }}>
-              {stepperData && stepperData.length > 0 &&
-                <Typography className='HighlightedSquare'>
-                  {activeStep + 1}
-                </Typography>
-              }
-              <Typography className='HighlightedText'>
-                {stepperData && stepperData[activeStep] ? stepperData[activeStep] : 'General Detail'}
-              </Typography>
-            </Box>
+                    <Box sx={{ display: 'inline-flex', gap: '12px', alignItems: 'center' }}>
+                        <Typography className='HighlightedSquare'>
+                            {activeStep + 1}
+                        </Typography>
+                        <Typography className='HighlightedText'>
+                            {stepperData && stepperData[activeStep] ? stepperData[activeStep] : 'General Detail'}
+                        </Typography>
+                    </Box>
 
-            {stepperData && stepperData.length > 0 &&
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <Button onClick={stepperPrevNavigation} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '16px' }} > <ArrowBackIosIcon sx={{ height: '16px', width: '16px', color: 'rgba(0, 0, 0, 0.56)', cursor: 'pointer' }} /> </Button>
-                <Button onClick={stepperNextNavigation} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '16px' }} > <ArrowForwardIosIcon sx={{ height: '16px', width: '16px', color: 'rgba(0, 0, 0, 0.56)', cursor: 'pointer' }} /> </Button>
-              </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <Button onClick={stepperPrevNavigation} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '16px' }} > <ArrowBackIosIcon sx={{ height: '16px', width: '16px', color: 'rgba(0, 0, 0, 0.56)', cursor: 'pointer' }} /> </Button>
+                        <Button onClick={stepperNextNavigation} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '16px' }} > <ArrowForwardIosIcon sx={{ height: '16px', width: '16px', color: 'rgba(0, 0, 0, 0.56)', cursor: 'pointer' }} /> </Button>
+                    </Box>
+                </Box>
             }
-          </Box>
+
+            {caseDiary === true && templateActions.length > 0 && (
+                <Box p={2}>
+                    <Accordion sx={{border: '1px solid #ddd'}} expanded={isAccordionOpen} onChange={() => setIsAccordionOpen(prev => !prev)}>
+                        <AccordionSummary
+                            expandIcon={<ExpandMoreIcon />}
+                            aria-controls="date-pickers-content"
+                            id="date-pickers-header"
+                            sx={{minHeight: '44px !important'}}
+                        >
+                            <Typography sx={{fontWeight: '500', color: '#1976d2', textDecoration: 'underline'}}>Case Investigation Date</Typography>
+                        </AccordionSummary>
+                        <AccordionDetails>
+                            <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                <Box>
+                                    {Array.from({ length: Math.ceil(templateActions.length / 3) }).map((_, rowIndex) => {
+                                        const start = rowIndex * 3;
+                                        const items = templateActions.slice(start, start + 3);
+                                        return (
+                                            <Grid container spacing={2} key={rowIndex} sx={{ mb: 2 }}>
+                                                {items.map((item, index) => {
+                                                    const actualIndex = start + index;
+                                                    return (
+                                                    <Grid item xs={12} sm={6} md={4} key={actualIndex} sx={{borderRight: index === 2 ? 'none' : '1px solid #ddd'}} px={2}>
+                                                        <Tooltip arrow title={item.name}>
+                                                        <Box display="flex" alignItems="center" gap={1} borderBottom='1px solid #ddd' pb={1}>
+
+                                                            <Typography
+                                                                fontWeight={500}
+                                                                fontSize={14}
+                                                                noWrap
+                                                                sx={{
+                                                                width: '125px',
+                                                                overflow: 'hidden',
+                                                                textOverflow: 'ellipsis',
+                                                                whiteSpace: 'nowrap',
+                                                                flexShrink: 0
+                                                                }}
+                                                            >
+                                                                {item.name}
+                                                            </Typography>
+
+                                                            <DatePicker
+                                                                value={
+                                                                selectedDates[actualIndex]?.date
+                                                                    ? dayjs(selectedDates[actualIndex].date)
+                                                                    : null
+                                                                }
+                                                                onChange={(e) => handleDateChange(actualIndex, e)}
+                                                                format="DD-MM-YYYY"
+                                                                disabled={readOnlyTemplate}                                                                
+                                                                slotProps={{
+                                                                textField: {
+                                                                    size: "small",
+                                                                    variant: "standard",
+                                                                    InputProps: {
+                                                                    disableUnderline: true
+                                                                    },
+                                                                    sx: {
+                                                                        '& .MuiOutlinedInput-notchedOutline': { border: 'none' },
+                                                                        '& .MuiInputBase-root': { border: 'none' },
+                                                                        backgroundColor: 'transparent',
+                                                                        minWidth: '110px'
+                                                                    }
+                                                                }
+                                                                }}
+                                                            />
+
+                                                            <Typography
+                                                                onClick={() => handleIndividualCaseDiaryLog(actualIndex)}
+                                                                variant="caption"
+                                                                sx={{
+                                                                    minWidth: '90px',    
+                                                                    color: 'primary.main',
+                                                                    cursor: 'pointer',
+                                                                    fontWeight: 500,
+                                                                    fontSize: 12,
+                                                                    whiteSpace: 'nowrap',
+                                                                    marginLeft: 'auto',
+                                                                    textAlign: 'center'
+                                                                }}
+                                                            >
+                                                                View Data
+                                                            </Typography>
+                                                        </Box>
+                                                        </Tooltip>
+                                                    </Grid>
+                                                    );
+                                                })}
+                                            </Grid>
+                                        );
+                                    })}
+
+                                    <Button
+                                        variant="contained"
+                                        color="primary"
+                                        onClick={handleFetch}
+                                        disabled={selectedDates.length === 0 || readOnlyTemplate}
+                                    >
+                                        Fetch
+                                    </Button>
+                                </Box>
+                            </LocalizationProvider>
+                        </AccordionDetails>
+                    </Accordion>
+                </Box>
+            )}
 
           <form onSubmit={handleSubmit} noValidate style={{ margin: 0 }} >
             <Grid container sx={{ alignItems: 'start' }}>
@@ -1437,30 +3658,49 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
                     if (shouldHide) return null;
                 }
 
-                const isRequired = field.required === 'true' || field.required === true;
 
                 var readOnlyData = readOnlyTemplate
+                if(table_name === "cid_pending_trial" ){
+                  if(field.name === "field_ps_crime_number" || field.name === "field_cid_crime_no./enquiry_no" || field.name === "field_name_of_the_police_station" || field.name === "field_ui_case"){
+                      readOnlyData = true;
+                  }
 
-                if(table_name === "cid_under_investigation" || table_name === "cid_pending_trial" || table_name === "cid_enquiries"){
+                }
 
-                    const roleTitle = JSON.parse(localStorage.getItem("role_title")?.toLowerCase().trim());
-    
-                    if (roleTitle === "admin organization") {
-                        if (!field.ao_field) {
-                            readOnlyData = true;
-                            if (field.required) {
-                                field.required = false;
-                            }
-                        }
-                    } else {
-                        if (field.ao_field) {
-                            readOnlyData = true;
-                            if (field.required) {
-                                field.required = false;
-                            }
+                if (table_name === "cid_under_investigation") {
+                    const regDateStr = formData?.["field_date_of_registration_by_ps/range"];
+
+                    if (regDateStr) {
+                        const regDate = new Date(regDateStr);
+
+                        if (!isNaN(regDate.getTime()) && regDate.getFullYear() < 2015) {
+                            field.required = false;
                         }
                     }
                 }
+
+                const isRequired = field.required === 'true' || field.required === true;
+
+                // if(table_name === "cid_under_investigation" || table_name === "cid_pending_trial" || table_name === "cid_enquiries"){
+
+                //     const roleTitle = JSON.parse(localStorage.getItem("role_title")?.toLowerCase().trim());
+    
+                //     if (roleTitle === "admin organization") {
+                //         if (!field.ao_field) {
+                //             readOnlyData = true;
+                //             if (field.required) {
+                //                 field.required = false;
+                //             }
+                //         }
+                //     } else {
+                //         if (field.ao_field) {
+                //             readOnlyData = true;
+                //             if (field.required) {
+                //                 field.required = false;
+                //             }
+                //         }
+                //     }
+                // }
 
                 if(field?.table?.toLowerCase() === "act" && table_name === "cid_under_investigation"){
                     return (
@@ -1566,7 +3806,8 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
                             errors={errors}
                             onHistory={() => showHistory(field.name)}
                             onChange={(value) => { handleChangeDate(field.name, value) }} 
-                            readOnly={readOnlyData}    
+                            readOnly={readOnlyData} 
+                            disabledDates={disabledDates}   
                         />
                         </div>
                       </Grid>
@@ -1614,6 +3855,7 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
                             onHistory={() => showHistory(field.name)}
                             onChange={(value) => handleAutocomplete(field, value.target.value)} 
                             readOnly={readOnlyData}
+                            viewLinkedTemplate={viewLinkedTemplate}
                         />
                         </div>
                       </Grid>
@@ -1630,6 +3872,7 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
                           onHistory={() => showHistory(field.name)}
                           onChange={(name, selectedCode) => handleAutocomplete(field, selectedCode)}
                           readOnly={readOnlyData}
+                          viewLinkedTemplate={viewLinkedTemplate}
                         />
                       </Grid>
                     );
@@ -1645,6 +3888,7 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
                           onHistory={() => showHistory(field.name)}
                           onChange={(name, selectedCode) => handleAutocomplete(field, selectedCode)}
                           readOnly={readOnlyData}
+                          viewLinkedTemplate={viewLinkedTemplate}
                         />
                       </Grid>
                     );
@@ -1735,6 +3979,38 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
                             />
                         </Grid>
                     );
+                    case "dropdown_with_add":
+                        return (
+                            <Grid item xs={12} md={field.col ? field.col : 12} p={2}>
+                                <DropdownWithAdd
+                                    key={field.id}
+                                    field={field}
+                                    formData={formData}
+                                    errors={errors}
+                                    onChange={(selectedCode) => handleAutocomplete(field, selectedCode)}
+                                    onAdd={(value)=>dropdownWithAddItem(field, value)}
+                                    onChangeDropdownInputValue={(value) => 
+                                        setDropdownInputValue({ ...dropdownInputValue, [field.name]: value })
+                                    }
+                                    onHistory={() => showHistory(field.name)}
+                                    dropdownInputValue={dropdownInputValue}
+                                    readOnly={readOnlyData}
+                                    viewLinkedTemplate={viewLinkedTemplate}
+                                />
+                            </Grid>
+                        );
+                        case "table":
+                        return (
+                            <Grid item xs={12} md={field.col ? field.col : 12} p={2}>
+                                <TableField
+                                    field={field}
+                                    formData={formData}
+                                    onChange={handleTableDataChange}
+                                    readOnly={readOnlyData}
+                                    errors={errors}
+                                />
+                            </Grid>
+                        );
                   case 'divider':
                     return (
                       <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: '16px', width: '100%' }}>
@@ -1748,7 +4024,7 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
               })}
             </Grid>
 
-            {onSubmit &&
+            {(onSubmit || onUpdate) &&
               <Grid container>
                 <Grid item xs={12} md={6}>
                   <Button ref={formButtonRef} className='GreenFillBtn' sx={{ display: 'none' }} type='submit'>Submit</Button>
@@ -1764,6 +4040,188 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
           </div>
         }
       </Box>
+
+<Dialog
+  open={showActionModal}
+  onClose={() => {
+    setShowActionModal(false);
+    setCaseActionSelectedValue(null);
+    setActionCases([]);
+    setActionCasesPage(0);
+  }}
+  aria-labelledby="alert-dialog-title"
+  aria-describedby="alert-dialog-description"
+  fullScreen
+  fullWidth
+  sx={{ zIndex: "1", marginLeft: '250px' }}
+>
+  <DialogTitle id="alert-dialog-title"></DialogTitle>
+  <DialogContent sx={{  }}>
+    <DialogContentText id="alert-dialog-description">
+     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12, justifyContent: "space-between" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <WestIcon
+          style={{ cursor: "pointer", color: "#222" }}
+          onClick={() => {
+            setShowActionModal(false);
+            setCaseActionSelectedValue(null);
+            setActionCases([]);
+          }}
+        />
+        <span style={{ fontWeight: 500, fontSize: 18, color: "#222", marginLeft: 12 }}>
+          {investigationAction?.name}
+        </span>
+      </div>
+      <Button variant='outlined' onClick={updateCaseActions}>
+      Submit
+    </Button>
+    </div>
+      
+      {/* <h4 className="form-field-heading">{investigationAction?.name}</h4> */}
+
+      <FormControl fullWidth sx={{ marginBottom: 2 }}>
+        <Autocomplete
+          options={caseActionOptions}
+          getOptionLabel={(option) => option.name || ""}
+          value={
+            caseActionOptions.find(
+              (option) => String(option.code) === String(caseActionSelectedValue)
+            ) || null
+          }
+          onChange={async (event, newValue) => {
+            setCaseActionSelectedValue(newValue?.code || null);
+            setActionCases([]);
+            if (newValue?.code) {
+              try {
+                const response = await api.post("cidMaster/getSpecificIoUsersCases", {
+                  user_id: String(newValue.code),
+                  template_module: "ui_case",
+                });
+
+                console.log("initialData from cases:", initialData.id);
+                
+
+                let cases = [];
+                if (Array.isArray(response.cases)) {
+                  cases = response.cases;
+                } else if (response?.cases && typeof response.cases === "object") {
+                  cases = [response.cases];
+                }
+                // Remove the current case (initialData.id) from the cases array
+                cases = cases.filter(
+                  (caseItem) =>
+                  String(caseItem.id) !== String(initialData.id)
+                );
+                setActionCases(cases);
+                } catch (err) {
+                console.error("Failed to fetch cases", err);
+                setActionCases([]);
+                }
+              }
+              }}
+              renderInput={(params) => (
+              <TextField
+                {...params}
+                className="selectHideHistory"
+                label={investigationAction?.name.trim() || "Assign to IO"}
+              />
+              )}
+            />
+            </FormControl>
+
+            <div style={{ marginTop: 16}}>
+              <h4 className="form-field-heading">Selected IO handling Case Details</h4>
+              <div style={{ }}>
+              <TableView
+                rows={actionCases
+                // Filter out the current case by id before displaying in the table
+                .filter(row => String(row.id) !== String(initialData.id))
+                .slice(
+                  actionCasesPage * actionCasesPageSize,
+                  (actionCasesPage + 1) * actionCasesPageSize
+                )
+                .map((row, idx) => ({
+                  ...row,
+                  sno: actionCasesPage * actionCasesPageSize + idx + 1,
+                  "field_cid_crime_no./enquiry_no":
+                  row["field_cid_crime_no./enquiry_no"] ||
+                  row.field_cid_crime_no ||
+                  row.enquiry_no ||
+                  "",
+                  "field_crime_number_of_ps": row["field_crime_number_of_ps"] || "",
+                  "field_case/enquiry_keyword": row["field_case/enquiry_keyword"] || "-",
+                }))}
+                columns={[
+                {
+                  field: "sno",
+                  headerName: "S.No",
+                  flex: 0.3,
+                  renderCell: (params) => params.row.sno,
+                },
+                {
+                  field: "field_cid_crime_no./enquiry_no",
+                  headerName: "Crime/Enquiry No.",
+                  flex: 1,
+                  renderCell: (params) =>
+                  params.row["field_cid_crime_no./enquiry_no"],
+                },
+                {
+                  field: "field_crime_number_of_ps",
+                  headerName: "Crime Number of PS",
+                  flex: 1,
+                  renderCell: (params) => params.row["field_crime_number_of_ps"],
+                },
+                {
+                  field: "field_case/enquiry_keyword",
+                  headerName: "Case/Enquiry Keyword",
+                  flex: 1,
+                  renderCell: (params) => params.row["field_case/enquiry_keyword"],
+                },
+                ]}
+                totalPage={
+                actionCases.filter(row => String(row.id) !== String(initialData.id)).length > 0 && actionCasesPageSize > 0
+                  ? Math.ceil(actionCases.filter(row => String(row.id) !== String(initialData.id)).length / actionCasesPageSize)
+                  : 1
+                }
+                totalRecord={actionCases.filter(row => String(row.id) !== String(initialData.id)).length}
+                paginationCount={
+                Number.isFinite(actionCasesPage) ? actionCasesPage + 1 : 1
+                }
+                handlePagination={(page) => setActionCasesPage(page - 1)}
+                getRowId={(row, idx) =>
+                row.id || row["field_cid_crime_no./enquiry_no"] || idx
+                }
+                noRowsOverlayText="No data found"
+                sx={{ width: 700 }}
+              />
+              </div>
+              <div style={{ marginTop: 8 }}>
+              Showing{" "}
+              {Math.min(
+                actionCases.filter(row => String(row.id) !== String(initialData.id)).length,
+                (actionCasesPage + 1) * actionCasesPageSize
+              )}{" "}
+              of {actionCases.filter(row => String(row.id) !== String(initialData.id)).length} cases
+              </div>
+            </div>
+          </DialogContentText>
+          </DialogContent>
+          <DialogActions sx={{ padding: "12px 24px" }}>
+          {/* <Button
+            onClick={() => {
+            setShowActionModal(false);
+            setCaseActionSelectedValue(null);
+            setActionCases([]);
+            }}
+          >
+            Cancel
+          </Button> */}
+    {/* <Button className="fillPrimaryBtn" onClick={updateCaseActions}>
+      Submit
+    </Button> */}
+  </DialogActions>
+</Dialog>
+
 
       {historyModal &&
         <Dialog
@@ -1796,6 +4254,183 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
           </DialogContent>
         </Dialog>
       }
+    
+        {caseHistoryModal && (
+        <Dialog
+            open={caseHistoryModal}
+            onClose={handleCloseCaseHistoryModal}
+            aria-labelledby="alert-dialog-title"
+            aria-describedby="alert-dialog-description"
+            maxWidth="md"
+            fullWidth
+            className="approvalModal"
+        >
+            <DialogTitle
+            id="alert-dialog-title"
+            sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                paddingBottom: 0,
+            }}
+            >
+            <Typography variant="h6">Case History</Typography>
+
+            <Box display="flex" alignItems="center" gap={2}>
+                <TextFieldInput
+                InputProps={{
+                    startAdornment: (
+                    <InputAdornment position="start">
+                        <SearchIcon sx={{ color: "#475467" }} />
+                    </InputAdornment>
+                    ),
+                }}
+                onInput={(e) => setSearchValue(e.target.value)}
+                value={searchValue}
+                id="tableSearch"
+                size="small"
+                placeholder="Search"
+                variant="outlined"
+                className="profileSearchClass"
+                onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleSearch();
+                    }
+                }}
+                sx={{
+                    width: "250px",
+                    borderRadius: "6px",
+                    outline: "none",
+                    "& .MuiInputBase-input::placeholder": {
+                    color: "#475467",
+                    opacity: "1",
+                    fontSize: "14px",
+                    fontWeight: "400",
+                    fontFamily: "Roboto",
+                    },
+                }}
+                />
+
+                <IconButton
+                aria-label="close"
+                onClick={handleCloseCaseHistoryModal}
+                sx={{ color: (theme) => theme.palette.grey[500] }}
+                >
+                <CloseIcon />
+                </IconButton>
+            </Box>
+            </DialogTitle>
+
+            {searchValue && !hideClearFilter && (
+            <Box px={2}>
+                <Typography
+                onClick={handleClear}
+                sx={{
+                    fontSize: "13px",
+                    fontWeight: "500",
+                    textDecoration: "underline",
+                    cursor: "pointer",
+                    textAlign: "right",
+                }}
+                mt={1}
+                >
+                View All / Clear Search
+                </Typography>
+            </Box>
+            )}
+
+            <DialogContent>
+            <DialogContentText id="alert-dialog-description">
+                <Box py={2}>
+                <TableView
+                    rows={caseHistoryData}
+                    columns={caseHistoryHeaderData}
+                    totalPage={totalPage}
+                    totalRecord={totalRecord}
+                    paginationCount={page}
+                    handlePagination={handlePagination}
+                />
+                </Box>
+            </DialogContentText>
+            </DialogContent>
+        </Dialog>
+        )}
+
+        {caseDiaryHistoryLog && (
+            <Dialog
+                open={caseDiaryHistoryLog}
+                onClose={() => setCaseDiaryHistoryLog(false)}
+                aria-labelledby="alert-dialog-title"
+                aria-describedby="alert-dialog-description"
+                maxWidth="xl"
+                fullWidth
+            >
+                <DialogTitle
+                    id="alert-dialog-title"
+                    sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        paddingBottom: 0
+                    }}
+                >
+                    <Box>Case History</Box>
+                    <IconButton
+                        aria-label="close"
+                        onClick={() => setCaseDiaryHistoryLog(false)}
+                        sx={{ color: (theme) => theme.palette.grey[500] }}
+                    >
+                        <CloseIcon />
+                    </IconButton>
+                </DialogTitle>
+                <DialogContent>
+                    <DialogContentText id="alert-dialog-description">
+                        <Box py={2}>
+                            <TableView rows={caseDiaryHistoryData} columns={caseDiaryHistoryHeaderData} />
+                        </Box>
+                    </DialogContentText>
+                </DialogContent>
+            </Dialog>
+        )}
+
+        {showLinkTemplate && (
+            <Dialog
+                open={showLinkTemplate}
+                onClose={() => closeLinkTemplateModal}
+                aria-labelledby="alert-dialog-title"
+                aria-describedby="alert-dialog-description"
+                maxWidth="xl"
+                fullWidth
+            >
+                <DialogContent sx={{ minWidth: "400px", padding: '0'}}>
+                    <DialogContentText id="alert-dialog-description">
+                        <FormControl fullWidth>
+                            <NormalViewForm
+                                table_row_id={linkTemplateRowId}
+                                template_id={linkTemplateId}
+                                template_name={linkTemplateName}
+                                table_name={linkTableName}
+                                readOnly={true}
+                                editData={false}
+                                initialData={linkTemplateInitialData}
+                                formConfig={linkTemplateFields}
+                                stepperData={linkTemplateStepperData}
+                                onUpdate={linkTemplateUpdateFunc}
+                                onError={linkTemplateErrorFunc}
+                                closeForm={closeLinkTemplateModal}
+                                disableEditButton={disabledEditBtn.current}
+                            />
+                        </FormControl>
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions sx={{ padding: "12px 24px" }}>
+                    <Button onClick={closeLinkTemplateModal}>
+                        Cancel
+                    </Button>
+                </DialogActions>
+            </Dialog>
+        )}
 
     </>
   );

@@ -21,6 +21,20 @@
     background-color: rgba(0, 0, 0, 0.4);
     z-index: 9999;
 }
+.parent_spinner_2 {
+  height: 100vh;
+  width: 100vw;
+  position: fixed;
+  top: 0;
+  left: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: rgba(0, 0, 0, 0.4);
+  z-index: 2147483647;
+  pointer-events: all;
+}
+
 
 body {
     margin: 0;
@@ -497,6 +511,35 @@ code {
 .Stepper_100_Percentage .stepperCompletedPercentage {
     background-color: #ECFDF3 !important;
     color: #12B76A !important;
+}
+
+.submissionCompleted{
+    background-color: #d1fae5 !important;
+    color: #065f46 !important;
+    padding: 4px 14px !important;
+}
+.submissionPending{
+    background-color: #fef3c7 !important;
+    color: #92400e !important;
+    padding: 4px 14px !important;
+}
+
+.submissionNotAssigned{
+    background-color: #dbeafe !important;
+    color: #1e40af !important;
+    padding: 4px 14px !important;
+}
+
+.submissionRejected {
+    background-color: #fee2e2 !important;
+    color: #b91c1c !important;
+    padding: 4px 14px !important;
+}
+
+.investigationStepperTitle{
+    font-size: 14px;
+    font-weight: 500;
+    color: #1D2939 !important;
 }
 
 /* stepper border */
@@ -1220,6 +1263,18 @@ div::first-letter {
         padding: 3px 12px 3px 8px;
         border-radius: 25px;
     }
+    .DIG-alert-flashy {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: bold;
+        color: #1816a3d0;
+        font-size: 14px;
+        border: 1px solid;
+        height: 23px;
+        padding: 3px 12px 3px 8px;
+        border-radius: 25px;
+    }
       
     .flashy-dot {
         margin-left: 8px;
@@ -1230,6 +1285,17 @@ div::first-letter {
         border-radius: 50%;
         box-shadow: 0 0 5px 2px #ff6467;
         animation: pulse-glow 1.2s infinite ease-in-out;
+    }
+
+     .blue-flashy-dot {
+        margin-left: 8px;
+        position: relative;
+        width: 10px;
+        height: 10px;
+        background-color: #1816a3d0;
+        border-radius: 50%;
+        box-shadow: 0 0 5px 2px rgb(21, 5, 199)d0;
+        animation: blue-pulse-glow 1.2s infinite ease-in-out;
     }
       
     @keyframes pulse-glow {
@@ -1244,6 +1310,21 @@ div::first-letter {
         100% {
           transform: scale(1);
           box-shadow: 0 0 3px 1px #ff6467;
+        }
+    }     
+       
+    @keyframes blue-pulse-glow {
+        0% {
+          transform: scale(1);
+          box-shadow: 0 0 3px 1px #1816a3d0;
+        }
+        50% {
+          transform: scale(1.3);
+          box-shadow: 0 0 8px 2px #1816a3d0;
+        }
+        100% {
+          transform: scale(1);
+          box-shadow: 0 0 3px 1px #1816a3d0;
         }
     }           
 
@@ -1596,4 +1677,86 @@ div::first-letter {
 
     .zIndex999{
         z-index: 999 !important;
+    }
+
+    .newStyleButton {
+        border: none !important;
+        padding: 8px 12px !important;
+        background-color: #488aec !important;
+        color: #ffffff !important;
+        font-size: 0.75rem !important;
+        line-height: 1rem !important;
+        font-weight: 700 !important;
+        text-align: center !important;
+        cursor: pointer !important;
+        text-transform: uppercase !important;
+        vertical-align: middle !important;
+        border-radius: 0.5rem !important;
+        user-select: none !important;
+        gap: 0.75rem !important;
+        box-shadow: 0 4px 6px -1px #488aec31, 0 2px 4px -1px #488aec17 !important;
+        transition: all 0.6s ease !important;
+    }
+
+    .newStyleButton.Mui-disabled {
+        background-color: #cccccc !important; 
+        color: #888888 !important;  
+        cursor: not-allowed !important;
+        box-shadow: none !important;
+    }
+
+    .newStyleButton:hover {
+        box-shadow: 0 10px 15px -3px #488aec4f, 0 4px 6px -2px #488aec17 !important;
+    }
+
+    .whiteBorderedBtn{
+        display: inline-block;
+        padding: 12px 24px;
+        border: 1px solid #4f4f4f !important;
+        border-radius: 4px;
+        transition: all 0.2s ease-in;
+        position: relative;
+        overflow: hidden;
+        font-size: 19px;
+        cursor: pointer;
+        color: #333 !important;
+        z-index: 1;
+    }
+
+    .padded-row .MuiDataGrid-cell {
+    padding-top: 10px !important;
+    padding-bottom: 8px !important;
+    }
+
+    /* .wrap-cell {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: normal;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    font-size: 14px;
+    line-height: 1.5;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    max-height: calc(1.5em * 3 + 15px);
+    } */
+
+
+    .clamped-cell {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: normal;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    font-size: 14px;
+    line-height: 1.5;
+    cursor: default;
     }
