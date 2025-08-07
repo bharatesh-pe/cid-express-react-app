@@ -846,14 +846,81 @@ const NormalViewForm = ({
     }));
   };
 
-    const handleTableDataChange = (field, data)=>{
-        setFormData(prevData => {
-            return {
-                ...prevData,
-                [field.name]: JSON.stringify(data),
+const handleTableDataChange = (field, data) => {
+  setFormData(prevData => ({
+    ...prevData,
+    [field.name]: JSON.stringify(data),
+  }));
+
+   if (field.name === "field_property_details") {
+    setTimeout(() => {
+        const hasAnyNoEvidence = (data || []).some(
+        row => row["Used as Evidence"] === "No"
+        );
+
+        const shouldHideReason = !hasAnyNoEvidence;
+
+        const updatedFormConfig = (Array.isArray(newFormConfig) ? newFormConfig : []).map(fld => {
+        if (fld.name === "field_property_details" && Array.isArray(fld.tableHeaders)) {
+            let updatedHeaders = [...fld.tableHeaders];
+
+            const hasReason = updatedHeaders.some(
+            header => header.header?.toLowerCase() === "reason"
+            );
+
+            if (shouldHideReason && hasReason) {
+            updatedHeaders = updatedHeaders.filter(
+                header => header.header?.toLowerCase() !== "reason"
+            );
+
+            const updatedData = (data || []).map(row => {
+                const newRow = { ...row };
+                delete newRow["Reason"];
+                return newRow;
+            });
+
+            setFormData(prev => ({
+                ...prev,
+                [field.name]: JSON.stringify(updatedData)
+            }));
+            }
+
+            else if (!shouldHideReason && !hasReason) {
+            const usedAsEvidenceIndex = updatedHeaders.findIndex(
+                header => header.header?.toLowerCase() === "used as evidence"
+            );
+
+            const newHeader = {
+                header: "Reason",
+                fieldType: {
+                type: "text_area",
+                required: true
+                },
             };
+
+            if (usedAsEvidenceIndex !== -1) {
+                updatedHeaders.splice(usedAsEvidenceIndex + 1, 0, newHeader);
+            } else {
+                updatedHeaders.push(newHeader);
+            }
+            }
+
+            return {
+            ...fld,
+            tableHeaders: updatedHeaders,
+            };
+        }
+
+        return fld;
         });
-    }
+
+        setNewFormConfig(updatedFormConfig);
+    }, 100);
+   }
+
+};
+
+
 
   const handleAutocomplete = (field, selectedValue) => {
 

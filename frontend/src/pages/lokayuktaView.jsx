@@ -3200,7 +3200,7 @@ const fetchCounts = async () => {
                                         const nextStepIndex = lastApprovedIndex + 1;
                                         const nextStep = caseFieldStepperArray[nextStepIndex];
 
-                                        let statusLabel = "Not Assigned";
+                                        let statusLabel = "Not Approved";
                                         let statusClass = "submissionNotAssigned";
 
                                         if (approvedStages.includes(step)) {
@@ -3385,7 +3385,7 @@ const fetchCounts = async () => {
                                         const nextStepIndex = lastApprovedIndex + 1;
                                         const nextStep = approvalStepperArray[nextStepIndex];
 
-                                        let statusLabel = "Not Assigned";
+                                        let statusLabel = "Not Approved";
                                         let statusClass = "submissionNotAssigned";
 
                                         if (approvedStages.includes(step)) {

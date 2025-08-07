@@ -2746,7 +2746,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                             }
                         }
 
-                        let statusLabel = "Not Assigned";
+                        let statusLabel = "Not Approved";
                         let statusClass = "submissionNotAssigned";
 
                         if (alreadySubmited) {

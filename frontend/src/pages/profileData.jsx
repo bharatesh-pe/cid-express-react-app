@@ -1300,6 +1300,7 @@ const ProfileData = () => {
 
         formData.append("data", JSON.stringify(normalData));
         formData.append("id", data.id);
+        formData.append("transaction_id" , "UPDATETEMPLATE" + Date.now() + "_" + Math.floor(Math.random() * 1000000),)
         setLoading(true);
 
         try {

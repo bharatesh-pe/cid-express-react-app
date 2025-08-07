@@ -2640,7 +2640,22 @@ const store_cnr_table_data = async (req, res) => {
         // }
        
         if(pt_case_id && pt_case_id.length > 0) {
+            //before insert check where there the data.field_cnr_number and the pt_case_id already exists in the CNR table, if it exist dont do anything.
+           
             for(const ptCaseId of pt_case_id) {
+
+                var existingCNR = await CNRModel.findOne({
+                    where: {
+                        field_cnr_number: data.field_cnr_number,
+                        pt_case_id: ptCaseId, // Check against the PT case ID
+                    }
+                });
+
+                if (existingCNR) {
+                    // If a record already exists, skip insertion
+                    console.log(`CNR record with CNR number ${data.field_cnr_number} and PT case ID ${ptCaseId} already exists. Skipping insertion.`);
+                    continue;
+                }
                 // Insert data into the CNR table
                 await CNRModel.create({
                     ...data,
@@ -2651,12 +2666,21 @@ const store_cnr_table_data = async (req, res) => {
         }
         else
         {
-            //Insert data into the CNR table with pt_case_id as null
-            await CNRModel.create({
-                ...data,
-                pt_case_id: null, // Use null for pt_case_id if no matching PT case
-            });
-            return res.status(200).json({ success: true, message: "CNR data stored successfully with no matching PT case." });
+
+            // var existingCNR = await CNRModel.findOne({
+            //     where: {
+            //         field_cnr_number: data.field_cnr_number,
+            //         pt_case_id: ptCaseId, // Check against the PT case ID
+            //     }
+            // });
+            // //Insert data into the CNR table with pt_case_id as null
+            // await CNRModel.create({
+            //     ...data,
+            //     pt_case_id: null, // Use null for pt_case_id if no matching PT case
+            // });
+            // return res.status(200).json({ success: true, message: "CNR data stored successfully with no matching PT case." });
+            //return an error like this "No matching PT case found for the provided CNR number."
+            return res.status(400).json({ success: false, message: "No matching PT case found for the provided CNR number." });
         }
         
     
