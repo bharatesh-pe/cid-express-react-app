@@ -677,7 +677,7 @@ exports.updateTemplate = async (req, res, next) => {
 
       try {
         await childModel.sync({ alter: true });
-      await migrateOldTableFieldData(model, childModel, field, table_name, childTableName);
+      // await migrateOldTableFieldData(model, childModel, field, table_name, childTableName);
         
       } catch (err) {
         console.error(`Failed to sync ${childTableName}:`, err);
@@ -762,86 +762,86 @@ exports.updateTemplate = async (req, res, next) => {
 };
 
 
-async function migrateOldTableFieldData(model, childModel, field, table_name, childTableName) {
-  const parentKey = `${table_name}_id`;
-  const parentRows = await model.findAll();
+// async function migrateOldTableFieldData(model, childModel, field, table_name, childTableName) {
+//   const parentKey = `${table_name}_id`;
+//   const parentRows = await model.findAll();
 
-  const sanitizeColumnName = (name) => {
-    return name
-      .toLowerCase()
-      .replace(/[^a-z0-9_]/gi, "_")
-      .replace(/_+/g, "_")
-      .replace(/^_+|_+$/g, "");
-  };
+//   const sanitizeColumnName = (name) => {
+//     return name
+//       .toLowerCase()
+//       .replace(/[^a-z0-9_]/gi, "_")
+//       .replace(/_+/g, "_")
+//       .replace(/^_+|_+$/g, "");
+//   };
 
-  for (const parent of parentRows) {
-    const existingChildren = await childModel.count({
-      where: { [parentKey]: parent.id },
-    });
+//   for (const parent of parentRows) {
+//     const existingChildren = await childModel.count({
+//       where: { [parentKey]: parent.id },
+//     });
 
-    if (existingChildren > 0) {
-      console.log(`Skipping migration for parent ID ${parent.id} — child rows already exist.`);
-      continue;
-    }
+//     if (existingChildren > 0) {
+//       console.log(`Skipping migration for parent ID ${parent.id} — child rows already exist.`);
+//       continue;
+//     }
 
-    const rawTableData = parent.get(field.name);
+//     const rawTableData = parent.get(field.name);
 
-    if (
-      !rawTableData ||
-      rawTableData === "[]" ||
-      rawTableData === "{}" ||
-      (typeof rawTableData === "object" && Object.keys(rawTableData).length === 0)
-    ) {
-      continue;
-    }
+//     if (
+//       !rawTableData ||
+//       rawTableData === "[]" ||
+//       rawTableData === "{}" ||
+//       (typeof rawTableData === "object" && Object.keys(rawTableData).length === 0)
+//     ) {
+//       continue;
+//     }
 
-    let parsedRows;
-    try {
-      parsedRows = typeof rawTableData === "string"
-        ? JSON.parse(rawTableData)
-        : rawTableData;
-    } catch (err) {
-      console.warn(`Invalid JSON in ${field.name} for row ID ${parent.id}`);
-      continue;
-    }
+//     let parsedRows;
+//     try {
+//       parsedRows = typeof rawTableData === "string"
+//         ? JSON.parse(rawTableData)
+//         : rawTableData;
+//     } catch (err) {
+//       console.warn(`Invalid JSON in ${field.name} for row ID ${parent.id}`);
+//       continue;
+//     }
 
-    if (!Array.isArray(parsedRows) || parsedRows.length === 0) {
-      continue;
-    }
+//     if (!Array.isArray(parsedRows) || parsedRows.length === 0) {
+//       continue;
+//     }
 
-    const nonEmptyRows = parsedRows.filter(obj =>
-      Object.values(obj).some(val =>
-        val !== null && val !== undefined && val.toString().trim() !== ""
-      )
-    );
+//     const nonEmptyRows = parsedRows.filter(obj =>
+//       Object.values(obj).some(val =>
+//         val !== null && val !== undefined && val.toString().trim() !== ""
+//       )
+//     );
 
-    if (nonEmptyRows.length === 0) {
-      continue;
-    }
+//     if (nonEmptyRows.length === 0) {
+//       continue;
+//     }
 
-    const rowsToInsert = [];
+//     const rowsToInsert = [];
 
-    for (const row of nonEmptyRows) {
-      const insertRow = {};
-      for (const header of field.tableHeaders || []) {
-        const sanitized = sanitizeColumnName(header.header);
-        insertRow[sanitized] = row[header.header] ?? null;
-      }
+//     for (const row of nonEmptyRows) {
+//       const insertRow = {};
+//       for (const header of field.tableHeaders || []) {
+//         const sanitized = sanitizeColumnName(header.header);
+//         insertRow[sanitized] = row[header.header] ?? null;
+//       }
 
-      insertRow[parentKey] = parent.id;
-      rowsToInsert.push(insertRow);
-    }
+//       insertRow[parentKey] = parent.id;
+//       rowsToInsert.push(insertRow);
+//     }
 
-    try {
-      if (rowsToInsert.length > 0) {
-        console.log(`Inserting ${rowsToInsert.length} child rows for parent ID ${parent.id}`);
-        await childModel.bulkCreate(rowsToInsert, { ignoreDuplicates: true });
-      }
-    } catch (err) {
-      console.error(`Error inserting child rows for parent ID ${parent.id}:`, err);
-    }
-  }
-}
+//     try {
+//       if (rowsToInsert.length > 0) {
+//         console.log(`Inserting ${rowsToInsert.length} child rows for parent ID ${parent.id}`);
+//         await childModel.bulkCreate(rowsToInsert, { ignoreDuplicates: true });
+//       }
+//     } catch (err) {
+//       console.error(`Error inserting child rows for parent ID ${parent.id}:`, err);
+//     }
+//   }
+// }
 
 
 
