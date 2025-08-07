@@ -1968,7 +1968,9 @@ const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData
             }
         } catch (err) {
             setLoading(false);
-            toast.error(err?.message || "Failed to save Mahazar/Property Form.", {
+
+            const errorMessage =err?.response?.data?.message || err?.message || "Failed to save Mahazar/Property Form.";
+                toast.error(errorMessage, {
                 position: "top-right",
                 autoClose: 3000,
                 className: "toast-error",
@@ -2409,7 +2411,10 @@ const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData
                     }
                 } catch (err) {
                     setLoading(false);
-                    toast.error(err?.message || "Failed to save Mahazar.", {
+                    const errorMessage =
+                        err?.response?.data?.message || err?.message || "Failed to save Mahazar.";
+
+                    toast.error(errorMessage, {
                         position: "top-right",
                         autoClose: 3000,
                         className: "toast-error",

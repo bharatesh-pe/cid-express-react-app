@@ -2698,7 +2698,7 @@ const CDR = ({ templateName, headerDetails, rowId, options, selectedRowData, bac
                             let fieldNeedToStatus = allData[0]?.field_need_to_do_by;
                             let stepLower = step.toLowerCase();
 
-                            let statusLabel = "Not Assigned";
+                            let statusLabel = "Not Approved";
                             let statusClass = "submissionNotAssigned";
 
 
@@ -2710,7 +2710,7 @@ const CDR = ({ templateName, headerDetails, rowId, options, selectedRowData, bac
                                     statusClass = "submissionPending";
                                 } else {
                                     alreadySubmited = false;
-                                    statusLabel = "Not Assigned";
+                                    statusLabel = "Not Approved";
                                     statusClass = "submissionNotAssigned";
                                 }
                             }
@@ -2730,7 +2730,7 @@ const CDR = ({ templateName, headerDetails, rowId, options, selectedRowData, bac
                                     statusClass = "submissionCompleted";
                                 } else {
                                     alreadySubmited = false;
-                                    statusLabel = "Not Assigned";
+                                    statusLabel = "Not Approved";
                                     statusClass = "submissionNotAssigned";
                                 }
                             }

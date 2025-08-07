@@ -58,6 +58,7 @@ const typeMapping = {
 
 exports.insertTemplateData = async (req, res, next) => {
   let dirPath = "";
+  const t = await sequelize.transaction(); 
   try {
     const { table_name, data, child_tables, folder_attachment_ids, transaction_id } =
       req.body;
@@ -94,6 +95,7 @@ exports.insertTemplateData = async (req, res, next) => {
     // Fetch table metadata
     const tableData = await Template.findOne({ where: { table_name } });
     if (!tableData) {
+      await t.rollback();
       return userSendResponse(
         res,
         400,
@@ -114,6 +116,7 @@ exports.insertTemplateData = async (req, res, next) => {
     try {
       parsedData = JSON.parse(data);
     } catch (err) {
+      await t.rollback();
       return userSendResponse(
         res,
         400,
@@ -130,6 +133,7 @@ exports.insertTemplateData = async (req, res, next) => {
       if (parsedData.hasOwnProperty(name)) {
         validData[name] = parsedData[name];
       } else if (not_null && default_value === undefined) {
+        await t.rollback();
         return userSendResponse(
           res,
           400,
@@ -211,7 +215,8 @@ exports.insertTemplateData = async (req, res, next) => {
     await Model.sync(); // Only use `sync()` when necessary to prevent performance overhead
 
     // Insert data
-    const insertedData = await Model.create(validData);
+    const insertedData = await Model.create(validData, { transaction: t });
+
 
     const fileUpdates = {};
 
@@ -258,7 +263,7 @@ exports.insertTemplateData = async (req, res, next) => {
       for (const [fieldname, filenames] of Object.entries(fileUpdates)) {
         await Model.update(
           { [fieldname]: filenames },
-          { where: { id: insertedData.id } }
+          { where: { id: insertedData.id }, transaction: t  }
         );
       }
     }
@@ -290,73 +295,99 @@ exports.insertTemplateData = async (req, res, next) => {
     }
     const allChildren = {};
 
-    // if (child_tables && insertedData?.id) {
-    //   let parsedChildTables = child_tables;
-    //   if (typeof child_tables === "string") {
-    //     try {
-    //       parsedChildTables = JSON.parse(child_tables);
-    //       console.log("Parsed child_tables object:", parsedChildTables);
-    //     } catch {
-    //       parsedChildTables = {};
-    //     }
-    //   }
+    if (child_tables && insertedData?.id) {
+      let parsedChildTables = child_tables;
+      if (typeof child_tables === "string") {
+        try {
+          parsedChildTables = JSON.parse(child_tables);
+          console.log("Parsed child_tables object:", parsedChildTables);
+        } catch {
+          parsedChildTables = {};
+        }
+      }
 
-    //   for (const rawChildTableName in parsedChildTables) {
-    //     const childTableName = sanitizeKey(rawChildTableName);
-    //     const childRows = parsedChildTables[rawChildTableName];
-    //     if (!Array.isArray(childRows) || childRows.length === 0) continue;
+      for (const rawChildTableName in parsedChildTables) {
+        const childTableName = sanitizeKey(rawChildTableName);
+        const childRows = parsedChildTables[rawChildTableName];
+        if (!Array.isArray(childRows) || childRows.length === 0) continue;
 
-    //     const firstRow = childRows[0];
-    //     const attributes = {};
+        const firstRow = childRows[0];
+        const attributes = {};
 
-    //     for (const key in firstRow) {
-    //       attributes[sanitizeKey(key)] = { type: Sequelize.DataTypes.TEXT, allowNull: true };
-    //     }
+        for (const key in firstRow) {
+          attributes[sanitizeKey(key)] = { type: Sequelize.DataTypes.TEXT, allowNull: true };
+        }
 
-    //     const foreignKeyColumn = sanitizeKey(`${table_name}_id`);
+        const foreignKeyColumn = sanitizeKey(`${table_name}_id`);
 
-    //     attributes[foreignKeyColumn] = {
-    //       type: Sequelize.DataTypes.INTEGER,
-    //       allowNull: false,
-    //       references: { model: table_name, key: "id" },
-    //       onDelete: "CASCADE",
-    //       field: foreignKeyColumn,
-    //     };
+        attributes[foreignKeyColumn] = {
+          type: Sequelize.DataTypes.INTEGER,
+          allowNull: false,
+          references: { model: table_name, key: "id" },
+          onDelete: "CASCADE",
+          field: foreignKeyColumn,
+        };
 
-    //     const ChildModel = sequelize.define(childTableName, attributes, {
-    //       freezeTableName: true,
-    //       timestamps: true,
-    //       createdAt: "created_at",
-    //       updatedAt: "updated_at",
-    //     });
+        const ChildModel = sequelize.define(childTableName, attributes, {
+          freezeTableName: true,
+          timestamps: true,
+          createdAt: "created_at",
+          updatedAt: "updated_at",
+        });
 
-    //     await ChildModel.sync();
+        const [results] = await sequelize.query(
+          `SELECT to_regclass('public.${childTableName}') AS table_exists;`
+        );
 
-    //     const childRecords = childRows.map(row => {
-    //       const sanitizedRow = {};
-    //       for (const key in row) {
-    //         sanitizedRow[sanitizeKey(key)] = row[key];
-    //       }
-    //       sanitizedRow[foreignKeyColumn] = insertedData.id;
-    //       return sanitizedRow;
-    //     });
+        if (!results[0]?.table_exists) {
+          throw new Error(`Child table "${childTableName}" is missing. Please update the template.`);
+        }
 
-    //     console.log(`Inserting ${childRecords.length} child records into ${childTableName}`);
-    //     await ChildModel.bulkCreate(childRecords);
+        const childRecords = childRows.map(row => {
+          const sanitizedRow = {};
+          for (const key in row) {
+            sanitizedRow[sanitizeKey(key)] = row[key];
+          }
+          sanitizedRow[foreignKeyColumn] = insertedData.id;
+          return sanitizedRow;
+        });
 
-    //     const insertedChildren = await ChildModel.findAll({
-    //       where: { [foreignKeyColumn]: insertedData.id },
-    //     });
-    //     console.log(`Inserted children rows for ${childTableName}:`, insertedChildren);
-    //     allChildren[rawChildTableName] = insertedChildren;
-    //   }
-    // }
+        console.log(`Inserting ${childRecords.length} child records into ${childTableName}`);
+        
+        try {
+      await ChildModel.bulkCreate(childRecords, {
+        transaction: t,
+        returning: true,
+      });
+    } catch (err) {
+      console.error(`Failed to insert into child table "${childTableName}"`);
+      console.error("Insert data:", childRecords);
+      console.error("Error:", err.message);
+      if (err?.errors) {
+        err.errors.forEach(e => console.error("→", e.message));
+      }
+      throw err;
+    }
 
+        const insertedChildren = await ChildModel.findAll({
+          where: { [foreignKeyColumn]: insertedData.id },
+        });
+        console.log(`Inserted children rows for ${childTableName}:`, insertedChildren);
+        allChildren[rawChildTableName] = insertedChildren;
+      }
+    }
+
+    await t.commit(); 
     return userSendResponse(res, 200, true, `Record Created Successfully`, null);
   } catch (error) {
+    await t.rollback();
     console.error("Error inserting data:", error.stack);
-    return userSendResponse(res, 500, false, "Failed to insert data.", error);
-  } finally {
+    return res.status(500).json({
+        success: false,
+        message: error?.message || "Failed to insert data.",
+        data: { error: error?.message }
+      });  } 
+  finally {
     if (fs.existsSync(dirPath))
       fs.rmSync(dirPath, { recursive: true, force: true });
   }
@@ -364,6 +395,8 @@ exports.insertTemplateData = async (req, res, next) => {
 
 exports.insertTwoTemplateData = async (req, res, next) => {
   let dirPath = "";
+  const transaction = await sequelize.transaction();
+
   try {
     const { table_name, data, child_tables,folder_attachment_ids, transaction_id, second_table_name,second_child_tables, second_data, second_folder_attachment_ids } = req.body;
     const userId = req.user?.user_id || null;
@@ -606,7 +639,7 @@ exports.insertTwoTemplateData = async (req, res, next) => {
         updatedAt: "updated_at",
       });
       await SecondModel.sync();
-      insertedSecondData = await SecondModel.create(secondValidData);
+      insertedSecondData = await SecondModel.create(secondValidData, { transaction });
 
       // Now, if first table is 'cid_ui_case_mahazars' and has 'field_property_form_id', set it to second table id
       if (
@@ -618,7 +651,7 @@ exports.insertTwoTemplateData = async (req, res, next) => {
       }
 
       // Insert first table row now (after setting property_form_id if needed)
-      insertedData = await Model.create(validData);
+      insertedData = await Model.create(validData, { transaction });
 
       // Handle file uploads for first table
       const fileUpdates = {};
@@ -645,7 +678,7 @@ exports.insertTwoTemplateData = async (req, res, next) => {
             s3_key: s3Key,
             field_name: fieldname,
             folder_id: folderId,
-          });
+          }, { transaction });
           if (!fileUpdates[fieldname]) {
             fileUpdates[fieldname] = originalname;
           } else {
@@ -685,7 +718,7 @@ exports.insertTwoTemplateData = async (req, res, next) => {
             s3_key: s3Key,
             field_name: fieldname,
             folder_id: folderId,
-          });
+          }, { transaction });
           if (!secondFileUpdates[fieldname]) {
             secondFileUpdates[fieldname] = originalname;
           } else {
@@ -695,13 +728,13 @@ exports.insertTwoTemplateData = async (req, res, next) => {
         for (const [fieldname, filenames] of Object.entries(secondFileUpdates)) {
           await SecondModel.update(
             { [fieldname]: filenames },
-            { where: { id: insertedSecondData.id } }
+            { where: { id: insertedSecondData.id } }, { transaction }
           );
         }
       }
     } else {
       // No second table, just insert first table as usual
-      insertedData = await Model.create(validData);
+      insertedData = await Model.create(validData , { transaction });
 
       // Handle file uploads for first table
       const fileUpdates = {};
@@ -728,7 +761,7 @@ exports.insertTwoTemplateData = async (req, res, next) => {
             s3_key: s3Key,
             field_name: fieldname,
             folder_id: folderId,
-          });
+          }, { transaction });
           if (!fileUpdates[fieldname]) {
             fileUpdates[fieldname] = originalname;
           } else {
@@ -738,7 +771,7 @@ exports.insertTwoTemplateData = async (req, res, next) => {
         for (const [fieldname, filenames] of Object.entries(fileUpdates)) {
           await Model.update(
             { [fieldname]: filenames },
-            { where: { id: insertedData.id } }
+            { where: { id: insertedData.id } }, transaction
           );
         }
       }
@@ -758,7 +791,7 @@ exports.insertTwoTemplateData = async (req, res, next) => {
         user_id: actorId,
         actor_name: userName,
         action: actionText,
-      });
+      }, { transaction });
     }
 
     if (insertedSecondData && second_table_name) {
@@ -776,7 +809,7 @@ exports.insertTwoTemplateData = async (req, res, next) => {
         user_id: actorId,
         actor_name: userName,
         action: actionText,
-      });
+      }, { transaction });
     }
 
     function sanitizeKey(str) {
@@ -789,136 +822,154 @@ exports.insertTwoTemplateData = async (req, res, next) => {
     }
     const allChildren = {};
 
-    // if (child_tables && insertedData?.id) {
-    //   let parsedChildTables = child_tables;
-    //   if (typeof child_tables === "string") {
-    //     try {
-    //       parsedChildTables = JSON.parse(child_tables);
-    //       console.log("Parsed child_tables object:", parsedChildTables);
-    //     } catch {
-    //       parsedChildTables = {};
-    //     }
-    //   }
+    if (child_tables && insertedData?.id) {
+      let parsedChildTables = child_tables;
+      if (typeof child_tables === "string") {
+        try {
+          parsedChildTables = JSON.parse(child_tables);
+          console.log("Parsed child_tables object:", parsedChildTables);
+        } catch {
+          parsedChildTables = {};
+        }
+      }
 
-    //   for (const rawChildTableName in parsedChildTables) {
-    //     const childTableName = sanitizeKey(rawChildTableName);
-    //     const childRows = parsedChildTables[rawChildTableName];
-    //     if (!Array.isArray(childRows) || childRows.length === 0) continue;
+      for (const rawChildTableName in parsedChildTables) {
+        const childTableName = sanitizeKey(rawChildTableName);
+        const childRows = parsedChildTables[rawChildTableName];
+        if (!Array.isArray(childRows) || childRows.length === 0) continue;
 
-    //     const firstRow = childRows[0];
-    //     const attributes = {};
+        const firstRow = childRows[0];
+        const attributes = {};
 
-    //     for (const key in firstRow) {
-    //       attributes[sanitizeKey(key)] = { type: Sequelize.DataTypes.TEXT, allowNull: true };
-    //     }
+        for (const key in firstRow) {
+          attributes[sanitizeKey(key)] = { type: Sequelize.DataTypes.TEXT, allowNull: true };
+        }
 
-    //     const foreignKeyColumn = sanitizeKey(`${table_name}_id`);
+        const foreignKeyColumn = sanitizeKey(`${table_name}_id`);
 
-    //     attributes[foreignKeyColumn] = {
-    //       type: Sequelize.DataTypes.INTEGER,
-    //       allowNull: false,
-    //       references: { model: table_name, key: "id" },
-    //       onDelete: "CASCADE",
-    //       field: foreignKeyColumn,
-    //     };
+        attributes[foreignKeyColumn] = {
+          type: Sequelize.DataTypes.INTEGER,
+          allowNull: false,
+          references: { model: table_name, key: "id" },
+          onDelete: "CASCADE",
+          field: foreignKeyColumn,
+        };
 
-    //     const ChildModel = sequelize.define(childTableName, attributes, {
-    //       freezeTableName: true,
-    //       timestamps: true,
-    //       createdAt: "created_at",
-    //       updatedAt: "updated_at",
-    //     });
+        const ChildModel = sequelize.define(childTableName, attributes, {
+          freezeTableName: true,
+          timestamps: true,
+          createdAt: "created_at",
+          updatedAt: "updated_at",
+        });
 
-    //     await ChildModel.sync();
+        const [results] = await sequelize.query(
+          `SELECT to_regclass('public.${childTableName}') AS table_exists;`
+        );
 
-    //     const childRecords = childRows.map(row => {
-    //       const sanitizedRow = {};
-    //       for (const key in row) {
-    //         sanitizedRow[sanitizeKey(key)] = row[key];
-    //       }
-    //       sanitizedRow[foreignKeyColumn] = insertedData.id;
-    //       return sanitizedRow;
-    //     });
+        if (!results[0]?.table_exists) {
+          throw new Error(`Child table "${childTableName}" is missing. Please update the template.`);
+        }
 
-    //     console.log(`Inserting ${childRecords.length} child records into ${childTableName}`);
-    //     await ChildModel.bulkCreate(childRecords);
+        const childRecords = childRows.map(row => {
+          const sanitizedRow = {};
+          for (const key in row) {
+            sanitizedRow[sanitizeKey(key)] = row[key];
+          }
+          sanitizedRow[foreignKeyColumn] = insertedData.id;
+          return sanitizedRow;
+        });
 
-    //     const insertedChildren = await ChildModel.findAll({
-    //       where: { [foreignKeyColumn]: insertedData.id },
-    //     });
-    //     console.log(`Inserted children rows for ${childTableName}:`, insertedChildren);
-    //     allChildren[rawChildTableName] = insertedChildren;
-    //   }
-    // }
+        console.log(`Inserting ${childRecords.length} child records into ${childTableName}`);
+        await ChildModel.bulkCreate(childRecords);
 
-    // if (second_child_tables && insertedSecondData?.id) {
-    //   let parsedSecondChildTables = second_child_tables;
-    //   if (typeof second_child_tables === "string") {
-    //     try {
-    //       parsedSecondChildTables = JSON.parse(second_child_tables);
-    //       console.log("Parsed second_child_tables object:", parsedSecondChildTables);
-    //     } catch {
-    //       parsedSecondChildTables = {};
-    //     }
-    //   }
+        const insertedChildren = await ChildModel.findAll({
+          where: { [foreignKeyColumn]: insertedData.id },
+        });
+        console.log(`Inserted children rows for ${childTableName}:`, insertedChildren);
+        allChildren[rawChildTableName] = insertedChildren;
+      }
+    }
 
-    //   for (const rawChildTableName in parsedSecondChildTables) {
-    //     const childTableName = sanitizeKey(rawChildTableName);
-    //     const childRows = parsedSecondChildTables[rawChildTableName];
-    //     if (!Array.isArray(childRows) || childRows.length === 0) continue;
+    if (second_child_tables && insertedSecondData?.id) {
+      let parsedSecondChildTables = second_child_tables;
+      if (typeof second_child_tables === "string") {
+        try {
+          parsedSecondChildTables = JSON.parse(second_child_tables);
+          console.log("Parsed second_child_tables object:", parsedSecondChildTables);
+        } catch {
+          parsedSecondChildTables = {};
+        }
+      }
 
-    //     const firstRow = childRows[0];
-    //     const attributes = {};
+      for (const rawChildTableName in parsedSecondChildTables) {
+        const childTableName = sanitizeKey(rawChildTableName);
+        const childRows = parsedSecondChildTables[rawChildTableName];
+        if (!Array.isArray(childRows) || childRows.length === 0) continue;
 
-    //     for (const key in firstRow) {
-    //       attributes[sanitizeKey(key)] = { type: Sequelize.DataTypes.TEXT, allowNull: true };
-    //     }
+        const firstRow = childRows[0];
+        const attributes = {};
 
-    //     const foreignKeyColumn = sanitizeKey(`${second_table_name}_id`);
+        for (const key in firstRow) {
+          attributes[sanitizeKey(key)] = { type: Sequelize.DataTypes.TEXT, allowNull: true };
+        }
 
-    //     attributes[foreignKeyColumn] = {
-    //       type: Sequelize.DataTypes.INTEGER,
-    //       allowNull: false,
-    //       references: { model: second_table_name, key: "id" },
-    //       onDelete: "CASCADE",
-    //       field: foreignKeyColumn,
-    //     };
+        const foreignKeyColumn = sanitizeKey(`${second_table_name}_id`);
 
-    //     const ChildModel = sequelize.define(childTableName, attributes, {
-    //       freezeTableName: true,
-    //       timestamps: true,
-    //       createdAt: "created_at",
-    //       updatedAt: "updated_at",
-    //     });
+        attributes[foreignKeyColumn] = {
+          type: Sequelize.DataTypes.INTEGER,
+          allowNull: false,
+          references: { model: second_table_name, key: "id" },
+          onDelete: "CASCADE",
+          field: foreignKeyColumn,
+        };
 
-    //     await ChildModel.sync();
+        const ChildModel = sequelize.define(childTableName, attributes, {
+          freezeTableName: true,
+          timestamps: true,
+          createdAt: "created_at",
+          updatedAt: "updated_at",
+        });
 
-    //     const childRecords = childRows.map(row => {
-    //       const sanitizedRow = {};
-    //       for (const key in row) {
-    //         sanitizedRow[sanitizeKey(key)] = row[key];
-    //       }
-    //       sanitizedRow[foreignKeyColumn] = insertedSecondData.id;
-    //       // Removed created_by and created_by_id from data insertion
-    //       return sanitizedRow;
-    //     });
+        const [results] = await sequelize.query(
+          `SELECT to_regclass('public.${childTableName}') AS table_exists;`
+        );
 
-    //     console.log(`Inserting ${childRecords.length} second-child records into ${childTableName}`);
-    //     await ChildModel.bulkCreate(childRecords);
+        if (!results[0]?.table_exists) {
+          throw new Error(`Child table "${childTableName}" is missing. Please update the template.`);
+        }
 
-    //     // Fetch and log inserted second-child rows
-    //     const insertedChildren = await ChildModel.findAll({
-    //       where: { [foreignKeyColumn]: insertedSecondData.id },
-    //     });
-    //     console.log(`Inserted second-child rows for ${childTableName}:`, insertedChildren);
-    //     allChildren[rawChildTableName] = insertedChildren;
-    //   }
-    // }
+        const childRecords = childRows.map(row => {
+          const sanitizedRow = {};
+          for (const key in row) {
+            sanitizedRow[sanitizeKey(key)] = row[key];
+          }
+          sanitizedRow[foreignKeyColumn] = insertedSecondData.id;
+          // Removed created_by and created_by_id from data insertion
+          return sanitizedRow;
+        });
 
+        console.log(`Inserting ${childRecords.length} second-child records into ${childTableName}`);
+        await ChildModel.bulkCreate(childRecords);
+
+        // Fetch and log inserted second-child rows
+        const insertedChildren = await ChildModel.findAll({
+          where: { [foreignKeyColumn]: insertedSecondData.id },
+        });
+        console.log(`Inserted second-child rows for ${childTableName}:`, insertedChildren);
+        allChildren[rawChildTableName] = insertedChildren;
+      }
+    }
+
+    await transaction.commit();
     return userSendResponse(res, 200, true, `Record Created Successfully`, null);
     } catch (error) {
+    await transaction.rollback();
     console.error("Error inserting data:", error.stack);
-    return userSendResponse(res, 500, false, "Failed to insert data", error);
+    return res.status(500).json({
+        success: false,
+        message: error?.message || "Failed to insert data.",
+        data: { error: error?.message }
+      });
   } finally {
     if (fs.existsSync(dirPath))
       fs.rmSync(dirPath, { recursive: true, force: true });
@@ -2133,9 +2184,9 @@ exports.getTemplateData = async (req, res, next) => {
     if(table_name === "cid_ui_case_action_plan" || table_name === "cid_eq_case_plan_of_action" || table_name === 'cid_ui_case_cdr_ipdr')
         relevantSchema.push({ name: "sys_status", data_type: "TEXT", not_null: false });
     
-    if(table_name === "cid_ui_case_property_form")
+    if(table_name === "cid_ui_case_property_form"){
         relevantSchema.push({ name: "sys_status", data_type: "TEXT", not_null: false });
-  
+    }
     // const relevantSchema = schema;
     // Define model attributes based on filtered schema
     const modelAttributes = {};
@@ -2361,7 +2412,7 @@ exports.getTemplateData = async (req, res, next) => {
         }
         else if (module === "pt_case") {
 
-            if(req.body.ui_case_id && req.body.ui_case_id !== "" || req.body.ui_case_id !== null) {
+            if(req.body.ui_case_id && req.body.ui_case_id !== "" && req.body.ui_case_id !== null) {
                 whereClause = {
                   [Op.and]: [
                     {
@@ -2401,6 +2452,69 @@ exports.getTemplateData = async (req, res, next) => {
                 };
             }
         }
+    }
+
+
+    if (module === "pt_case" && table_name === "cid_ui_case_property_form" && (ui_case_id || pt_case_id) ) {
+      console.log("Running property form evidence check");
+
+      const propertyFormTemplate = await Template.findOne({
+        where: { table_name: "cid_ui_case_property_form" },
+      });
+
+      if (propertyFormTemplate) {
+        const tableName = propertyFormTemplate.table_name;
+        const PropertyFormModel = sequelize.models[tableName];
+
+        if (PropertyFormModel) {
+          console.log("Found PropertyFormModel:", tableName);
+
+          const propertyFormData = await PropertyFormModel.findAll({
+            attributes: ["pt_case_id", "ui_case_id", "field_property_details", "id"],
+            where: {
+              [Op.or]: [
+                { ui_case_id: ui_case_id || null },
+                { pt_case_id: pt_case_id || null }
+              ]
+            },
+            raw: true,
+          });
+
+          console.log("Fetched property form data:", propertyFormData);
+
+          const matchedRows = propertyFormData.filter((row) => {
+            const hasUICaseIdOnly = row.ui_case_id && !row.pt_case_id;
+
+            if (hasUICaseIdOnly) {
+              try {
+                const details = JSON.parse(row.field_property_details || "[]");
+                const isUsedAsEvidence = Array.isArray(details) && details.some(
+                  (entry) =>
+                    entry?.["Used as Evidence"]?.toLowerCase() === "yes"
+                );
+                console.log(`Row ID ${row.id}: Used as Evidence = ${isUsedAsEvidence}`);
+                return isUsedAsEvidence;
+              } catch (e) {
+                console.log(`Error parsing JSON for row ID ${row.id}`, e);
+                return false;
+              }
+            }
+
+            return row.pt_case_id;
+          });
+
+          if (matchedRows.length === 0) {
+            console.log("No matching rows with Used as Evidence = Yes. Applying whereClause.id = null");
+            whereClause.id = null;
+          } else {
+            console.log("Matched rows:", matchedRows.map(row => row.id));
+            whereClause.id = {
+              [Op.in]: matchedRows.map(row => row.id)
+            };
+          }
+
+        }
+      }
     }
 
     // Apply field filters if provided
@@ -4060,6 +4174,20 @@ exports.deleteTemplateData = async (req, res, next) => {
           .toLowerCase()
           .replace(/[^a-z0-9]+/gi, "_")
           .replace(/^_+|_+$/g, "");
+
+          const [results] = await sequelize.query(
+            `SELECT to_regclass('${childTableName}') AS exists`
+          );
+
+          if (!results[0].exists) {
+            return userSendResponse(
+              res,
+              400,
+              false,
+              `Child table "${childTableName}" does not exist.Please Update the template`,
+              null
+            );
+          }
 
         const ChildModel = sequelize.models[childTableName] || sequelize.define(childTableName, {
           [`${table_name}_id`]: Sequelize.DataTypes.INTEGER,
@@ -8006,9 +8134,9 @@ exports.appendToLastLineOfPDF = async (req, res) => {
     const monthBoldFont = await monthPdf.embedFont(StandardFonts.HelveticaBold);
 
     // Insert general info if needed
-    if (shouldInsertGeneralInfoForPdfDoc(ui_case_id)) {
-      await insertGeneralInfo(pdfDoc, aoFields, pageWidth, pageHeight, regularFont, boldFont, 'pdfDoc');
-    }
+    // if (shouldInsertGeneralInfoForPdfDoc(ui_case_id)) {
+    //   await insertGeneralInfo(pdfDoc, aoFields, pageWidth, pageHeight, regularFont, boldFont, 'pdfDoc');
+    // }
     if (shouldInsertGeneralInfoForMonthPdf(ui_case_id, monthLabelRaw)) {
       await insertGeneralInfo(monthPdf, aoFields, pageWidth, pageHeight, monthRegularFont, monthBoldFont, 'monthPdf');
     }
@@ -8317,92 +8445,98 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
             const allChildren = {};
             let parsedChildTables = child_tables;
 
-            // if (insertedData && child_tables) {
-            //   if (typeof child_tables === "string") {
-            //     try {
-            //       parsedChildTables = JSON.parse(child_tables);
-            //       console.log("Parsed child_tables object:", parsedChildTables);
-            //     } catch (error) {
-            //       console.error("Failed to parse child_tables JSON string:", error);
-            //       parsedChildTables = {};
-            //     }
-            //   }
+            if (insertedData && child_tables) {
+              if (typeof child_tables === "string") {
+                try {
+                  parsedChildTables = JSON.parse(child_tables);
+                  console.log("Parsed child_tables object:", parsedChildTables);
+                } catch (error) {
+                  console.error("Failed to parse child_tables JSON string:", error);
+                  parsedChildTables = {};
+                }
+              }
 
-            //   for (const raw_child_table_name in parsedChildTables) {
-            //     const child_table_name = sanitizeKey(raw_child_table_name); // sanitize here
-            //     const child_data = parsedChildTables[raw_child_table_name];
+              for (const raw_child_table_name in parsedChildTables) {
+                const child_table_name = sanitizeKey(raw_child_table_name); // sanitize here
+                const child_data = parsedChildTables[raw_child_table_name];
 
-            //     if (!child_data || !Array.isArray(child_data) || child_data.length === 0) {
-            //       console.log("Skipping child table:", raw_child_table_name, "- no data or invalid");
-            //       continue;
-            //     }
+                if (!child_data || !Array.isArray(child_data) || child_data.length === 0) {
+                  console.log("Skipping child table:", raw_child_table_name, "- no data or invalid");
+                  continue;
+                }
 
-            //     console.log("Inserting into child_table:", child_table_name, "child_data:", child_data);
+                console.log("Inserting into child_table:", child_table_name, "child_data:", child_data);
 
-            //     const parentTemplate = await Template.findOne({ where: { table_name } });
-            //     const schemaChild = JSON.parse(parentTemplate.fields);
+                const parentTemplate = await Template.findOne({ where: { table_name } });
+                const schemaChild = JSON.parse(parentTemplate.fields);
 
-            //     const matchingSchemaField = schemaChild.find(
-            //       field => field.formType === "Table" && sanitizeKey(`${table_name}_${field.name}`) === child_table_name
-            //     );
+                const matchingSchemaField = schemaChild.find(
+                  field => field.formType === "Table" && sanitizeKey(`${table_name}_${field.name}`) === child_table_name
+                );
 
-            //     if (!matchingSchemaField || !matchingSchemaField.tableHeaders) {
-            //       console.log("Skipping schema structure for:", child_table_name);
-            //       continue;
-            //     }
+                if (!matchingSchemaField || !matchingSchemaField.tableHeaders) {
+                  console.log("Skipping schema structure for:", child_table_name);
+                  continue;
+                }
 
-            //     const childSchema = matchingSchemaField.tableHeaders.map(header => ({
-            //       name: sanitizeKey(header.header),
-            //       formType: header.fieldType?.type || "short_text"
-            //     }));
+                const childSchema = matchingSchemaField.tableHeaders.map(header => ({
+                  name: sanitizeKey(header.header),
+                  formType: header.fieldType?.type || "short_text"
+                }));
 
-            //     const childModelFields = {};
-            //     childSchema.forEach(f => {
-            //       let sequelizeType = Sequelize.DataTypes.TEXT;
-            //       if (f.formType === "short_text") sequelizeType = Sequelize.DataTypes.STRING(255);
-            //       else if (["dropdown", "radio"].includes(f.formType)) sequelizeType = Sequelize.DataTypes.STRING(100);
-            //       childModelFields[f.name] = {
-            //         type: sequelizeType,
-            //         allowNull: true,
-            //         field: sanitizeKey(f.name)
-            //       };
-            //     });
+                const childModelFields = {};
+                childSchema.forEach(f => {
+                  let sequelizeType = Sequelize.DataTypes.TEXT;
+                  if (f.formType === "short_text") sequelizeType = Sequelize.DataTypes.STRING(255);
+                  else if (["dropdown", "radio"].includes(f.formType)) sequelizeType = Sequelize.DataTypes.STRING(100);
+                  childModelFields[f.name] = {
+                    type: sequelizeType,
+                    allowNull: true,
+                    field: sanitizeKey(f.name)
+                  };
+                });
 
-            //     childModelFields[`${table_name}_id`] = {
-            //       type: Sequelize.DataTypes.INTEGER,
-            //       allowNull: false,
-            //       references: { model: table_name, key: "id" },
-            //       onDelete: "CASCADE",
-            //     };
+                childModelFields[`${table_name}_id`] = {
+                  type: Sequelize.DataTypes.INTEGER,
+                  allowNull: false,
+                  references: { model: table_name, key: "id" },
+                  onDelete: "CASCADE",
+                };
 
-            //     const ChildModel = sequelize.define(child_table_name, childModelFields, {
-            //       freezeTableName: true,
-            //       timestamps: true,
-            //       underscored: true,
-            //     });
+                const ChildModel = sequelize.define(child_table_name, childModelFields, {
+                  freezeTableName: true,
+                  timestamps: true,
+                  underscored: true,
+                });
 
-            //     await ChildModel.sync();
+                const [results] = await sequelize.query(
+                  `SELECT to_regclass('public.${child_table_name}') AS table_exists;`
+                );
 
-            //     const dataToInsert = child_data.map(row => {
-            //       const rowData = {};
-            //       for (const key in row) {
-            //         rowData[sanitizeKey(key)] = row[key];
-            //       }
-            //       rowData[`${table_name}_id`] = insertedData.id;
-            //       return rowData;
-            //     });
+                if (!results[0]?.table_exists) {
+                  throw new Error(`Child table "${child_table_name}" is missing. Please update the template.`);
+                }
 
-            //     console.log("bulkCreate into:", child_table_name, "with rows:", dataToInsert);
+                const dataToInsert = child_data.map(row => {
+                  const rowData = {};
+                  for (const key in row) {
+                    rowData[sanitizeKey(key)] = row[key];
+                  }
+                  rowData[`${table_name}_id`] = insertedData.id;
+                  return rowData;
+                });
 
-            //     await ChildModel.bulkCreate(dataToInsert, { transaction: t });
+                console.log("bulkCreate into:", child_table_name, "with rows:", dataToInsert);
 
-            //     const insertedChildren = await ChildModel.findAll({
-            //       where: { [`${table_name}_id`]: insertedData.id },
-            //     });
-            //     console.log("Inserted children rows:", insertedChildren);
-            //     allChildren[raw_child_table_name] = insertedChildren;
-            //   }
-            // }
+                await ChildModel.bulkCreate(dataToInsert, { transaction: t });
+
+                const insertedChildren = await ChildModel.findAll({
+                  where: { [`${table_name}_id`]: insertedData.id },
+                });
+                console.log("Inserted children rows:", insertedChildren);
+                allChildren[raw_child_table_name] = insertedChildren;
+              }
+            }
 
             if (insertedData && tableData?.template_id) {
               const isUICase = !!insertedData.ui_case_id;
@@ -9542,117 +9676,117 @@ exports.updateDataWithApprovalToTemplates = async (req, res, next) => {
                 .replace(/^_+|_+$/g, "");
             }
 
-            // if (child_tables) {
-            //   let parsedChildTables = child_tables;
-            //   if (typeof child_tables === "string") {
-            //     try {
-            //       parsedChildTables = JSON.parse(child_tables);
-            //     } catch (error) {
-            //       console.error("Failed to parse child_tables JSON string:", error);
-            //       parsedChildTables = {};
-            //     }
-            //   }
+            if (child_tables) {
+              let parsedChildTables = child_tables;
+              if (typeof child_tables === "string") {
+                try {
+                  parsedChildTables = JSON.parse(child_tables);
+                } catch (error) {
+                  console.error("Failed to parse child_tables JSON string:", error);
+                  parsedChildTables = {};
+                }
+              }
 
-            //   for (const child_table_name in parsedChildTables) {
-            //     const child_data = parsedChildTables[child_table_name];
-            //     if (!child_data || !Array.isArray(child_data) || child_data.length === 0) {
-            //       console.log("Skipping child table:", child_table_name, "- no data or invalid");
-            //       continue;
-            //     }
+              for (const child_table_name in parsedChildTables) {
+                const child_data = parsedChildTables[child_table_name];
+                if (!child_data || !Array.isArray(child_data) || child_data.length === 0) {
+                  console.log("Skipping child table:", child_table_name, "- no data or invalid");
+                  continue;
+                }
 
-            //     const parentTemplate = await Template.findOne({ where: { table_name } });
-            //     if (!parentTemplate) continue;
+                const parentTemplate = await Template.findOne({ where: { table_name } });
+                if (!parentTemplate) continue;
 
-            //     const schemaChild = typeof parentTemplate.fields === "string"
-            //       ? JSON.parse(parentTemplate.fields)
-            //       : parentTemplate.fields;
+                const schemaChild = typeof parentTemplate.fields === "string"
+                  ? JSON.parse(parentTemplate.fields)
+                  : parentTemplate.fields;
 
-            //     const matchingSchemaField = schemaChild.find(
-            //       field => field.formType === "Table" && `${table_name}_${field.name}` === child_table_name
-            //     );
+                const matchingSchemaField = schemaChild.find(
+                  field => field.formType === "Table" && `${table_name}_${field.name}` === child_table_name
+                );
 
-            //     if (!matchingSchemaField || !matchingSchemaField.tableHeaders) {
-            //       console.log("Skipping schema structure for:", child_table_name);
-            //       continue;
-            //     }
+                if (!matchingSchemaField || !matchingSchemaField.tableHeaders) {
+                  console.log("Skipping schema structure for:", child_table_name);
+                  continue;
+                }
 
-            //     const childSchema = matchingSchemaField.tableHeaders.map(header => ({
-            //       name: header.header,
-            //       formType: header.fieldType?.type || "short_text"
-            //     }));
+                const childSchema = matchingSchemaField.tableHeaders.map(header => ({
+                  name: header.header,
+                  formType: header.fieldType?.type || "short_text"
+                }));
 
-            //     const childModelFields = {};
-            //     childSchema.forEach(f => {
-            //       const sanitized = sanitizeKey(f.name);
-            //       let sequelizeType = Sequelize.DataTypes.TEXT;
-            //       if (f.formType === "short_text") sequelizeType = Sequelize.DataTypes.STRING(255);
-            //       else if (["dropdown", "radio"].includes(f.formType)) sequelizeType = Sequelize.DataTypes.STRING(100);
+                const childModelFields = {};
+                childSchema.forEach(f => {
+                  const sanitized = sanitizeKey(f.name);
+                  let sequelizeType = Sequelize.DataTypes.TEXT;
+                  if (f.formType === "short_text") sequelizeType = Sequelize.DataTypes.STRING(255);
+                  else if (["dropdown", "radio"].includes(f.formType)) sequelizeType = Sequelize.DataTypes.STRING(100);
 
-            //       childModelFields[sanitized] = {
-            //         type: sequelizeType,
-            //         allowNull: true,
-            //         field: sanitized
-            //       };
-            //     });
+                  childModelFields[sanitized] = {
+                    type: sequelizeType,
+                    allowNull: true,
+                    field: sanitized
+                  };
+                });
 
-            //     // Add FK reference to parent
-            //     const fkName = `${table_name}_id`;
-            //     childModelFields[fkName] = {
-            //       type: Sequelize.DataTypes.INTEGER,
-            //       allowNull: false,
-            //       references: { model: table_name, key: "id" },
-            //       onDelete: "CASCADE"
-            //     };
+                // Add FK reference to parent
+                const fkName = `${table_name}_id`;
+                childModelFields[fkName] = {
+                  type: Sequelize.DataTypes.INTEGER,
+                  allowNull: false,
+                  references: { model: table_name, key: "id" },
+                  onDelete: "CASCADE"
+                };
 
-            //     // Add primary key if not present
-            //     if (!childModelFields.id) {
-            //       childModelFields.id = {
-            //         type: Sequelize.DataTypes.INTEGER,
-            //         primaryKey: true,
-            //         autoIncrement: true
-            //       };
-            //     }
+                // Add primary key if not present
+                if (!childModelFields.id) {
+                  childModelFields.id = {
+                    type: Sequelize.DataTypes.INTEGER,
+                    primaryKey: true,
+                    autoIncrement: true
+                  };
+                }
 
-            //     const ChildModel = sequelize.define(child_table_name, childModelFields, {
-            //       freezeTableName: true,
-            //       timestamps: true,
-            //       underscored: true
-            //     });
+                const ChildModel = sequelize.define(child_table_name, childModelFields, {
+                  freezeTableName: true,
+                  timestamps: true,
+                  underscored: true
+                });
 
-            //     await ChildModel.sync({ transaction: t });
+                await ChildModel.sync({ transaction: t });
 
-            //     const incomingChildIds = child_data.filter(d => d.id).map(d => d.id);
+                const incomingChildIds = child_data.filter(d => d.id).map(d => d.id);
 
-            //     await ChildModel.destroy({
-            //       where: {
-            //         [fkName]: { [Sequelize.Op.in]: ids },
-            //         id: { [Sequelize.Op.notIn]: incomingChildIds.length ? incomingChildIds : [0] }
-            //       },
-            //       transaction: t
-            //     });
+                await ChildModel.destroy({
+                  where: {
+                    [fkName]: { [Sequelize.Op.in]: ids },
+                    id: { [Sequelize.Op.notIn]: incomingChildIds.length ? incomingChildIds : [0] }
+                  },
+                  transaction: t
+                });
 
-            //     for (const row of child_data) {
-            //       row[fkName] = ids.length === 1 ? ids[0] : null;
+                for (const row of child_data) {
+                  row[fkName] = ids.length === 1 ? ids[0] : null;
 
-            //       // Sanitize keys in row to match Sequelize model
-            //       const sanitizedRow = {};
-            //       for (const key in row) {
-            //         sanitizedRow[sanitizeKey(key)] = row[key];
-            //       }
+                  // Sanitize keys in row to match Sequelize model
+                  const sanitizedRow = {};
+                  for (const key in row) {
+                    sanitizedRow[sanitizeKey(key)] = row[key];
+                  }
 
-            //       if (row.id) {
-            //         const childRecord = await ChildModel.findByPk(row.id, { transaction: t });
-            //         if (childRecord) {
-            //           await childRecord.update(sanitizedRow, { transaction: t });
-            //         } else {
-            //           console.log("Child record with id not found:", row.id);
-            //         }
-            //       } else {
-            //         await ChildModel.create(sanitizedRow, { transaction: t });
-            //       }
-            //     }
-            //   }
-            // }
+                  if (row.id) {
+                    const childRecord = await ChildModel.findByPk(row.id, { transaction: t });
+                    if (childRecord) {
+                      await childRecord.update(sanitizedRow, { transaction: t });
+                    } else {
+                      console.log("Child record with id not found:", row.id);
+                    }
+                  } else {
+                    await ChildModel.create(sanitizedRow, { transaction: t });
+                  }
+                }
+              }
+            }
         }
 
 		let otherParsedData  = {};
@@ -12957,107 +13091,114 @@ exports.saveActionPlan = async (req, res) => {
 
             const insertedData = await Model.create(validData, { transaction: t });
             
-            // if (insertedData && child_tables) {
-            //   let parsedChildTables = child_tables;
+            if (insertedData && child_tables) {
+              let parsedChildTables = child_tables;
 
-            //   if (typeof child_tables === "string") {
-            //     try {
-            //       parsedChildTables = JSON.parse(child_tables);
-            //     } catch (err) {
-            //       console.error("Invalid JSON for child_tables:", err);
-            //       parsedChildTables = {};
-            //     }
-            //   }
+              if (typeof child_tables === "string") {
+                try {
+                  parsedChildTables = JSON.parse(child_tables);
+                } catch (err) {
+                  console.error("Invalid JSON for child_tables:", err);
+                  parsedChildTables = {};
+                }
+              }
 
-            //   for (const child_table_name in parsedChildTables) {
-            //     const child_data = parsedChildTables[child_table_name];
+              for (const child_table_name in parsedChildTables) {
+                const child_data = parsedChildTables[child_table_name];
 
-            //     if (!child_data || !Array.isArray(child_data) || child_data.length === 0) {
-            //       console.log("Skipping child table:", child_table_name, "- no data or invalid");
-            //       continue;
-            //     }
+                if (!child_data || !Array.isArray(child_data) || child_data.length === 0) {
+                  console.log("Skipping child table:", child_table_name, "- no data or invalid");
+                  continue;
+                }
 
-            //     const matchingField = schema.find(
-            //       field =>
-            //         field.formType === "Table" &&
-            //         `${table_name}_${field.name}`.toLowerCase() === child_table_name.toLowerCase()
-            //     );
+                const matchingField = schema.find(
+                  field =>
+                    field.formType === "Table" &&
+                    `${table_name}_${field.name}`.toLowerCase() === child_table_name.toLowerCase()
+                );
 
-            //     if (!matchingField || !matchingField.tableHeaders) {
-            //       console.log("Skipping child schema for:", child_table_name);
-            //       continue;
-            //     }
+                if (!matchingField || !matchingField.tableHeaders) {
+                  console.log("Skipping child schema for:", child_table_name);
+                  continue;
+                }
 
-            //     console.log("Processing child table:", child_table_name);
+                console.log("Processing child table:", child_table_name);
 
-            //     const childSchema = matchingField.tableHeaders.map(header => {
-            //       const cleanName = header.header
-            //         .trim()
-            //         .toLowerCase()
-            //         .replace(/[^a-z0-9]+/gi, "_")
-            //         .replace(/^_+|_+$/g, "");
+                const childSchema = matchingField.tableHeaders.map(header => {
+                  const cleanName = header.header
+                    .trim()
+                    .toLowerCase()
+                    .replace(/[^a-z0-9]+/gi, "_")
+                    .replace(/^_+|_+$/g, "");
 
-            //       console.log(`Sanitized header: "${header.header}" → "${cleanName}"`);
+                  console.log(`Sanitized header: "${header.header}" → "${cleanName}"`);
 
-            //       return {
-            //         name: cleanName,
-            //         formType: header.fieldType?.type || "short_text"
-            //       };
-            //     });
+                  return {
+                    name: cleanName,
+                    formType: header.fieldType?.type || "short_text"
+                  };
+                });
 
-            //     const childModelFields = {};
-            //     childSchema.forEach(f => {
-            //       let sequelizeType = Sequelize.DataTypes.TEXT;
-            //       if (f.formType === "short_text") sequelizeType = Sequelize.DataTypes.STRING(255);
-            //       else if (["dropdown", "radio"].includes(f.formType)) sequelizeType = Sequelize.DataTypes.STRING(100);
+                const childModelFields = {};
+                childSchema.forEach(f => {
+                  let sequelizeType = Sequelize.DataTypes.TEXT;
+                  if (f.formType === "short_text") sequelizeType = Sequelize.DataTypes.STRING(255);
+                  else if (["dropdown", "radio"].includes(f.formType)) sequelizeType = Sequelize.DataTypes.STRING(100);
 
-            //       childModelFields[f.name.toLowerCase()] = {
-            //         type: sequelizeType,
-            //         allowNull: true,
-            //         field: f.name.toLowerCase()
-            //       };
-            //     });
+                  childModelFields[f.name.toLowerCase()] = {
+                    type: sequelizeType,
+                    allowNull: true,
+                    field: f.name.toLowerCase()
+                  };
+                });
 
-            //     childModelFields[`${table_name}_id`] = {
-            //       type: Sequelize.DataTypes.INTEGER,
-            //       allowNull: false,
-            //       references: { model: table_name, key: "id" },
-            //       onDelete: "CASCADE",
-            //     };
+                childModelFields[`${table_name}_id`] = {
+                  type: Sequelize.DataTypes.INTEGER,
+                  allowNull: false,
+                  references: { model: table_name, key: "id" },
+                  onDelete: "CASCADE",
+                };
 
-            //     console.log("Creating dynamic model for:", child_table_name);
-            //     const ChildModel = sequelize.define(child_table_name, childModelFields, {
-            //       freezeTableName: true,
-            //       timestamps: true,
-            //       underscored: true,
-            //     });
+                console.log("Creating dynamic model for:", child_table_name);
+                const ChildModel = sequelize.define(child_table_name, childModelFields, {
+                  freezeTableName: true,
+                  timestamps: true,
+                  underscored: true,
+                });
 
-            //     await ChildModel.sync();
-            //     console.log("Synced child model:", child_table_name);
+                const [results] = await sequelize.query(
+                  `SELECT to_regclass('public.${child_table_name}') AS table_exists;`
+                );
 
-            //     const dataToInsert = child_data.map(row => {
-            //       const newRow = {};
-            //       for (const key in row) {
-            // const cleanKey = key
-            //   .trim()
-            //   .toLowerCase()
-            //   .replace(/[^a-z0-9]+/gi, "_")    // collapse multiple non-alphanumerics into one "_"
-            //   .replace(/^_+|_+$/g, "");        // trim leading/trailing underscores
+                if (!results[0]?.table_exists) {
+                  throw new Error(`Child table "${child_table_name}" is missing. Please update the template.`);
+                }
+
+
+
+                const dataToInsert = child_data.map(row => {
+                  const newRow = {};
+                  for (const key in row) {
+                  const cleanKey = key
+                    .trim()
+                    .toLowerCase()
+                    .replace(/[^a-z0-9]+/gi, "_")
+                    .replace(/^_+|_+$/g, "");
                     
-            //         console.log(`Sanitized key: "${key}" → "${cleanKey}"`);
+                    console.log(`Sanitized key: "${key}" → "${cleanKey}"`);
 
-            //         newRow[cleanKey] = row[key];
-            //       }
+                    newRow[cleanKey] = row[key];
+                  }
 
-            //       newRow[`${table_name}_id`] = insertedData.id;
-            //       return newRow;
-            //     });
+                  newRow[`${table_name}_id`] = insertedData.id;
+                  return newRow;
+                });
 
-            //     console.log("Inserting data to child table:", child_table_name);
-            //     await ChildModel.bulkCreate(dataToInsert, { transaction: t });
-            //     console.log("Successfully inserted data into:", child_table_name);
-            //   }
-            // }
+                console.log("Inserting data to child table:", child_table_name);
+                await ChildModel.bulkCreate(dataToInsert, { transaction: t });
+                console.log("Successfully inserted data into:", child_table_name);
+              }
+            }
             if (!insertedData) {
                 await t.rollback();
                 return userSendResponse(res, 400, false, "Failed to insert data.", null);
@@ -14153,7 +14294,7 @@ exports.getTableCountsByCaseId = async (req, res) => {
                 //   ]
                 // };
 
-                if(req.body.ui_case_id && req.body.ui_case_id !== "" || req.body.ui_case_id !== null) {
+                if(req.body.ui_case_id && req.body.ui_case_id !== "" && req.body.ui_case_id !== null) {
                     whereClause = {
                     [Op.and]: [
                         {
@@ -14195,6 +14336,70 @@ exports.getTableCountsByCaseId = async (req, res) => {
               }
             }
           }
+
+          if (module === "pt_case" && table_name === "cid_ui_case_property_form" && (ui_case_id || pt_case_id)) {
+            console.log("Running property form evidence check");
+
+            const propertyFormTemplate = await Template.findOne({
+              where: { table_name: "cid_ui_case_property_form" },
+            });
+
+            if (propertyFormTemplate) {
+              const PropertyFormModel = sequelize.models[table_name];
+
+              if (PropertyFormModel) {
+                console.log("Found PropertyFormModel:", table_name);
+
+                const propertyFormData = await PropertyFormModel.findAll({
+                  attributes: ["pt_case_id", "ui_case_id", "field_property_details", "id"],
+                  where: {
+                    [Op.or]: [
+                      { ui_case_id: ui_case_id || null },
+                      { pt_case_id: pt_case_id || null }
+                    ]
+                  },
+                  raw: true,
+                });
+
+                console.log("Fetched property form data:", propertyFormData);
+
+                const matchedRows = propertyFormData.filter((row) => {
+                  const hasUICaseIdOnly = row.ui_case_id && !row.pt_case_id;
+
+                  if (hasUICaseIdOnly) {
+                    try {
+                      const details = JSON.parse(row.field_property_details || "[]");
+                      const isUsedAsEvidence = Array.isArray(details) && details.some(
+                        (entry) => entry?.["Used as Evidence"]?.toLowerCase() === "yes"
+                      );
+                      console.log(`Row ID ${row.id}: Used as Evidence = ${isUsedAsEvidence}`);
+                      return isUsedAsEvidence;
+                    } catch (e) {
+                      console.log(`Error parsing JSON for row ID ${row.id}`, e);
+                      return false;
+                    }
+                  }
+
+                  // If pt_case_id is present, include by default
+                  return row.pt_case_id;
+                });
+
+                if (matchedRows.length === 0) {
+                  console.log("No evidence rows matched. Skipping count.");
+                  result[table_name] = 0;
+                  continue; // Skip to next table
+                } else {
+                  const matchedIds = matchedRows.map(row => row.id);
+                  console.log("Evidence matched rows:", matchedIds);
+
+                  // Add to whereClause
+                  whereClause.id = {
+                    [Op.in]: matchedIds
+                  };
+                }
+              }
+            }
+        }
 
           const count = await Model.count({ where: whereClause });
           result[table_name] = count;

@@ -486,6 +486,7 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
             case_io_id: selectedRow?.field_io_name || "",
             pt_case_id: pt_case_id ,
             limit: 10,
+            module: module || "ui_case",
             page: !searchFlag ? otherTemplatesPaginationCount : 1,
             search: !searchFlag ? otherSearchValue : "",
             from_date: !searchFlag ? othersFromDate : null,
