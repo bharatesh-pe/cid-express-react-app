@@ -78,7 +78,6 @@ const LokayuktaView = () => {
     const [othersFiltersDropdown, setOthersFiltersDropdown] = useState([]);
     const [othersFilterData, setOthersFilterData] = useState({});
     const [filterValues, setFilterValues] = useState(record_id ? {"record_id": JSON.parse(record_id)} : {});
-    const [filterData, setFilterData] = useState({});
 
     const [splitScreenArray, setSplitScreenArray] = useState([
         'cid_ui_case_accused',
@@ -3317,7 +3316,10 @@ const fetchCounts = async () => {
                         showMagazineView={showMagazineView}
                         headerDetails={headerDetails}
                         backToForm={backToForm}
+                        options={activeSidebar}
+                        selectedRowData={rowData}
                         rowData={rowData}
+                        record_id={record_id}
                         module={module}
                     />
 
