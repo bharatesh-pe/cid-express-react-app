@@ -1443,7 +1443,7 @@ const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData
         }
     };
 
-        const setOtherFilterData = () => {
+    const setOtherFilterData = () => {
         setOtherTemplatesPaginationCount(1);
         setOthersFilterModal(false);
         handleOtherTemplateActions(selectedOtherTemplate, selectedRowData)
