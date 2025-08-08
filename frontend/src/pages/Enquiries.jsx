@@ -3145,28 +3145,28 @@ const handleCheckboxDemerge = (event, row) => {
                             ),
                             renderCell: renderCellFunc("field_cid_crime_no./enquiry_no", 0),
                         },
-                        {
-                          field: "field_io_name",
-                          headerName: "Assign To IO",
-                          width: 150,
-                          resizable: true,
-                          cellClassName: 'justify-content-start',
-                          renderHeader: (params) => (
-                              tableHeaderRender(params, "field_io_name")
-                          ),
-                          renderCell: renderCellFunc("field_io_name", ),
-                        },
-                        {
-                            field: "field_name_of_the_police_station",
-                            headerName: "Police Station",
-                            width: 200,
-                            resizable: true,
-                            cellClassName: 'justify-content-start',
-                            renderHeader: (params) => (
-                                tableHeaderRender(params, "field_name_of_the_police_station")
-                            ),
-                            renderCell: renderCellFunc("field_name_of_the_police_station", ),
-                        },
+                        // {
+                        //   field: "field_io_name",
+                        //   headerName: "Assign To IO",
+                        //   width: 150,
+                        //   resizable: true,
+                        //   cellClassName: 'justify-content-start',
+                        //   renderHeader: (params) => (
+                        //       tableHeaderRender(params, "field_io_name")
+                        //   ),
+                        //   renderCell: renderCellFunc("field_io_name", ),
+                        // },
+                        // {
+                        //     field: "field_name_of_the_police_station",
+                        //     headerName: "Police Station",
+                        //     width: 200,
+                        //     resizable: true,
+                        //     cellClassName: 'justify-content-start',
+                        //     renderHeader: (params) => (
+                        //         tableHeaderRender(params, "field_name_of_the_police_station")
+                        //     ),
+                        //     renderCell: renderCellFunc("field_name_of_the_police_station", ),
+                        // },
                         {
                             field: "field_division",
                             headerName: "Divisions",
@@ -9878,7 +9878,8 @@ const handleExtensionApprovalWithUpdate = async () => {
                             template_name : viewTemplateResponse?.["data"]?.template_name,
                             table_name: table_name,
                             module : "eq_case",
-                            overAllReadonly : !viewTemplateData?.["data"]?.field_io_name ? true : false,
+                            // overAllReadonly : !viewTemplateData?.["data"]?.field_io_name ? true : false,
+                            overAllReadonly : !viewTemplateData?.["data"]?.field_name_of_the_io ? true : false,
                             record_id : dashboardRecordId ? JSON.stringify(dashboardRecordId) : [],
                             dashboardName : dashboardTileName,
                             caseExtension :rowData?.isDisabled ?? false,
