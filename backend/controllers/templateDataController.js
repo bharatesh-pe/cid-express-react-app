@@ -880,7 +880,7 @@ exports.insertTwoTemplateData = async (req, res, next) => {
         });
 
         console.log(`Inserting ${childRecords.length} child records into ${childTableName}`);
-        await ChildModel.bulkCreate(childRecords);
+        await ChildModel.bulkCreate(childRecords, { transaction });
 
         const insertedChildren = await ChildModel.findAll({
           where: { [foreignKeyColumn]: insertedData.id },
@@ -949,7 +949,7 @@ exports.insertTwoTemplateData = async (req, res, next) => {
         });
 
         console.log(`Inserting ${childRecords.length} second-child records into ${childTableName}`);
-        await ChildModel.bulkCreate(childRecords);
+        await ChildModel.bulkCreate(childRecords, { transaction });
 
         // Fetch and log inserted second-child rows
         const insertedChildren = await ChildModel.findAll({
