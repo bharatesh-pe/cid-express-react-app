@@ -242,74 +242,74 @@ exports.createTemplate = async (req, res, next) => {
     sequelize.models[table_name] = model;
 
 
-    // for (const { field, parentTableName } of childTables) {
-    //   const childTableName = `${parentTableName}_${field.name}`;
-    //   const childFields = {};
-    //   const tableHeaders = field.tableHeaders || [];
+    for (const { field, parentTableName } of childTables) {
+      const childTableName = `${parentTableName}_${field.name}`;
+      const childFields = {};
+      const tableHeaders = field.tableHeaders || [];
 
-    //   for (const headerObj of tableHeaders) {
-    //     let originalHeader = headerObj.header;
+      for (const headerObj of tableHeaders) {
+        let originalHeader = headerObj.header;
 
-    //     const normalizedHeader = originalHeader
-    //       .trim()
-    //       .toLowerCase()
-    //       .replace(/[^a-z0-9]+/g, "_")
-    //       .replace(/^_+|_+$/g, "")
-    //       .slice(0, 63);
+        const normalizedHeader = originalHeader
+          .trim()
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "_")
+          .replace(/^_+|_+$/g, "")
+          .slice(0, 63);
 
-    //     const type = headerObj.fieldType?.type || "short_text";
-    //     const sequelizeType =
-    //       type === "short_text"
-    //         ? Sequelize.DataTypes.STRING(255)
-    //         : Sequelize.DataTypes.TEXT;
+        const type = headerObj.fieldType?.type || "short_text";
+        const sequelizeType =
+          type === "short_text"
+            ? Sequelize.DataTypes.STRING(255)
+            : Sequelize.DataTypes.TEXT;
 
-    //     childFields[normalizedHeader] = {
-    //       type: sequelizeType,
-    //       allowNull: true,
-    //       field: normalizedHeader 
-    //     };
-    //   }
+        childFields[normalizedHeader] = {
+          type: sequelizeType,
+          allowNull: true,
+          field: normalizedHeader 
+        };
+      }
       
-    //   childFields[`${parentTableName}_id`] = {
-    //     type: Sequelize.DataTypes.INTEGER,
-    //     allowNull: false,
-    //     references: {
-    //       model: parentTableName,
-    //       key: 'id',
-    //     },
-    //     onDelete: 'CASCADE',
-    //   };
+      childFields[`${parentTableName}_id`] = {
+        type: Sequelize.DataTypes.INTEGER,
+        allowNull: false,
+        references: {
+          model: parentTableName,
+          key: 'id',
+        },
+        onDelete: 'CASCADE',
+      };
 
-    //   childFields.created_at = {
-    //     type: Sequelize.DataTypes.DATE,
-    //     allowNull: true,
-    //   };
+      childFields.created_at = {
+        type: Sequelize.DataTypes.DATE,
+        allowNull: true,
+      };
 
-    //   childFields.updated_at = {
-    //     type: Sequelize.DataTypes.DATE,
-    //     allowNull: true,
-    //   };
+      childFields.updated_at = {
+        type: Sequelize.DataTypes.DATE,
+        allowNull: true,
+      };
 
-    //   const childModel = sequelize.define(childTableName, childFields, {
-    //     freezeTableName: true,
-    //     timestamps: true,
-    //     underscored: true,
-    //   });
+      const childModel = sequelize.define(childTableName, childFields, {
+        freezeTableName: true,
+        timestamps: true,
+        underscored: true,
+      });
 
-    //   await childModel.sync({ force: true });
+      await childModel.sync({ force: true });
 
-    //   sequelize.models[childTableName] = childModel;
+      sequelize.models[childTableName] = childModel;
 
-    //   model.hasMany(childModel, {
-    //     foreignKey: `${parentTableName}_id`,
-    //     as: field.name + "_children", 
-    //   });
+      model.hasMany(childModel, {
+        foreignKey: `${parentTableName}_id`,
+        as: field.name + "_children", 
+      });
 
-    //   childModel.belongsTo(model, {
-    //     foreignKey: `${parentTableName}_id`,
-    //     as: parentTableName,
-    //   });
-    // }
+      childModel.belongsTo(model, {
+        foreignKey: `${parentTableName}_id`,
+        as: parentTableName,
+      });
+    }
 
     // Create indexes
     for (let field of indexFields) {
@@ -609,97 +609,97 @@ exports.updateTemplate = async (req, res, next) => {
       field => field.type === "table" || field.formType === "Table"
     );
 
-    // for (const field of childTables) {
-    //   const childTableName = sanitizeColumnName(`${table_name}_${field.name}`);
-    //   const parentKey = `${table_name}_id`;
+    for (const field of childTables) {
+      const childTableName = sanitizeColumnName(`${table_name}_${field.name}`);
+      const parentKey = `${table_name}_id`;
 
-    //   const existingColsQuery = await sequelize.query(`
-    //     SELECT column_name, data_type
-    //     FROM information_schema.columns
-    //     WHERE table_name = '${childTableName}'
-    //   `);
-    //   const existingColumns = new Set(existingColsQuery[0].map(c => c.column_name));
+      const existingColsQuery = await sequelize.query(`
+        SELECT column_name, data_type
+        FROM information_schema.columns
+        WHERE table_name = '${childTableName}'
+      `);
+      const existingColumns = new Set(existingColsQuery[0].map(c => c.column_name));
 
-    //   const fullFields = {};
+      const fullFields = {};
 
-    //   const protectedColumns = new Set([
-    //     "id",
-    //     parentKey,
-    //     `${table_name}_id`,
-    //   ]);
+      const protectedColumns = new Set([
+        "id",
+        parentKey,
+        `${table_name}_id`,
+      ]);
 
-    //   for (const col of existingColsQuery[0]) {
-    //     const colName = col.column_name;
-    //     if (protectedColumns.has(colName)) continue;
+      for (const col of existingColsQuery[0]) {
+        const colName = col.column_name;
+        if (protectedColumns.has(colName)) continue;
 
-    //     fullFields[colName] = {
-    //       type: Sequelize.DataTypes.TEXT,
-    //       allowNull: true,
-    //     };
-    //   }
+        fullFields[colName] = {
+          type: Sequelize.DataTypes.TEXT,
+          allowNull: true,
+        };
+      }
 
-    //   for (const headerObj of field.tableHeaders || []) {
-    //     const raw = headerObj.header;
-    //     const sanitized = sanitizeColumnName(raw);
-    //     const fieldType = headerObj.fieldType?.type || "short_text";
+      for (const headerObj of field.tableHeaders || []) {
+        const raw = headerObj.header;
+        const sanitized = sanitizeColumnName(raw);
+        const fieldType = headerObj.fieldType?.type || "short_text";
 
-    //      if (!sanitized || existingColumns.has(sanitized)) {
-    //         continue;
-    //       }
+         if (!sanitized || existingColumns.has(sanitized)) {
+            continue;
+          }
 
-    //     fullFields[sanitized] = {
-    //       type: fieldType === "short_text"
-    //         ? Sequelize.DataTypes.STRING(255)
-    //         : Sequelize.DataTypes.TEXT,
-    //       allowNull: true,
-    //     };
-    //   }
+        fullFields[sanitized] = {
+          type: fieldType === "short_text"
+            ? Sequelize.DataTypes.STRING(255)
+            : Sequelize.DataTypes.TEXT,
+          allowNull: true,
+        };
+      }
 
-    //   fullFields.created_at = { type: Sequelize.DataTypes.DATE, allowNull: true };
-    //   fullFields.updated_at = { type: Sequelize.DataTypes.DATE, allowNull: true };
+      fullFields.created_at = { type: Sequelize.DataTypes.DATE, allowNull: true };
+      fullFields.updated_at = { type: Sequelize.DataTypes.DATE, allowNull: true };
 
 
-    //   fullFields[parentKey] = {
-    //     type: Sequelize.DataTypes.INTEGER,
-    //     allowNull: false,
-    //     references: {
-    //       model: table_name,
-    //       key: 'id',
-    //     },
-    //     onDelete: 'CASCADE',
-    //   };
+      fullFields[parentKey] = {
+        type: Sequelize.DataTypes.INTEGER,
+        allowNull: false,
+        references: {
+          model: table_name,
+          key: 'id',
+        },
+        onDelete: 'CASCADE',
+      };
 
-    //   const childModel = sequelize.define(childTableName, fullFields, {
-    //     freezeTableName: true,
-    //     timestamps: true,
-    //     underscored: true,
-    //   });
+      const childModel = sequelize.define(childTableName, fullFields, {
+        freezeTableName: true,
+        timestamps: true,
+        underscored: true,
+      });
 
-    //   try {
-    //     await childModel.sync({ alter: true });
-    //   // await migrateOldTableFieldData(model, childModel, field, table_name, childTableName);
+      try {
+        await childModel.sync({ alter: true });
+      // await migrateOldTableFieldData(model, childModel, field, table_name, childTableName);
         
-    //   } catch (err) {
-    //     console.error(`Failed to sync ${childTableName}:`, err);
-    //     throw err;
-    //   }
+      } catch (err) {
+        console.error(`Failed to sync ${childTableName}:`, err);
+        throw err;
+      }
 
-    //   sequelize.models[childTableName] = childModel;
+      sequelize.models[childTableName] = childModel;
 
-    //   if (!model.associations[`${field.name}_children`]) {
-    //     model.hasMany(childModel, {
-    //       foreignKey: parentKey,
-    //       as: `${field.name}_children`,
-    //     });
-    //   }
+      if (!model.associations[`${field.name}_children`]) {
+        model.hasMany(childModel, {
+          foreignKey: parentKey,
+          as: `${field.name}_children`,
+        });
+      }
 
-    //   if (!childModel.associations[`${table_name}_parent`]) {
-    //     childModel.belongsTo(model, {
-    //       foreignKey: parentKey,
-    //       as: `${table_name}_parent`,
-    //     });
-    //   }
-    // }
+      if (!childModel.associations[`${table_name}_parent`]) {
+        childModel.belongsTo(model, {
+          foreignKey: parentKey,
+          as: `${table_name}_parent`,
+        });
+      }
+    }
 
     const updatedFields = fields.map(field => {
       if (field.new_field_name) {
