@@ -905,23 +905,23 @@ exports.deleteTemplate = async (req, res, next) => {
       }
     );
 
-    // const childTables = await sequelize.query(`
-    //   SELECT DISTINCT kcu.table_name
-    //   FROM information_schema.referential_constraints AS rc
-    //   JOIN information_schema.key_column_usage AS kcu
-    //     ON rc.constraint_name = kcu.constraint_name
-    //   WHERE rc.unique_constraint_name IN (
-    //     SELECT constraint_name
-    //     FROM information_schema.table_constraints
-    //     WHERE table_name = :tableName
-    //   )
-    // `, {
-    //   replacements: { tableName: table_name },
-    //   type: sequelize.QueryTypes.SELECT
-    // });
-    // for (const child of childTables) {
-    //   await sequelize.query(`DROP TABLE IF EXISTS "${child.table_name}" CASCADE`);
-    // }
+    const childTables = await sequelize.query(`
+      SELECT DISTINCT kcu.table_name
+      FROM information_schema.referential_constraints AS rc
+      JOIN information_schema.key_column_usage AS kcu
+        ON rc.constraint_name = kcu.constraint_name
+      WHERE rc.unique_constraint_name IN (
+        SELECT constraint_name
+        FROM information_schema.table_constraints
+        WHERE table_name = :tableName
+      )
+    `, {
+      replacements: { tableName: table_name },
+      type: sequelize.QueryTypes.SELECT
+    });
+    for (const child of childTables) {
+      await sequelize.query(`DROP TABLE IF EXISTS "${child.table_name}" CASCADE`);
+    }
 
 
     // Hard delete: drop the table from the database
@@ -988,15 +988,15 @@ exports.viewTemplate = async (req, res, next) => {
 
     const parsedFields = JSON.parse(template.fields);
 
-    // const childTables = parsedFields
-    //   .filter(f => f.type === "table" || f.formType === "Table")
-    //   .map(f => {
-    //     return {
-    //       field_name: f.name,
-    //       child_table_name: `${table_name}_${f.name}`,
-    //       tableHeaders: f.tableHeaders || [],
-    //     };
-    // });
+    const childTables = parsedFields
+      .filter(f => f.type === "table" || f.formType === "Table")
+      .map(f => {
+        return {
+          field_name: f.name,
+          child_table_name: `${table_name}_${f.name}`,
+          tableHeaders: f.tableHeaders || [],
+        };
+    });
 
     return adminSendResponse(
       res,
@@ -1018,7 +1018,7 @@ exports.viewTemplate = async (req, res, next) => {
         fields: JSON.parse(template.fields),
         paranoid: template.paranoid,
         enable_edit: enable_edit,
-        // child_tables: childTables,
+        child_tables: childTables,
       }
     );
   } catch (error) {
