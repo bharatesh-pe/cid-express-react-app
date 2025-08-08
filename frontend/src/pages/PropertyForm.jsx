@@ -4,6 +4,7 @@ import NormalViewForm from "../components/dynamic-form/NormalViewForm";
 import TableView from "../components/table-view/TableView";
 import api from "../services/api";
 import { Chip, Tooltip } from "@mui/material";
+import { CircularProgress } from "@mui/material";
 import {
     Box,
     Button,
@@ -2833,6 +2834,11 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
                 </Dialog>
             )}
 
+            {
+                loading && <div className='parent_spinner' tabIndex="-1" aria-hidden="true">
+                    <CircularProgress size={100} />
+                </div>
+            }
             {
             bulkUploadShow &&
                 <Dialog
