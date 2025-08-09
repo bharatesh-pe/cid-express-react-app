@@ -122,7 +122,7 @@ export default function TableView({rows, columns, checkboxSelection,getRowId, ba
         {[
         ...(hoverTableOptions || [])
             // Hide "assign to io" option on hover
-            .filter(option => option?.name?.toLowerCase() !== "assign to io")
+            .filter(option => option?.name?.toLowerCase() !== "assign to io" || option?.name?.toLowerCase() !== "assign to eo")
             .map((option) => {
                 const isCaseExtension = option.name?.toLowerCase() === "case extension approve" || option.name?.toLowerCase() === "case extension request";
                 const shouldDisable =
@@ -137,7 +137,7 @@ export default function TableView({rows, columns, checkboxSelection,getRowId, ba
         ...(selectedRow?.extraHoverOptions || []),
         ].map((option, index) => {
         if (
-            option?.name?.toLowerCase() === "assign to io"
+            option?.name?.toLowerCase() === "assign to io" || option?.name?.toLowerCase() === "assign to eo"
         ) {
             return null;
         }
