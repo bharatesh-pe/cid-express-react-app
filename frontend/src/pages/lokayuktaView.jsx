@@ -277,7 +277,7 @@ const LokayuktaView = () => {
     useEffect(()=>{
 
         sidebarContentArray.map((element)=>{
-            if(element.name.toLowerCase() === "assign to io"){
+            if(element.name.toLowerCase() === "assign to io" || element.name.toLowerCase() === "assign to eo"){
 
                 setCaseFieldArray(initialRowData?.["field_approval_done_by"] ? [initialRowData?.["field_approval_done_by"]] : [] );
 
@@ -293,22 +293,31 @@ const LokayuktaView = () => {
 
                 setShowCaseActionBtn(approvedStages.includes(userRole));
 
-                if(!initialRowData?.["field_approval_done_by"] || initialRowData?.["field_approval_done_by"] !== "DIG"){
-                    setCaseAction(element);
-                    setCaseFieldStepperArray((element?.is_approval && element?.approval_steps) ? JSON.parse(element.approval_steps) : []);
-
-                    if(approvedStages.includes(userRole)){
+                if(element.name.toLowerCase() === "assign to io")
+                {
+                    if(!initialRowData?.["field_approval_done_by"] || initialRowData?.["field_approval_done_by"] !== "DIG"){
+                        setCaseAction(element);
+                        setCaseFieldStepperArray((element?.is_approval && element?.approval_steps) ? JSON.parse(element.approval_steps) : []);
+    
+                        if(approvedStages.includes(userRole)){
+                            setFormEditFlag(false);
+                            setFormReadFlag(true);
+                            setOverAllReadonlyCases(false);
+                        }else{
+                            setFormEditFlag(false);
+                            setFormReadFlag(true);
+                            setOverAllReadonlyCases(true);
+                        }
+                    }else if(initialRowData?.["field_approval_done_by"] === "DIG"){
                         setFormEditFlag(false);
                         setFormReadFlag(true);
                         setOverAllReadonlyCases(false);
-                    }else{
-                        setFormEditFlag(false);
-                        setFormReadFlag(true);
-                        setOverAllReadonlyCases(true);
                     }
-                }else if(initialRowData?.["field_approval_done_by"] === "DIG"){
-                    setFormEditFlag(false);
-                    setFormReadFlag(true);
+                }
+                else if(element.name.toLowerCase() === "assign to eo")
+                {
+                    setFormEditFlag(true);
+                    setFormReadFlag(false);
                     setOverAllReadonlyCases(false);
                 }
 

@@ -3053,7 +3053,7 @@ const handleCheckboxDemerge = (event, row) => {
                     const excludedKeys = [
                          "updated_at", "id", "deleted_at", "attachments",
                         "Starred", "ReadStatus", "linked_profile_info",
-                        "ui_case_id", "pt_case_id", "sys_status", "task_unread_count" , "field_cid_crime_no./enquiry_no","field_io_name" , "field_io_name_id", 
+                        "ui_case_id", "pt_case_id", "sys_status", "task_unread_count" , "field_cid_crime_no./enquiry_no","field_name_of_the_io" , "field_io_name_id", 
                         "field_name_of_the_police_station", "field_division", "field_case/enquiry_keyword", "field_date_of_taking_over_by_cid", "field_extension_date"
                     ];
     
@@ -3114,7 +3114,7 @@ const handleCheckboxDemerge = (event, row) => {
                                 <Tooltip title="Approval"><VerifiedIcon sx={{ color: "", fill: "#1f1dac" }} /></Tooltip>
                             ),                            
                             renderCell: (params) => {
-                              const isDisabled = !params?.row?.["field_io_name"];
+                              const isDisabled = !params?.row?.["field_name_of_the_io"];
                               return(
                                 <Button
                                     variant="contained"
@@ -3146,27 +3146,27 @@ const handleCheckboxDemerge = (event, row) => {
                             renderCell: renderCellFunc("field_cid_crime_no./enquiry_no", 0),
                         },
                         {
-                          field: "field_io_name",
-                          headerName: "Assign To IO",
+                          field: "field_name_of_the_io",
+                          headerName: "Assign To EO",
                           width: 150,
                           resizable: true,
                           cellClassName: 'justify-content-start',
                           renderHeader: (params) => (
-                              tableHeaderRender(params, "field_io_name")
+                              tableHeaderRender(params, "field_name_of_the_io")
                           ),
-                          renderCell: renderCellFunc("field_io_name", ),
+                          renderCell: renderCellFunc("field_name_of_the_io", ),
                         },
-                        {
-                            field: "field_name_of_the_police_station",
-                            headerName: "Police Station",
-                            width: 200,
-                            resizable: true,
-                            cellClassName: 'justify-content-start',
-                            renderHeader: (params) => (
-                                tableHeaderRender(params, "field_name_of_the_police_station")
-                            ),
-                            renderCell: renderCellFunc("field_name_of_the_police_station", ),
-                        },
+                        // {
+                        //     field: "field_name_of_the_police_station",
+                        //     headerName: "Police Station",
+                        //     width: 200,
+                        //     resizable: true,
+                        //     cellClassName: 'justify-content-start',
+                        //     renderHeader: (params) => (
+                        //         tableHeaderRender(params, "field_name_of_the_police_station")
+                        //     ),
+                        //     renderCell: renderCellFunc("field_name_of_the_police_station", ),
+                        // },
                         {
                             field: "field_division",
                             headerName: "Divisions",
@@ -4144,10 +4144,10 @@ const handleCheckboxDemerge = (event, row) => {
     return (
         <Tooltip title={value} placement="top">
             {
-                (key === "field_io_name" && (value === "" || !value)) ? (
+                (key === "field_name_of_the_io" && (value === "" || !value)) ? (
                     <span className="io-alert-flashy">
                         <span className="flashy-dot"></span>
-                        ASSIGN IO
+                        ASSIGN EO
                     </span>                  
                 ) : (
                     <span
@@ -8909,7 +8909,7 @@ const handleOpenExportPopup = async () => {
     var combinedData = {
       id: selectedRowIds.join(","),
       [selectKey.name]: selectedOtherFields.code,
-      field_io_name: selectedUser?.user_id,
+      field_name_of_the_io: selectedUser?.user_id,
     };
   
     if (selectedOtherTemplate.is_approval) {
@@ -9878,7 +9878,8 @@ const handleExtensionApprovalWithUpdate = async () => {
                             template_name : viewTemplateResponse?.["data"]?.template_name,
                             table_name: table_name,
                             module : "eq_case",
-                            overAllReadonly : !viewTemplateData?.["data"]?.field_io_name ? true : false,
+                            // overAllReadonly : !viewTemplateData?.["data"]?.field_io_name ? true : false,
+                            overAllReadonly : !viewTemplateData?.["data"]?.field_name_of_the_io ? true : false,
                             record_id : dashboardRecordId ? JSON.stringify(dashboardRecordId) : [],
                             dashboardName : dashboardTileName,
                             caseExtension :rowData?.isDisabled ?? false,
@@ -11048,7 +11049,8 @@ const handleExtensionApprovalWithUpdate = async () => {
     const setUnAssignedIo = ()=>{
         setFilterValues(prev => ({
             ...(prev || {}),
-            field_io_name: ""
+            // field_io_name: ""
+            field_name_of_the_io: ""
         }));
         setForceTableLoad((prev) => !prev);
     }
@@ -11378,7 +11380,7 @@ const handleExtensionApprovalWithUpdate = async () => {
                 paginationCount={paginationCount} 
                 handlePagination={handlePagination} 
                 getRowClassName={(params) => {
-                  return !params.row["field_io_name"]
+                  return !params.row["field_name_of_the_io"]
                       ? "row-red-background"
                       : "";
               }}
