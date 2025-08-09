@@ -2517,11 +2517,18 @@ exports.getTemplateData = async (req, res, next) => {
       }
     }
 
-    // Apply field filters if provided
     if (filter && typeof filter === "object") {
       Object.entries(filter).forEach(([key, value]) => {
-        if (fields[key]) {
-          whereClause[key] = value;
+        if (fields[key] && value !== null && value !== undefined) {
+          const fieldType = fields[key].type.key;
+
+          if (fieldType === 'STRING' || fieldType === 'TEXT') {
+            whereClause[key] = String(value);
+          } else if (['INTEGER', 'FLOAT', 'DOUBLE'].includes(fieldType)) {
+            whereClause[key] = Number(value);
+          } else {
+            whereClause[key] = value;
+          }
         }
       });
     }
@@ -2637,7 +2644,7 @@ exports.getTemplateData = async (req, res, next) => {
             
             if (["STRING", "TEXT"].includes(fieldType)) {
                 //if the field is having date in the name means avoid it.
-                if( field.toLowerCase().includes("date") || field.toLowerCase().includes("time") ) return;
+                if( field.toLowerCase().includes("date") || field.toLowerCase().includes("time") || field.toLowerCase().includes("l4") ) return;
                 searchConditions.push({ [field]: { [Op.iLike]: `%${search}%` } });
             } else if (["INTEGER", "FLOAT", "DOUBLE"].includes(fieldType)) {
                 if (!isNaN(search)) {

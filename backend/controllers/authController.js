@@ -1361,8 +1361,8 @@ const fetch_dash_count = async (req, res) => {
                 }
             }
             if (allowedDivisionIds.length > 0) {
-                if (["ui_case", "pt_case", "eq_case"].includes(template_module)) {
-                    whereClause["field_division"] = { [Op.in]: normalizedDivisionIds };
+                if (["ui_case", "pt_case", "eq_case"].includes(case_modules)) {
+                    caseWhereClause["field_division"] = { [Op.in]: normalizedDivisionIds };
                 }
             }
         }
