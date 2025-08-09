@@ -79,7 +79,7 @@ exports.refreshAlertCron = async (req, res) => {
             runDailyAlertCron.runDailyAlertCronOtherHearing(),
             runDailyAlertCron.runDailyAlertCronCourtStay(),
             runDailyAlertCron.runDailyAlertCronPetition(),
-            // runDailyAlertCron.runChildTableMigrationCron(),
+            runDailyAlertCron.runChildTableMigrationCron(),
         ]);
 
         const currentTime = new Date().toISOString(); // e.g., "2025-05-26T08:34:12.000Z"
