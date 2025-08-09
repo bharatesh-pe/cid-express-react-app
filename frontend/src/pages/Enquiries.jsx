@@ -11240,7 +11240,7 @@ const handleExtensionApprovalWithUpdate = async () => {
             <>
               {roleTitle !== "investigation officer"   ? (
                 <>
-                  {filterValues?.field_io_name === "" ? (
+                  {filterValues?.field_name_of_the_io === "" ? (
                     <Button
                       variant="outlined"
                       startIcon={<VisibilityIcon />}
@@ -11449,6 +11449,7 @@ const handleExtensionApprovalWithUpdate = async () => {
                 fromDateValue ||
                 toDateValue ||
                 Object.keys(filterValues).length > 0) && (
+                   !hideClearFilter && (
                 <Typography
                   onClick={handleClear}
                   sx={{
@@ -11461,7 +11462,7 @@ const handleExtensionApprovalWithUpdate = async () => {
                 >
                   View All / Clear Filter
                 </Typography>
-              )}
+              ))}
             </Box>
         </Box>
 

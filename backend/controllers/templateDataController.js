@@ -5225,6 +5225,9 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
                   ]
               };
           }
+          else if (key === "field_name_of_the_io" && value === "") {
+                whereClause[key] = { [Op.is]: null };
+            }
           else{
             whereClause[key] = String(value); // Direct match for foreign key fields
           }
