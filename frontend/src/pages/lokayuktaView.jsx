@@ -307,7 +307,7 @@ const LokayuktaView = () => {
 
                 setShowCaseActionBtn(approvedStages.includes(userRole));
 
-                if(element.name.toLowerCase() === "assign to io")
+                if(element.name.toLowerCase() === "assign to io" || element.name.toLowerCase() === "assign to eo")
                 {
                     if(!initialRowData?.["field_approval_done_by"] || initialRowData?.["field_approval_done_by"] !== "DIG"){
                         setCaseAction(element);
@@ -328,12 +328,12 @@ const LokayuktaView = () => {
                         setOverAllReadonlyCases(false);
                     }
                 }
-                else if(element.name.toLowerCase() === "assign to eo")
-                {
-                    setFormEditFlag(true);
-                    setFormReadFlag(false);
-                    setOverAllReadonlyCases(false);
-                }
+                // else if(element.name.toLowerCase() === "assign to eo")
+                // {
+                //     setFormEditFlag(true);
+                //     setFormReadFlag(false);
+                //     setOverAllReadonlyCases(false);
+                // }
 
             }
         });

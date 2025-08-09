@@ -6,6 +6,7 @@ import NormalViewForm from "../components/dynamic-form/NormalViewForm";
 import TableView from "../components/table-view/TableView";
 import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
 import SelectAllIcon from '@mui/icons-material/SelectAll';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 
 import VerifiedIcon from '@mui/icons-material/Verified';
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
@@ -133,6 +134,7 @@ const Enquiries = () => {
     const [saveNew, setSaveNew] = useState(null);
     const [saveNewAction, setSaveNewAction] = useState(null);
 
+    const [hideClearFilter, setHideClearFilter] = useState(false);
     // on save approval modal
 
     const [showApprovalModal, setShowApprovalModal] = useState(false);
@@ -4142,11 +4144,17 @@ const handleCheckboxDemerge = (event, row) => {
 
 
     return (
+
         <Tooltip title={value} placement="top">
             {
                 (key === "field_name_of_the_io" && (value === "" || !value)) ? (
                     <span className="io-alert-flashy">
                         <span className="flashy-dot"></span>
+                        ASSIGN EO
+                    </span>                  
+                ) : (key === "field_name_of_the_io" && (value !== "" && (params?.row?.field_approval_done_by === "" || params?.row?.field_approval_done_by !== "DIG"))) ? (
+                    <span className="DIG-alert-flashy">
+                        <span className="blue-flashy-dot"></span>
                         ASSIGN EO
                     </span>                  
                 ) : (
@@ -10099,6 +10107,7 @@ const handleExtensionApprovalWithUpdate = async () => {
     setFromDateValue(null);
     setToDateValue(null);
     setForceTableLoad((prev) => !prev);
+    setHideClearFilter(false);
   };
 
   const setFilterData = () => {
@@ -11046,14 +11055,35 @@ const handleExtensionApprovalWithUpdate = async () => {
         setShowFileAttachments(true);
     }
 
-    const setUnAssignedIo = ()=>{
-        setFilterValues(prev => ({
-            ...(prev || {}),
-            // field_io_name: ""
-            field_name_of_the_io: ""
-        }));
-        setForceTableLoad((prev) => !prev);
-    }
+      const clearAllFilters = () => {
+        setFilterValues({});
+        setFromDateValue(null);
+        setToDateValue(null);
+        setSearchValue("");
+      };
+
+    const setUnAssignedIo = () => {
+      clearAllFilters();
+      setHideClearFilter(true);
+      setFilterValues(prev => ({
+        ...(prev || {}),
+        field_name_of_the_io: ""
+      }));
+      setForceTableLoad((prev) => !prev);
+    };
+    const setDigNotApproved = () => {
+      clearAllFilters();
+      setHideClearFilter(true);
+      setFilterValues(prev => ({
+        ...(prev || {}),
+        field_approval_done_by: "SP"
+      }));
+      setForceTableLoad(prev => !prev);
+    };
+    const rawRoleTitle = localStorage.getItem("role_title") || "";
+    const cleanedRoleTitle = rawRoleTitle.replace(/^"(.*)"$/, "$1");
+    const roleTitle = cleanedRoleTitle.toLowerCase().trim();
+
 
   return (
     <Box p={2} inert={loading ? true : false}>
@@ -11159,29 +11189,109 @@ const handleExtensionApprovalWithUpdate = async () => {
           </Box>
           <Box sx={{ display: "flex", alignItems: "start", gap: "12px" }}>
 
-            <Button
+            {filterValues?.field_approval_done_by === "SP" ? (
+              <Button
+                variant="outlined"
+                startIcon={<VisibilityIcon />}
+                onClick={handleClear}
+                sx={{
+                borderColor: '#00931D',
+                color: '#00931D',
+                backgroundColor: '#E6FFEB', 
+                textTransform: 'none',
+                height: 38,
+                px: 2,
+                borderRadius: 1,
+                fontWeight: 500,
+                '&:hover': {
+                  borderColor: '#00931D',
+                  color: '#00931D',
+                  backgroundColor: '#E6FFEB',
+                },
+                }}
+              >
+                View All Cases
+              </Button>
+              ) : (
+              <Button
                 variant="outlined"
                 startIcon={<PersonOffIcon />}
-                onClick={setUnAssignedIo}
                 sx={{
-                    borderColor: '#eb2f06',
-                    backgroundColor: '#FFF5F5',
-                    color: '#eb2f06',
-                    height: 38,
-                    fontWeight: 500,
-                    textTransform: 'uppercase',
-                    '&:hover': {
-                        borderColor: '#e55039',
-                        backgroundColor: '#FFE8E8',
-                        color: '#e55039'
-                    },
-                    '& .MuiSvgIcon-root': {
-                        color: '#eb2f06'
-                    }
+                borderColor: '#0B3C91',
+                backgroundColor: '#E3EAFD',
+                color: '#0B3C91',
+                height: 38,
+                fontWeight: 500,
+                textTransform: 'none',
+                textTransform: 'uppercase',
+                ml: 2,
+                '&:hover': {
+                  borderColor: '#1816a3d0',
+                  backgroundColor: '#D0D8F6',
+                  color: '#1816a3d0'
+                }
                 }}
-            >
-                Unassigned IO
-            </Button>
+                onClick={setDigNotApproved}
+              >
+                DIG approval pending
+              </Button>
+            )}
+            
+            <>
+              {roleTitle !== "investigation officer"   ? (
+                <>
+                  {filterValues?.field_io_name === "" ? (
+                    <Button
+                      variant="outlined"
+                      startIcon={<VisibilityIcon />}
+                      onClick={handleClear}
+                      sx={{
+                        borderColor: '#00931D',
+                        color: '#00931D',
+                        backgroundColor: '#E6FFEB',
+                        textTransform: 'none',
+                        height: 38,
+                        px: 2,
+                        borderRadius: 1,
+                        fontWeight: 500,
+                        '&:hover': {
+                          borderColor: '#00931D',
+                          color: '#00931D',
+                          backgroundColor: '#E6FFEB',
+                        },
+                      }}
+                    >
+                      View All Cases
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outlined"
+                      startIcon={<PersonOffIcon />}
+                      onClick={setUnAssignedIo}
+                      sx={{
+                        borderColor: '#eb2f06',
+                        backgroundColor: '#FFF5F5',
+                        color: '#eb2f06',
+                        height: 38,
+                        fontWeight: 500,
+                        textTransform: 'uppercase',
+                        '&:hover': {
+                          borderColor: '#e55039',
+                          backgroundColor: '#FFE8E8',
+                          color: '#e55039'
+                        },
+                        '& .MuiSvgIcon-root': {
+                          color: '#eb2f06'
+                        }
+                      }}
+                    >
+                      Unassigned IO
+                    </Button>
+                  )}
+                </>
+              ) : null}
+            </>
+            
 
             {JSON.parse(localStorage.getItem("user_permissions")) &&
               JSON.parse(localStorage.getItem("user_permissions"))[0]

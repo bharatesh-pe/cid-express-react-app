@@ -453,7 +453,8 @@ const CaseActions = () => {
         }).then( async (result) => {
             if (result.isConfirmed) {
                 const deleteTableData = {
-                    "id": row.id
+                    "id": row.id,
+                     transaction_id : "TXN_" + Date.now() + "_" + Math.floor(Math.random() * 1000000),
                 }
                 setLoading(true);
                 try {
