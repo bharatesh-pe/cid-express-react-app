@@ -154,7 +154,7 @@ export default function TableView({rows, columns, checkboxSelection,getRowId, ba
                 if (!option.disabled) handleHoverOptionClick(option);
             }}
             sx={{ display: "flex", alignItems: "start", height: "40px" }}
-            disabled={(selectedRow?.field_io_name == null && option?.name.toLowerCase() !== "assign to io" ||selectedRow?.field_name_of_the_io == null && option?.name.toLowerCase() !== "assign to eo" )  || option.disabled === true}
+            disabled={selectedRow?.field_io_name == null && option?.name.toLowerCase() !== "assign to io" || option.disabled === true}
             >
             {option?.icon ? (
                 typeof option.icon === "function" ? (
