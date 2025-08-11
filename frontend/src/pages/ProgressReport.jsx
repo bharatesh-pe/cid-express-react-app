@@ -48,16 +48,16 @@ import dayjs from "dayjs";
 
 const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedRowData, backNavigation, showMagazineView ,fetchCounts}) => {
 
-  useEffect(() => {
-    const fetchData = async () => {
-      if (rowId) {
-        await checkPdfEntryStatus(rowId);
-        getUploadedFiles(rowId, options);
-      }
-    };
+  // useEffect(() => {
+  //   const fetchData = async () => {
+  //     if (rowId) {
+  //       // await checkPdfEntryStatus(rowId);
+  //       getUploadedFiles(rowId, options);
+  //     }
+  //   };
 
-    fetchData();
-  }, [rowId]);
+  //   fetchData();
+  // }, [rowId]);
 
   const [selectedTab, setSelectedTab] = useState(0);
   const handleTabChange = (event, newValue) => {
@@ -1007,7 +1007,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
         setOtherTemplateData(updatedTableData);
 
         if (options.table === "cid_ui_case_progress_report" && options.is_pdf && !fromUploadedFiles) {
-          await checkPdfEntryStatus(selectedRow.id);
+          // await checkPdfEntryStatus(selectedRow.id);
           await getUploadedFiles(selectedRow, options);
         }
 
@@ -2054,7 +2054,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
       if (response.success) {
         Swal.fire("Success", "File uploaded successfully.", "success");
         setSelectedTab(1);
-        checkPdfEntryStatus(caseId);
+        // checkPdfEntryStatus(caseId);
         getUploadedFiles(selectedRowData);
       } else {
         Swal.fire("Error", response.message || "Upload failed.", "error");
