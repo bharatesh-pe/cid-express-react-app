@@ -603,7 +603,7 @@ const UnderInvestigation = () => {
         
             if (viewTemplateResponse && viewTemplateResponse.success && viewTemplateResponse.data) {
                 var templateFields = viewTemplateResponse.data["fields"] ? viewTemplateResponse.data["fields"] : [];
-                var validFilterFields = ["dropdown", "autocomplete", "multidropdown"];
+                var validFilterFields = ["dropdown", "autocomplete", "multidropdown", "date", "datetime", "time",];
         
                 var getOnlyDropdown = templateFields.filter((element) => validFilterFields.includes(element.type)).map((field) => {
                     const existingField = filterDropdownObj?.find(
@@ -7742,6 +7742,7 @@ const UnderInvestigation = () => {
                 <DialogContentText id="alert-dialog-description">
                     <Grid container sx={{ alignItems: "center" }}>
                         <Grid item xs={12} md={6} p={2}>
+                           <h4 className="form-field-heading">From Date</h4>
                             <LocalizationProvider dateAdapter={AdapterDayjs}>
                                 <DatePicker
                                     format="DD-MM-YYYY"
@@ -7758,6 +7759,7 @@ const UnderInvestigation = () => {
                         </Grid>
 
                         <Grid item xs={12} md={6} p={2}>
+                          <h4 className="form-field-heading">To Date</h4>
                             <LocalizationProvider dateAdapter={AdapterDayjs}>
                                 <DatePicker
                                     format="DD-MM-YYYY"
@@ -8058,6 +8060,7 @@ const UnderInvestigation = () => {
             <DialogContentText id="alert-dialog-description">
               <Grid container sx={{ alignItems: "center" }}>
                 <Grid item xs={12} md={6} p={2}>
+                   <h4 className="form-field-heading">From Date</h4>
                   <LocalizationProvider dateAdapter={AdapterDayjs}>
                     <DatePicker
                       format="DD-MM-YYYY"
@@ -8074,6 +8077,7 @@ const UnderInvestigation = () => {
                 </Grid>
 
                 <Grid item xs={12} md={6} p={2}>
+                  <h4 className="form-field-heading">To Date</h4>
                   <LocalizationProvider dateAdapter={AdapterDayjs}>
                     <DatePicker
                       format="DD-MM-YYYY"

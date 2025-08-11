@@ -127,6 +127,9 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
     const hoverTableOptionsRef = useRef([]);
     const [childTables, setChildTables] = useState([]);
 
+    const [cachedSysStatus, setCachedSysStatus] = useState("");
+    const [cachedSubmitStatus, setCachedSubmitStatus] = useState("");
+
     const [actionPlanData, setActionPlanData] = useState([])
     const loadValueField = async (rowData, editData, table_name) => {
         if (!table_name || table_name === "") {
@@ -756,7 +759,21 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                         );
                     
                     } else {
-                        anySubmitAP = false;
+                        const fallbackPayload = { ...getTemplatePayload, filter: {}, from_date: null, to_date: null };
+                        const fallbackResponse = await api.post("/templateData/getTemplateData", fallbackPayload);
+                        const fallbackRecords = fallbackResponse?.data || [];
+
+                        const hasIO = fallbackRecords.some(record => record.sys_status === "IO");
+                        const supervisorRecords = fallbackRecords.filter(record => record.supervisior_designation_id == userDesigId);
+                        
+                        if (hasIO) {
+                            anySubmitAP = true;
+                            isSuperivisor = supervisorRecords.length > 0;
+                        }
+
+                        setShowSubmitAPButton(anySubmitAP);
+                        setIsImmediateSupervisior(isSuperivisor);
+                        setAPIsSubmited(false);
                     }
 
                     
@@ -2701,6 +2718,14 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
         // Example: toast.info(`Clicked step: ${step}`);
     };
 
+    useEffect(() => {
+  if (actionPlanData.length > 0) {
+    setCachedSysStatus(actionPlanData[0].sys_status);
+    setCachedSubmitStatus(actionPlanData[0].field_submit_status);
+  }
+}, [actionPlanData]);
+
+
     return (
         <>
         <Box sx={{  overflow: 'auto' , height: '100vh'}}>
@@ -2724,8 +2749,8 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                         let alreadySubmited = false;
                         let nextStageStep = false;
 
-                        let sysStatus = actionPlanData[0]?.sys_status;
-                        let fieldSubmitStatus = actionPlanData[0]?.field_submit_status;
+                        let sysStatus = actionPlanData[0]?.sys_status || cachedSysStatus;
+                        let fieldSubmitStatus = actionPlanData[0]?.field_submit_status || cachedSubmitStatus;
                         let stepLower = step.toLowerCase();
                         // If sys_status is IO, mark IO as submitted
                         if (sysStatus === "IO" && stepLower === "io") {
@@ -3334,6 +3359,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                 <DialogContentText id="alert-dialog-description">
                     <Grid container sx={{ alignItems: "center" }}>
                         <Grid item xs={12} md={6} p={2}>
+                             <h4 className="form-field-heading">From Date</h4>
                             <LocalizationProvider dateAdapter={AdapterDayjs}>
                                 <DatePicker
                                     format="DD-MM-YYYY"
@@ -3350,6 +3376,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                         </Grid>
 
                         <Grid item xs={12} md={6} p={2}>
+                             <h4 className="form-field-heading">To Date</h4>
                             <LocalizationProvider dateAdapter={AdapterDayjs}>
                                 <DatePicker
                                     format="DD-MM-YYYY"
