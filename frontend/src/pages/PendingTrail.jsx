@@ -70,6 +70,8 @@ import ApprovalModal from '../components/dynamic-form/ApprovalModalForm';
 import GenerateProfilePdf from "./GenerateProfilePdf";
 import WestIcon from '@mui/icons-material/West';
 import FileInput from "../components/form/FileInput";
+import DateTimeField from "../components/form/DateTime";
+import TimeField from "../components/form/Time";
 
 const UnderInvestigation = () => {
   const location = useLocation();
@@ -8177,6 +8179,50 @@ const UnderInvestigation = () => {
                                 </div>
                             </Grid>
                       );
+                      case "datetime":
+                        return (
+                            <Grid item xs={12} md={6} p={2} key={field.id}>
+                                <div className="form-field-wrapper_selectedField">
+                                    <DateTimeField
+                                        key={field.id}
+                                        field={field}
+                                        formData={filterValues}
+                                        onChange={(date) => {
+                                            const formattedDateTime = date
+                                                ? dayjs(date).format("YYYY-MM-DD HH:mm:ss")
+                                                : null;
+                                            setFilterValues((prev) => ({
+                                                ...prev,
+                                                [field.name]: formattedDateTime,
+                                            }));
+                                        }}
+                                    />
+                                </div>
+                            </Grid>
+                        );
+                       
+                      case "time":
+                          return (
+                              <Grid item xs={12} md={6} p={2} key={field.id}>
+                                  <div className="form-field-wrapper_selectedField">
+                                      <TimeField
+                                          key={field.id}
+                                          field={field}
+                                          formData={filterValues}
+                                          onChange={(time) => {
+                                              const formattedTime = time
+                                                  ? dayjs(time).format("HH:mm:ss")
+                                                  : null;
+                                              setFilterValues((prev) => ({
+                                                  ...prev,
+                                                  [field.name]: formattedTime,
+                                              }));
+                                          }}
+                                      />
+                                  </div>
+                              </Grid>
+                          );
+
                   }
                 })}
               </Grid>

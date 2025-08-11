@@ -96,6 +96,8 @@ import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 import ImportExportIcon from '@mui/icons-material/ImportExport';
 import { BorderTop } from "@mui/icons-material";
+import DateTimeField from "../components/form/DateTime";
+import TimeField from "../components/form/Time";
 
 const Enquiries = () => {
   const location = useLocation();
@@ -13380,6 +13382,50 @@ const handleExtensionApprovalWithUpdate = async () => {
                                   </div>
                               </Grid>
                           );
+                          case "datetime":
+                            return (
+                                <Grid item xs={12} md={6} p={2} key={field.id}>
+                                    <div className="form-field-wrapper_selectedField">
+                                        <DateTimeField
+                                            key={field.id}
+                                            field={field}
+                                            formData={filterValues}
+                                            onChange={(date) => {
+                                                const formattedDateTime = date
+                                                    ? dayjs(date).format("YYYY-MM-DD HH:mm:ss")
+                                                    : null;
+                                                setFilterValues((prev) => ({
+                                                    ...prev,
+                                                    [field.name]: formattedDateTime,
+                                                }));
+                                            }}
+                                        />
+                                    </div>
+                                </Grid>
+                            );
+                          
+                          case "time":
+                              return (
+                                  <Grid item xs={12} md={6} p={2} key={field.id}>
+                                      <div className="form-field-wrapper_selectedField">
+                                          <TimeField
+                                              key={field.id}
+                                              field={field}
+                                              formData={filterValues}
+                                              onChange={(time) => {
+                                                  const formattedTime = time
+                                                      ? dayjs(time).format("HH:mm:ss")
+                                                      : null;
+                                                  setFilterValues((prev) => ({
+                                                      ...prev,
+                                                      [field.name]: formattedTime,
+                                                  }));
+                                              }}
+                                          />
+                                      </div>
+                                  </Grid>
+                              );
+  
                   }
                 })}
               </Grid>

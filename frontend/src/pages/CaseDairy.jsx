@@ -26,6 +26,8 @@ import SelectField from "../components/form/Select";
 import MultiSelect from "../components/form/MultiSelect";
 import AutocompleteField from "../components/form/AutoComplete";
 import DateField from "../components/form/Date";
+import DateTimeField from "../components/form/DateTime";
+import TimeField from "../components/form/Time";
 import CloseIcon from '@mui/icons-material/Close';
 import dayjs from "dayjs";
 import { toast } from "react-toastify";
@@ -1482,6 +1484,51 @@ const CaseDairy = ({headerDetails, backToForm, showMagazineView, rowData, select
                                                 </div>
                                             </Grid>
                                         );
+
+                                    case "datetime":
+                                    return (
+                                        <Grid item xs={12} md={6} p={2} key={field.id}>
+                                            <div className="form-field-wrapper_selectedField">
+                                                <DateTimeField
+                                                    key={field.id}
+                                                    field={field}
+                                                    formData={othersFilterData}
+                                                    onChange={(date) => {
+                                                        const formattedDateTime = date
+                                                            ? dayjs(date).format("YYYY-MM-DD HH:mm:ss")
+                                                            : null;
+                                                        setOthersFilterData((prev) => ({
+                                                            ...prev,
+                                                            [field.name]: formattedDateTime,
+                                                        }));
+                                                    }}
+                                                />
+                                            </div>
+                                        </Grid>
+                                    );
+                                                       
+                                case "time":
+                                    return (
+                                        <Grid item xs={12} md={6} p={2} key={field.id}>
+                                            <div className="form-field-wrapper_selectedField">
+                                                <TimeField
+                                                    key={field.id}
+                                                    field={field}
+                                                    formData={othersFilterData}
+                                                    onChange={(time) => {
+                                                        const formattedTime = time
+                                                            ? dayjs(time).format("HH:mm:ss")
+                                                            : null;
+                                                        setOthersFilterData((prev) => ({
+                                                            ...prev,
+                                                            [field.name]: formattedTime,
+                                                        }));
+                                                    }}
+                                                />
+                                            </div>
+                                        </Grid>
+                                    );
+
                             }
                             })}
                         </Grid>
