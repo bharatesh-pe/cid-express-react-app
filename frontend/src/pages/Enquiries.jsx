@@ -96,6 +96,8 @@ import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 import ImportExportIcon from '@mui/icons-material/ImportExport';
 import { BorderTop } from "@mui/icons-material";
+import DateTimeField from "../components/form/DateTime";
+import TimeField from "../components/form/Time";
 
 const Enquiries = () => {
   const location = useLocation();
@@ -9979,7 +9981,7 @@ const handleExtensionApprovalWithUpdate = async () => {
           ? viewTemplateResponse.data["fields"]
           : [];
 
-        var validFilterFields = ["dropdown", "autocomplete", "multidropdown"];
+        var validFilterFields = ["dropdown", "autocomplete", "multidropdown", "date", "datetime", "time"];
 
         var getOnlyDropdown = templateFields
           .filter((element) => validFilterFields.includes(element.type))
@@ -13283,6 +13285,7 @@ const handleExtensionApprovalWithUpdate = async () => {
             <DialogContentText id="alert-dialog-description">
               <Grid container sx={{ alignItems: "center" }}>
                 <Grid item xs={12} md={6} p={2}>
+                 <h4 className="form-field-heading">From Date</h4>
                   <LocalizationProvider dateAdapter={AdapterDayjs}>
                     <DatePicker
                       format="DD-MM-YYYY"
@@ -13299,6 +13302,7 @@ const handleExtensionApprovalWithUpdate = async () => {
                 </Grid>
 
                 <Grid item xs={12} md={6} p={2}>
+                   <h4 className="form-field-heading">To Date</h4>
                   <LocalizationProvider dateAdapter={AdapterDayjs}>
                     <DatePicker
                       format="DD-MM-YYYY"
@@ -13359,6 +13363,69 @@ const handleExtensionApprovalWithUpdate = async () => {
                           />
                         </Grid>
                       );
+                      case "date":
+                          return (
+                              <Grid item xs={12} md={6} p={2} key={field.id}>
+                                  <div className="form-field-wrapper_selectedField">
+                                      <DateField
+                                          key={field.id}
+                                          field={field}
+                                          formData={filterValues}
+                                            onChange={(date) => {
+                                            const formattedDate = date ? dayjs(date).format("YYYY-MM-DD") : null;
+                                            setFilterValues((prev) => ({
+                                              ...prev,
+                                              [field.name]: formattedDate,
+                                            }));
+                                          }}
+                                      />
+                                  </div>
+                              </Grid>
+                          );
+                          case "datetime":
+                            return (
+                                <Grid item xs={12} md={6} p={2} key={field.id}>
+                                    <div className="form-field-wrapper_selectedField">
+                                        <DateTimeField
+                                            key={field.id}
+                                            field={field}
+                                            formData={filterValues}
+                                            onChange={(date) => {
+                                                const formattedDateTime = date
+                                                    ? dayjs(date).format("YYYY-MM-DD HH:mm:ss")
+                                                    : null;
+                                                setFilterValues((prev) => ({
+                                                    ...prev,
+                                                    [field.name]: formattedDateTime,
+                                                }));
+                                            }}
+                                        />
+                                    </div>
+                                </Grid>
+                            );
+                          
+                          case "time":
+                              return (
+                                  <Grid item xs={12} md={6} p={2} key={field.id}>
+                                      <div className="form-field-wrapper_selectedField">
+                                          <TimeField
+                                              key={field.id}
+                                              field={field}
+                                              formData={filterValues}
+                                              onChange={(time) => {
+                                                  const formattedTime = time
+                                                      ? dayjs(time).format("HH:mm:ss")
+                                                      : null;
+                                                  setFilterValues((prev) => ({
+                                                      ...prev,
+                                                      [field.name]: formattedTime,
+                                                  }));
+                                              }}
+                                          />
+                                      </div>
+                                  </Grid>
+                              );
+  
                   }
                 })}
               </Grid>
@@ -13408,6 +13475,7 @@ const handleExtensionApprovalWithUpdate = async () => {
                 <DialogContentText id="alert-dialog-description">
                     <Grid container sx={{ alignItems: "center" }}>
                         <Grid item xs={12} md={6} p={2}>
+                           <h4 className="form-field-heading">From Date</h4>
                             <LocalizationProvider dateAdapter={AdapterDayjs}>
                                 <DatePicker
                                     format="DD-MM-YYYY"
@@ -13424,6 +13492,7 @@ const handleExtensionApprovalWithUpdate = async () => {
                         </Grid>
 
                         <Grid item xs={12} md={6} p={2}>
+                           <h4 className="form-field-heading">To Date</h4>
                             <LocalizationProvider dateAdapter={AdapterDayjs}>
                                 <DatePicker
                                     format="DD-MM-YYYY"

@@ -33,6 +33,8 @@ import FilterListIcon from "@mui/icons-material/FilterList";
 import MultiSelect from "../components/form/MultiSelect";
 import AutocompleteField from "../components/form/AutoComplete";
 import DateField from "../components/form/Date";
+import DateTimeField from "../components/form/DateTime";
+import TimeField from "../components/form/Time";
 import ShortText from "../components/form/ShortText";
 import WestIcon from '@mui/icons-material/West';
 import { Tabs, Tab } from '@mui/material';
@@ -46,16 +48,16 @@ import dayjs from "dayjs";
 
 const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedRowData, backNavigation, showMagazineView ,fetchCounts}) => {
 
-  useEffect(() => {
-    const fetchData = async () => {
-      if (rowId) {
-        await checkPdfEntryStatus(rowId);
-        getUploadedFiles(rowId, options);
-      }
-    };
+  // useEffect(() => {
+  //   const fetchData = async () => {
+  //     if (rowId) {
+  //       // await checkPdfEntryStatus(rowId);
+  //       getUploadedFiles(rowId, options);
+  //     }
+  //   };
 
-    fetchData();
-  }, [rowId]);
+  //   fetchData();
+  // }, [rowId]);
 
   const [selectedTab, setSelectedTab] = useState(0);
   const handleTabChange = (event, newValue) => {
@@ -1005,7 +1007,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
         setOtherTemplateData(updatedTableData);
 
         if (options.table === "cid_ui_case_progress_report" && options.is_pdf && !fromUploadedFiles) {
-          await checkPdfEntryStatus(selectedRow.id);
+          // await checkPdfEntryStatus(selectedRow.id);
           await getUploadedFiles(selectedRow, options);
         }
 
@@ -1613,7 +1615,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
 
       if (viewTemplateResponse && viewTemplateResponse.success && viewTemplateResponse.data) {
         var templateFields = viewTemplateResponse.data["fields"] ? viewTemplateResponse.data["fields"] : [];
-        var validFilterFields = ["dropdown", "autocomplete", "multidropdown"];
+        var validFilterFields = ["dropdown", "autocomplete", "multidropdown", "date", "datetime", "time", ];
 
         var getOnlyDropdown = templateFields.filter((element) => validFilterFields.includes(element.type)).map((field) => {
           const existingField = filterDropdownObj?.find(
@@ -2052,7 +2054,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
       if (response.success) {
         Swal.fire("Success", "File uploaded successfully.", "success");
         setSelectedTab(1);
-        checkPdfEntryStatus(caseId);
+        // checkPdfEntryStatus(caseId);
         getUploadedFiles(selectedRowData);
       } else {
         Swal.fire("Error", response.message || "Upload failed.", "error");
@@ -3505,6 +3507,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
               <DialogContentText id="alert-dialog-description">
                   <Grid container sx={{ alignItems: "center" }}>
                       <Grid item xs={12} md={6} p={2}>
+                         <h4 className="form-field-heading">From Date</h4>
                           <LocalizationProvider dateAdapter={AdapterDayjs}>
                               <DatePicker
                                   format="DD-MM-YYYY"
@@ -3521,6 +3524,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
                       </Grid>
 
                       <Grid item xs={12} md={6} p={2}>
+                          <h4 className="form-field-heading">To Date</h4>
                           <LocalizationProvider dateAdapter={AdapterDayjs}>
                               <DatePicker
                                   format="DD-MM-YYYY"
@@ -3584,6 +3588,70 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
                                   />
                                   </Grid>
                               );
+
+                              case "date":
+                                return (
+                                    <Grid item xs={12} md={6} p={2} key={field.id}>
+                                        <div className="form-field-wrapper_selectedField">
+                                            <DateField
+                                                key={field.id}
+                                                field={field}
+                                                formData={othersFilterData}
+                                                 onChange={(date) => {
+                                                  const formattedDate = date ? dayjs(date).format("YYYY-MM-DD") : null;
+                                                  setOthersFilterData((prev) => ({
+                                                    ...prev,
+                                                    [field.name]: formattedDate,
+                                                  }));
+                                                }}
+                                            />
+                                        </div>
+                                    </Grid>
+                                );
+                                case "datetime":
+                                    return (
+                                        <Grid item xs={12} md={6} p={2} key={field.id}>
+                                            <div className="form-field-wrapper_selectedField">
+                                                <DateTimeField
+                                                    key={field.id}
+                                                    field={field}
+                                                    formData={othersFilterData}
+                                                    onChange={(date) => {
+                                                        const formattedDateTime = date
+                                                            ? dayjs(date).format("YYYY-MM-DD HH:mm:ss")
+                                                            : null;
+                                                        setOthersFilterData((prev) => ({
+                                                            ...prev,
+                                                            [field.name]: formattedDateTime,
+                                                        }));
+                                                    }}
+                                                />
+                                            </div>
+                                        </Grid>
+                                    );
+                                                       
+                                case "time":
+                                    return (
+                                        <Grid item xs={12} md={6} p={2} key={field.id}>
+                                            <div className="form-field-wrapper_selectedField">
+                                                <TimeField
+                                                    key={field.id}
+                                                    field={field}
+                                                    formData={othersFilterData}
+                                                    onChange={(time) => {
+                                                        const formattedTime = time
+                                                            ? dayjs(time).format("HH:mm:ss")
+                                                            : null;
+                                                        setOthersFilterData((prev) => ({
+                                                            ...prev,
+                                                            [field.name]: formattedTime,
+                                                        }));
+                                                    }}
+                                                />
+                                            </div>
+                                        </Grid>
+                                    );
+
                       }
                       })}
                   </Grid>

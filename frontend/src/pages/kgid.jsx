@@ -1090,6 +1090,7 @@ const formatForDateInput = (dateStr) => {
                     <DialogContentText id="alert-dialog-description">
                         <Grid container sx={{ alignItems: "center" }}>
                         <Grid item xs={12} md={6} p={2}>
+                             <h4 className="form-field-heading">From Date</h4>
                             <LocalizationProvider dateAdapter={AdapterDayjs}>
                             <DatePicker
                                 format="DD-MM-YYYY"
@@ -1106,6 +1107,7 @@ const formatForDateInput = (dateStr) => {
                         </Grid>
         
                         <Grid item xs={12} md={6} p={2}>
+                                <h4 className="form-field-heading">To Date</h4>
                             <LocalizationProvider dateAdapter={AdapterDayjs}>
                             <DatePicker
                                 format="DD-MM-YYYY"

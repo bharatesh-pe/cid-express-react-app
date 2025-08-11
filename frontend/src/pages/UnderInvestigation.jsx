@@ -87,6 +87,8 @@ import NumberField from "../components/form/NumberField";
 import ShortText from "../components/form/ShortText";
 import LongText from "../components/form/LongText";
 import DateField from "../components/form/Date";
+import DateTimeField from "../components/form/DateTime";
+import TimeField from "../components/form/Time";
 import GenerateProfilePdf from "./GenerateProfilePdf";
 
 import ApprovalModal from '../components/dynamic-form/ApprovalModalForm';
@@ -786,6 +788,7 @@ const fslTableRef = useRef();
 
     const handleOthersFilter = async (selectedOptions)=>{
 
+      console.log("is it opening for filter page")
         if(!selectedOptions?.table){
             toast.error('Please Check The Template', {
                 position: "top-right",
@@ -809,12 +812,15 @@ const fslTableRef = useRef();
       
             if (viewTemplateResponse && viewTemplateResponse.success && viewTemplateResponse.data) {
                 var templateFields = viewTemplateResponse.data["fields"] ? viewTemplateResponse.data["fields"] : [];
-                var validFilterFields = ["dropdown", "autocomplete", "multidropdown"];
+                var validFilterFields = ["dropdown", "autocomplete", "multidropdown", "date", "datetime", "time"];
       
+                console.log("templateFields", templateFields);
+                console.log("validFilterFields", validFilterFields);
                 var getOnlyDropdown = templateFields.filter((element) => validFilterFields.includes(element.type)).map((field) => {
                     const existingField = filterDropdownObj?.find(
                         (item) => item.name === field.name
                     );
+
                     return {
                         ...field,
                         history: false,
@@ -11923,10 +11929,12 @@ const handleExtensionApprovalWithUpdate = async () => {
           ? viewTemplateResponse.data["fields"]
           : [];
 
-        var validFilterFields = ["dropdown", "autocomplete", "multidropdown"];
+        var validFilterFields = ["dropdown", "autocomplete", "multidropdown", "date", "datetime", "time"];
+
+        const excludedFields = ['field_extension_date'];
 
         var getOnlyDropdown = templateFields
-          .filter((element) => validFilterFields.includes(element.type))
+          .filter((element) => validFilterFields.includes(element.type) && !excludedFields.includes(element.name)) 
           .map((field) => {
             const existingField = filterDropdownObj?.find(
               (item) => item.name === field.name
@@ -16062,6 +16070,7 @@ return (
             <DialogContentText id="alert-dialog-description">
               <Grid container sx={{ alignItems: "center" }}>
                 <Grid item xs={12} md={6} p={2}>
+                 <h4 className="form-field-heading">From Date</h4>
                   <LocalizationProvider dateAdapter={AdapterDayjs}>
                     <DatePicker
                       format="DD-MM-YYYY"
@@ -16078,6 +16087,7 @@ return (
                 </Grid>
 
                 <Grid item xs={12} md={6} p={2}>
+                  <h4 className="form-field-heading">To Date</h4>
                   <LocalizationProvider dateAdapter={AdapterDayjs}>
                     <DatePicker
                       format="DD-MM-YYYY"
@@ -16094,6 +16104,8 @@ return (
                 </Grid>
 
                 {filterDropdownObj.map((field) => {
+                    console.log("field", field);
+
                   switch (field.type) {
                     case "dropdown":
                       return (
@@ -16138,6 +16150,67 @@ return (
                           />
                         </Grid>
                       );
+                       case "date":
+                        return (
+                            <Grid item xs={12} md={6} p={2} key={field.id}>
+                                <div className="form-field-wrapper_selectedField">
+                                    <DateField
+                                        key={field.id}
+                                        field={field}
+                                        formData={filterValues}
+                                          onChange={(date) => {
+                                          const formattedDate = date ? dayjs(date).format("YYYY-MM-DD") : null;
+                                          setFilterValues((prev) => ({
+                                            ...prev,
+                                            [field.name]: formattedDate,
+                                          }));
+                                        }}
+                                    />
+                                </div>
+                            </Grid>
+                        );
+                        case "datetime":
+                          return (
+                              <Grid item xs={12} md={6} p={2} key={field.id}>
+                                  <div className="form-field-wrapper_selectedField">
+                                      <DateTimeField
+                                          key={field.id}
+                                          field={field}
+                                          formData={filterValues}
+                                          onChange={(date) => {
+                                              const formattedDateTime = date
+                                                  ? dayjs(date).format("YYYY-MM-DD HH:mm:ss")
+                                                  : null;
+                                              setFilterValues((prev) => ({
+                                                  ...prev,
+                                                  [field.name]: formattedDateTime,
+                                              }));
+                                          }}
+                                      />
+                                  </div>
+                              </Grid>
+                          );
+                          case "time":
+                            return (
+                                <Grid item xs={12} md={6} p={2} key={field.id}>
+                                    <div className="form-field-wrapper_selectedField">
+                                        <TimeField
+                                            key={field.id}
+                                            field={field}
+                                            formData={filterValues}
+                                            onChange={(time) => {
+                                                const formattedTime = time
+                                                    ? dayjs(time).format("HH:mm:ss")
+                                                    : null;
+                                                setFilterValues((prev) => ({
+                                                    ...prev,
+                                                    [field.name]: formattedTime,
+                                                }));
+                                            }}
+                                        />
+                                    </div>
+                                </Grid>
+                            );
                   }
                 })}
               </Grid>
@@ -16187,6 +16260,7 @@ return (
                 <DialogContentText id="alert-dialog-description">
                     <Grid container sx={{ alignItems: "center" }}>
                         <Grid item xs={12} md={6} p={2}>
+                           <h4 className="form-field-heading">From Date</h4>
                             <LocalizationProvider dateAdapter={AdapterDayjs}>
                                 <DatePicker
                                     format="DD-MM-YYYY"
@@ -16203,6 +16277,7 @@ return (
                         </Grid>
 
                         <Grid item xs={12} md={6} p={2}>
+                          <h4 className="form-field-heading">To Date</h4>
                             <LocalizationProvider dateAdapter={AdapterDayjs}>
                                 <DatePicker
                                     format="DD-MM-YYYY"
