@@ -6198,7 +6198,7 @@ const UnderInvestigation = () => {
           ? viewTemplateResponse.data["fields"]
           : [];
 
-        var validFilterFields = ["dropdown", "autocomplete", "multidropdown"];
+        var validFilterFields = ["dropdown", "autocomplete", "multidropdown", "date", "datetime", "time"];
 
         var getOnlyDropdown = templateFields
           .filter((element) => validFilterFields.includes(element.type))
@@ -7823,6 +7823,25 @@ const UnderInvestigation = () => {
                                     />
                                     </Grid>
                                 );
+                                case "date":
+                                return (
+                                    <Grid item xs={12} md={6} p={2} key={field.id}>
+                                        <div className="form-field-wrapper_selectedField">
+                                            <DateField
+                                                key={field.id}
+                                                field={field}
+                                                formData={othersFilterData}
+                                                 onChange={(date) => {
+                                                  const formattedDate = date ? dayjs(date).format("YYYY-MM-DD") : null;
+                                                  setOthersFilterData((prev) => ({
+                                                    ...prev,
+                                                    [field.name]: formattedDate,
+                                                  }));
+                                                }}
+                                            />
+                                        </div>
+                                    </Grid>
+                                );
                         }
                         })}
                     </Grid>
@@ -8137,6 +8156,26 @@ const UnderInvestigation = () => {
                             }
                           />
                         </Grid>
+                      );
+
+                      case "date":
+                        return (
+                            <Grid item xs={12} md={6} p={2} key={field.id}>
+                                <div className="form-field-wrapper_selectedField">
+                                    <DateField
+                                        key={field.id}
+                                        field={field}
+                                        formData={filterValues}
+                                          onChange={(date) => {
+                                          const formattedDate = date ? dayjs(date).format("YYYY-MM-DD") : null;
+                                          setOthersFilterData((prev) => ({
+                                            ...prev,
+                                            [field.name]: formattedDate,
+                                          }));
+                                        }}
+                                    />
+                                </div>
+                            </Grid>
                       );
                   }
                 })}

@@ -33,6 +33,7 @@ import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import DialogTitle from "@mui/material/DialogTitle";
 import Autocomplete from "@mui/material/Autocomplete";
+import DateField from "../components/form/Date";
 import { Add } from "@mui/icons-material";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
@@ -1275,7 +1276,7 @@ const CDR = ({ templateName, headerDetails, rowId, options, selectedRowData, bac
 
             if (viewTemplateResponse && viewTemplateResponse.success && viewTemplateResponse.data) {
                 var templateFields = viewTemplateResponse.data["fields"] ? viewTemplateResponse.data["fields"] : [];
-                var validFilterFields = ["dropdown", "autocomplete", "multidropdown"];
+                var validFilterFields = ["dropdown", "autocomplete", "multidropdown", "date", "datetime", "time"];
 
                 var getOnlyDropdown = templateFields.filter((element) => validFilterFields.includes(element.type)).map((field) => {
                     const existingField = filterDropdownObj?.find(
@@ -3668,6 +3669,25 @@ const CDR = ({ templateName, headerDetails, rowId, options, selectedRowData, bac
                                         />
                                         </Grid>
                                     );
+                                    case "date":
+                                        return (
+                                            <Grid item xs={12} md={6} p={2} key={field.id}>
+                                                <div className="form-field-wrapper_selectedField">
+                                                    <DateField
+                                                        key={field.id}
+                                                        field={field}
+                                                        formData={othersFilterData}
+                                                        onChange={(date) => {
+                                                        const formattedDate = date ? dayjs(date).format("YYYY-MM-DD") : null;
+                                                        setOthersFilterData((prev) => ({
+                                                            ...prev,
+                                                            [field.name]: formattedDate,
+                                                        }));
+                                                        }}
+                                                    />
+                                                </div>
+                                            </Grid>
+                                        );
                             }
                             })}
                         </Grid>
