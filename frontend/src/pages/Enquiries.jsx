@@ -13512,6 +13512,10 @@ const handleExtensionApprovalWithUpdate = async () => {
                             if (field?.hide_from_ux) {
                                 return null;
                             }
+
+                            if (!field?.table_display_content) {
+                                return null;
+                            }
                             switch (field.type) {
                                 case "dropdown":
                                 return (
