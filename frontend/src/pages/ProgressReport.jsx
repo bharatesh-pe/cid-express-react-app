@@ -1006,7 +1006,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
 
         setOtherTemplateData(updatedTableData);
 
-        if (options.table === "cid_ui_case_progress_report" && options.is_pdf && !fromUploadedFiles) {
+        if (options.table === "cid_ui_case_progress_report" && options.is_pdf && !fromUploadedFiles && selectedTab === 3) {
           // await checkPdfEntryStatus(selectedRow.id);
           await getUploadedFiles(selectedRow, options);
         }
@@ -3542,7 +3542,11 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
 
                       {othersFiltersDropdown.map((field) => {
                           if (field?.hide_from_ux) {
-                              return null;
+                            return null;
+                          }
+
+                          if (!field?.table_display_content) {
+                            return null;
                           }
                           switch (field.type) {
                               case "dropdown":

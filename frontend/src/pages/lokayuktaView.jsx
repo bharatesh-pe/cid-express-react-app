@@ -2993,8 +2993,11 @@ const fetchCounts = async () => {
 
     const setOtherFilterData = () => {
         setOthersFilterModal(false);
-        getTableData(activeSidebar,false,{from_date: othersFromDate,to_date: othersToDate,...othersFilterData}
+        const normalizedOthersFilterData = Object.fromEntries(
+        Object.entries(othersFilterData).map(([key, value]) => [key, value != null ? String(value) : null])
         );
+
+        getTableData(activeSidebar, false, { from_date: othersFromDate, to_date: othersToDate,...normalizedOthersFilterData});
     };
 
     const handleOthersFilter = async (activeSidebar)=>{
@@ -3039,7 +3042,9 @@ const fetchCounts = async () => {
         
                 // const today = dayjs().format("YYYY-MM-DD");
         
-                getAllOptionsforFilter(getOnlyDropdown, true);
+                // getAllOptionsforFilter(getOnlyDropdown, true);
+                getAllOptionsforFilter(getOnlyDropdown, true, rowData, activeSidebar.table, activeSidebar.table);
+
                 // if(fromDateValue == null || toDateValue === null){
                 //     setFromDateValue(today);
                 //     setToDateValue(today);
@@ -3078,75 +3083,128 @@ const fetchCounts = async () => {
             }
         }
     };
-    
-    const getAllOptionsforFilter = async (dropdownFields, others) => {
-    try {
-        setLoading(true);
 
-        const apiCalls = dropdownFields
-        .filter((field) => field.api && field.table)
-        .map(async (field) => {
-            try {
-            let payload = {};
-            let headerName = "name";
-            let headerId = "id";
-            let res;
+    const getAllOptionsforFilter = async (dropdownFields, others, selectedRow, table_name, investigationViewTable) => {
+        try {
 
-            if (field.api === "/templateData/getTemplateData") {
-                payload.table_name = field.table;
-                res = await api.post(field.api, payload);
-                if (!res.data) return { id: field.id, options: [] };
-                const updatedOptions = res.data.map((item) => {
-                const nameKey = Object.keys(item).find(
-                    (key) => !["id", "created_at", "updated_at"].includes(key)
-                );
-                return {
-                    name: nameKey ? item[nameKey] : "",
-                    code: item.id,
-                };
+            setLoading(true);
+
+            const apiCalls = dropdownFields
+                .filter((field) => field.api && field.table)
+                .map(async (field) => {
+                    try {
+
+                        let payload = {};
+                        let headerName = "name";
+                        let headerId = "id";
+                        let res;
+
+                        const isAccusedOrWitness =
+                            (field.table === "cid_ui_case_accused" || field.table === "cid_pt_case_witness") &&
+                            selectedRow &&
+                            field?.particular_case_options;
+
+                        if (isAccusedOrWitness) {
+                            let payloadApi = "templateData/getAccusedWitness";
+
+                            let ui_case_id = "";
+                            let pt_case_id = "";
+
+                            if (selectedRow?.pt_case_id) {
+                                ui_case_id = selectedRow.id || "";
+                                pt_case_id = selectedRow.pt_case_id || "";
+                            } else if (selectedRow?.ui_case_id) {
+                                ui_case_id = selectedRow.ui_case_id || "";
+                                pt_case_id = selectedRow.id || "";
+                            } else {
+                                ui_case_id = selectedRow.id || "";
+                            }
+
+                            payload = {
+                                table_name: field.table,
+                                ui_case_id,
+                                pt_case_id,
+                            };
+
+
+                            res = await api.post(payloadApi, payload);
+
+
+                            if (!res.data) return { id: field.id, options: [] };
+
+                            const updatedOptions = res.data.map((item) => ({
+                                name: item?.name || "",
+                                code: item?.id || "",
+                            }));
+
+                            return { id: field.id, options: updatedOptions };
+                        }
+
+                        if (field.api === "/templateData/getTemplateData") {
+                            payload.table_name = field.table;
+
+                            res = await api.post(field.api, payload);
+
+                            if (!res.data) return { id: field.id, options: [] };
+
+                            const updatedOptions = res.data.map((item) => {
+                                const nameKey = Object.keys(item).find(
+                                    (key) => !["id", "created_at", "updated_at"].includes(key)
+                                );
+                                return {
+                                    name: nameKey ? item[nameKey] : "",
+                                    code: item.id,
+                                };
+                            });
+
+                            return { id: field.id, options: updatedOptions };
+                        } else {
+                            res = await api.post(field.api, payload);
+
+                            if (!res.data) return { id: field.id, options: [] };
+
+                            if (field.table === "users") {
+                                headerName = "name";
+                                headerId = "user_id";
+                            } else {
+                                headerName = field.table + "_name";
+                                headerId = field.table + "_id";
+                            }
+
+                            const updatedOptions = res.data.map((item) => ({
+                                name: item[headerName],
+                                code: item[headerId],
+                            }));
+
+                            return { id: field.id, options: updatedOptions };
+                        }
+                    } catch (error) {
+                        console.error(`Error in field [${field.id}]:`, error);
+                        return { id: field.id, options: [] };
+                    }
                 });
-                return { id: field.id, options: updatedOptions };
+
+            const results = await Promise.all(apiCalls);
+
+
+            const updatedFieldsDropdown = dropdownFields.map((field) => {
+                const updatedField = results.find((res) => res.id === field.id);
+                return updatedField ? { ...field, options: updatedField.options } : field;
+            });
+
+            if (others) {
+                setOthersFiltersDropdown(updatedFieldsDropdown);
             } else {
-                res = await api.post(field.api, payload);
-                if (!res.data) return { id: field.id, options: [] };
-                if (field.table === "users") {
-                headerName = "name";
-                headerId = "user_id";
-                } else {
-                headerName = field.table + "_name";
-                headerId = field.table + "_id";
-                }
-                const updatedOptions = res.data.map((item) => ({
-                name: item[headerName],
-                code: item[headerId],
-                }));
-                return { id: field.id, options: updatedOptions };
+                setfilterDropdownObj(updatedFieldsDropdown);
             }
-            } catch (error) {
-            return { id: field.id, options: [] };
-            }
-        });
 
-        const results = await Promise.all(apiCalls);
-
-        setLoading(false);
-        var updatedFieldsDropdown = dropdownFields.map((field) => {
-        const updatedField = results.find((res) => res.id === field.id);
-        return updatedField
-            ? { ...field, options: updatedField.options }
-            : field;
-        });
-
-        if (others) {
-        setOthersFiltersDropdown(updatedFieldsDropdown);
-        } else {
-        setfilterDropdownObj(updatedFieldsDropdown);
+            setLoading(false);
+        } catch (error) {
+            setLoading(false);
+            console.error(" Error in getAllOptionsforFilter:", error);
         }
-    } catch (error) {
-        setLoading(false);
-        console.error("Error fetching template data:", error);
-    }
     };
+
 
     const handleAutocomplete = (field, selectedValue, othersFilter) => {
 
@@ -4311,6 +4369,10 @@ const fetchCounts = async () => {
 
                         {othersFiltersDropdown.map((field) => {
                             if (field?.hide_from_ux) {
+                                return null;
+                            }
+
+                            if (!field?.table_display_content) {
                                 return null;
                             }
                             switch (field.type) {
