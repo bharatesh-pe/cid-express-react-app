@@ -5677,6 +5677,9 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
                 {
                     data["field_io_name_id"] = data[fieldName];
                 }
+                if(fieldName === "field_name_of_the_io"){
+                    data["field_name_of_the_io_id"] = data[fieldName];
+                  }
                 data[fieldName] = dropdownFieldMappings[fieldName][data[fieldName]];
             }
         }
