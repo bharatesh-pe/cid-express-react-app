@@ -571,14 +571,36 @@ const getIoUsersBasedOnDivision = async (req, res) => {
         });
         
         // Transform output: move kgidDetails.name to top level.
-        const users = usersData.map(user => ({
+        const userMap = {};
+
+        usersData.forEach(user => {
+            const userId = user.user_id;
+            const name = user.kgidDetails?.name || "";
+            const designation = user.users_designations?.designation?.designation_name || "";
+
+            if (!userMap[userId]) {
+                userMap[userId] = {
+                    ...user,
+                    name: name,
+                    designations: new Set(),
+                    kgid: user.kgidDetails?.kgid || "",
+                    mobile: user.kgidDetails?.mobile || ""
+                };
+            }
+            if (designation) {
+                userMap[userId].designations.add(designation);
+            }
+        });
+
+        const users = Object.values(userMap).map(user => ({
             ...user,
-            name: (user.kgidDetails?.name + " - " + user.users_designations?.designation?.designation_name) || "",
-            kgid: user.kgidDetails?.kgid || "",
-            mobile: user.kgidDetails?.mobile || "",
-            kgidDetails: undefined, // remove nested object if not needed
+            name: `${user.name} - ${Array.from(user.designations).join(", ")}`,
+            kgid: user.kgid,
+            mobile: user.mobile,
+            kgidDetails: undefined,
+            designations: undefined
         }));
-        
+
         return res.status(200).json({ data: users });
     } catch (error) {
         console.error("Error fetching users based on division:", error);
