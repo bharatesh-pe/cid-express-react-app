@@ -303,8 +303,12 @@ const Enquiries = () => {
   // transfer to other division states
 
   const [showOtherTransferModal, setShowOtherTransferModal] = useState(false);
+  const [showAssignIOTransferModal, setShowAssignIOTransferModal] = useState(false)
   const [showMassiveTransferModal, setShowMassiveTransferModal] = useState(false);
-
+  const [showReassignIoModal, setShowReassignIoModal] = useState(false);
+  const [ioUserCases, setIoUserCases] = useState([]);
+  const [casesPage, setCasesPage] = useState(0);
+  const [casesPageSize, setCasesPageSize] = useState(10);
   const [otherTransferField, setOtherTransferField] = useState([]);
   const [selectedOtherFields, setSelectedOtherFields] = useState(null);
   const [selectKey, setSelectKey] = useState(null);
@@ -8415,7 +8419,7 @@ const handleOpenExportPopup = async () => {
                                         setSelectedOtherFields(preSelectedDivision);
 
                         
-                                        if (options.name.trim().toLowerCase() == "transfer to other division" || options.name.trim().toLowerCase() == "reassign io" && preSelectedDivision?.code) {
+                                        if (options.name.trim().toLowerCase() == "transfer to other division" || options.name.trim().toLowerCase() == "reassign eo" && preSelectedDivision?.code) {
                                             api.post("cidMaster/getIoUsersBasedOnDivision", {
                                                 division_ids: [preSelectedDivision.code],
                                                 role_id: null,
@@ -8433,8 +8437,14 @@ const handleOpenExportPopup = async () => {
                                         //   setSelectedRow(selectedRow);
                                         //   setselectedOtherTemplate(options);
                                         setOtherTransferField(updatedOptions);
-                                        if (options.name.trim().toLowerCase() == "transfer to other division" || options.name.trim().toLowerCase() == "reassign io") {
+                                        if (options.name.trim().toLowerCase() == "transfer to other division") {
                                             setShowMassiveTransferModal(true);
+                                            setSelectedRowIds([selectedRow.id])
+                                        }else if(options.name.trim().toLowerCase() == "reassign eo"){
+                                            setShowReassignIoModal(true);
+                                            setSelectedRowIds([selectedRow.id])
+                                        }else if(options.name.trim().toLowerCase() == "assign to eo"){
+                                            setShowAssignIOTransferModal(true);
                                             setSelectedRowIds([selectedRow.id])
                                         } else {
                                             setShowOtherTransferModal(true);
@@ -8459,7 +8469,7 @@ const handleOpenExportPopup = async () => {
                                 const preSelectedDivision = matchedOption || null;
                                 setSelectedOtherFields(preSelectedDivision);
                                 
-                                if (options.name.trim().toLowerCase() == "transfer to other division" || options.name.trim().toLowerCase() == "reassign io" && preSelectedDivision?.code) {
+                                if (options.name.trim().toLowerCase() == "transfer to other division" || options.name.trim().toLowerCase() == "reassign eo" && preSelectedDivision?.code) {
                                     api.post("cidMaster/getIoUsersBasedOnDivision", {
                                         division_ids: [preSelectedDivision.code],
                                         role_id: null,
@@ -8477,8 +8487,10 @@ const handleOpenExportPopup = async () => {
                                 //   setSelectedRow(selectedRow);
                                 //   setselectedOtherTemplate(options);
                                 setOtherTransferField(staticOptions);
-                                if (options.name.trim().toLowerCase() == "transfer to other division".toLowerCase() || options.name.trim().toLowerCase() == "reassign io") {
+                                if (options.name.trim().toLowerCase() == "transfer to other division".toLowerCase()) {
                                     setShowMassiveTransferModal(true);
+                                } else if(options.name.trim().toLowerCase() == "reassign eo"){
+                                  setShowReassignIoModal(true);
                                 } else {
                                     setShowOtherTransferModal(true);
                                 }
@@ -8818,6 +8830,7 @@ const handleOpenExportPopup = async () => {
                     setAddApproveFlag(false);
                     setApproveTableFlag(false);
                     setShowOtherTransferModal(false);
+                    setShowAssignIOTransferModal(false);
                     setApprovalSaveData({});
 
                 } else {
@@ -8963,6 +8976,7 @@ const handleOpenExportPopup = async () => {
           setAddApproveFlag(false);
           setApproveTableFlag(false);
           setShowOtherTransferModal(false);
+          setShowReassignIoModal(false);
           setApprovalSaveData({});
           setShowMassiveTransferModal(false);
           setSelectKey(null);
@@ -12847,6 +12861,195 @@ const handleExtensionApprovalWithUpdate = async () => {
       </Dialog>
 
 
+ <Dialog
+      open={showAssignIOTransferModal}
+      onClose={() => {
+        setShowAssignIOTransferModal(false);
+        setSelectKey(null);
+        // setSelectedRow([]);
+        setOtherTransferField([]);
+        setSelectedUser(null);
+        setIoUserCases([]);
+        setSelectedOtherFields(null);
+        // setselectedOtherTemplate(null);
+        setUsersBasedOnDivision([]);
+        // setSelectedUser(null);
+        // setSelectedRowIds([]);
+        setSelectedMergeRowData([]);
+        setSelectedParentId(null);
+        setTableData((prevData) =>
+          prevData.map((item) => ({ ...item, isSelected: false }))
+        );
+        // setHasApproval(false);
+      }}
+      aria-labelledby="alert-dialog-title"
+      aria-describedby="alert-dialog-description"
+      maxWidth={false}
+      fullWidth={false}
+      PaperProps={{
+        sx: { width: 800, maxWidth: "100vw" }
+      }}
+    >
+      <DialogTitle id="alert-dialog-title"></DialogTitle>
+      <DialogContent sx={{ width: "800px" }}>
+        <DialogContentText id="alert-dialog-description">
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+            <WestIcon
+              style={{ cursor: "pointer", color: "#222" }}
+              onClick={() => {
+                setShowAssignIOTransferModal(false);
+                setSelectKey(null);
+                setOtherTransferField([]);
+                setUsersBasedOnDivision([]);
+                setSelectedUser(null);
+                setIoUserCases([]);
+                setSelectedMergeRowData([]);
+                setSelectedParentId(null);
+                setTableData((prevData) =>
+                  prevData.map((item) => ({ ...item, isSelected: false }))
+                );
+              }}
+            />
+            <span style={{ fontWeight: 500, fontSize: 18, color: "#222", marginLeft: 12 }}>
+              {selectKey?.title}
+            </span>
+          </div>
+          <FormControl fullWidth>
+          </FormControl>
+          <div style={{ display: "flex", gap: 16, maxWidth: 700 }}>
+            <FormControl fullWidth>
+              <div style={{ marginBottom: 4, fontWeight: 500, color: "#222" }}>EO User</div>
+              <Autocomplete
+                options={otherTransferField}
+                getOptionLabel={(option) => option.name || ""}
+                value={selectedOtherFields || null}
+                onChange={async (event, newValue) => {
+                  // setSelectedUser(newValue);
+                  setSelectedOtherFields(newValue);
+                  setIoUserCases([]);
+                  if (newValue && newValue.code) {
+                    try {
+                      const user_id = String(newValue.code);
+                      const template_module = "eq_case";
+                      const response = await api.post(
+                        "cidMaster/getSpecificIoUsersCases",
+                        {
+                          user_id,
+                          template_module,
+                        }
+                      );
+                      let cases = [];
+                      if (Array.isArray(response.cases)) {
+                        cases = response.cases;
+                      } else if (Array.isArray(response?.cases)) {
+                        cases = response.cases;
+                      } else if (response.cases && typeof response.cases === "object") {
+                        cases = [response.cases];
+                      } else if (response?.cases && typeof response.cases === "object") {
+                        cases = [response.cases];
+                      }
+                      setIoUserCases(cases);
+                    } catch (err) {
+                      console.error("Failed to fetch EO user cases", err);
+                      setIoUserCases([]);
+                    }
+                  }
+                }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    className="selectHideHistory"
+                    label="EO User"
+                  />
+                )}
+                // disabled={fieldActionAddFlag.current === false}
+              />
+            </FormControl>
+          </div>
+                <div style={{ marginTop: 24, maxWidth: 700 }}>
+                <h4 className="form-field-heading">Selected EO handling Case Details</h4>
+                <div style={{ maxHeight: 250, overflowY: "auto" }}>
+                  <TableView
+                  rows={ioUserCases.slice(
+                    casesPage * casesPageSize,
+                    (casesPage + 1) * casesPageSize
+                  ).map((row, idx) => ({
+                    ...row,
+                    sno: casesPage * casesPageSize + idx + 1,
+                    "field_cid_crime_no./enquiry_no":
+                    row["field_cid_crime_no./enquiry_no"] ||
+                    row.field_cid_crime_no ||
+                    row.enquiry_no ||
+                    "",
+                  }))}
+                  columns={[
+                    {
+                    field: "sno",
+                    headerName: "S.No",
+                    flex: 0.3,
+                    renderCell: (params) => params.row.sno,
+                    },
+                    {
+                    field: "field_cid_crime_no./enquiry_no",
+                    headerName: "Crime/Enquiry No.",
+                    flex: 1,
+                    renderCell: (params) => params.row["field_cid_crime_no./enquiry_no"],
+                    },
+                  ]}
+                  totalPage={ioUserCases.length > 0 && casesPageSize > 0 ? Math.ceil(ioUserCases.length / casesPageSize) : 1}
+                  totalRecord={ioUserCases.length}
+                  paginationCount={Number.isFinite(casesPage) ? casesPage + 1 : 1}
+                  handlePagination={(page) => setCasesPage(page - 1)}
+                  getRowId={(row, idx) => row.id || row["field_cid_crime_no./enquiry_no"] || idx}
+                  noRowsOverlayText="No data found"
+                  sx={{ width: 700 }}
+                  />
+                </div>
+                <div style={{ marginTop: 8 }}>
+                  Showing{" "}
+                  {Math.min(ioUserCases.length, (casesPage + 1) * casesPageSize)} of{" "}
+                  {ioUserCases.length} cases
+                </div>
+                </div>
+              </DialogContentText>
+              </DialogContent>
+              <DialogActions sx={{ padding: "12px 24px" }}>
+              <Button
+                onClick={() => {
+            setShowAssignIOTransferModal(false);
+            setSelectKey(null);
+            setSelectedRow([]);
+            setOtherTransferField([]);
+            setSelectedUser(null);
+            setIoUserCases([]);
+            // setSelectedOtherFields(null);
+            // setselectedOtherTemplate(null);
+            setUsersBasedOnDivision([]);
+            // setSelectedUser(null);
+            // setSelectedRowIds([]);
+            setSelectedMergeRowData([]);
+            setSelectedParentId(null);
+            setTableData((prevData) =>
+              prevData.map((item) => ({ ...item, isSelected: false }))
+            );
+            // setHasApproval(false);
+          }}
+        >
+          Cancel
+        </Button>
+        {fieldActionAddFlag.current === true && (
+          <Button
+            className="fillPrimaryBtn"
+            onClick={() => {
+              handleSaveDivisionChange();
+            }}
+          >
+            Submit
+          </Button>
+        )}
+      </DialogActions>
+    </Dialog>
+
       <Dialog
         open={showMassiveTransferModal}
         onClose={() => {
@@ -12900,16 +13103,16 @@ const handleExtensionApprovalWithUpdate = async () => {
                   <TextField
                     {...params}
                     className="selectHideHistory"
-                    label={selectKey?.title.trim() == "Reassign IO" ? "Division" : selectKey?.title}
+                    label={selectKey?.title.trim() == "Reassign EO" ? "Division" : selectKey?.title}
                     />
                 )}
-                disabled={fieldActionAddFlag.current === false}
+                // disabled={fieldActionAddFlag.current === false}
 
               />
             </FormControl>
 
               <>
-                <h4 className="form-field-heading" style={{ marginTop: "20px" }}>IO User</h4>
+                <h4 className="form-field-heading" style={{ marginTop: "20px" }}>EO User</h4>
                 <FormControl fullWidth>
                   <Autocomplete
                     options={usersBasedOnDivision}
@@ -12920,10 +13123,10 @@ const handleExtensionApprovalWithUpdate = async () => {
                       <TextField
                         {...params}
                         className="selectHideHistory"
-                        label="IO User"
+                        label="EO User"
                       />
                     )}
-                    disabled={fieldActionAddFlag.current === false}
+                    // disabled={fieldActionAddFlag.current === false}
                   />
                 </FormControl>
               </>
@@ -12963,6 +13166,249 @@ const handleExtensionApprovalWithUpdate = async () => {
           }
         </DialogActions>
       </Dialog>
+
+        <Dialog
+            open={showReassignIoModal}
+            onClose={() => {
+              setShowReassignIoModal(false);
+              setSelectKey(null);
+              // setSelectedRow([]);
+              setOtherTransferField([]);
+              setSelectedUser(null);
+              setIoUserCases([]);
+              // setSelectedOtherFields(null);
+              // setselectedOtherTemplate(null);
+              setUsersBasedOnDivision([]);
+              // setSelectedUser(null);
+              // setSelectedRowIds([]);
+              setSelectedMergeRowData([]);
+              setSelectedParentId(null);
+              setTableData((prevData) =>
+                prevData.map((item) => ({ ...item, isSelected: false }))
+              );
+              // setHasApproval(false);
+            }}
+            aria-labelledby="alert-dialog-title"
+            aria-describedby="alert-dialog-description"
+            fullScreen
+            fullWidth
+            sx={{ zIndex: "1", marginLeft: '250px' }}
+          >
+            <DialogTitle id="alert-dialog-title"></DialogTitle>
+            <DialogContent sx={{  }}>
+              <DialogContentText id="alert-dialog-description">
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12, justifyContent: "space-between" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <WestIcon
+                      style={{ cursor: "pointer", color: "#222" }}
+                      onClick={() => {
+                        setShowReassignIoModal(false);
+                        setSelectKey(null);
+                        setOtherTransferField([]);
+                        setUsersBasedOnDivision([]);
+                        setSelectedUser(null);
+                        setIoUserCases([]);
+                        setSelectedMergeRowData([]);
+                        setSelectedParentId(null);
+                        setTableData((prevData) =>
+                          prevData.map((item) => ({ ...item, isSelected: false }))
+                        );
+                      }}
+                    />
+                    <span style={{ fontWeight: 500, fontSize: 18, color: "#222", marginLeft: 12 }}>
+                      {selectKey?.title}
+                    </span>
+                  </div>
+                  <Button
+                    variant="outlined"
+                    onClick={() => {
+                      handleMassiveDivisionChange();
+                    }}
+                  >
+                    Submit
+                  </Button>
+                </div>
+                <div style={{ display: "flex", gap: 16, }}>
+                  <FormControl fullWidth>
+                  <div style={{ marginBottom: 4, fontWeight: 600, fontSize: 16, color: "#222" }}>
+                    {selectKey?.title?.trim() === "Reassign EO" ? "Division" : selectKey?.title || "Division"}
+                  </div>
+                    <Autocomplete
+                      options={otherTransferField}
+                      getOptionLabel={(option) => option.name || ""}
+                      value={selectedOtherFields || null}
+                      onChange={(event, newValue) => {
+                        setSelectedOtherFields(newValue);
+                        setSelectedUser(null);
+      
+                        if (newValue && newValue.code) {
+                          api
+                            .post("cidMaster/getIoUsersBasedOnDivision", {
+                              division_ids: [newValue.code],
+                              role_id: null,
+                            })
+                            .then((res) => {
+                              setUsersBasedOnDivision(res.data || []);
+                            })
+                            .catch((err) => {
+                              console.error("Failed to load users based on division", err);
+                              setUsersBasedOnDivision([]);
+                            });
+                        } else {
+                          setUsersBasedOnDivision([]);
+                        }
+                      }}
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          className="selectHideHistory"
+                          label={
+                            selectKey?.title.trim() == "Reassign EO"
+                              ? "Division"
+                              : selectKey?.title
+                          }
+                        />
+                      )}
+                      // disabled={fieldActionAddFlag.current === false}
+                    />
+                  </FormControl>
+                  <FormControl fullWidth>
+                    <div style={{ marginBottom: 4, fontWeight: 500, color: "#222" }}>EO User</div>
+                    <Autocomplete
+                      options={usersBasedOnDivision}
+                      getOptionLabel={(option) => option.name || ""}
+                      value={selectedUser || null}
+                      onChange={async (event, newValue) => {
+                        setSelectedUser(newValue);
+                        setIoUserCases([]); 
+                        if (newValue && newValue.user_id) {
+                          try {
+                            const user_id = String(newValue.user_id);
+                            const template_module = "eq_case";
+                            const response = await api.post(
+                              "cidMaster/getSpecificIoUsersCases",
+                              {
+                                user_id,
+                                template_module,
+                              }
+                            );
+                            let cases = [];
+                            if (Array.isArray(response.cases)) {
+                              cases = response.cases;
+                            } else if (Array.isArray(response?.cases)) {
+                              cases = response.cases;
+                            } else if (response.cases && typeof response.cases === "object") {
+                              cases = [response.cases];
+                            } else if (response?.cases && typeof response.cases === "object") {
+                              cases = [response.cases];
+                            }
+                            setIoUserCases(cases);
+                          } catch (err) {
+                            console.error("Failed to fetch EO user cases", err);
+                            setIoUserCases([]);
+                          }
+                        }
+                      }}
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          className="selectHideHistory"
+                          label="EO User"
+                        />
+                      )}
+                      // disabled={fieldActionAddFlag.current === false}
+                    />
+                  </FormControl>
+                </div>
+                      <div style={{ marginTop: 24, maxWidth: '100vw'  }}>
+                      <h4 className="form-field-heading">Selected EO handling Case Details</h4>
+                      <div style={{  }}>
+                        <TableView
+                        rows={ioUserCases.slice(
+                          casesPage * casesPageSize,
+                          (casesPage + 1) * casesPageSize
+                        ).map((row, idx) => ({
+                          ...row,
+                          sno: casesPage * casesPageSize + idx + 1,
+                          "field_cid_crime_no./enquiry_no":
+                          row["field_cid_crime_no./enquiry_no"] ||
+                          row.field_cid_crime_no ||
+                          row.enquiry_no ||
+                          "",
+                          "field_crime_number_of_ps" : row["field_crime_number_of_ps"] || "",
+                          "field_case/enquiry_keyword" : row["field_case/enquiry_keyword"] || "-",
+                          
+                        }
+                      ))}
+                        columns={[
+                          {
+                          field: "sno",
+                          headerName: "S.No",
+                          flex: 0.3,
+                          renderCell: (params) => params.row.sno,
+                          },
+                          {
+                          field: "field_cid_crime_no./enquiry_no",
+                          headerName: "Crime/Enquiry No.",
+                          flex: 1,
+                          renderCell: (params) => params.row["field_cid_crime_no./enquiry_no"],
+                          },
+                          {
+                          field: "field_crime_number_of_ps",
+                          headerName: "Crime Number of PS",
+                          flex: 1,
+                          renderCell: (params) => params.row["field_crime_number_of_ps"],
+                          },{
+                          field: "field_case/enquiry_keyword",
+                          headerName: "Case/Enquiry Keyword",
+                          flex: 1,
+                          renderCell: (params) => params.row["field_case/enquiry_keyword"],
+                          },
+                        ]}
+                        totalPage={ioUserCases.length > 0 && casesPageSize > 0 ? Math.ceil(ioUserCases.length / casesPageSize) : 1}
+                        totalRecord={ioUserCases.length}
+                        paginationCount={Number.isFinite(casesPage) ? casesPage + 1 : 1}
+                        handlePagination={(page) => setCasesPage(page - 1)}
+                        getRowId={(row, idx) => row.id || row["field_cid_crime_no./enquiry_no"] || idx}
+                        noRowsOverlayText="No data found"
+                        sx={{ width: 700 }}
+                        />
+                      </div>
+                      <div style={{ marginTop: 8 }}>
+                        Showing{" "}
+                        {Math.min(ioUserCases.length, (casesPage + 1) * casesPageSize)} of{" "}
+                        {ioUserCases.length} cases
+                      </div>
+                      </div>
+                    </DialogContentText>
+                    </DialogContent>
+                    <DialogActions sx={{ padding: "12px 24px" }}>
+                    {/* <Button
+                      onClick={() => {
+                  setShowReassignIoModal(false);
+                  setSelectKey(null);
+                  setSelectedRow([]);
+                  setOtherTransferField([]);
+                  setSelectedUser(null);
+                  setIoUserCases([]);
+                  // setSelectedOtherFields(null);
+                  // setselectedOtherTemplate(null);
+                  setUsersBasedOnDivision([]);
+                  // setSelectedUser(null);
+                  // setSelectedRowIds([]);
+                  setSelectedMergeRowData([]);
+                  setSelectedParentId(null);
+                  setTableData((prevData) =>
+                    prevData.map((item) => ({ ...item, isSelected: false }))
+                  );
+                  // setHasApproval(false);
+                }}
+              >
+                Cancel
+              </Button> */}
+      
+            </DialogActions>
+          </Dialog>
 
 
               <Dialog
