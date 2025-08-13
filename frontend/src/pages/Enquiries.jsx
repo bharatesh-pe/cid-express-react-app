@@ -3057,7 +3057,7 @@ const handleCheckboxDemerge = (event, row) => {
                     const excludedKeys = [
                          "updated_at", "id", "deleted_at", "attachments",
                         "Starred", "ReadStatus", "linked_profile_info",
-                        "ui_case_id", "pt_case_id", "sys_status", "task_unread_count" , "field_cid_crime_no./enquiry_no","field_name_of_the_io" , "field_io_name_id", 
+                        "ui_case_id", "pt_case_id", "sys_status", "task_unread_count" , "field_cid_crime_no./enquiry_no","field_name_of_the_io" , "field_io_name_id",  "field_name_of_the_io_id",
                         "field_name_of_the_police_station", "field_division", "field_case/enquiry_keyword", "field_date_of_taking_over_by_cid", "field_extension_date"
                     ];
     
@@ -7227,7 +7227,7 @@ const handleOpenExportPopup = async () => {
     table_name: selectedOtherTemplate.table,
     ui_case_id: selectedRowData.id,
     pt_case_id: selectedRowData?.pt_case_id || null,
-    case_io_id: selectedRowData.field_io_name_id || "",
+    case_io_id: selectedRowData.field_name_of_the_io_id || "",
   };
 
   try {
@@ -7279,7 +7279,7 @@ const handleOpenExportPopup = async () => {
     var getTemplatePayload = {
         table_name: options.table,
         ui_case_id: selectedRow.id,
-        case_io_id: selectedRow.field_io_name_id || "",
+        case_io_id: selectedRow.field_name_of_the_io_id || "",
         pt_case_id: selectedRow?.pt_case_id || null,
         limit : 10,
         page : !searchFlag ? otherTemplatesPaginationCount : 1,

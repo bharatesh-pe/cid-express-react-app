@@ -3110,7 +3110,10 @@ const fetchCounts = async () => {
                             let ui_case_id = "";
                             let pt_case_id = "";
 
-                            if (selectedRow?.pt_case_id) {
+                            if (selectedRow?.pt_case_id && selectedRow?.ui_case_id) {
+                                ui_case_id = selectedRow.ui_case_id || "";
+                                pt_case_id = selectedRow.pt_case_id || "";
+                            } else if (selectedRow?.pt_case_id) {
                                 ui_case_id = selectedRow.id || "";
                                 pt_case_id = selectedRow.pt_case_id || "";
                             } else if (selectedRow?.ui_case_id) {
@@ -3119,6 +3122,7 @@ const fetchCounts = async () => {
                             } else {
                                 ui_case_id = selectedRow.id || "";
                             }
+
 
                             payload = {
                                 table_name: field.table,
