@@ -4975,12 +4975,17 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
         }
     } else {
         if (allowedUserIds.length > 0) {
-            if (["ui_case", "pt_case", "eq_case"].includes(template_module)) {
+            if (["ui_case", "pt_case"].includes(template_module)) {
             whereClause[Op.or] = [
                 { created_by_id: { [Op.in]: normalizedUserIds } },
                 { field_io_name: { [Op.in]: normalizedUserIds } },
             ];
-            } else {
+            } else if (["eq_case"].includes(template_module)) {
+            whereClause[Op.or] = [
+                { created_by_id: { [Op.in]: normalizedUserIds } },
+                { field_name_of_the_io: { [Op.in]: normalizedUserIds } },
+            ];
+            }else {
             whereClause["created_by_id"] = { [Op.in]: normalizedUserIds };
             }
         }
