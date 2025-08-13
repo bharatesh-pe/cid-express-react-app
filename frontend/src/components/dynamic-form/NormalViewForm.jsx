@@ -4093,9 +4093,13 @@ const handleTableDataChange = (field, data) => {
             setActionCases([]);
             if (newValue?.code) {
               try {
+                let templateModuleToSend = "ui_case";
+                if (investigationAction?.name?.trim()?.toLowerCase() === "eo") {
+                    templateModuleToSend = "eq_case";
+                }
                 const response = await api.post("cidMaster/getSpecificIoUsersCases", {
                   user_id: String(newValue.code),
-                  template_module: "ui_case",
+                  template_module: templateModuleToSend,
                 });
 
                 console.log("initialData from cases:", initialData.id);
@@ -4130,7 +4134,7 @@ const handleTableDataChange = (field, data) => {
             </FormControl>
 
             <div style={{ marginTop: 16}}>
-              <h4 className="form-field-heading">Selected IO handling Case Details</h4>
+              <h4 className="form-field-heading">  Selected {investigationAction?.name?.trim()?.toLowerCase() === "eo" ? "EO" : "IO"} handling Case Details</h4>
               <div style={{ }}>
               <TableView
                 rows={actionCases
