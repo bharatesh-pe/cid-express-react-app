@@ -156,17 +156,41 @@ export default function TableView({rows, columns, checkboxSelection,getRowId, ba
             sx={{ display: "flex", alignItems: "start", height: "40px" }}
             disabled={
                 (
-                    (selectedRow && "field_io_name" in selectedRow &&
-                    selectedRow.field_io_name === null &&
-                    option?.name?.toLowerCase() !== "assign to io")
-                    ||
-                    (selectedRow && "field_name_of_the_io" in selectedRow &&
-                    selectedRow.field_name_of_the_io === null &&
-                    option?.name?.toLowerCase() !== "assign to eo")
+                    selectedRow &&
+                    (
+                        (
+                            "field_io_name" in selectedRow &&
+                            selectedRow.field_io_name === null &&
+                            selectedRow.field_approval_done_by !== "DIG" &&
+                            option?.name?.toLowerCase() !== "assign to io"
+                        )
+                        ||
+                        (
+                            "field_name_of_the_io" in selectedRow &&
+                            selectedRow.field_name_of_the_io === null &&
+                            selectedRow.field_approval_done_by !== "DIG" &&
+                            option?.name?.toLowerCase() !== "assign to eo"
+                        )
+                        ||
+                        (
+                            "field_io_name" in selectedRow &&
+                            selectedRow.field_io_name !== null &&
+                            selectedRow.field_approval_done_by !== "DIG" &&
+                            option?.name?.toLowerCase() !== "assign to io"
+                        )
+                        ||
+                        (
+                            "field_name_of_the_io" in selectedRow &&
+                            selectedRow.field_name_of_the_io !== null &&
+                            selectedRow.field_approval_done_by !== "DIG" &&
+                            option?.name?.toLowerCase() !== "assign to eo"
+                        )
+                    )
                 )
                 ||
                 option?.disabled === true
             }
+
             >
             {option?.icon ? (
                 typeof option.icon === "function" ? (

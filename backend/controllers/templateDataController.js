@@ -2521,12 +2521,26 @@ exports.getTemplateData = async (req, res, next) => {
       Object.entries(filter).forEach(([key, value]) => {
         if (fields[key] && value !== null && value !== undefined) {
           const fieldType = fields[key].type.key;
+          const uiFieldConfig = schema.find(f => f.name === key);
+          const uiType = uiFieldConfig?.type || null;
 
-          if (fieldType === 'STRING' || fieldType === 'TEXT') {
+          if (uiType === 'date' || fieldType === 'DATE') {
+            const date = new Date(value);
+            const startOfDay = new Date(date.setHours(0, 0, 0, 0));
+            const endOfDay = new Date(date.setHours(23, 59, 59, 999));
+            whereClause[key] = { [Op.between]: [startOfDay, endOfDay] };
+
+          }else if (uiType === 'datetime' || fieldType === 'DATETIME' || fieldType === 'TIMESTAMP') {
+            const date = new Date(value);
+            const startOfDay = new Date(date.setHours(0, 0, 0, 0));
+            const endOfDay = new Date(date.setHours(23, 59, 59, 999));
+            whereClause[key] = { [Op.between]: [startOfDay, endOfDay] };
+          }
+          else if (fieldType === 'STRING' || fieldType === 'TEXT') {
             whereClause[key] = String(value);
           } else if (['INTEGER', 'FLOAT', 'DOUBLE'].includes(fieldType)) {
             whereClause[key] = Number(value);
-          } else {
+          }else {
             whereClause[key] = value;
           }
         }
