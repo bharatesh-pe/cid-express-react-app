@@ -621,18 +621,20 @@ const getSpecificIoUsersCases = async (req, res) => {
         }
 
         let table_name = "";
+        let ioField = "field_io_name"
         if (template_module === "ui_case") {
             table_name = "cid_under_investigation";
         } else if (template_module === "pt_case") {
             table_name = "cid_pending_trial";
         } else if (template_module === "eq_case") {
             table_name = "cid_enquiry";
+            ioField = "field_name_of_the_io";
         } else {
             return res.status(400).json({ message: "Invalid template module." });
         }
 
         const cases = await sequelize.query(
-            `SELECT * FROM ${table_name} WHERE field_io_name = :userID`,
+            `SELECT * FROM ${table_name} WHERE ${ioField} = :userID`,
             {
                 replacements: { userID: user_id },
                 type: sequelize.QueryTypes.SELECT
