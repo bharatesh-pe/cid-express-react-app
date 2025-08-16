@@ -6,7 +6,7 @@ import InfoIcon from '@mui/icons-material/Info';
 import HistoryIcon from '@mui/icons-material/History';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 
-const SelectField = ({ field, formData, errors, onChange, onFocus, isFocused, onHistory, readOnly, viewLinkedTemplate }) => {
+const SelectField = ({ field, formData, errors, onChange, onFocus, isFocused, onHistory, readOnly, viewLinkedTemplate ,hideLinkModule = false}) => {
   return (
     <Box sx={{width: '100%'}}>
       {field.heading && <h4 className={`form-field-heading ${readOnly || field.disabled ? 'disabled' : ''}`}>{field.heading}</h4>}
@@ -156,7 +156,7 @@ const SelectField = ({ field, formData, errors, onChange, onFocus, isFocused, on
           {errors?.[field.name] || field.supportingText || ' '}
         </FormHelperText>
         {
-            field?.linkModule && (
+            field?.linkModule && !hideLinkModule && (
                 <Tooltip title="" arrow placement="top">
                     <Box
                         onClick={()=> viewLinkedTemplate && viewLinkedTemplate(field)}

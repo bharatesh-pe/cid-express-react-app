@@ -4391,6 +4391,7 @@ const fetchCounts = async () => {
                                         onChange={(value) =>
                                             handleAutocomplete(field, value.target.value, true)
                                         }
+                                        hideLinkModule={true}   
                                         />
                                     </div>
                                     </Grid>
@@ -4406,6 +4407,7 @@ const fetchCounts = async () => {
                                         onChange={(name, selectedCode) =>
                                             handleAutocomplete(field, selectedCode, true)
                                         }
+                                        hideLinkModule={true}   
                                     />
                                     </Grid>
                                 );
@@ -4420,6 +4422,7 @@ const fetchCounts = async () => {
                                         onChange={(name, selectedCode) =>
                                             handleAutocomplete(field, selectedCode, true)
                                         }
+                                        hideLinkModule={true}   
                                     />
                                     </Grid>
                                 );
