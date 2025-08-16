@@ -8,7 +8,7 @@ import InfoIcon from '@mui/icons-material/Info';
 import HistoryIcon from '@mui/icons-material/History';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 
-export default function AutocompleteField({ formData, errors, field, onFocus, isFocused, onChange, onHistory, value, disabled, readOnly, viewLinkedTemplate }) {
+export default function AutocompleteField({ formData, errors, field, onFocus, isFocused, onChange, onHistory, value, disabled, readOnly, viewLinkedTemplate,hideLinkModule = false }) {
     return (
         <Box sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
             {field.heading && 
@@ -117,7 +117,7 @@ export default function AutocompleteField({ formData, errors, field, onFocus, is
             </FormHelperText>
 
             {
-                field?.linkModule && (
+                field?.linkModule && !hideLinkModule && (
                     <Tooltip title="" arrow placement="top">
                         <Box
                             onClick={()=> viewLinkedTemplate && viewLinkedTemplate(field)}

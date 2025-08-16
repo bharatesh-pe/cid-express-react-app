@@ -771,7 +771,10 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                         if (hasIO) {
                             anySubmitAP = true;
                             isSuperivisor = supervisorRecords.length > 0;
+                        }else {
+                            anySubmitAP = false;
                         }
+
 
                         setShowSubmitAPButton(anySubmitAP);
                         setIsImmediateSupervisior(isSuperivisor);
@@ -3068,7 +3071,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                                     </Button>
                                 )}
                                 {
-                                    userPermissions && userPermissions?.[0]?.['bulk_upload'] === true &&
+                                    !showSubmitAPButton && userPermissions && userPermissions?.[0]?.['bulk_upload'] === true &&
                                     <Button
                                         variant="contained"
                                         color="success"
