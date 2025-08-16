@@ -1511,27 +1511,27 @@ const CaseDairy = ({headerDetails, backToForm, showMagazineView, rowData, select
                                         </Grid>
                                     );
                                                        
-                                case "time":
-                                    return (
-                                        <Grid item xs={12} md={6} p={2} key={field.id}>
-                                            <div className="form-field-wrapper_selectedField">
-                                                <TimeField
-                                                    key={field.id}
-                                                    field={field}
-                                                    formData={othersFilterData}
-                                                    onChange={(time) => {
-                                                        const formattedTime = time
-                                                            ? dayjs(time).format("HH:mm:ss")
-                                                            : null;
-                                                        setOthersFilterData((prev) => ({
-                                                            ...prev,
-                                                            [field.name]: formattedTime,
-                                                        }));
-                                                    }}
-                                                />
-                                            </div>
-                                        </Grid>
-                                    );
+                                // case "time":
+                                //     return (
+                                //         <Grid item xs={12} md={6} p={2} key={field.id}>
+                                //             <div className="form-field-wrapper_selectedField">
+                                //                 <TimeField
+                                //                     key={field.id}
+                                //                     field={field}
+                                //                     formData={othersFilterData}
+                                //                     onChange={(time) => {
+                                //                         const formattedTime = time
+                                //                             ? dayjs(time).format("HH:mm:ss")
+                                //                             : null;
+                                //                         setOthersFilterData((prev) => ({
+                                //                             ...prev,
+                                //                             [field.name]: formattedTime,
+                                //                         }));
+                                //                     }}
+                                //                 />
+                                //             </div>
+                                //         </Grid>
+                                //     );
 
                             }
                             })}
