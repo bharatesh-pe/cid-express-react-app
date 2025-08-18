@@ -2923,7 +2923,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                             onClick={() => backNavigation()}
                         >
                             <WestIcon />
-                            <Typography variant="body1" fontWeight={500}>
+                            <Typography sx={{textWrap: 'nowrap'}} variant="body1" fontWeight={500}>
                                 {selectedOtherTemplate?.name}
                             </Typography>
 
@@ -3035,8 +3035,6 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                                         display: 'flex',
                                         flexWrap: 'wrap',
                                         gap: 1.5,
-                                        justifyContent: 'flex-end',
-                                        marginLeft: 'auto',
                                     }}
                                 >
 
@@ -3198,17 +3196,20 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                     </Box>
 
                     {/* Data Table */}
-                    <TableView
-                        rows={otherTemplateData}
-                        columns={otherTemplateColumn}
-                        totalPage={otherTemplatesTotalPage}
-                        totalRecord={otherTemplatesTotalRecord}
-                        paginationCount={otherTemplatesPaginationCount}
-                        handlePagination={handleOtherPagination}
-                        tableName={selectedOtherTemplate?.table}
-                        dynamicRowHeight={true}
-                        shouldPadRows={true}
-                    />
+                    <Box sx={{width: '75%'}}>
+                        <TableView
+                            rows={otherTemplateData}
+                            columns={otherTemplateColumn}
+                            totalPage={otherTemplatesTotalPage}
+                            totalRecord={otherTemplatesTotalRecord}
+                            paginationCount={otherTemplatesPaginationCount}
+                            handlePagination={handleOtherPagination}
+                            tableName={selectedOtherTemplate?.table}
+                            dynamicRowHeight={true}
+                            shouldPadRows={true}
+                        />
+                    </Box>
+
                 </Box>
             </Box>
         </Box>
