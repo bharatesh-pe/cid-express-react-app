@@ -430,6 +430,12 @@ const LokayuktaView = () => {
         setActiveSidebar(item);
         setFormOpen(false);
         setSelectedTableTabs('all');
+
+        setTableSearchValue("");
+        setTableFilterOtherFilters({});
+        setTableFilterFromDate(null);
+        setTableFilterToDate(null);
+
         if(item?.viewAction){
             setTableViewFlag(false);
             setTemplateId(template_id);
@@ -447,7 +453,7 @@ const LokayuktaView = () => {
             setTableViewFlag(true);
             setCurrentTableName(null);
             setSecondTableName(null);
-            getTableData(item);
+            getTableData(item, false, true);
         }
     }
 
