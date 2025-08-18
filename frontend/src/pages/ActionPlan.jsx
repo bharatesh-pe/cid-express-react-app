@@ -2967,7 +2967,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
 
                         {/* Actions Section */}
                         <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                            <Box sx={{ display: 'flex', alignItems: 'start', justifyContent: 'space-between', gap: '12px' }}>
+                            <Box sx={{ display: 'flex', alignItems: 'start', justifyContent: 'end', flexWrap: 'wrap', gap: '12px' }}>
                                 <Box></Box>
 
                                 <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'end' }}>
