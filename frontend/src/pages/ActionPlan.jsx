@@ -869,7 +869,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                                 return {
                                     field: key,
                                     headerName: updatedKeyName || "",
-                                    width: 540,
+                                    flex: 1,
                                     // cellClassName: 'wrap-cell',
                                     resizable: true,
                                     renderHeader: () => (
