@@ -432,9 +432,12 @@ const LokayuktaView = () => {
         setSelectedTableTabs('all');
 
         setTableSearchValue("");
-        setTableFilterOtherFilters({});
-        setTableFilterFromDate(null);
         setTableFilterToDate(null);
+        setTableFilterFromDate(null);
+        setTableFilterOtherFilters({});
+        setOthersFilterData({});
+        setOthersFromDate(null);
+        setOthersToDate(null);
 
         if(item?.viewAction){
             setTableViewFlag(false);

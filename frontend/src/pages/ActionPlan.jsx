@@ -761,7 +761,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                         );
                     
                     } else {
-                        const fallbackPayload = { ...getTemplatePayload, filter: {}, from_date: null, to_date: null };
+                        const fallbackPayload = { ...getTemplatePayload, search: "", filter: {}, from_date: null, to_date: null };
                         const fallbackResponse = await api.post("/templateData/getTemplateData", fallbackPayload);
                         const fallbackRecords = fallbackResponse?.data || [];
 
