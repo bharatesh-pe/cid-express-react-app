@@ -5,7 +5,7 @@ import InfoIcon from '@mui/icons-material/Info';
 import HistoryIcon from '@mui/icons-material/History';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 
-const MultiSelect = ({ field, formData, errors, onChange, onFocus, isFocused, onHistory, disabled, readOnly, viewLinkedTemplate }) => {
+const MultiSelect = ({ field, formData, errors, onChange, onFocus, isFocused, onHistory, disabled, readOnly, viewLinkedTemplate,hideLinkModule = false }) => {
 
     let multiSelectValue = [];
 
@@ -117,7 +117,7 @@ const MultiSelect = ({ field, formData, errors, onChange, onFocus, isFocused, on
                 {errors?.[field?.name] || field?.supportingText || ''}
             </FormHelperText>
             {
-                field?.linkModule && (
+                field?.linkModule && !hideLinkModule && (
                     <Tooltip title="" arrow placement="top">
                         <Box
                             onClick={()=> viewLinkedTemplate && viewLinkedTemplate(field)}

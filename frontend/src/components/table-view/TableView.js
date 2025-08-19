@@ -122,7 +122,7 @@ export default function TableView({rows, columns, checkboxSelection,getRowId, ba
         {[
         ...(hoverTableOptions || [])
             // Hide "assign to io" option on hover
-            .filter(option => option?.name?.toLowerCase() !== "assign to io")
+            .filter(option => option?.name?.toLowerCase() !== "assign to io" || option?.name?.toLowerCase() !== "assign to eo")
             .map((option) => {
                 const isCaseExtension = option.name?.toLowerCase() === "case extension approve" || option.name?.toLowerCase() === "case extension request";
                 const shouldDisable =
@@ -137,7 +137,7 @@ export default function TableView({rows, columns, checkboxSelection,getRowId, ba
         ...(selectedRow?.extraHoverOptions || []),
         ].map((option, index) => {
         if (
-            option?.name?.toLowerCase() === "assign to io"
+            option?.name?.toLowerCase() === "assign to io" || option?.name?.toLowerCase() === "assign to eo"
         ) {
             return null;
         }
@@ -154,7 +154,43 @@ export default function TableView({rows, columns, checkboxSelection,getRowId, ba
                 if (!option.disabled) handleHoverOptionClick(option);
             }}
             sx={{ display: "flex", alignItems: "start", height: "40px" }}
-            disabled={selectedRow?.field_io_name == null && option?.name.toLowerCase() !== "assign to io" || option.disabled === true}
+            disabled={
+                (
+                    selectedRow &&
+                    (
+                        (
+                            "field_io_name" in selectedRow &&
+                            selectedRow.field_io_name === null &&
+                            selectedRow.field_approval_done_by !== "DIG" &&
+                            option?.name?.toLowerCase() !== "assign to io"
+                        )
+                        ||
+                        (
+                            "field_name_of_the_io" in selectedRow &&
+                            selectedRow.field_name_of_the_io === null &&
+                            selectedRow.field_approval_done_by !== "DIG" &&
+                            option?.name?.toLowerCase() !== "assign to eo"
+                        )
+                        ||
+                        (
+                            "field_io_name" in selectedRow &&
+                            selectedRow.field_io_name !== null &&
+                            selectedRow.field_approval_done_by !== "DIG" &&
+                            option?.name?.toLowerCase() !== "assign to io"
+                        )
+                        ||
+                        (
+                            "field_name_of_the_io" in selectedRow &&
+                            selectedRow.field_name_of_the_io !== null &&
+                            selectedRow.field_approval_done_by !== "DIG" &&
+                            option?.name?.toLowerCase() !== "assign to eo"
+                        )
+                    )
+                )
+                ||
+                option?.disabled === true
+            }
+
             >
             {option?.icon ? (
                 typeof option.icon === "function" ? (

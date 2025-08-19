@@ -70,6 +70,8 @@ import ApprovalModal from '../components/dynamic-form/ApprovalModalForm';
 import GenerateProfilePdf from "./GenerateProfilePdf";
 import WestIcon from '@mui/icons-material/West';
 import FileInput from "../components/form/FileInput";
+import DateTimeField from "../components/form/DateTime";
+import TimeField from "../components/form/Time";
 
 const UnderInvestigation = () => {
   const location = useLocation();
@@ -603,7 +605,7 @@ const UnderInvestigation = () => {
         
             if (viewTemplateResponse && viewTemplateResponse.success && viewTemplateResponse.data) {
                 var templateFields = viewTemplateResponse.data["fields"] ? viewTemplateResponse.data["fields"] : [];
-                var validFilterFields = ["dropdown", "autocomplete", "multidropdown"];
+                var validFilterFields = ["dropdown", "autocomplete", "multidropdown", "date", "datetime", "time",];
         
                 var getOnlyDropdown = templateFields.filter((element) => validFilterFields.includes(element.type)).map((field) => {
                     const existingField = filterDropdownObj?.find(
@@ -6198,7 +6200,7 @@ const UnderInvestigation = () => {
           ? viewTemplateResponse.data["fields"]
           : [];
 
-        var validFilterFields = ["dropdown", "autocomplete", "multidropdown"];
+        var validFilterFields = ["dropdown", "autocomplete", "multidropdown", "date", "datetime", "time"];
 
         var getOnlyDropdown = templateFields
           .filter((element) => validFilterFields.includes(element.type))
@@ -7742,6 +7744,7 @@ const UnderInvestigation = () => {
                 <DialogContentText id="alert-dialog-description">
                     <Grid container sx={{ alignItems: "center" }}>
                         <Grid item xs={12} md={6} p={2}>
+                           <h4 className="form-field-heading">From Date</h4>
                             <LocalizationProvider dateAdapter={AdapterDayjs}>
                                 <DatePicker
                                     format="DD-MM-YYYY"
@@ -7758,6 +7761,7 @@ const UnderInvestigation = () => {
                         </Grid>
 
                         <Grid item xs={12} md={6} p={2}>
+                          <h4 className="form-field-heading">To Date</h4>
                             <LocalizationProvider dateAdapter={AdapterDayjs}>
                                 <DatePicker
                                     format="DD-MM-YYYY"
@@ -7775,6 +7779,10 @@ const UnderInvestigation = () => {
 
                         {othersFiltersDropdown.map((field) => {
                             if (field?.hide_from_ux) {
+                                return null;
+                            }
+
+                            if (!field?.table_display_content) {
                                 return null;
                             }
                             switch (field.type) {
@@ -7819,6 +7827,25 @@ const UnderInvestigation = () => {
                                             handleAutocomplete(field, selectedCode, true)
                                         }
                                     />
+                                    </Grid>
+                                );
+                                case "date":
+                                return (
+                                    <Grid item xs={12} md={6} p={2} key={field.id}>
+                                        <div className="form-field-wrapper_selectedField">
+                                            <DateField
+                                                key={field.id}
+                                                field={field}
+                                                formData={othersFilterData}
+                                                 onChange={(date) => {
+                                                  const formattedDate = date ? dayjs(date).format("YYYY-MM-DD") : null;
+                                                  setOthersFilterData((prev) => ({
+                                                    ...prev,
+                                                    [field.name]: formattedDate,
+                                                  }));
+                                                }}
+                                            />
+                                        </div>
                                     </Grid>
                                 );
                         }
@@ -8058,6 +8085,7 @@ const UnderInvestigation = () => {
             <DialogContentText id="alert-dialog-description">
               <Grid container sx={{ alignItems: "center" }}>
                 <Grid item xs={12} md={6} p={2}>
+                   <h4 className="form-field-heading">From Date</h4>
                   <LocalizationProvider dateAdapter={AdapterDayjs}>
                     <DatePicker
                       format="DD-MM-YYYY"
@@ -8074,6 +8102,7 @@ const UnderInvestigation = () => {
                 </Grid>
 
                 <Grid item xs={12} md={6} p={2}>
+                  <h4 className="form-field-heading">To Date</h4>
                   <LocalizationProvider dateAdapter={AdapterDayjs}>
                     <DatePicker
                       format="DD-MM-YYYY"
@@ -8134,6 +8163,70 @@ const UnderInvestigation = () => {
                           />
                         </Grid>
                       );
+
+                      case "date":
+                        return (
+                            <Grid item xs={12} md={6} p={2} key={field.id}>
+                                <div className="form-field-wrapper_selectedField">
+                                    <DateField
+                                        key={field.id}
+                                        field={field}
+                                        formData={filterValues}
+                                          onChange={(date) => {
+                                          const formattedDate = date ? dayjs(date).format("YYYY-MM-DD") : null;
+                                          setOthersFilterData((prev) => ({
+                                            ...prev,
+                                            [field.name]: formattedDate,
+                                          }));
+                                        }}
+                                    />
+                                </div>
+                            </Grid>
+                      );
+                      case "datetime":
+                        return (
+                            <Grid item xs={12} md={6} p={2} key={field.id}>
+                                <div className="form-field-wrapper_selectedField">
+                                    <DateTimeField
+                                        key={field.id}
+                                        field={field}
+                                        formData={filterValues}
+                                        onChange={(date) => {
+                                            const formattedDateTime = date
+                                                ? dayjs(date).format("YYYY-MM-DD HH:mm:ss")
+                                                : null;
+                                            setFilterValues((prev) => ({
+                                                ...prev,
+                                                [field.name]: formattedDateTime,
+                                            }));
+                                        }}
+                                    />
+                                </div>
+                            </Grid>
+                        );
+                       
+                      // case "time":
+                      //     return (
+                      //         <Grid item xs={12} md={6} p={2} key={field.id}>
+                      //             <div className="form-field-wrapper_selectedField">
+                      //                 <TimeField
+                      //                     key={field.id}
+                      //                     field={field}
+                      //                     formData={filterValues}
+                      //                     onChange={(time) => {
+                      //                         const formattedTime = time
+                      //                             ? dayjs(time).format("HH:mm:ss")
+                      //                             : null;
+                      //                         setFilterValues((prev) => ({
+                      //                             ...prev,
+                      //                             [field.name]: formattedTime,
+                      //                         }));
+                      //                     }}
+                      //                 />
+                      //             </div>
+                      //         </Grid>
+                      //     );
+
                   }
                 })}
               </Grid>

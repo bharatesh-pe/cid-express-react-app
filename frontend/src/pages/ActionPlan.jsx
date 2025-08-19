@@ -39,6 +39,14 @@ import ShortText from "../components/form/ShortText";
 import DateField from "../components/form/Date";
 import WestIcon from '@mui/icons-material/West';
 import { CircularProgress } from "@mui/material";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import SelectField from "../components/form/Select";
+import dayjs from "dayjs";
+import DateTimeField from "../components/form/DateTime";
+import TimeField from "../components/form/Time";
+
 
 const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowData, backNavigation, showMagazineView, fetchCounts}) => {
 
@@ -120,6 +128,9 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
     const [randomApprovalId, setRandomApprovalId] = useState(0);
     const hoverTableOptionsRef = useRef([]);
     const [childTables, setChildTables] = useState([]);
+
+    const [cachedSysStatus, setCachedSysStatus] = useState("");
+    const [cachedSubmitStatus, setCachedSubmitStatus] = useState("");
 
     const [actionPlanData, setActionPlanData] = useState([])
     const loadValueField = async (rowData, editData, table_name) => {
@@ -750,7 +761,24 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                         );
                     
                     } else {
-                        anySubmitAP = false;
+                        const fallbackPayload = { ...getTemplatePayload, search: "", filter: {}, from_date: null, to_date: null };
+                        const fallbackResponse = await api.post("/templateData/getTemplateData", fallbackPayload);
+                        const fallbackRecords = fallbackResponse?.data || [];
+
+                        const hasIO = fallbackRecords.some(record => record.sys_status === "IO");
+                        const supervisorRecords = fallbackRecords.filter(record => record.supervisior_designation_id == userDesigId);
+                        
+                        if (hasIO) {
+                            anySubmitAP = true;
+                            isSuperivisor = supervisorRecords.length > 0;
+                        }else {
+                            anySubmitAP = false;
+                        }
+
+
+                        setShowSubmitAPButton(anySubmitAP);
+                        setIsImmediateSupervisior(isSuperivisor);
+                        setAPIsSubmited(false);
                     }
 
                     
@@ -841,7 +869,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                                 return {
                                     field: key,
                                     headerName: updatedKeyName || "",
-                                    width: 540,
+                                    flex: 1,
                                     // cellClassName: 'wrap-cell',
                                     resizable: true,
                                     renderHeader: () => (
@@ -1599,6 +1627,11 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
         }
     };
 
+    const setOtherFilterData = () => {
+        setOtherTemplatesPaginationCount(1);
+        setOthersFilterModal(false);
+        handleOtherTemplateActions(selectedOtherTemplate, selectedRowData)
+    };
     const handleOthersFilter = async (selectedOptions)=>{
 
         if(!selectedOptions?.table){
@@ -2690,6 +2723,14 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
         // Example: toast.info(`Clicked step: ${step}`);
     };
 
+    useEffect(() => {
+  if (actionPlanData.length > 0) {
+    setCachedSysStatus(actionPlanData[0].sys_status);
+    setCachedSubmitStatus(actionPlanData[0].field_submit_status);
+  }
+}, [actionPlanData]);
+
+
     return (
         <>
         <Box sx={{  overflow: 'auto' , height: '100vh'}}>
@@ -2713,8 +2754,8 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                         let alreadySubmited = false;
                         let nextStageStep = false;
 
-                        let sysStatus = actionPlanData[0]?.sys_status;
-                        let fieldSubmitStatus = actionPlanData[0]?.field_submit_status;
+                        let sysStatus = actionPlanData[0]?.sys_status || cachedSysStatus;
+                        let fieldSubmitStatus = actionPlanData[0]?.field_submit_status || cachedSubmitStatus;
                         let stepLower = step.toLowerCase();
                         // If sys_status is IO, mark IO as submitted
                         if (sysStatus === "IO" && stepLower === "io") {
@@ -2882,7 +2923,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                             onClick={() => backNavigation()}
                         >
                             <WestIcon />
-                            <Typography variant="body1" fontWeight={500}>
+                            <Typography sx={{textWrap: 'nowrap'}} variant="body1" fontWeight={500}>
                                 {selectedOtherTemplate?.name}
                             </Typography>
 
@@ -2926,7 +2967,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
 
                         {/* Actions Section */}
                         <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                            <Box sx={{ display: 'flex', alignItems: 'start', justifyContent: 'space-between', gap: '12px' }}>
+                            <Box sx={{ display: 'flex', alignItems: 'start', justifyContent: 'end', flexWrap: 'wrap', gap: '12px' }}>
                                 <Box></Box>
 
                                 <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'end' }}>
@@ -2937,16 +2978,16 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                                                     <SearchIcon sx={{ color: "#475467" }} />
                                                 </InputAdornment>
                                             ),
-                                            // endAdornment: (
-                                            //     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                                            //         <IconButton
-                                            //             sx={{ px: 1, borderRadius: 0 }}
-                                            //             onClick={() => handleOthersFilter(selectedOtherTemplate)}
-                                            //         >
-                                            //             <FilterListIcon sx={{ color: "#475467" }} />
-                                            //         </IconButton>
-                                            //     </Box>
-                                            // ),
+                                            endAdornment: (
+                                                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                                    <IconButton
+                                                        sx={{ px: 1, borderRadius: 0 }}
+                                                        onClick={() => handleOthersFilter(selectedOtherTemplate)}
+                                                    >
+                                                        <FilterListIcon sx={{ color: "#475467" }} />
+                                                    </IconButton>
+                                                </Box>
+                                            ),
                                         }}
                                         onInput={(e) => setOtherSearchValue(e.target.value)}
                                         value={otherSearchValue}
@@ -2984,7 +3025,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                                                 mt: 1,
                                             }}
                                         >
-                                            Clear Search
+                                            View all/Clear filter
                                         </Typography>
                                     )}
                                 </Box>
@@ -2994,8 +3035,6 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                                         display: 'flex',
                                         flexWrap: 'wrap',
                                         gap: 1.5,
-                                        justifyContent: 'flex-end',
-                                        marginLeft: 'auto',
                                     }}
                                 >
 
@@ -3030,7 +3069,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                                     </Button>
                                 )}
                                 {
-                                    userPermissions && userPermissions?.[0]?.['bulk_upload'] === true &&
+                                    !showSubmitAPButton && userPermissions && userPermissions?.[0]?.['bulk_upload'] === true &&
                                     <Button
                                         variant="contained"
                                         color="success"
@@ -3157,17 +3196,20 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                     </Box>
 
                     {/* Data Table */}
-                    <TableView
-                        rows={otherTemplateData}
-                        columns={otherTemplateColumn}
-                        totalPage={otherTemplatesTotalPage}
-                        totalRecord={otherTemplatesTotalRecord}
-                        paginationCount={otherTemplatesPaginationCount}
-                        handlePagination={handleOtherPagination}
-                        tableName={selectedOtherTemplate?.table}
-                        dynamicRowHeight={true}
-                        shouldPadRows={true}
-                    />
+                    <Box sx={{width: '75%'}}>
+                        <TableView
+                            rows={otherTemplateData}
+                            columns={otherTemplateColumn}
+                            totalPage={otherTemplatesTotalPage}
+                            totalRecord={otherTemplatesTotalRecord}
+                            paginationCount={otherTemplatesPaginationCount}
+                            handlePagination={handleOtherPagination}
+                            tableName={selectedOtherTemplate?.table}
+                            dynamicRowHeight={true}
+                            shouldPadRows={true}
+                        />
+                    </Box>
+
                 </Box>
             </Box>
         </Box>
@@ -3290,6 +3332,141 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                     </DialogContent>
                 </Dialog>
         }
+
+        {othersFilterModal && (
+            <Dialog
+                open={othersFilterModal}
+                onClose={() => setOthersFilterModal(false)}
+                aria-labelledby="alert-dialog-title"
+                aria-describedby="alert-dialog-description"
+                maxWidth="md"
+                fullWidth
+            >
+
+                <DialogTitle
+                    id="alert-dialog-title"
+                    sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                    }}
+                >
+                    Filter
+                    <IconButton
+                        aria-label="close"
+                        onClick={() => setOthersFilterModal(false)}
+                        sx={{ color: (theme) => theme.palette.grey[500] }}
+                    >
+                        <CloseIcon />
+                    </IconButton>
+                </DialogTitle>
+
+            <DialogContent sx={{ minWidth: "400px" }}>
+                <DialogContentText id="alert-dialog-description">
+                    <Grid container sx={{ alignItems: "center" }}>
+                        <Grid item xs={12} md={6} p={2}>
+                             <h4 className="form-field-heading">From Date</h4>
+                            <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                <DatePicker
+                                    format="DD-MM-YYYY"
+                                    sx={{
+                                        width: "100%",
+                                    }}
+                                    label="From Date"
+                                    value={othersFromDate ? dayjs(othersFromDate) : null}
+                                    onChange={(e) =>
+                                        setOthersFromDate(e ? e.format("YYYY-MM-DD") : null)
+                                    }
+                                />
+                            </LocalizationProvider>
+                        </Grid>
+
+                        <Grid item xs={12} md={6} p={2}>
+                             <h4 className="form-field-heading">To Date</h4>
+                            <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                <DatePicker
+                                    format="DD-MM-YYYY"
+                                    sx={{
+                                        width: "100%",
+                                    }}
+                                    label="To Date"
+                                    value={othersToDate ? dayjs(othersToDate) : null}
+                                    onChange={(e) =>
+                                        setOthersToDate(e ? e.format("YYYY-MM-DD") : null)
+                                    }
+                                />
+                            </LocalizationProvider>
+                        </Grid>
+
+                        {othersFiltersDropdown.map((field) => {
+                            if (field?.hide_from_ux) {
+                                return null;
+                            }
+
+                            if (!field?.table_display_content) {
+                                return null;
+                            }
+                            switch (field.type) {
+                                case "dropdown":
+                                return (
+                                    <Grid item xs={12} md={6} p={2}>
+                                    <div className="form-field-wrapper_selectedField">
+                                        <SelectField
+                                        key={field.id}
+                                        field={field}
+                                        formData={othersFilterData}
+                                        onChange={(value) =>
+                                            handleAutocomplete(field, value.target.value, true)
+                                        }
+                                        />
+                                    </div>
+                                    </Grid>
+                                );
+
+                                case "multidropdown":
+                                return (
+                                    <Grid item xs={12} md={6} p={2}>
+                                    <MultiSelect
+                                        key={field.id}
+                                        field={field}
+                                        formData={othersFilterData}
+                                        onChange={(name, selectedCode) =>
+                                            handleAutocomplete(field, selectedCode, true)
+                                        }
+                                    />
+                                    </Grid>
+                                );
+
+                                case "autocomplete":
+                                return (
+                                    <Grid item xs={12} md={6} p={2}>
+                                    <AutocompleteField
+                                        key={field.id}
+                                        field={field}
+                                        formData={othersFilterData}
+                                        onChange={(name, selectedCode) =>
+                                            handleAutocomplete(field, selectedCode, true)
+                                        }
+                                    />
+                                    </Grid>
+                                );
+                        }
+                        })}
+                    </Grid>
+                </DialogContentText>
+            </DialogContent>
+            <DialogActions sx={{ padding: "12px 24px" }}>
+                <Button onClick={() => setOthersFilterModal(false)}>Close</Button>
+                <Button
+                    className="fillPrimaryBtn"
+                    sx={{ minWidth: "100px" }}
+                    onClick={() => setOtherFilterData()}
+                >
+                    Apply
+                </Button>
+            </DialogActions>
+            </Dialog>
+        )}
         </>
     );
 };

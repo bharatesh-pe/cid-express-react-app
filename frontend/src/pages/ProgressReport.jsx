@@ -33,24 +33,31 @@ import FilterListIcon from "@mui/icons-material/FilterList";
 import MultiSelect from "../components/form/MultiSelect";
 import AutocompleteField from "../components/form/AutoComplete";
 import DateField from "../components/form/Date";
+import DateTimeField from "../components/form/DateTime";
+import TimeField from "../components/form/Time";
 import ShortText from "../components/form/ShortText";
 import WestIcon from '@mui/icons-material/West';
 import { Tabs, Tab } from '@mui/material';
 import { CircularProgress } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import SelectField from "../components/form/Select";
+import dayjs from "dayjs";
 
 const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedRowData, backNavigation, showMagazineView ,fetchCounts}) => {
 
-  useEffect(() => {
-    const fetchData = async () => {
-      if (rowId) {
-        await checkPdfEntryStatus(rowId);
-        getUploadedFiles(rowId, options);
-      }
-    };
+  // useEffect(() => {
+  //   const fetchData = async () => {
+  //     if (rowId) {
+  //       // await checkPdfEntryStatus(rowId);
+  //       getUploadedFiles(rowId, options);
+  //     }
+  //   };
 
-    fetchData();
-  }, [rowId]);
+  //   fetchData();
+  // }, [rowId]);
 
   const [selectedTab, setSelectedTab] = useState(0);
   const handleTabChange = (event, newValue) => {
@@ -999,8 +1006,8 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
 
         setOtherTemplateData(updatedTableData);
 
-        if (options.table === "cid_ui_case_progress_report" && options.is_pdf && !fromUploadedFiles) {
-          await checkPdfEntryStatus(selectedRow.id);
+        if (options.table === "cid_ui_case_progress_report" && options.is_pdf && !fromUploadedFiles && selectedTab === 3) {
+          // await checkPdfEntryStatus(selectedRow.id);
           await getUploadedFiles(selectedRow, options);
         }
 
@@ -1578,6 +1585,11 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
     }
   };
 
+  const setOtherFilterData = () => {
+        setOtherTemplatesPaginationCount(1);
+        setOthersFilterModal(false);
+        handleOtherTemplateActions(selectedOtherTemplate, selectedRowData)
+    };
   const handleOthersFilter = async (selectedOptions) => {
 
     if (!selectedOptions?.table) {
@@ -1603,7 +1615,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
 
       if (viewTemplateResponse && viewTemplateResponse.success && viewTemplateResponse.data) {
         var templateFields = viewTemplateResponse.data["fields"] ? viewTemplateResponse.data["fields"] : [];
-        var validFilterFields = ["dropdown", "autocomplete", "multidropdown"];
+        var validFilterFields = ["dropdown", "autocomplete", "multidropdown", "date", "datetime", "time", ];
 
         var getOnlyDropdown = templateFields.filter((element) => validFilterFields.includes(element.type)).map((field) => {
           const existingField = filterDropdownObj?.find(
@@ -1659,6 +1671,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
       }
     }
   };
+  
 
   const handleOtherClear = () => {
     setOtherSearchValue('');
@@ -2041,7 +2054,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
       if (response.success) {
         Swal.fire("Success", "File uploaded successfully.", "success");
         setSelectedTab(1);
-        checkPdfEntryStatus(caseId);
+        // checkPdfEntryStatus(caseId);
         getUploadedFiles(selectedRowData);
       } else {
         Swal.fire("Error", response.message || "Upload failed.", "error");
@@ -2942,16 +2955,16 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
                                 <SearchIcon sx={{ color: "#475467" }} />
                                 </InputAdornment>
                             ),
-                            // endAdornment: (
-                            //     <Box sx={{ display: "flex", alignItems: "center" }}>
-                            //     <IconButton
-                            //         sx={{ px: 1, borderRadius: 0 }}
-                            //         onClick={() => handleOthersFilter(selectedOtherTemplate)}
-                            //     >
-                            //         <FilterListIcon sx={{ color: "#475467" }} />
-                            //     </IconButton>
-                            //     </Box>
-                            // ),
+                            endAdornment: (
+                                <Box sx={{ display: "flex", alignItems: "center" }}>
+                                <IconButton
+                                    sx={{ px: 1, borderRadius: 0 }}
+                                    onClick={() => handleOthersFilter(selectedOtherTemplate)}
+                                >
+                                    <FilterListIcon sx={{ color: "#475467" }} />
+                                </IconButton>
+                                </Box>
+                            ),
                             }}
                             onInput={(e) => setOtherSearchValue(e.target.value)}
                             value={otherSearchValue}
@@ -2991,7 +3004,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
                                 textAlign: { xs: 'left', sm: 'right' },
                             }}
                             >
-                            Clear Search
+                            View all/Clear filter
                             </Typography>
                         )}
                         </Box>
@@ -3462,6 +3475,204 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
             </Dialog>
         }
 
+      {othersFilterModal && (
+          <Dialog
+              open={othersFilterModal}
+              onClose={() => setOthersFilterModal(false)}
+              aria-labelledby="alert-dialog-title"
+              aria-describedby="alert-dialog-description"
+              maxWidth="md"
+              fullWidth
+          >
+
+              <DialogTitle
+                  id="alert-dialog-title"
+                  sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                  }}
+              >
+                  Filter
+                  <IconButton
+                      aria-label="close"
+                      onClick={() => setOthersFilterModal(false)}
+                      sx={{ color: (theme) => theme.palette.grey[500] }}
+                  >
+                      <CloseIcon />
+                  </IconButton>
+              </DialogTitle>
+
+          <DialogContent sx={{ minWidth: "400px" }}>
+              <DialogContentText id="alert-dialog-description">
+                  <Grid container sx={{ alignItems: "center" }}>
+                      <Grid item xs={12} md={6} p={2}>
+                         <h4 className="form-field-heading">From Date</h4>
+                          <LocalizationProvider dateAdapter={AdapterDayjs}>
+                              <DatePicker
+                                  format="DD-MM-YYYY"
+                                  sx={{
+                                      width: "100%",
+                                  }}
+                                  label="From Date"
+                                  value={othersFromDate ? dayjs(othersFromDate) : null}
+                                  onChange={(e) =>
+                                      setOthersFromDate(e ? e.format("YYYY-MM-DD") : null)
+                                  }
+                              />
+                          </LocalizationProvider>
+                      </Grid>
+
+                      <Grid item xs={12} md={6} p={2}>
+                          <h4 className="form-field-heading">To Date</h4>
+                          <LocalizationProvider dateAdapter={AdapterDayjs}>
+                              <DatePicker
+                                  format="DD-MM-YYYY"
+                                  sx={{
+                                      width: "100%",
+                                  }}
+                                  label="To Date"
+                                  value={othersToDate ? dayjs(othersToDate) : null}
+                                  onChange={(e) =>
+                                      setOthersToDate(e ? e.format("YYYY-MM-DD") : null)
+                                  }
+                              />
+                          </LocalizationProvider>
+                      </Grid>
+
+                      {othersFiltersDropdown.map((field) => {
+                          if (field?.hide_from_ux) {
+                            return null;
+                          }
+
+                          if (!field?.table_display_content) {
+                            return null;
+                          }
+                          switch (field.type) {
+                              case "dropdown":
+                              return (
+                                  <Grid item xs={12} md={6} p={2}>
+                                  <div className="form-field-wrapper_selectedField">
+                                      <SelectField
+                                      key={field.id}
+                                      field={field}
+                                      formData={othersFilterData}
+                                      onChange={(value) =>
+                                          handleAutocomplete(field, value.target.value, true)
+                                      }
+                                      />
+                                  </div>
+                                  </Grid>
+                              );
+
+                              case "multidropdown":
+                              return (
+                                  <Grid item xs={12} md={6} p={2}>
+                                  <MultiSelect
+                                      key={field.id}
+                                      field={field}
+                                      formData={othersFilterData}
+                                      onChange={(name, selectedCode) =>
+                                          handleAutocomplete(field, selectedCode, true)
+                                      }
+                                  />
+                                  </Grid>
+                              );
+
+                              case "autocomplete":
+                              return (
+                                  <Grid item xs={12} md={6} p={2}>
+                                  <AutocompleteField
+                                      key={field.id}
+                                      field={field}
+                                      formData={othersFilterData}
+                                      onChange={(name, selectedCode) =>
+                                          handleAutocomplete(field, selectedCode, true)
+                                      }
+                                  />
+                                  </Grid>
+                              );
+
+                              case "date":
+                                return (
+                                    <Grid item xs={12} md={6} p={2} key={field.id}>
+                                        <div className="form-field-wrapper_selectedField">
+                                            <DateField
+                                                key={field.id}
+                                                field={field}
+                                                formData={othersFilterData}
+                                                 onChange={(date) => {
+                                                  const formattedDate = date ? dayjs(date).format("YYYY-MM-DD") : null;
+                                                  setOthersFilterData((prev) => ({
+                                                    ...prev,
+                                                    [field.name]: formattedDate,
+                                                  }));
+                                                }}
+                                            />
+                                        </div>
+                                    </Grid>
+                                );
+                                case "datetime":
+                                    return (
+                                        <Grid item xs={12} md={6} p={2} key={field.id}>
+                                            <div className="form-field-wrapper_selectedField">
+                                                <DateTimeField
+                                                    key={field.id}
+                                                    field={field}
+                                                    formData={othersFilterData}
+                                                    onChange={(date) => {
+                                                        const formattedDateTime = date
+                                                            ? dayjs(date).format("YYYY-MM-DD HH:mm:ss")
+                                                            : null;
+                                                        setOthersFilterData((prev) => ({
+                                                            ...prev,
+                                                            [field.name]: formattedDateTime,
+                                                        }));
+                                                    }}
+                                                />
+                                            </div>
+                                        </Grid>
+                                    );
+                                                       
+                                // case "time":
+                                //     return (
+                                //         <Grid item xs={12} md={6} p={2} key={field.id}>
+                                //             <div className="form-field-wrapper_selectedField">
+                                //                 <TimeField
+                                //                     key={field.id}
+                                //                     field={field}
+                                //                     formData={othersFilterData}
+                                //                     onChange={(time) => {
+                                //                         const formattedTime = time
+                                //                             ? dayjs(time).format("HH:mm:ss")
+                                //                             : null;
+                                //                         setOthersFilterData((prev) => ({
+                                //                             ...prev,
+                                //                             [field.name]: formattedTime,
+                                //                         }));
+                                //                     }}
+                                //                 />
+                                //             </div>
+                                //         </Grid>
+                                //     );
+
+                      }
+                      })}
+                  </Grid>
+              </DialogContentText>
+          </DialogContent>
+          <DialogActions sx={{ padding: "12px 24px" }}>
+              <Button onClick={() => setOthersFilterModal(false)}>Close</Button>
+              <Button
+                  className="fillPrimaryBtn"
+                  sx={{ minWidth: "100px" }}
+                  onClick={() => setOtherFilterData()}
+              >
+                  Apply
+              </Button>
+          </DialogActions>
+          </Dialog>
+      )}
     </>
   );
 };

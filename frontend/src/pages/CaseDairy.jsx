@@ -1,11 +1,13 @@
 import React, { useEffect, useRef, useState } from "react";
 
-import { Box, Button, Chip, CircularProgress, IconButton, InputAdornment, Tooltip, Typography } from "@mui/material";
+import { Box, Button,Grid, Chip, CircularProgress, IconButton, InputAdornment, Tooltip, Typography } from "@mui/material";
 
 import {
   Dialog,
   DialogTitle,
   DialogContent,
+  DialogActions,
+  DialogContentText,
 } from '@mui/material';
 
 import { West } from "@mui/icons-material";
@@ -17,15 +19,39 @@ import NormalViewForm from "../components/dynamic-form/NormalViewForm";
 import TableView from "../components/table-view/TableView";
 import api from "../services/api";
 import Swal from "sweetalert2";
-
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import SelectField from "../components/form/Select";
+import MultiSelect from "../components/form/MultiSelect";
+import AutocompleteField from "../components/form/AutoComplete";
+import DateField from "../components/form/Date";
+import DateTimeField from "../components/form/DateTime";
+import TimeField from "../components/form/Time";
+import CloseIcon from '@mui/icons-material/Close';
+import dayjs from "dayjs";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import SearchIcon from "@mui/icons-material/Search";
+import FilterListIcon from "@mui/icons-material/FilterList";
 
-const CaseDairy = ({headerDetails, backToForm, showMagazineView, rowData, module, actionArray}) => {
+const CaseDairy = ({headerDetails, backToForm, showMagazineView, rowData, selectedRowData,module, actionArray, record_id, options}) => {
 
     const [disabledDateArray, setDisabledDateArray] = useState([]);
 
+    const [filterDropdownObj, setfilterDropdownObj] = useState([]);
+    const [othersFilterModal, setOthersFilterModal] = useState(false);
+    const [othersFromDate, setOthersFromDate] = useState(null);
+    const [othersToDate, setOthersToDate] = useState(null);
+    const [othersFiltersDropdown, setOthersFiltersDropdown] = useState([]);
+    const [othersFilterData, setOthersFilterData] = useState({});
+    const [filterValues, setFilterValues] = useState(record_id ? {"record_id": JSON.parse(record_id)} : {});
+    const [selectedOtherTemplate, setselectedOtherTemplate] = useState(options);
+    const [selectedRow, setSelectedRow] = useState(selectedRowData);
+    const [tableFilterToDate, setTableFilterToDate] = useState(null);
+    const [tableFilterFromDate, setTableFilterFromDate] = useState(null);
+    const [tableFilterOtherFilters, setTableFilterOtherFilters] = useState({});
+    
     const [tableColumnData, setTableColumnData] = useState([
         { field: 'sl_no', headerName: 'Sl. No.' },
     ]);
@@ -77,6 +103,9 @@ const CaseDairy = ({headerDetails, backToForm, showMagazineView, rowData, module
             limit : 10,
             page : tablePaginationCount.current,
             search: noFilters ? "" : tableSearchValue,
+            from_date: noFilters?.from_date ?? tableFilterFromDate,
+            to_date: noFilters?.to_date ?? tableFilterToDate,
+            filter: noFilters || tableFilterOtherFilters,
             module: module ? module : 'ui_case',
             checkTabs : true,
         };
@@ -298,6 +327,298 @@ const CaseDairy = ({headerDetails, backToForm, showMagazineView, rowData, module
         }
     }
 
+        const setOtherFilterData = () => {
+            setOthersFilterModal(false);
+            getTableData("cid_ui_case_case_diary",false,{from_date: othersFromDate,to_date: othersToDate,...othersFilterData}
+            );
+        };
+        
+        const handleOthersFilter = async (selectedOtherTemplate)=>{
+    
+            if(!selectedOtherTemplate){
+                toast.error('Please Check The Template', {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+                return false;
+            }
+    
+            const viewTableData = { table_name: selectedOtherTemplate };
+            
+            setLoading(true);
+            try {
+                const viewTemplateResponse = await api.post("/templates/viewTemplate", viewTableData);
+                setLoading(false);
+            
+                if (viewTemplateResponse && viewTemplateResponse.success && viewTemplateResponse.data) {
+                    var templateFields = viewTemplateResponse.data["fields"] ? viewTemplateResponse.data["fields"] : [];
+                    var validFilterFields = ["dropdown", "autocomplete", "multidropdown", "date", "datetime", "time"];
+            
+                    var getOnlyDropdown = templateFields.filter((element) => validFilterFields.includes(element.type)).map((field) => {
+                        const existingField = filterDropdownObj?.find(
+                            (item) => item.name === field.name
+                        );
+                        return {
+                            ...field,
+                            history: false,
+                            info: false,
+                            required: false,
+                            ...(field.is_dependent === "true" && {options: existingField?.options ? [...existingField.options] : [] }),
+                        };
+                    });
+            
+                    // const today = dayjs().format("YYYY-MM-DD");
+            
+                    getAllOptionsforFilter(getOnlyDropdown, true);
+                    // if(fromDateValue == null || toDateValue === null){
+                    //     setFromDateValue(today);
+                    //     setToDateValue(today);
+                    // }
+            
+                    // setShowFilterModal(true);
+                    setOthersFilterModal(true);
+    
+                } else {
+                    const errorMessage = viewTemplateResponse.message ? viewTemplateResponse.message : "Failed to Get Template. Please try again.";
+                    toast.error(errorMessage, {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-error",
+                    });
+                }
+    
+            } catch (error) {
+                setLoading(false);
+                if (error && error.response && error.response["data"]) {
+                    toast.error( error.response["data"].message ? error.response["data"].message : "Please Try Again !",{
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-error",
+                    });
+                }
+            }
+        };
+            
+        const getAllOptionsforFilter = async (dropdownFields, others) => {
+        try {
+            setLoading(true);
+    
+            const apiCalls = dropdownFields
+            .filter((field) => field.api && field.table)
+            .map(async (field) => {
+                try {
+                let payload = {};
+                let headerName = "name";
+                let headerId = "id";
+                let res;
+    
+                if (field.api === "/templateData/getTemplateData") {
+                    payload.table_name = field.table;
+                    res = await api.post(field.api, payload);
+                    if (!res.data) return { id: field.id, options: [] };
+                    const updatedOptions = res.data.map((item) => {
+                    const nameKey = Object.keys(item).find(
+                        (key) => !["id", "created_at", "updated_at"].includes(key)
+                    );
+                    return {
+                        name: nameKey ? item[nameKey] : "",
+                        code: item.id,
+                    };
+                    });
+                    return { id: field.id, options: updatedOptions };
+                } else {
+                    res = await api.post(field.api, payload);
+                    if (!res.data) return { id: field.id, options: [] };
+                    if (field.table === "users") {
+                    headerName = "name";
+                    headerId = "user_id";
+                    } else {
+                    headerName = field.table + "_name";
+                    headerId = field.table + "_id";
+                    }
+                    const updatedOptions = res.data.map((item) => ({
+                    name: item[headerName],
+                    code: item[headerId],
+                    }));
+                    return { id: field.id, options: updatedOptions };
+                }
+                } catch (error) {
+                return { id: field.id, options: [] };
+                }
+            });
+    
+            const results = await Promise.all(apiCalls);
+    
+            setLoading(false);
+            var updatedFieldsDropdown = dropdownFields.map((field) => {
+            const updatedField = results.find((res) => res.id === field.id);
+            return updatedField
+                ? { ...field, options: updatedField.options }
+                : field;
+            });
+    
+            if (others) {
+            setOthersFiltersDropdown(updatedFieldsDropdown);
+            } else {
+            setfilterDropdownObj(updatedFieldsDropdown);
+            }
+        } catch (error) {
+            setLoading(false);
+            console.error("Error fetching template data:", error);
+        }
+        };
+        
+        const handleAutocomplete = (field, selectedValue, othersFilter) => {
+    
+            var updatedFormData = {}
+            var selectedFilterDropdown = []
+    
+            if(othersFilter){
+    
+                selectedFilterDropdown = othersFiltersDropdown
+                updatedFormData = { ...othersFilterData, [field.name]: selectedValue };
+                
+                setOthersFilterData(updatedFormData);
+                
+            }else{
+    
+                selectedFilterDropdown = filterDropdownObj
+                updatedFormData = { ...filterValues, [field.name]: selectedValue };
+            
+                setFilterValues(updatedFormData);
+    
+            }
+    
+            if (field?.api && field?.table) {
+                var dependent_field = selectedFilterDropdown.filter((element) => {
+                return (
+                    element.dependent_table &&
+                    element.dependent_table.length > 0 &&
+                    element.dependent_table.includes(field.table)
+                );
+                });
+    
+                if (dependent_field && dependent_field[0] && dependent_field[0].api) {
+                var apiPayload = {};
+                if (dependent_field[0].dependent_table.length === 1) {
+                    const key = field.table === "users" ? "user_id" : `${field.table}_id`;
+                    apiPayload = {
+                    [key]: updatedFormData[field.name],
+                    };
+                } else {
+                    var dependentFields = selectedFilterDropdown.filter((element) => {
+                    return dependent_field[0].dependent_table.includes(element.table);
+                    });
+    
+                    apiPayload = dependentFields.reduce((payload, element) => {
+                    if (updatedFormData && updatedFormData[element.name]) {
+                        const key =
+                        element.table === "users" ? "user_id" : `${element.table}_id`;
+                        payload[key] = updatedFormData[element.name];
+                    }
+                    return payload;
+                    }, {});
+                }
+    
+                const callApi = async () => {
+                    setLoading(true);
+    
+                    try {
+                    var getOptionsValue = await api.post(
+                        dependent_field[0].api,
+                        apiPayload
+                    );
+                    setLoading(false);
+    
+                    var updatedOptions = [];
+    
+                    if (getOptionsValue && getOptionsValue.data) {
+                        updatedOptions = getOptionsValue.data.map((element, i) => {
+                        return {
+                            name: element[
+                            dependent_field[0].table === "users"
+                                ? "name"
+                                : dependent_field[0].table + "_name"
+                            ],
+                            code: element[
+                            dependent_field[0].table === "users"
+                                ? "user_id"
+                                : dependent_field[0].table + "_id"
+                            ],
+                        };
+                        });
+                    }
+    
+                    var userUpdateFields = {
+                        options: updatedOptions,
+                    };
+    
+    
+                    dependent_field.forEach((data) => {
+                        delete updatedFormData[data.name];
+                    });
+    
+                    if(othersFilter){
+                        setOthersFiltersDropdown(
+                            selectedFilterDropdown.map((element) => element.id === dependent_field[0].id ? { ...element, ...userUpdateFields } : element)
+                        );
+                        dependent_field.map((data) => {
+                            delete othersFilterData[data.name];
+                        });
+    
+                        setOthersFilterData(updatedFormData);
+                    }else{
+                        setfilterDropdownObj(
+                            selectedFilterDropdown.map((element) => element.id === dependent_field[0].id ? { ...element, ...userUpdateFields } : element )
+                        );
+                        dependent_field.map((data) => {
+                            delete filterValues[data.name];
+                        });
+    
+                        setFilterValues(updatedFormData);
+                    }
+    
+                    } catch (error) {
+                    setLoading(false);
+                    if (error && error.response && error.response.data) {
+                        toast.error(
+                        error.response?.data?.message || "Need dependent Fields",
+                        {
+                            position: "top-right",
+                            autoClose: 3000,
+                            hideProgressBar: false,
+                            closeOnClick: true,
+                            pauseOnHover: true,
+                            draggable: true,
+                            progress: undefined,
+                            className: "toast-error",
+                        }
+                        );
+                        return;
+                    }
+                    }
+                };
+                callApi();
+                }
+            }
+        };
+            
     function isValidISODate(value) {
         return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(value) && !isNaN(new Date(value).getTime());
     }
@@ -684,9 +1005,17 @@ const CaseDairy = ({headerDetails, backToForm, showMagazineView, rowData, module
         return;
     }
 
+    
     const handleClear = () => {
         tablePaginationCount.current = 1;
         setTableSearchValue("");
+        setTableFilterToDate(null);
+        setTableFilterFromDate(null);
+        setTableFilterOtherFilters({});
+        setOthersFilterData({});
+        setOthersFromDate(null);
+        setOthersToDate(null);
+
         getTableData({table:"cid_ui_case_case_diary"}, false, true);
     };
 
@@ -875,20 +1204,30 @@ const CaseDairy = ({headerDetails, backToForm, showMagazineView, rowData, module
                 </Typography>
 
                 <Box sx={{display: 'flex', alignItems: 'start', gap: '12px'}}>
-                    <Box sx={{display: 'flex', flexDirection: 'column', alignItems: 'end'}}>
+                   <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'end' }}>
                         <TextFieldInput
                             InputProps={{
                                 startAdornment: (
                                     <InputAdornment position="start">
                                         <SearchIcon sx={{ color: '#475467' }} />
                                     </InputAdornment>
+                                ),
+                                endAdornment: (
+                                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                        <IconButton
+                                            sx={{ padding: "0 5px", borderRadius: "0" }}
+                                            onClick={() => handleOthersFilter("cid_ui_case_case_diary")}
+                                        >
+                                            <FilterListIcon sx={{ color: "#475467" }} />
+                                        </IconButton>
+                                    </Box>
                                 )
                             }}
                             onInput={(e) => setTableSearchValue(e.target.value)}
                             value={tableSearchValue}
                             id="tableSearch"
                             size="small"
-                            placeholder='Search'
+                            placeholder="Search"
                             variant="outlined"
                             className="profileSearchClass"
                             onKeyDown={(e) => {
@@ -898,7 +1237,7 @@ const CaseDairy = ({headerDetails, backToForm, showMagazineView, rowData, module
                                 }
                             }}
                             sx={{
-                                width: '300px', borderRadius: '6px', outline: 'none',
+                                width: '250px', borderRadius: '6px', outline: 'none',
                                 '& .MuiInputBase-input::placeholder': {
                                     color: '#475467',
                                     opacity: '1',
@@ -908,20 +1247,26 @@ const CaseDairy = ({headerDetails, backToForm, showMagazineView, rowData, module
                                 },
                             }}
                         />
-                        {tableSearchValue && (
-                            <Typography
-                                onClick={handleClear}
-                                sx={{
-                                    fontSize: "13px",
-                                    fontWeight: "500",
-                                    textDecoration: "underline",
-                                    cursor: "pointer",
-                                }}
-                                mt={1}
-                            >
-                                Clear Search
-                            </Typography>
-                        )}
+                        {(
+                            tableSearchValue ||
+                            tableFilterToDate ||
+                            tableFilterFromDate ||
+                            Object.keys(tableFilterOtherFilters).length > 0 ||
+                            Object.keys(othersFilterData || {}).length > 0
+                        ) && (
+                                <Typography
+                                    onClick={handleClear}
+                                    sx={{
+                                        fontSize: "13px",
+                                        fontWeight: "500",
+                                        textDecoration: "underline",
+                                        cursor: "pointer",
+                                    }}
+                                    mt={1}
+                                >
+                                    View all/ Clear Filter
+                                </Typography>
+                            )}
                     </Box>
 
                     <Button
@@ -1007,6 +1352,204 @@ const CaseDairy = ({headerDetails, backToForm, showMagazineView, rowData, module
                 </div>
             )}
 
+            {othersFilterModal && (
+                <Dialog
+                    open={othersFilterModal}
+                    onClose={() => setOthersFilterModal(false)}
+                    aria-labelledby="alert-dialog-title"
+                    aria-describedby="alert-dialog-description"
+                    maxWidth="md"
+                    fullWidth
+                >
+
+                    <DialogTitle
+                        id="alert-dialog-title"
+                        sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                        }}
+                    >
+                        Filter
+                        <IconButton
+                            aria-label="close"
+                            onClick={() => setOthersFilterModal(false)}
+                            sx={{ color: (theme) => theme.palette.grey[500] }}
+                        >
+                            <CloseIcon />
+                        </IconButton>
+                    </DialogTitle>
+
+                <DialogContent sx={{ minWidth: "400px" }}>
+                    <DialogContentText id="alert-dialog-description">
+                        <Grid container sx={{ alignItems: "center" }}>
+                            <Grid item xs={12} md={6} p={2}>
+                                 <h4 className="form-field-heading">From Date</h4>
+                                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                    <DatePicker
+                                        format="DD-MM-YYYY"
+                                        sx={{
+                                            width: "100%",
+                                        }}
+                                        label="From Date"
+                                        value={othersFromDate ? dayjs(othersFromDate) : null}
+                                        onChange={(e) =>
+                                            setOthersFromDate(e ? e.format("YYYY-MM-DD") : null)
+                                        }
+                                    />
+                                </LocalizationProvider>
+                            </Grid>
+
+                            <Grid item xs={12} md={6} p={2}>
+                                 <h4 className="form-field-heading">To Date</h4>
+                                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                    <DatePicker
+                                        format="DD-MM-YYYY"
+                                        sx={{
+                                            width: "100%",
+                                        }}
+                                        label="To Date"
+                                        value={othersToDate ? dayjs(othersToDate) : null}
+                                        onChange={(e) =>
+                                            setOthersToDate(e ? e.format("YYYY-MM-DD") : null)
+                                        }
+                                    />
+                                </LocalizationProvider>
+                            </Grid>
+
+                            {othersFiltersDropdown.map((field) => {
+                                if (field?.hide_from_ux) {
+                                    return null;
+                                }
+
+                                if (!field?.table_display_content) {
+                                    return null;
+                                }
+                                switch (field.type) {
+                                    case "dropdown":
+                                    return (
+                                        <Grid item xs={12} md={6} p={2}>
+                                        <div className="form-field-wrapper_selectedField">
+                                            <SelectField
+                                            key={field.id}
+                                            field={field}
+                                            formData={othersFilterData}
+                                            onChange={(value) =>
+                                                handleAutocomplete(field, value.target.value, true)
+                                            }
+                                            />
+                                        </div>
+                                        </Grid>
+                                    );
+
+                                    case "multidropdown":
+                                    return (
+                                        <Grid item xs={12} md={6} p={2}>
+                                        <MultiSelect
+                                            key={field.id}
+                                            field={field}
+                                            formData={othersFilterData}
+                                            onChange={(name, selectedCode) =>
+                                                handleAutocomplete(field, selectedCode, true)
+                                            }
+                                        />
+                                        </Grid>
+                                    );
+
+                                    case "autocomplete":
+                                    return (
+                                        <Grid item xs={12} md={6} p={2}>
+                                        <AutocompleteField
+                                            key={field.id}
+                                            field={field}
+                                            formData={othersFilterData}
+                                            onChange={(name, selectedCode) =>
+                                                handleAutocomplete(field, selectedCode, true)
+                                            }
+                                        />
+                                        </Grid>
+                                    );
+                                    case "date":
+                                        return (
+                                            <Grid item xs={12} md={6} p={2} key={field.id}>
+                                                <div className="form-field-wrapper_selectedField">
+                                                    <DateField
+                                                        key={field.id}
+                                                        field={field}
+                                                        formData={othersFilterData}
+                                                        onChange={(date) => {
+                                                        const formattedDate = date ? dayjs(date).format("YYYY-MM-DD") : null;
+                                                        setOthersFilterData((prev) => ({
+                                                            ...prev,
+                                                            [field.name]: formattedDate,
+                                                        }));
+                                                        }}
+                                                    />
+                                                </div>
+                                            </Grid>
+                                        );
+
+                                    case "datetime":
+                                    return (
+                                        <Grid item xs={12} md={6} p={2} key={field.id}>
+                                            <div className="form-field-wrapper_selectedField">
+                                                <DateTimeField
+                                                    key={field.id}
+                                                    field={field}
+                                                    formData={othersFilterData}
+                                                    onChange={(date) => {
+                                                        const formattedDateTime = date
+                                                            ? dayjs(date).format("YYYY-MM-DD HH:mm:ss")
+                                                            : null;
+                                                        setOthersFilterData((prev) => ({
+                                                            ...prev,
+                                                            [field.name]: formattedDateTime,
+                                                        }));
+                                                    }}
+                                                />
+                                            </div>
+                                        </Grid>
+                                    );
+                                                       
+                                // case "time":
+                                //     return (
+                                //         <Grid item xs={12} md={6} p={2} key={field.id}>
+                                //             <div className="form-field-wrapper_selectedField">
+                                //                 <TimeField
+                                //                     key={field.id}
+                                //                     field={field}
+                                //                     formData={othersFilterData}
+                                //                     onChange={(time) => {
+                                //                         const formattedTime = time
+                                //                             ? dayjs(time).format("HH:mm:ss")
+                                //                             : null;
+                                //                         setOthersFilterData((prev) => ({
+                                //                             ...prev,
+                                //                             [field.name]: formattedTime,
+                                //                         }));
+                                //                     }}
+                                //                 />
+                                //             </div>
+                                //         </Grid>
+                                //     );
+
+                            }
+                            })}
+                        </Grid>
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions sx={{ padding: "12px 24px" }}>
+                    <Button onClick={() => setOthersFilterModal(false)}>Close</Button>
+                    <Button
+                        className="fillPrimaryBtn"
+                        sx={{ minWidth: "100px" }}
+                        onClick={() => setOtherFilterData()}
+                    >
+                        Apply
+                    </Button>
+                </DialogActions>
+                </Dialog>
+            )}
         </Box>
     )
 };

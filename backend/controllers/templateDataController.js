@@ -880,7 +880,7 @@ exports.insertTwoTemplateData = async (req, res, next) => {
         });
 
         console.log(`Inserting ${childRecords.length} child records into ${childTableName}`);
-        await ChildModel.bulkCreate(childRecords);
+        await ChildModel.bulkCreate(childRecords, { transaction });
 
         const insertedChildren = await ChildModel.findAll({
           where: { [foreignKeyColumn]: insertedData.id },
@@ -949,7 +949,7 @@ exports.insertTwoTemplateData = async (req, res, next) => {
         });
 
         console.log(`Inserting ${childRecords.length} second-child records into ${childTableName}`);
-        await ChildModel.bulkCreate(childRecords);
+        await ChildModel.bulkCreate(childRecords, { transaction });
 
         // Fetch and log inserted second-child rows
         const insertedChildren = await ChildModel.findAll({
@@ -2517,11 +2517,32 @@ exports.getTemplateData = async (req, res, next) => {
       }
     }
 
-    // Apply field filters if provided
     if (filter && typeof filter === "object") {
       Object.entries(filter).forEach(([key, value]) => {
-        if (fields[key]) {
-          whereClause[key] = value;
+        if (fields[key] && value !== null && value !== undefined) {
+          const fieldType = fields[key].type.key;
+          const uiFieldConfig = schema.find(f => f.name === key);
+          const uiType = uiFieldConfig?.type || null;
+
+          if (uiType === 'date' || fieldType === 'DATE') {
+            const date = new Date(value);
+            const startOfDay = new Date(date.setHours(0, 0, 0, 0));
+            const endOfDay = new Date(date.setHours(23, 59, 59, 999));
+            whereClause[key] = { [Op.between]: [startOfDay, endOfDay] };
+
+          }else if (uiType === 'datetime' || fieldType === 'DATETIME' || fieldType === 'TIMESTAMP') {
+            const date = new Date(value);
+            const startOfDay = new Date(date.setHours(0, 0, 0, 0));
+            const endOfDay = new Date(date.setHours(23, 59, 59, 999));
+            whereClause[key] = { [Op.between]: [startOfDay, endOfDay] };
+          }
+          else if (fieldType === 'STRING' || fieldType === 'TEXT') {
+            whereClause[key] = String(value);
+          } else if (['INTEGER', 'FLOAT', 'DOUBLE'].includes(fieldType)) {
+            whereClause[key] = Number(value);
+          }else {
+            whereClause[key] = value;
+          }
         }
       });
     }
@@ -2637,7 +2658,7 @@ exports.getTemplateData = async (req, res, next) => {
             
             if (["STRING", "TEXT"].includes(fieldType)) {
                 //if the field is having date in the name means avoid it.
-                if( field.toLowerCase().includes("date") || field.toLowerCase().includes("time") ) return;
+                if( field.toLowerCase().includes("date") || field.toLowerCase().includes("time") || field.toLowerCase().includes("l4") ) return;
                 searchConditions.push({ [field]: { [Op.iLike]: `%${search}%` } });
             } else if (["INTEGER", "FLOAT", "DOUBLE"].includes(fieldType)) {
                 if (!isNaN(search)) {
@@ -4968,12 +4989,17 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
         }
     } else {
         if (allowedUserIds.length > 0) {
-            if (["ui_case", "pt_case", "eq_case"].includes(template_module)) {
+            if (["ui_case", "pt_case"].includes(template_module)) {
             whereClause[Op.or] = [
                 { created_by_id: { [Op.in]: normalizedUserIds } },
                 { field_io_name: { [Op.in]: normalizedUserIds } },
             ];
-            } else {
+            } else if (["eq_case"].includes(template_module)) {
+            whereClause[Op.or] = [
+                { created_by_id: { [Op.in]: normalizedUserIds } },
+                { field_name_of_the_io: { [Op.in]: normalizedUserIds } },
+            ];
+            }else {
             whereClause["created_by_id"] = { [Op.in]: normalizedUserIds };
             }
         }
@@ -5225,6 +5251,9 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
                   ]
               };
           }
+          else if (key === "field_name_of_the_io" && value === "") {
+                whereClause[key] = { [Op.is]: null };
+            }
           else{
             whereClause[key] = String(value); // Direct match for foreign key fields
           }
@@ -5667,6 +5696,9 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
                 {
                     data["field_io_name_id"] = data[fieldName];
                 }
+                if(fieldName === "field_name_of_the_io"){
+                    data["field_name_of_the_io_id"] = data[fieldName];
+                  }
                 data[fieldName] = dropdownFieldMappings[fieldName][data[fieldName]];
             }
         }
@@ -8368,7 +8400,6 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
                   }
                 }
             }
-
 
             if (table_name === "cid_pending_trial") {
                 if (parsedData.field_ui_case && !parsedData.ui_case_id) {

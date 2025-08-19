@@ -468,11 +468,32 @@ const getIoUsers = async (req, res) => {
         }
 
     // Transform output to move kgidDetails.name to the top level
-    const users = usersData.map(user => ({
+    const userMap = {};
+
+    usersData.forEach(user => {
+        const userId = user.user_id;
+        const name = user.kgidDetails?.name || "";
+        const designation = user.users_designations?.designation?.designation_name || "";
+
+        if (!userMap[userId]) {
+            userMap[userId] = {
+                ...user,
+                name: name,
+                designations: new Set()
+            };
+        }
+
+        if (designation) {
+            userMap[userId].designations.add(designation);
+        }
+    });
+    const users = Object.values(userMap).map(user => ({
         ...user,
-        name: (user.kgidDetails?.name + " - " + user.users_designations?.designation?.designation_name) || "", // Move name to top level
-        kgidDetails: undefined // Remove the nested object if not needed
+        name: `${user.name} - ${Array.from(user.designations).join(", ")}`,
+        kgidDetails: undefined, 
+        designations: undefined
     }));
+
 
     return res.status(200).json({ data : users});
   } catch (error) {
@@ -550,14 +571,36 @@ const getIoUsersBasedOnDivision = async (req, res) => {
         });
         
         // Transform output: move kgidDetails.name to top level.
-        const users = usersData.map(user => ({
+        const userMap = {};
+
+        usersData.forEach(user => {
+            const userId = user.user_id;
+            const name = user.kgidDetails?.name || "";
+            const designation = user.users_designations?.designation?.designation_name || "";
+
+            if (!userMap[userId]) {
+                userMap[userId] = {
+                    ...user,
+                    name: name,
+                    designations: new Set(),
+                    kgid: user.kgidDetails?.kgid || "",
+                    mobile: user.kgidDetails?.mobile || ""
+                };
+            }
+            if (designation) {
+                userMap[userId].designations.add(designation);
+            }
+        });
+
+        const users = Object.values(userMap).map(user => ({
             ...user,
-            name: (user.kgidDetails?.name + " - " + user.users_designations?.designation?.designation_name) || "",
-            kgid: user.kgidDetails?.kgid || "",
-            mobile: user.kgidDetails?.mobile || "",
-            kgidDetails: undefined, // remove nested object if not needed
+            name: `${user.name} - ${Array.from(user.designations).join(", ")}`,
+            kgid: user.kgid,
+            mobile: user.mobile,
+            kgidDetails: undefined,
+            designations: undefined
         }));
-        
+
         return res.status(200).json({ data: users });
     } catch (error) {
         console.error("Error fetching users based on division:", error);
@@ -578,18 +621,20 @@ const getSpecificIoUsersCases = async (req, res) => {
         }
 
         let table_name = "";
+        let ioField = "field_io_name"
         if (template_module === "ui_case") {
             table_name = "cid_under_investigation";
         } else if (template_module === "pt_case") {
             table_name = "cid_pending_trial";
         } else if (template_module === "eq_case") {
             table_name = "cid_enquiry";
+            ioField = "field_name_of_the_io";
         } else {
             return res.status(400).json({ message: "Invalid template module." });
         }
 
         const cases = await sequelize.query(
-            `SELECT * FROM ${table_name} WHERE field_io_name = :userID`,
+            `SELECT * FROM ${table_name} WHERE ${ioField} = :userID`,
             {
                 replacements: { userID: user_id },
                 type: sequelize.QueryTypes.SELECT

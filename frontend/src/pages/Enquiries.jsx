@@ -6,6 +6,7 @@ import NormalViewForm from "../components/dynamic-form/NormalViewForm";
 import TableView from "../components/table-view/TableView";
 import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
 import SelectAllIcon from '@mui/icons-material/SelectAll';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 
 import VerifiedIcon from '@mui/icons-material/Verified';
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
@@ -95,6 +96,8 @@ import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 import ImportExportIcon from '@mui/icons-material/ImportExport';
 import { BorderTop } from "@mui/icons-material";
+import DateTimeField from "../components/form/DateTime";
+import TimeField from "../components/form/Time";
 
 const Enquiries = () => {
   const location = useLocation();
@@ -133,6 +136,7 @@ const Enquiries = () => {
     const [saveNew, setSaveNew] = useState(null);
     const [saveNewAction, setSaveNewAction] = useState(null);
 
+    const [hideClearFilter, setHideClearFilter] = useState(false);
     // on save approval modal
 
     const [showApprovalModal, setShowApprovalModal] = useState(false);
@@ -299,8 +303,12 @@ const Enquiries = () => {
   // transfer to other division states
 
   const [showOtherTransferModal, setShowOtherTransferModal] = useState(false);
+  const [showAssignIOTransferModal, setShowAssignIOTransferModal] = useState(false)
   const [showMassiveTransferModal, setShowMassiveTransferModal] = useState(false);
-
+  const [showReassignIoModal, setShowReassignIoModal] = useState(false);
+  const [ioUserCases, setIoUserCases] = useState([]);
+  const [casesPage, setCasesPage] = useState(0);
+  const [casesPageSize, setCasesPageSize] = useState(10);
   const [otherTransferField, setOtherTransferField] = useState([]);
   const [selectedOtherFields, setSelectedOtherFields] = useState(null);
   const [selectKey, setSelectKey] = useState(null);
@@ -3053,7 +3061,7 @@ const handleCheckboxDemerge = (event, row) => {
                     const excludedKeys = [
                          "updated_at", "id", "deleted_at", "attachments",
                         "Starred", "ReadStatus", "linked_profile_info",
-                        "ui_case_id", "pt_case_id", "sys_status", "task_unread_count" , "field_cid_crime_no./enquiry_no","field_io_name" , "field_io_name_id", 
+                        "ui_case_id", "pt_case_id", "sys_status", "task_unread_count" , "field_cid_crime_no./enquiry_no","field_name_of_the_io" , "field_io_name_id",  "field_name_of_the_io_id",
                         "field_name_of_the_police_station", "field_division", "field_case/enquiry_keyword", "field_date_of_taking_over_by_cid", "field_extension_date"
                     ];
     
@@ -3114,7 +3122,7 @@ const handleCheckboxDemerge = (event, row) => {
                                 <Tooltip title="Approval"><VerifiedIcon sx={{ color: "", fill: "#1f1dac" }} /></Tooltip>
                             ),                            
                             renderCell: (params) => {
-                              const isDisabled = !params?.row?.["field_io_name"];
+                              const isDisabled = !params?.row?.["field_name_of_the_io"];
                               return(
                                 <Button
                                     variant="contained"
@@ -3146,27 +3154,27 @@ const handleCheckboxDemerge = (event, row) => {
                             renderCell: renderCellFunc("field_cid_crime_no./enquiry_no", 0),
                         },
                         {
-                          field: "field_io_name",
-                          headerName: "Assign To IO",
+                          field: "field_name_of_the_io",
+                          headerName: "Assign To EO",
                           width: 150,
                           resizable: true,
                           cellClassName: 'justify-content-start',
                           renderHeader: (params) => (
-                              tableHeaderRender(params, "field_io_name")
+                              tableHeaderRender(params, "field_name_of_the_io")
                           ),
-                          renderCell: renderCellFunc("field_io_name", ),
+                          renderCell: renderCellFunc("field_name_of_the_io", ),
                         },
-                        {
-                            field: "field_name_of_the_police_station",
-                            headerName: "Police Station",
-                            width: 200,
-                            resizable: true,
-                            cellClassName: 'justify-content-start',
-                            renderHeader: (params) => (
-                                tableHeaderRender(params, "field_name_of_the_police_station")
-                            ),
-                            renderCell: renderCellFunc("field_name_of_the_police_station", ),
-                        },
+                        // {
+                        //     field: "field_name_of_the_police_station",
+                        //     headerName: "Police Station",
+                        //     width: 200,
+                        //     resizable: true,
+                        //     cellClassName: 'justify-content-start',
+                        //     renderHeader: (params) => (
+                        //         tableHeaderRender(params, "field_name_of_the_police_station")
+                        //     ),
+                        //     renderCell: renderCellFunc("field_name_of_the_police_station", ),
+                        // },
                         {
                             field: "field_division",
                             headerName: "Divisions",
@@ -4142,12 +4150,18 @@ const handleCheckboxDemerge = (event, row) => {
 
 
     return (
+
         <Tooltip title={value} placement="top">
             {
-                (key === "field_io_name" && (value === "" || !value)) ? (
+                (key === "field_name_of_the_io" && (value === "" || !value)) ? (
                     <span className="io-alert-flashy">
                         <span className="flashy-dot"></span>
-                        ASSIGN IO
+                        ASSIGN EO
+                    </span>                  
+                ) : (key === "field_name_of_the_io" && (value !== "" && (params?.row?.field_approval_done_by === "" || params?.row?.field_approval_done_by !== "DIG"))) ? (
+                    <span className="DIG-alert-flashy">
+                        <span className="blue-flashy-dot"></span>
+                        ASSIGN EO
                     </span>                  
                 ) : (
                     <span
@@ -7217,7 +7231,7 @@ const handleOpenExportPopup = async () => {
     table_name: selectedOtherTemplate.table,
     ui_case_id: selectedRowData.id,
     pt_case_id: selectedRowData?.pt_case_id || null,
-    case_io_id: selectedRowData.field_io_name_id || "",
+    case_io_id: selectedRowData.field_name_of_the_io_id || "",
   };
 
   try {
@@ -7269,7 +7283,7 @@ const handleOpenExportPopup = async () => {
     var getTemplatePayload = {
         table_name: options.table,
         ui_case_id: selectedRow.id,
-        case_io_id: selectedRow.field_io_name_id || "",
+        case_io_id: selectedRow.field_name_of_the_io_id || "",
         pt_case_id: selectedRow?.pt_case_id || null,
         limit : 10,
         page : !searchFlag ? otherTemplatesPaginationCount : 1,
@@ -8405,7 +8419,7 @@ const handleOpenExportPopup = async () => {
                                         setSelectedOtherFields(preSelectedDivision);
 
                         
-                                        if (options.name.trim().toLowerCase() == "transfer to other division" || options.name.trim().toLowerCase() == "reassign io" && preSelectedDivision?.code) {
+                                        if (options.name.trim().toLowerCase() == "transfer to other division" || options.name.trim().toLowerCase() == "reassign eo" && preSelectedDivision?.code) {
                                             api.post("cidMaster/getIoUsersBasedOnDivision", {
                                                 division_ids: [preSelectedDivision.code],
                                                 role_id: null,
@@ -8423,8 +8437,14 @@ const handleOpenExportPopup = async () => {
                                         //   setSelectedRow(selectedRow);
                                         //   setselectedOtherTemplate(options);
                                         setOtherTransferField(updatedOptions);
-                                        if (options.name.trim().toLowerCase() == "transfer to other division" || options.name.trim().toLowerCase() == "reassign io") {
+                                        if (options.name.trim().toLowerCase() == "transfer to other division") {
                                             setShowMassiveTransferModal(true);
+                                            setSelectedRowIds([selectedRow.id])
+                                        }else if(options.name.trim().toLowerCase() == "reassign eo"){
+                                            setShowReassignIoModal(true);
+                                            setSelectedRowIds([selectedRow.id])
+                                        }else if(options.name.trim().toLowerCase() == "assign to eo"){
+                                            setShowAssignIOTransferModal(true);
                                             setSelectedRowIds([selectedRow.id])
                                         } else {
                                             setShowOtherTransferModal(true);
@@ -8449,7 +8469,7 @@ const handleOpenExportPopup = async () => {
                                 const preSelectedDivision = matchedOption || null;
                                 setSelectedOtherFields(preSelectedDivision);
                                 
-                                if (options.name.trim().toLowerCase() == "transfer to other division" || options.name.trim().toLowerCase() == "reassign io" && preSelectedDivision?.code) {
+                                if (options.name.trim().toLowerCase() == "transfer to other division" || options.name.trim().toLowerCase() == "reassign eo" && preSelectedDivision?.code) {
                                     api.post("cidMaster/getIoUsersBasedOnDivision", {
                                         division_ids: [preSelectedDivision.code],
                                         role_id: null,
@@ -8467,8 +8487,10 @@ const handleOpenExportPopup = async () => {
                                 //   setSelectedRow(selectedRow);
                                 //   setselectedOtherTemplate(options);
                                 setOtherTransferField(staticOptions);
-                                if (options.name.trim().toLowerCase() == "transfer to other division".toLowerCase() || options.name.trim().toLowerCase() == "reassign io") {
+                                if (options.name.trim().toLowerCase() == "transfer to other division".toLowerCase()) {
                                     setShowMassiveTransferModal(true);
+                                } else if(options.name.trim().toLowerCase() == "reassign eo"){
+                                  setShowReassignIoModal(true);
                                 } else {
                                     setShowOtherTransferModal(true);
                                 }
@@ -8808,6 +8830,7 @@ const handleOpenExportPopup = async () => {
                     setAddApproveFlag(false);
                     setApproveTableFlag(false);
                     setShowOtherTransferModal(false);
+                    setShowAssignIOTransferModal(false);
                     setApprovalSaveData({});
 
                 } else {
@@ -8909,7 +8932,7 @@ const handleOpenExportPopup = async () => {
     var combinedData = {
       id: selectedRowIds.join(","),
       [selectKey.name]: selectedOtherFields.code,
-      field_io_name: selectedUser?.user_id,
+      field_name_of_the_io: selectedUser?.user_id,
     };
   
     if (selectedOtherTemplate.is_approval) {
@@ -8953,6 +8976,7 @@ const handleOpenExportPopup = async () => {
           setAddApproveFlag(false);
           setApproveTableFlag(false);
           setShowOtherTransferModal(false);
+          setShowReassignIoModal(false);
           setApprovalSaveData({});
           setShowMassiveTransferModal(false);
           setSelectKey(null);
@@ -9878,7 +9902,9 @@ const handleExtensionApprovalWithUpdate = async () => {
                             template_name : viewTemplateResponse?.["data"]?.template_name,
                             table_name: table_name,
                             module : "eq_case",
-                            overAllReadonly : !viewTemplateData?.["data"]?.field_io_name ? true : false,
+                            // overAllReadonly : !viewTemplateData?.["data"]?.field_io_name ? true : false,
+                            overAllReadonly : !viewTemplateData?.["data"]?.field_name_of_the_io || !viewTemplateData?.["data"]?.field_approval_done_by || viewTemplateData?.["data"]?.field_approval_done_by === "" || viewTemplateData?.["data"]?.field_approval_done_by !== "DIG" ? true : false,
+                            // overAllReadonly : !viewTemplateData?.["data"]?.field_name_of_the_io ? true : false,
                             record_id : dashboardRecordId ? JSON.stringify(dashboardRecordId) : [],
                             dashboardName : dashboardTileName,
                             caseExtension :rowData?.isDisabled ?? false,
@@ -9970,7 +9996,7 @@ const handleExtensionApprovalWithUpdate = async () => {
           ? viewTemplateResponse.data["fields"]
           : [];
 
-        var validFilterFields = ["dropdown", "autocomplete", "multidropdown"];
+        var validFilterFields = ["dropdown", "autocomplete", "multidropdown", "date", "datetime", "time"];
 
         var getOnlyDropdown = templateFields
           .filter((element) => validFilterFields.includes(element.type))
@@ -10098,6 +10124,7 @@ const handleExtensionApprovalWithUpdate = async () => {
     setFromDateValue(null);
     setToDateValue(null);
     setForceTableLoad((prev) => !prev);
+    setHideClearFilter(false);
   };
 
   const setFilterData = () => {
@@ -11045,13 +11072,35 @@ const handleExtensionApprovalWithUpdate = async () => {
         setShowFileAttachments(true);
     }
 
-    const setUnAssignedIo = ()=>{
-        setFilterValues(prev => ({
-            ...(prev || {}),
-            field_io_name: ""
-        }));
-        setForceTableLoad((prev) => !prev);
-    }
+      const clearAllFilters = () => {
+        setFilterValues({});
+        setFromDateValue(null);
+        setToDateValue(null);
+        setSearchValue("");
+      };
+
+    const setUnAssignedIo = () => {
+      clearAllFilters();
+      setHideClearFilter(true);
+      setFilterValues(prev => ({
+        ...(prev || {}),
+        field_name_of_the_io: ""
+      }));
+      setForceTableLoad((prev) => !prev);
+    };
+    const setDigNotApproved = () => {
+      clearAllFilters();
+      setHideClearFilter(true);
+      setFilterValues(prev => ({
+        ...(prev || {}),
+        field_approval_done_by: "SP"
+      }));
+      setForceTableLoad(prev => !prev);
+    };
+    const rawRoleTitle = localStorage.getItem("role_title") || "";
+    const cleanedRoleTitle = rawRoleTitle.replace(/^"(.*)"$/, "$1");
+    const roleTitle = cleanedRoleTitle.toLowerCase().trim();
+
 
   return (
     <Box p={2} inert={loading ? true : false}>
@@ -11157,29 +11206,109 @@ const handleExtensionApprovalWithUpdate = async () => {
           </Box>
           <Box sx={{ display: "flex", alignItems: "start", gap: "12px" }}>
 
-            <Button
+            {filterValues?.field_approval_done_by === "SP" ? (
+              <Button
+                variant="outlined"
+                startIcon={<VisibilityIcon />}
+                onClick={handleClear}
+                sx={{
+                borderColor: '#00931D',
+                color: '#00931D',
+                backgroundColor: '#E6FFEB', 
+                textTransform: 'none',
+                height: 38,
+                px: 2,
+                borderRadius: 1,
+                fontWeight: 500,
+                '&:hover': {
+                  borderColor: '#00931D',
+                  color: '#00931D',
+                  backgroundColor: '#E6FFEB',
+                },
+                }}
+              >
+                View All Cases
+              </Button>
+              ) : (
+              <Button
                 variant="outlined"
                 startIcon={<PersonOffIcon />}
-                onClick={setUnAssignedIo}
                 sx={{
-                    borderColor: '#eb2f06',
-                    backgroundColor: '#FFF5F5',
-                    color: '#eb2f06',
-                    height: 38,
-                    fontWeight: 500,
-                    textTransform: 'uppercase',
-                    '&:hover': {
-                        borderColor: '#e55039',
-                        backgroundColor: '#FFE8E8',
-                        color: '#e55039'
-                    },
-                    '& .MuiSvgIcon-root': {
-                        color: '#eb2f06'
-                    }
+                borderColor: '#0B3C91',
+                backgroundColor: '#E3EAFD',
+                color: '#0B3C91',
+                height: 38,
+                fontWeight: 500,
+                textTransform: 'none',
+                textTransform: 'uppercase',
+                ml: 2,
+                '&:hover': {
+                  borderColor: '#1816a3d0',
+                  backgroundColor: '#D0D8F6',
+                  color: '#1816a3d0'
+                }
                 }}
-            >
-                Unassigned IO
-            </Button>
+                onClick={setDigNotApproved}
+              >
+                DIG approval pending
+              </Button>
+            )}
+            
+            <>
+              {roleTitle !== "investigation officer"   ? (
+                <>
+                  {filterValues?.field_name_of_the_io === "" ? (
+                    <Button
+                      variant="outlined"
+                      startIcon={<VisibilityIcon />}
+                      onClick={handleClear}
+                      sx={{
+                        borderColor: '#00931D',
+                        color: '#00931D',
+                        backgroundColor: '#E6FFEB',
+                        textTransform: 'none',
+                        height: 38,
+                        px: 2,
+                        borderRadius: 1,
+                        fontWeight: 500,
+                        '&:hover': {
+                          borderColor: '#00931D',
+                          color: '#00931D',
+                          backgroundColor: '#E6FFEB',
+                        },
+                      }}
+                    >
+                      View All Cases
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outlined"
+                      startIcon={<PersonOffIcon />}
+                      onClick={setUnAssignedIo}
+                      sx={{
+                        borderColor: '#eb2f06',
+                        backgroundColor: '#FFF5F5',
+                        color: '#eb2f06',
+                        height: 38,
+                        fontWeight: 500,
+                        textTransform: 'uppercase',
+                        '&:hover': {
+                          borderColor: '#e55039',
+                          backgroundColor: '#FFE8E8',
+                          color: '#e55039'
+                        },
+                        '& .MuiSvgIcon-root': {
+                          color: '#eb2f06'
+                        }
+                      }}
+                    >
+                      Unassigned IO
+                    </Button>
+                  )}
+                </>
+              ) : null}
+            </>
+            
 
             {JSON.parse(localStorage.getItem("user_permissions")) &&
               JSON.parse(localStorage.getItem("user_permissions"))[0]
@@ -11337,6 +11466,7 @@ const handleExtensionApprovalWithUpdate = async () => {
                 fromDateValue ||
                 toDateValue ||
                 Object.keys(filterValues).length > 0) && (
+                   !hideClearFilter && (
                 <Typography
                   onClick={handleClear}
                   sx={{
@@ -11349,7 +11479,7 @@ const handleExtensionApprovalWithUpdate = async () => {
                 >
                   View All / Clear Filter
                 </Typography>
-              )}
+              ))}
             </Box>
         </Box>
 
@@ -11378,7 +11508,7 @@ const handleExtensionApprovalWithUpdate = async () => {
                 paginationCount={paginationCount} 
                 handlePagination={handlePagination} 
                 getRowClassName={(params) => {
-                  return !params.row["field_io_name"]
+                  return !params.row["field_name_of_the_io"]
                       ? "row-red-background"
                       : "";
               }}
@@ -12731,6 +12861,195 @@ const handleExtensionApprovalWithUpdate = async () => {
       </Dialog>
 
 
+ <Dialog
+      open={showAssignIOTransferModal}
+      onClose={() => {
+        setShowAssignIOTransferModal(false);
+        setSelectKey(null);
+        // setSelectedRow([]);
+        setOtherTransferField([]);
+        setSelectedUser(null);
+        setIoUserCases([]);
+        setSelectedOtherFields(null);
+        // setselectedOtherTemplate(null);
+        setUsersBasedOnDivision([]);
+        // setSelectedUser(null);
+        // setSelectedRowIds([]);
+        setSelectedMergeRowData([]);
+        setSelectedParentId(null);
+        setTableData((prevData) =>
+          prevData.map((item) => ({ ...item, isSelected: false }))
+        );
+        // setHasApproval(false);
+      }}
+      aria-labelledby="alert-dialog-title"
+      aria-describedby="alert-dialog-description"
+      maxWidth={false}
+      fullWidth={false}
+      PaperProps={{
+        sx: { width: 800, maxWidth: "100vw" }
+      }}
+    >
+      <DialogTitle id="alert-dialog-title"></DialogTitle>
+      <DialogContent sx={{ width: "800px" }}>
+        <DialogContentText id="alert-dialog-description">
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+            <WestIcon
+              style={{ cursor: "pointer", color: "#222" }}
+              onClick={() => {
+                setShowAssignIOTransferModal(false);
+                setSelectKey(null);
+                setOtherTransferField([]);
+                setUsersBasedOnDivision([]);
+                setSelectedUser(null);
+                setIoUserCases([]);
+                setSelectedMergeRowData([]);
+                setSelectedParentId(null);
+                setTableData((prevData) =>
+                  prevData.map((item) => ({ ...item, isSelected: false }))
+                );
+              }}
+            />
+            <span style={{ fontWeight: 500, fontSize: 18, color: "#222", marginLeft: 12 }}>
+              {selectKey?.title}
+            </span>
+          </div>
+          <FormControl fullWidth>
+          </FormControl>
+          <div style={{ display: "flex", gap: 16, maxWidth: 700 }}>
+            <FormControl fullWidth>
+              <div style={{ marginBottom: 4, fontWeight: 500, color: "#222" }}>EO User</div>
+              <Autocomplete
+                options={otherTransferField}
+                getOptionLabel={(option) => option.name || ""}
+                value={selectedOtherFields || null}
+                onChange={async (event, newValue) => {
+                  // setSelectedUser(newValue);
+                  setSelectedOtherFields(newValue);
+                  setIoUserCases([]);
+                  if (newValue && newValue.code) {
+                    try {
+                      const user_id = String(newValue.code);
+                      const template_module = "eq_case";
+                      const response = await api.post(
+                        "cidMaster/getSpecificIoUsersCases",
+                        {
+                          user_id,
+                          template_module,
+                        }
+                      );
+                      let cases = [];
+                      if (Array.isArray(response.cases)) {
+                        cases = response.cases;
+                      } else if (Array.isArray(response?.cases)) {
+                        cases = response.cases;
+                      } else if (response.cases && typeof response.cases === "object") {
+                        cases = [response.cases];
+                      } else if (response?.cases && typeof response.cases === "object") {
+                        cases = [response.cases];
+                      }
+                      setIoUserCases(cases);
+                    } catch (err) {
+                      console.error("Failed to fetch EO user cases", err);
+                      setIoUserCases([]);
+                    }
+                  }
+                }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    className="selectHideHistory"
+                    label="EO User"
+                  />
+                )}
+                // disabled={fieldActionAddFlag.current === false}
+              />
+            </FormControl>
+          </div>
+                <div style={{ marginTop: 24, maxWidth: 700 }}>
+                <h4 className="form-field-heading">Selected EO handling Case Details</h4>
+                <div style={{ maxHeight: 250, overflowY: "auto" }}>
+                  <TableView
+                  rows={ioUserCases.slice(
+                    casesPage * casesPageSize,
+                    (casesPage + 1) * casesPageSize
+                  ).map((row, idx) => ({
+                    ...row,
+                    sno: casesPage * casesPageSize + idx + 1,
+                    "field_cid_crime_no./enquiry_no":
+                    row["field_cid_crime_no./enquiry_no"] ||
+                    row.field_cid_crime_no ||
+                    row.enquiry_no ||
+                    "",
+                  }))}
+                  columns={[
+                    {
+                    field: "sno",
+                    headerName: "S.No",
+                    flex: 0.3,
+                    renderCell: (params) => params.row.sno,
+                    },
+                    {
+                    field: "field_cid_crime_no./enquiry_no",
+                    headerName: "Crime/Enquiry No.",
+                    flex: 1,
+                    renderCell: (params) => params.row["field_cid_crime_no./enquiry_no"],
+                    },
+                  ]}
+                  totalPage={ioUserCases.length > 0 && casesPageSize > 0 ? Math.ceil(ioUserCases.length / casesPageSize) : 1}
+                  totalRecord={ioUserCases.length}
+                  paginationCount={Number.isFinite(casesPage) ? casesPage + 1 : 1}
+                  handlePagination={(page) => setCasesPage(page - 1)}
+                  getRowId={(row, idx) => row.id || row["field_cid_crime_no./enquiry_no"] || idx}
+                  noRowsOverlayText="No data found"
+                  sx={{ width: 700 }}
+                  />
+                </div>
+                <div style={{ marginTop: 8 }}>
+                  Showing{" "}
+                  {Math.min(ioUserCases.length, (casesPage + 1) * casesPageSize)} of{" "}
+                  {ioUserCases.length} cases
+                </div>
+                </div>
+              </DialogContentText>
+              </DialogContent>
+              <DialogActions sx={{ padding: "12px 24px" }}>
+              <Button
+                onClick={() => {
+            setShowAssignIOTransferModal(false);
+            setSelectKey(null);
+            setSelectedRow([]);
+            setOtherTransferField([]);
+            setSelectedUser(null);
+            setIoUserCases([]);
+            // setSelectedOtherFields(null);
+            // setselectedOtherTemplate(null);
+            setUsersBasedOnDivision([]);
+            // setSelectedUser(null);
+            // setSelectedRowIds([]);
+            setSelectedMergeRowData([]);
+            setSelectedParentId(null);
+            setTableData((prevData) =>
+              prevData.map((item) => ({ ...item, isSelected: false }))
+            );
+            // setHasApproval(false);
+          }}
+        >
+          Cancel
+        </Button>
+        {fieldActionAddFlag.current === true && (
+          <Button
+            className="fillPrimaryBtn"
+            onClick={() => {
+              handleSaveDivisionChange();
+            }}
+          >
+            Submit
+          </Button>
+        )}
+      </DialogActions>
+    </Dialog>
+
       <Dialog
         open={showMassiveTransferModal}
         onClose={() => {
@@ -12784,16 +13103,16 @@ const handleExtensionApprovalWithUpdate = async () => {
                   <TextField
                     {...params}
                     className="selectHideHistory"
-                    label={selectKey?.title.trim() == "Reassign IO" ? "Division" : selectKey?.title}
+                    label={selectKey?.title.trim() == "Reassign EO" ? "Division" : selectKey?.title}
                     />
                 )}
-                disabled={fieldActionAddFlag.current === false}
+                // disabled={fieldActionAddFlag.current === false}
 
               />
             </FormControl>
 
               <>
-                <h4 className="form-field-heading" style={{ marginTop: "20px" }}>IO User</h4>
+                <h4 className="form-field-heading" style={{ marginTop: "20px" }}>EO User</h4>
                 <FormControl fullWidth>
                   <Autocomplete
                     options={usersBasedOnDivision}
@@ -12804,10 +13123,10 @@ const handleExtensionApprovalWithUpdate = async () => {
                       <TextField
                         {...params}
                         className="selectHideHistory"
-                        label="IO User"
+                        label="EO User"
                       />
                     )}
-                    disabled={fieldActionAddFlag.current === false}
+                    // disabled={fieldActionAddFlag.current === false}
                   />
                 </FormControl>
               </>
@@ -12847,6 +13166,249 @@ const handleExtensionApprovalWithUpdate = async () => {
           }
         </DialogActions>
       </Dialog>
+
+        <Dialog
+            open={showReassignIoModal}
+            onClose={() => {
+              setShowReassignIoModal(false);
+              setSelectKey(null);
+              // setSelectedRow([]);
+              setOtherTransferField([]);
+              setSelectedUser(null);
+              setIoUserCases([]);
+              // setSelectedOtherFields(null);
+              // setselectedOtherTemplate(null);
+              setUsersBasedOnDivision([]);
+              // setSelectedUser(null);
+              // setSelectedRowIds([]);
+              setSelectedMergeRowData([]);
+              setSelectedParentId(null);
+              setTableData((prevData) =>
+                prevData.map((item) => ({ ...item, isSelected: false }))
+              );
+              // setHasApproval(false);
+            }}
+            aria-labelledby="alert-dialog-title"
+            aria-describedby="alert-dialog-description"
+            fullScreen
+            fullWidth
+            sx={{ zIndex: "1", marginLeft: '250px' }}
+          >
+            <DialogTitle id="alert-dialog-title"></DialogTitle>
+            <DialogContent sx={{  }}>
+              <DialogContentText id="alert-dialog-description">
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12, justifyContent: "space-between" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <WestIcon
+                      style={{ cursor: "pointer", color: "#222" }}
+                      onClick={() => {
+                        setShowReassignIoModal(false);
+                        setSelectKey(null);
+                        setOtherTransferField([]);
+                        setUsersBasedOnDivision([]);
+                        setSelectedUser(null);
+                        setIoUserCases([]);
+                        setSelectedMergeRowData([]);
+                        setSelectedParentId(null);
+                        setTableData((prevData) =>
+                          prevData.map((item) => ({ ...item, isSelected: false }))
+                        );
+                      }}
+                    />
+                    <span style={{ fontWeight: 500, fontSize: 18, color: "#222", marginLeft: 12 }}>
+                      {selectKey?.title}
+                    </span>
+                  </div>
+                  <Button
+                    variant="outlined"
+                    onClick={() => {
+                      handleMassiveDivisionChange();
+                    }}
+                  >
+                    Submit
+                  </Button>
+                </div>
+                <div style={{ display: "flex", gap: 16, }}>
+                  <FormControl fullWidth>
+                  <div style={{ marginBottom: 4, fontWeight: 600, fontSize: 16, color: "#222" }}>
+                    {selectKey?.title?.trim() === "Reassign EO" ? "Division" : selectKey?.title || "Division"}
+                  </div>
+                    <Autocomplete
+                      options={otherTransferField}
+                      getOptionLabel={(option) => option.name || ""}
+                      value={selectedOtherFields || null}
+                      onChange={(event, newValue) => {
+                        setSelectedOtherFields(newValue);
+                        setSelectedUser(null);
+      
+                        if (newValue && newValue.code) {
+                          api
+                            .post("cidMaster/getIoUsersBasedOnDivision", {
+                              division_ids: [newValue.code],
+                              role_id: null,
+                            })
+                            .then((res) => {
+                              setUsersBasedOnDivision(res.data || []);
+                            })
+                            .catch((err) => {
+                              console.error("Failed to load users based on division", err);
+                              setUsersBasedOnDivision([]);
+                            });
+                        } else {
+                          setUsersBasedOnDivision([]);
+                        }
+                      }}
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          className="selectHideHistory"
+                          label={
+                            selectKey?.title.trim() == "Reassign EO"
+                              ? "Division"
+                              : selectKey?.title
+                          }
+                        />
+                      )}
+                      // disabled={fieldActionAddFlag.current === false}
+                    />
+                  </FormControl>
+                  <FormControl fullWidth>
+                    <div style={{ marginBottom: 4, fontWeight: 500, color: "#222" }}>EO User</div>
+                    <Autocomplete
+                      options={usersBasedOnDivision}
+                      getOptionLabel={(option) => option.name || ""}
+                      value={selectedUser || null}
+                      onChange={async (event, newValue) => {
+                        setSelectedUser(newValue);
+                        setIoUserCases([]); 
+                        if (newValue && newValue.user_id) {
+                          try {
+                            const user_id = String(newValue.user_id);
+                            const template_module = "eq_case";
+                            const response = await api.post(
+                              "cidMaster/getSpecificIoUsersCases",
+                              {
+                                user_id,
+                                template_module,
+                              }
+                            );
+                            let cases = [];
+                            if (Array.isArray(response.cases)) {
+                              cases = response.cases;
+                            } else if (Array.isArray(response?.cases)) {
+                              cases = response.cases;
+                            } else if (response.cases && typeof response.cases === "object") {
+                              cases = [response.cases];
+                            } else if (response?.cases && typeof response.cases === "object") {
+                              cases = [response.cases];
+                            }
+                            setIoUserCases(cases);
+                          } catch (err) {
+                            console.error("Failed to fetch EO user cases", err);
+                            setIoUserCases([]);
+                          }
+                        }
+                      }}
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          className="selectHideHistory"
+                          label="EO User"
+                        />
+                      )}
+                      // disabled={fieldActionAddFlag.current === false}
+                    />
+                  </FormControl>
+                </div>
+                      <div style={{ marginTop: 24, maxWidth: '100vw'  }}>
+                      <h4 className="form-field-heading">Selected EO handling Case Details</h4>
+                      <div style={{  }}>
+                        <TableView
+                        rows={ioUserCases.slice(
+                          casesPage * casesPageSize,
+                          (casesPage + 1) * casesPageSize
+                        ).map((row, idx) => ({
+                          ...row,
+                          sno: casesPage * casesPageSize + idx + 1,
+                          "field_cid_crime_no./enquiry_no":
+                          row["field_cid_crime_no./enquiry_no"] ||
+                          row.field_cid_crime_no ||
+                          row.enquiry_no ||
+                          "",
+                          "field_crime_number_of_ps" : row["field_crime_number_of_ps"] || "",
+                          "field_case/enquiry_keyword" : row["field_case/enquiry_keyword"] || "-",
+                          
+                        }
+                      ))}
+                        columns={[
+                          {
+                          field: "sno",
+                          headerName: "S.No",
+                          flex: 0.3,
+                          renderCell: (params) => params.row.sno,
+                          },
+                          {
+                          field: "field_cid_crime_no./enquiry_no",
+                          headerName: "Crime/Enquiry No.",
+                          flex: 1,
+                          renderCell: (params) => params.row["field_cid_crime_no./enquiry_no"],
+                          },
+                          {
+                          field: "field_crime_number_of_ps",
+                          headerName: "Crime Number of PS",
+                          flex: 1,
+                          renderCell: (params) => params.row["field_crime_number_of_ps"],
+                          },{
+                          field: "field_case/enquiry_keyword",
+                          headerName: "Case/Enquiry Keyword",
+                          flex: 1,
+                          renderCell: (params) => params.row["field_case/enquiry_keyword"],
+                          },
+                        ]}
+                        totalPage={ioUserCases.length > 0 && casesPageSize > 0 ? Math.ceil(ioUserCases.length / casesPageSize) : 1}
+                        totalRecord={ioUserCases.length}
+                        paginationCount={Number.isFinite(casesPage) ? casesPage + 1 : 1}
+                        handlePagination={(page) => setCasesPage(page - 1)}
+                        getRowId={(row, idx) => row.id || row["field_cid_crime_no./enquiry_no"] || idx}
+                        noRowsOverlayText="No data found"
+                        sx={{ width: 700 }}
+                        />
+                      </div>
+                      <div style={{ marginTop: 8 }}>
+                        Showing{" "}
+                        {Math.min(ioUserCases.length, (casesPage + 1) * casesPageSize)} of{" "}
+                        {ioUserCases.length} cases
+                      </div>
+                      </div>
+                    </DialogContentText>
+                    </DialogContent>
+                    <DialogActions sx={{ padding: "12px 24px" }}>
+                    {/* <Button
+                      onClick={() => {
+                  setShowReassignIoModal(false);
+                  setSelectKey(null);
+                  setSelectedRow([]);
+                  setOtherTransferField([]);
+                  setSelectedUser(null);
+                  setIoUserCases([]);
+                  // setSelectedOtherFields(null);
+                  // setselectedOtherTemplate(null);
+                  setUsersBasedOnDivision([]);
+                  // setSelectedUser(null);
+                  // setSelectedRowIds([]);
+                  setSelectedMergeRowData([]);
+                  setSelectedParentId(null);
+                  setTableData((prevData) =>
+                    prevData.map((item) => ({ ...item, isSelected: false }))
+                  );
+                  // setHasApproval(false);
+                }}
+              >
+                Cancel
+              </Button> */}
+      
+            </DialogActions>
+          </Dialog>
 
 
               <Dialog
@@ -13170,6 +13732,7 @@ const handleExtensionApprovalWithUpdate = async () => {
             <DialogContentText id="alert-dialog-description">
               <Grid container sx={{ alignItems: "center" }}>
                 <Grid item xs={12} md={6} p={2}>
+                 <h4 className="form-field-heading">From Date</h4>
                   <LocalizationProvider dateAdapter={AdapterDayjs}>
                     <DatePicker
                       format="DD-MM-YYYY"
@@ -13186,6 +13749,7 @@ const handleExtensionApprovalWithUpdate = async () => {
                 </Grid>
 
                 <Grid item xs={12} md={6} p={2}>
+                   <h4 className="form-field-heading">To Date</h4>
                   <LocalizationProvider dateAdapter={AdapterDayjs}>
                     <DatePicker
                       format="DD-MM-YYYY"
@@ -13246,6 +13810,69 @@ const handleExtensionApprovalWithUpdate = async () => {
                           />
                         </Grid>
                       );
+                      case "date":
+                          return (
+                              <Grid item xs={12} md={6} p={2} key={field.id}>
+                                  <div className="form-field-wrapper_selectedField">
+                                      <DateField
+                                          key={field.id}
+                                          field={field}
+                                          formData={filterValues}
+                                            onChange={(date) => {
+                                            const formattedDate = date ? dayjs(date).format("YYYY-MM-DD") : null;
+                                            setFilterValues((prev) => ({
+                                              ...prev,
+                                              [field.name]: formattedDate,
+                                            }));
+                                          }}
+                                      />
+                                  </div>
+                              </Grid>
+                          );
+                          case "datetime":
+                            return (
+                                <Grid item xs={12} md={6} p={2} key={field.id}>
+                                    <div className="form-field-wrapper_selectedField">
+                                        <DateTimeField
+                                            key={field.id}
+                                            field={field}
+                                            formData={filterValues}
+                                            onChange={(date) => {
+                                                const formattedDateTime = date
+                                                    ? dayjs(date).format("YYYY-MM-DD HH:mm:ss")
+                                                    : null;
+                                                setFilterValues((prev) => ({
+                                                    ...prev,
+                                                    [field.name]: formattedDateTime,
+                                                }));
+                                            }}
+                                        />
+                                    </div>
+                                </Grid>
+                            );
+                          
+                          // case "time":
+                          //     return (
+                          //         <Grid item xs={12} md={6} p={2} key={field.id}>
+                          //             <div className="form-field-wrapper_selectedField">
+                          //                 <TimeField
+                          //                     key={field.id}
+                          //                     field={field}
+                          //                     formData={filterValues}
+                          //                     onChange={(time) => {
+                          //                         const formattedTime = time
+                          //                             ? dayjs(time).format("HH:mm:ss")
+                          //                             : null;
+                          //                         setFilterValues((prev) => ({
+                          //                             ...prev,
+                          //                             [field.name]: formattedTime,
+                          //                         }));
+                          //                     }}
+                          //                 />
+                          //             </div>
+                          //         </Grid>
+                          //     );
+  
                   }
                 })}
               </Grid>
@@ -13295,6 +13922,7 @@ const handleExtensionApprovalWithUpdate = async () => {
                 <DialogContentText id="alert-dialog-description">
                     <Grid container sx={{ alignItems: "center" }}>
                         <Grid item xs={12} md={6} p={2}>
+                           <h4 className="form-field-heading">From Date</h4>
                             <LocalizationProvider dateAdapter={AdapterDayjs}>
                                 <DatePicker
                                     format="DD-MM-YYYY"
@@ -13311,6 +13939,7 @@ const handleExtensionApprovalWithUpdate = async () => {
                         </Grid>
 
                         <Grid item xs={12} md={6} p={2}>
+                           <h4 className="form-field-heading">To Date</h4>
                             <LocalizationProvider dateAdapter={AdapterDayjs}>
                                 <DatePicker
                                     format="DD-MM-YYYY"
@@ -13328,6 +13957,10 @@ const handleExtensionApprovalWithUpdate = async () => {
 
                         {othersFiltersDropdown.map((field) => {
                             if (field?.hide_from_ux) {
+                                return null;
+                            }
+
+                            if (!field?.table_display_content) {
                                 return null;
                             }
                             switch (field.type) {
