@@ -389,7 +389,7 @@ const generate_OTP = async (req, res) => {
     }
 
     const user_detail = await KGID.findOne({ where: { kgid } });
-
+    console.log(user_detail,"user_detail")
     if (user_detail) {
         const mobile = user_detail.mobile;
         const kgid_id = user_detail.id;
