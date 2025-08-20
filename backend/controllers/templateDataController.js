@@ -6097,6 +6097,22 @@ exports.bulkInsertData = async (req, res) => {
             };
         }
 
+        if (!modelAttributes["created_by"]) {
+          modelAttributes['created_by'] = { type: Sequelize.DataTypes.STRING, allowNull: true , defaultValue: null }
+        }
+        const userId = req.user?.user_id || null;
+        if (!userId) {
+          return userSendResponse(res, 403, false, "Unauthorized access.", null);
+        }
+
+        const userData = await Users.findOne({
+          include: [{ model: KGID, as: "kgidDetails", attributes: ["kgid", "name", "mobile"] }],
+          where: { user_id: userId },
+        });
+
+        let userName = userData?.kgidDetails?.name || null;
+
+
         const Model = sequelize.define(table_name, modelAttributes, {
             freezeTableName: true,
             timestamps: true,
@@ -6165,6 +6181,8 @@ exports.bulkInsertData = async (req, res) => {
 
                 processedRow[col] = value;
             }
+
+            processedRow['created_by'] = userName;
 
             insertRows.push(processedRow);
         }
