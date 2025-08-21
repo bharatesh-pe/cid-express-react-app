@@ -2442,19 +2442,7 @@ exports.getTemplateData = async (req, res, next) => {
                 };
             }
             else {
-                // whereClause = {
-                //     [Op.and]: [
-                //             { pt_case_id: req.body.pt_case_id },
-                //             { sys_status: { [Op.or]: ["pt_case", "others"] }},
-                //             {
-                //                 field_status_of_accused_in_charge_sheet: {
-                //                     [Op.notILike]: `%${pending}%`
-                //                 }
-                //             }
-                //     ]
-                // };
-
-                whereClause = {
+                  whereClause = {
                         [Op.and]: [
                                 {
                                     pt_case_id: req.body.pt_case_id,
@@ -6112,6 +6100,15 @@ exports.bulkInsertData = async (req, res) => {
         if (!modelAttributes["created_by"]) {
           modelAttributes['created_by'] = { type: Sequelize.DataTypes.STRING, allowNull: true , defaultValue: null }
         }
+
+        if (!modelAttributes["created_by_id"]) {
+            modelAttributes["created_by_id"] = {
+                type: Sequelize.DataTypes.INTEGER,
+                allowNull: true,
+                defaultValue: null,
+            };
+        }
+
         const userId = req.user?.user_id || null;
         if (!userId) {
           return userSendResponse(res, 403, false, "Unauthorized access.", null);
@@ -6123,6 +6120,7 @@ exports.bulkInsertData = async (req, res) => {
         });
 
         let userName = userData?.kgidDetails?.name || null;
+
 
 
         const Model = sequelize.define(table_name, modelAttributes, {
@@ -6195,6 +6193,7 @@ exports.bulkInsertData = async (req, res) => {
             }
 
             processedRow['created_by'] = userName;
+            processedRow['created_by_id'] = userId;
 
             insertRows.push(processedRow);
         }
@@ -14331,29 +14330,6 @@ exports.getTableCountsByCaseId = async (req, res) => {
               } 
               
               else if (module === "pt_case") {
-                // whereClause = {
-                //   [Sequelize.Op.and]: [
-                //     {
-                //       [Sequelize.Op.or]: [
-                //         { ui_case_id: req.body.ui_case_id || null },
-                //         { pt_case_id: req.body.pt_case_id || null }
-                //       ]
-                //     },
-                //     {
-                //       [Sequelize.Op.or]: [
-                //         {
-                //           sys_status: "pt_case"
-                //         },
-                //         {
-                //           sys_status: "ui_case",
-                //           field_status_of_accused_in_charge_sheet: {
-                //             [Sequelize.Op.notILike]: `%${pending}%`
-                //           }
-                //         }
-                //       ]
-                //     }
-                //   ]
-                // };
 
                 if(req.body.ui_case_id && req.body.ui_case_id !== "" && req.body.ui_case_id !== null) {
                     whereClause = {
@@ -14381,23 +14357,6 @@ exports.getTableCountsByCaseId = async (req, res) => {
                     };
                 }
                 else {
-                    // whereClause = {
-                    //     [Op.or]: [
-                    //             {
-                    //               [Op.and]: [
-                    //                 { pt_case_id: req.body.pt_case_id },
-                    //                 { sys_status: { [Op.in]: ['pt_case', 'other'] } },
-                    //               ]
-                    //             },
-                    //             {
-                    //               [Op.and]: [
-                    //                 { sys_status: { [Op.in]: ['ui_case', 'other'] } },
-                    //                 {field_status_of_accused_in_charge_sheet: {[Op.notILike]: `%${pending}%`}}
-                    //               ]
-                    //             }
-                    //     ]
-                    // };
-
                     whereClause = {
                         [Op.and]: [
                                 {
