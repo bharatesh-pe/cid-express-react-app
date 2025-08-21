@@ -2442,17 +2442,34 @@ exports.getTemplateData = async (req, res, next) => {
                 };
             }
             else {
+                // whereClause = {
+                //     [Op.and]: [
+                //             { pt_case_id: req.body.pt_case_id },
+                //             { sys_status: { [Op.or]: ["pt_case", "others"] }},
+                //             {
+                //                 field_status_of_accused_in_charge_sheet: {
+                //                     [Op.notILike]: `%${pending}%`
+                //                 }
+                //             }
+                //     ]
+                // };
+
                 whereClause = {
-                    [Op.and]: [
-                            { pt_case_id: req.body.pt_case_id },
-                            { sys_status: { [Op.or]: ["pt_case", "others"] }},
-                            {
-                                field_status_of_accused_in_charge_sheet: {
-                                    [Op.notILike]: `%${pending}%`
+                        [Op.or]: [
+                                {
+                                  [Op.and]: [
+                                    { pt_case_id: req.body.pt_case_id },
+                                    { sys_status: { [Op.in]: ['pt_case', 'other'] } },
+                                  ]
+                                },
+                                {
+                                  [Op.and]: [
+                                    { sys_status: { [Op.in]: ['ui_case', 'other'] } },
+                                    {field_status_of_accused_in_charge_sheet: {[Op.notILike]: `%${pending}%`}}
+                                  ]
                                 }
-                            }
-                    ]
-                };
+                        ]
+                    };
             }
         }
     }
@@ -14373,14 +14390,18 @@ exports.getTableCountsByCaseId = async (req, res) => {
                 }
                 else {
                     whereClause = {
-                        [Op.and]: [
-                                { pt_case_id: req.body.pt_case_id },
-                                { sys_status: "pt_case" },
+                        [Op.or]: [
                                 {
-                                    sys_status: "ui_case",
-                                    field_status_of_accused_in_charge_sheet: {
-                                        [Op.notILike]: `%${pending}%`
-                                    }
+                                  [Op.and]: [
+                                    { pt_case_id: req.body.pt_case_id },
+                                    { sys_status: { [Op.in]: ['pt_case', 'other'] } },
+                                  ]
+                                },
+                                {
+                                  [Op.and]: [
+                                    { sys_status: { [Op.in]: ['ui_case', 'other'] } },
+                                    {field_status_of_accused_in_charge_sheet: {[Op.notILike]: `%${pending}%`}}
+                                  ]
                                 }
                         ]
                     };
