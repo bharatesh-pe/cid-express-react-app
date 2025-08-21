@@ -727,7 +727,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                         // Get non-supervisor records with sys_status "ui_case"
                         const ioRecords = records.filter(
                             record =>
-                                record.sys_status === "ui_case" &&
+                                (record.sys_status === "ui_case" || record.sys_status === "others") &&
                                 record.supervisior_designation_id != userDesigId
                         );
 
