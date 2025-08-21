@@ -2458,7 +2458,7 @@ exports.getTemplateData = async (req, res, next) => {
                         [Op.and]: [
                                 {
                                     pt_case_id: req.body.pt_case_id,
-                                    sys_status: { [Op.in]: ['pt_case', 'other'] },
+                                    sys_status: { [Op.in]: ['pt_case', 'others'] },
                                 }
                         ]
                     };
@@ -14402,7 +14402,7 @@ exports.getTableCountsByCaseId = async (req, res) => {
                         [Op.and]: [
                                 {
                                     pt_case_id: req.body.pt_case_id,
-                                    sys_status: { [Op.in]: ['pt_case', 'other'] },
+                                    sys_status: { [Op.in]: ['pt_case', 'others'] },
                                 }
                         ]
                     };
