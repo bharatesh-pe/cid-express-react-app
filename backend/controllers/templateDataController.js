@@ -13663,11 +13663,11 @@ exports.submitActionPlanPR = async (req, res) => {
 
 
 exports.submitPropertyFormFSL = async (req, res) => {
-	const { transaction_id, ui_case_id, row_ids } = req.body;
+	const { transaction_id, ui_case_id, row_ids , pt_case_id} = req.body;
 	const { user_id: userId } = req.user;
 
-	if (!transaction_id || !ui_case_id) {
-		return userSendResponse(res, 400, false, "transaction_id and ui_case_id are required.", null);
+	if (!transaction_id ) {
+		return userSendResponse(res, 400, false, "transaction_id are required.", null);
 	}
 
 	let t = await dbConfig.sequelize.transaction();
@@ -13691,13 +13691,14 @@ exports.submitPropertyFormFSL = async (req, res) => {
 		const apTemplate = await Template.findOne({ where: { table_name: "cid_ui_case_property_form" } });
 		if (!apTemplate) {
 			return userSendResponse(res, 400, false, "Property Form template not found.", null);
-		}
+		} 
+    
 
 		// Fetch Property Form records
 		const propertyFormData = await sequelize.query(
-			`SELECT * FROM cid_ui_case_property_form WHERE ui_case_id = :ui_case_id`,
+			`SELECT * FROM cid_ui_case_property_form WHERE ui_case_id = :ui_case_id OR pt_case_id = :pt_case_id`,
 			{
-				replacements: { ui_case_id },
+				replacements: { ui_case_id, pt_case_id },
 				type: Sequelize.QueryTypes.SELECT,
 				transaction: t,
 			}

@@ -211,8 +211,8 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
 
         const payload = {
             table_name: selectedOtherTemplate.table,
-            ui_case_id: selectedRowData.id,
-            pt_case_id: selectedRowData?.pt_case_id || null,
+            ui_case_id : selectedRowData?.ui_case_id,
+            pt_case_id : selectedRowData?.id,
             case_io_id: selectedRowData.field_io_name_id || "",
         };
 
@@ -1949,13 +1949,22 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
             showCancelButton: true,
             confirmButtonText: 'Yes, submit it!',
             cancelButtonText: 'Cancel',
-        });
+        }); 
+
+        var ui_case_id = selectedRowData?.id;
+        var pt_case_id = selectedRowData?.pt_case_id;
+
+        if(module === "pt_case"){
+            ui_case_id = selectedRowData?.ui_case_id
+            pt_case_id = selectedRowData?.id
+        }
 
         if (result.isConfirmed) {
             const payload = {
                 transaction_id: `submitap_${Math.floor(Math.random() * 1000000)}`,
-                ui_case_id: selectedRowData.id,
-                row_ids: pfRows.map(row => row.id)
+                ui_case_id: ui_case_id,
+                pt_case_id: pt_case_id,
+                row_ids: pfRows.map(row => row.id),
             };
 
             try {
@@ -2103,11 +2112,18 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
 
         normalData.sys_status = "PF"
         normalData.field_submit_status = "";
-        if(module === 'ui_case'){
-            normalData["ui_case_id"] = selectedRowData.id;
-        }else if(module === 'pt_case'){
-            normalData["pt_case_id"] = selectedRowData.id;
+
+        var ui_case_id = selectedRowData?.id;
+        var pt_case_id = selectedRowData?.pt_case_id;
+
+        if(module === "pt_case"){
+            ui_case_id = selectedRowData?.ui_case_id
+            pt_case_id = selectedRowData?.id
         }
+
+        normalData['ui_case_id'] = ui_case_id;
+        normalData['pt_case_id'] = pt_case_id;
+
         formData.append("table_name", selectedOtherTemplate.table);
         formData.append("data", JSON.stringify(normalData));
         formData.append("child_tables", JSON.stringify(childTableDataMap));
