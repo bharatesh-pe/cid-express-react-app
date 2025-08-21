@@ -2425,12 +2425,12 @@ exports.getTemplateData = async (req, res, next) => {
                       [Op.or]: [
                         {
                           sys_status: {
-                            [Op.or]: ["pt_case", "other"]
+                            [Op.or]: ["pt_case", "others"]
                           }
                         },
                         {
                           sys_status: {
-                            [Op.or]: ["pt_case", "other"]
+                            [Op.or]: ["pt_case", "others"]
                           },
                           field_status_of_accused_in_charge_sheet: {
                             [Op.notILike]: `%${pending}%`
@@ -2445,11 +2445,8 @@ exports.getTemplateData = async (req, res, next) => {
                 whereClause = {
                     [Op.and]: [
                             { pt_case_id: req.body.pt_case_id },
-                            { sys_status: { [Op.or]: ["pt_case", "other"] }},
+                            { sys_status: { [Op.or]: ["pt_case", "others"] }},
                             {
-                                sys_status: {
-                                  [Op.or]: ["pt_case", "other"]
-                                },
                                 field_status_of_accused_in_charge_sheet: {
                                     [Op.notILike]: `%${pending}%`
                                 }
