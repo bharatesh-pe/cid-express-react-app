@@ -13790,7 +13790,7 @@ exports.submitPropertyFormFSL = async (req, res) => {
 		// Insert selected rows into FSL
 		await PropertyFormModel.bulkCreate(propertyFormDataToInsert, { transaction: t });
 
-    const caseId = ui_case_id || null;
+    const caseId = ui_case_id || pt_case_id || null;
     const formattedTableName = formatTableName("cid_ui_case_forensic_science_laboratory");
     const actionText = `<span style="color: #003366; font-weight: bold;">${formattedTableName}</span> - New record created from Property Form`;
 
