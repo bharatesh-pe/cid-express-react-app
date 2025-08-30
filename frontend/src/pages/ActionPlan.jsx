@@ -717,7 +717,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
 
                         for (let i = 0; i < supervisorRecords.length; i++) {
                             const status = supervisorRecords[i]['field_submit_status'];
-                            if (status === "" || status === null) {
+                            if (status === "" || status === null || status === "others") {
                                 allAPWithOutSupervisorSubmit = true;
                                 console.log("Set allAPWithOutSupervisorSubmit to true");
                                 break;
@@ -727,7 +727,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                         // Get non-supervisor records with sys_status "ui_case"
                         const ioRecords = records.filter(
                             record =>
-                                record.sys_status === "ui_case" &&
+                                (record.sys_status === "ui_case" || record.sys_status === "others") &&
                                 record.supervisior_designation_id != userDesigId
                         );
 
@@ -738,11 +738,11 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                         // Check if all IO records are NOT submitted
                         const allAPWithOutIOSubmit = ioRecords.length > 0 &&
                             ioRecords.every(
-                                record => record.field_submit_status === "" || record.field_submit_status === null
+                                record => record.field_submit_status === "" || record.field_submit_status === null || record.field_submit_status === "others"
                             );
                     
                         // Set flags accordingly
-                        if (allAPWithOutSupervisorSubmit || allAPWithOutIOSubmit) {
+                        if (allAPWithOutSupervisorSubmit || allAPWithOutIOSubmit ) {
                             anySubmitAP = false;
                         }
                     
@@ -775,7 +775,9 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                             anySubmitAP = false;
                         }
 
-
+                        if(searchFlag){
+                            anySubmitAP = false;
+                        }
                         setShowSubmitAPButton(anySubmitAP);
                         setIsImmediateSupervisior(isSuperivisor);
                         setAPIsSubmited(false);

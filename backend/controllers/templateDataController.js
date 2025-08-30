@@ -2424,10 +2424,14 @@ exports.getTemplateData = async (req, res, next) => {
                     {
                       [Op.or]: [
                         {
-                          sys_status: "pt_case"
+                          sys_status: {
+                            [Op.or]: ["pt_case", "others"]
+                          }
                         },
                         {
-                          sys_status: "ui_case",
+                          sys_status: {
+                            [Op.or]: ["pt_case", "others"]
+                          },
                           field_status_of_accused_in_charge_sheet: {
                             [Op.notILike]: `%${pending}%`
                           }
@@ -2438,18 +2442,14 @@ exports.getTemplateData = async (req, res, next) => {
                 };
             }
             else {
-                whereClause = {
-                    [Op.and]: [
-                            { pt_case_id: req.body.pt_case_id },
-                            { sys_status: "pt_case" },
-                            {
-                                sys_status: "ui_case",
-                                field_status_of_accused_in_charge_sheet: {
-                                    [Op.notILike]: `%${pending}%`
+                  whereClause = {
+                        [Op.and]: [
+                                {
+                                    pt_case_id: req.body.pt_case_id,
+                                    sys_status: { [Op.in]: ['pt_case', 'others'] },
                                 }
-                            }
-                    ]
-                };
+                        ]
+                    };
             }
         }
     }
@@ -6097,6 +6097,32 @@ exports.bulkInsertData = async (req, res) => {
             };
         }
 
+        if (!modelAttributes["created_by"]) {
+          modelAttributes['created_by'] = { type: Sequelize.DataTypes.STRING, allowNull: true , defaultValue: null }
+        }
+
+        if (!modelAttributes["created_by_id"]) {
+            modelAttributes["created_by_id"] = {
+                type: Sequelize.DataTypes.INTEGER,
+                allowNull: true,
+                defaultValue: null,
+            };
+        }
+
+        const userId = req.user?.user_id || null;
+        if (!userId) {
+          return userSendResponse(res, 403, false, "Unauthorized access.", null);
+        }
+
+        const userData = await Users.findOne({
+          include: [{ model: KGID, as: "kgidDetails", attributes: ["kgid", "name", "mobile"] }],
+          where: { user_id: userId },
+        });
+
+        let userName = userData?.kgidDetails?.name || null;
+
+
+
         const Model = sequelize.define(table_name, modelAttributes, {
             freezeTableName: true,
             timestamps: true,
@@ -6165,6 +6191,9 @@ exports.bulkInsertData = async (req, res) => {
 
                 processedRow[col] = value;
             }
+
+            processedRow['created_by'] = userName;
+            processedRow['created_by_id'] = userId;
 
             insertRows.push(processedRow);
         }
@@ -13634,11 +13663,11 @@ exports.submitActionPlanPR = async (req, res) => {
 
 
 exports.submitPropertyFormFSL = async (req, res) => {
-	const { transaction_id, ui_case_id, row_ids } = req.body;
+	const { transaction_id, ui_case_id, row_ids , pt_case_id} = req.body;
 	const { user_id: userId } = req.user;
 
-	if (!transaction_id || !ui_case_id) {
-		return userSendResponse(res, 400, false, "transaction_id and ui_case_id are required.", null);
+	if (!transaction_id ) {
+		return userSendResponse(res, 400, false, "transaction_id are required.", null);
 	}
 
 	let t = await dbConfig.sequelize.transaction();
@@ -13662,13 +13691,14 @@ exports.submitPropertyFormFSL = async (req, res) => {
 		const apTemplate = await Template.findOne({ where: { table_name: "cid_ui_case_property_form" } });
 		if (!apTemplate) {
 			return userSendResponse(res, 400, false, "Property Form template not found.", null);
-		}
+		} 
+    
 
 		// Fetch Property Form records
 		const propertyFormData = await sequelize.query(
-			`SELECT * FROM cid_ui_case_property_form WHERE ui_case_id = :ui_case_id`,
+			`SELECT * FROM cid_ui_case_property_form WHERE ui_case_id = :ui_case_id OR pt_case_id = :pt_case_id`,
 			{
-				replacements: { ui_case_id },
+				replacements: { ui_case_id, pt_case_id },
 				type: Sequelize.QueryTypes.SELECT,
 				transaction: t,
 			}
@@ -13760,7 +13790,7 @@ exports.submitPropertyFormFSL = async (req, res) => {
 		// Insert selected rows into FSL
 		await PropertyFormModel.bulkCreate(propertyFormDataToInsert, { transaction: t });
 
-    const caseId = ui_case_id || null;
+    const caseId = ui_case_id || pt_case_id || null;
     const formattedTableName = formatTableName("cid_ui_case_forensic_science_laboratory");
     const actionText = `<span style="color: #003366; font-weight: bold;">${formattedTableName}</span> - New record created from Property Form`;
 
@@ -14301,29 +14331,6 @@ exports.getTableCountsByCaseId = async (req, res) => {
               } 
               
               else if (module === "pt_case") {
-                // whereClause = {
-                //   [Sequelize.Op.and]: [
-                //     {
-                //       [Sequelize.Op.or]: [
-                //         { ui_case_id: req.body.ui_case_id || null },
-                //         { pt_case_id: req.body.pt_case_id || null }
-                //       ]
-                //     },
-                //     {
-                //       [Sequelize.Op.or]: [
-                //         {
-                //           sys_status: "pt_case"
-                //         },
-                //         {
-                //           sys_status: "ui_case",
-                //           field_status_of_accused_in_charge_sheet: {
-                //             [Sequelize.Op.notILike]: `%${pending}%`
-                //           }
-                //         }
-                //       ]
-                //     }
-                //   ]
-                // };
 
                 if(req.body.ui_case_id && req.body.ui_case_id !== "" && req.body.ui_case_id !== null) {
                     whereClause = {
@@ -14353,13 +14360,9 @@ exports.getTableCountsByCaseId = async (req, res) => {
                 else {
                     whereClause = {
                         [Op.and]: [
-                                { pt_case_id: req.body.pt_case_id },
-                                { sys_status: "pt_case" },
                                 {
-                                    sys_status: "ui_case",
-                                    field_status_of_accused_in_charge_sheet: {
-                                        [Op.notILike]: `%${pending}%`
-                                    }
+                                    pt_case_id: req.body.pt_case_id,
+                                    sys_status: { [Op.in]: ['pt_case', 'others'] },
                                 }
                         ]
                     };
