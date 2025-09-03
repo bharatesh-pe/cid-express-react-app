@@ -1919,7 +1919,7 @@ exports.getActionTemplateData = async (req, res, next) => {
       created_at: { type: Sequelize.DataTypes.DATE, allowNull: false },
       updated_at: { type: Sequelize.DataTypes.DATE, allowNull: false },
       created_by: { type: Sequelize.DataTypes.STRING, allowNull: true },
-      publickey: { type: Sequelize.DataTypes.STRING, allowNull: true },
+    //   publickey: { type: Sequelize.DataTypes.STRING, allowNull: true },
     };
 
     const associations = [];
@@ -7410,7 +7410,7 @@ exports.caseSysStatusUpdation = async (req, res) => {
         { name: "updated_by_id", data_type: "INTEGER", not_null: false },
         { name: "ui_case_id", data_type: "INTEGER", not_null: false },
         { name: "pt_case_id", data_type: "INTEGER", not_null: false },
-        { name: "publickey", data_type: "TEXT", not_null: false },
+        // { name: "publickey", data_type: "TEXT", not_null: false },
         ...schema,
       ];
   
@@ -7516,7 +7516,7 @@ exports.caseSysStatusUpdation = async (req, res) => {
             { name: "updated_by", data_type: "TEXT", not_null: false },
             { name: "created_by_id", data_type: "INTEGER", not_null: false },
             { name: "updated_by_id", data_type: "INTEGER", not_null: false },
-            { name: "publickey", data_type: "TEXT", not_null: false },
+            // { name: "publickey", data_type: "TEXT", not_null: false },
             ...invSchema,
           ];
   
@@ -9032,7 +9032,7 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
 						{ name: "updated_by_id", data_type: "INTEGER", not_null: false },
 						{ name: "ui_case_id", data_type: "INTEGER", not_null: false },
 						{ name: "pt_case_id", data_type: "INTEGER", not_null: false },
-                        { name: "publickey", data_type: "TEXT", not_null: false },
+                        // { name: "publickey", data_type: "TEXT", not_null: false },
 						...otherSchema
 					];
 
@@ -9178,10 +9178,10 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
                                      type: Sequelize.DataTypes.STRING,
                                      allowNull: true,
                                      },
-                                    publickey: {
-                                        type: Sequelize.DataTypes.STRING,
-                                        allowNull: true,
-                                    },
+                                    // publickey: {
+                                    //     type: Sequelize.DataTypes.STRING,
+                                    //     allowNull: true,
+                                    // },
                                  };
                             
                                  for (const field of PRschema) {
@@ -9890,7 +9890,7 @@ exports.updateDataWithApprovalToTemplates = async (req, res, next) => {
 						{ name: "updated_by_id", data_type: "INTEGER", not_null: false },
 						{ name: "ui_case_id", data_type: "INTEGER", not_null: false },
 						{ name: "pt_case_id", data_type: "INTEGER", not_null: false },
-                        { name: "publickey", data_type: "TEXT", not_null: false },
+                        // { name: "publickey", data_type: "TEXT", not_null: false },
 						...otherSchema
 					];
 
@@ -12280,7 +12280,7 @@ exports.deMergeCaseData = async (req, res) => {
             { name: "updated_by_id", data_type: "INTEGER", not_null: false },
             { name: "ui_case_id", data_type: "INTEGER", not_null: false },
             { name: "pt_case_id", data_type: "INTEGER", not_null: false },
-            { name: "publickey", data_type: "TEXT", not_null: false },
+            // { name: "publickey", data_type: "TEXT", not_null: false },
             ...schema,
         ];
 

@@ -12110,7 +12110,7 @@ const handleExtensionApprovalWithUpdate = async () => {
           ? { ...field, options: updatedField.options }
           : field;
       });
-
+      
       if (others) {
         setOthersFiltersDropdown(updatedFieldsDropdown);
       } else {
@@ -12137,140 +12137,582 @@ const handleExtensionApprovalWithUpdate = async () => {
     setForceTableLoad((prev) => !prev);
   };
 
-  const handleAutocomplete = (field, selectedValue, othersFilter) => {
+//   const handleAutocomplete = (field, selectedValue, othersFilter) => {
 
-    var updatedFormData = {}
-    var selectedFilterDropdown = []
+//     var updatedFormData = {}
+//     var selectedFilterDropdown = []
 
-    if(othersFilter){
+//     if(othersFilter){
 
-        selectedFilterDropdown = othersFiltersDropdown
-        updatedFormData = { ...othersFilterData, [field.name]: selectedValue };
+//         selectedFilterDropdown = othersFiltersDropdown
+//         updatedFormData = { ...othersFilterData, [field.name]: selectedValue };
         
-        setOthersFilterData(updatedFormData);
+//         setOthersFilterData(updatedFormData);
         
-    }else{
+//     }else{
 
-        selectedFilterDropdown = filterDropdownObj
-        updatedFormData = { ...filterValues, [field.name]: selectedValue };
+//         selectedFilterDropdown = filterDropdownObj
+//         updatedFormData = { ...filterValues, [field.name]: selectedValue };
     
-        setFilterValues(updatedFormData);
+//         setFilterValues(updatedFormData);
 
+//     }
+
+//     if (field?.api && field?.table) {
+//       var dependent_field = selectedFilterDropdown.filter((element) => {
+//         return (
+//           element.dependent_table &&
+//           element.dependent_table.length > 0 &&
+//           element.dependent_table.includes(field.table)
+//         );
+//       });
+
+//       if (dependent_field && dependent_field[0] && dependent_field[0].api) {
+//         var apiPayload = {};
+//         if (dependent_field[0].dependent_table.length === 1) {
+//           const key = field.table === "users" ? "user_id" : `${field.table}_id`;
+//           apiPayload = {
+//             [key]: updatedFormData[field.name],
+//           };
+//         } else {
+//           var dependentFields = selectedFilterDropdown.filter((element) => {
+//             return dependent_field[0].dependent_table.includes(element.table);
+//           });
+
+//           apiPayload = dependentFields.reduce((payload, element) => {
+//             if (updatedFormData && updatedFormData[element.name]) {
+//               const key =
+//                 element.table === "users" ? "user_id" : `${element.table}_id`;
+//               payload[key] = updatedFormData[element.name];
+//             }
+//             return payload;
+//           }, {});
+//         }
+
+//         const callApi = async () => {
+//           setLoading(true);
+
+//           try {
+//             var getOptionsValue = await api.post(
+//               dependent_field[0].api,
+//               apiPayload
+//             );
+//             setLoading(false);
+
+//             var updatedOptions = [];
+
+//             if (getOptionsValue && getOptionsValue.data) {
+//               updatedOptions = getOptionsValue.data.map((element, i) => {
+//                 return {
+//                   name: element[
+//                     dependent_field[0].table === "users"
+//                       ? "name"
+//                       : dependent_field[0].table + "_name"
+//                   ],
+//                   code: element[
+//                     dependent_field[0].table === "users"
+//                       ? "user_id"
+//                       : dependent_field[0].table + "_id"
+//                   ],
+//                 };
+//               });
+//             }
+
+//             var userUpdateFields = {
+//               options: updatedOptions,
+//             };
+
+
+//             dependent_field.forEach((data) => {
+//                 delete updatedFormData[data.name];
+//             });
+
+//             if(othersFilter){
+//                 setOthersFiltersDropdown(
+//                     selectedFilterDropdown.map((element) => element.id === dependent_field[0].id ? { ...element, ...userUpdateFields } : element)
+//                 );
+//                 dependent_field.map((data) => {
+//                     delete othersFilterData[data.name];
+//                 });
+
+//                 setOthersFilterData(updatedFormData);
+//             }else{
+//                 setfilterDropdownObj(
+//                     selectedFilterDropdown.map((element) => element.id === dependent_field[0].id ? { ...element, ...userUpdateFields } : element )
+//                 );
+//                 dependent_field.map((data) => {
+//                     delete filterValues[data.name];
+//                 });
+
+//                 setFilterValues(updatedFormData);
+//             }
+
+//           } catch (error) {
+//             setLoading(false);
+//             if (error && error.response && error.response.data) {
+//               toast.error(
+//                 error.response?.data?.message || "Need dependent Fields",
+//                 {
+//                   position: "top-right",
+//                   autoClose: 3000,
+//                   hideProgressBar: false,
+//                   closeOnClick: true,
+//                   pauseOnHover: true,
+//                   draggable: true,
+//                   progress: undefined,
+//                   className: "toast-error",
+//                 }
+//               );
+//               return;
+//             }
+//           }
+//         };
+//         callApi();
+//       }
+
+//         if (field && field?.name === "field_io_name") {
+//             const gettingUserDetails = async () => {
+//                 if (formData["field_io_name"]) {
+//                 try {
+//                     const response = await api.post("cidMaster/getUserParticularDetails", {
+//                     user_id: formData["field_io_name"]
+//                     });
+
+//                     const data = response?.data;
+//                     if (!data) return;
+
+//                     let updatedFormData = {};
+
+//                     selectedFilterDropdown.forEach((field) => {   // 🔄 replaced newFormConfig
+//                     if (field?.name === "field_io_code/kgid_number" && data?.kgid_id) {
+//                         updatedFormData["field_io_code/kgid_number"] = data.kgid_id;
+//                     }
+
+//                     if (field?.name === "field_io_rank_(designation)") {
+//                         if (field?.type === "multidropdown") {
+//                         updatedFormData["field_io_rank_(designation)"] = data?.designations || [];
+//                         } else {
+//                         updatedFormData["field_io_rank_(designation)"] = data?.designations?.[0] || "";
+//                         }
+//                     }
+//                     });
+
+//                     setFormData((prevData) => ({
+//                     ...prevData,
+//                     ...updatedFormData
+//                     }));
+
+//                 } catch (error) {
+//                     console.error("Error fetching user details:", error);
+//                 }
+//                 } else {
+//                 let updatedFormData = {};
+
+//                 selectedFilterDropdown.forEach((field) => {   // 🔄 replaced newFormConfig
+//                     if (field?.name === "field_io_code/kgid_number" && formData?.['field_io_code/kgid_number']) {
+//                     updatedFormData["field_io_code/kgid_number"] = "";
+//                     }
+
+//                     if (field?.name === "field_io_rank_(designation)" && formData?.['field_io_rank_(designation)']) {
+//                     if (field?.type === "multidropdown") {
+//                         updatedFormData["field_io_rank_(designation)"] = [];
+//                     } else {
+//                         updatedFormData["field_io_rank_(designation)"] = "";
+//                     }
+//                     }
+//                 });
+
+//                 setFormData((prevData) => ({
+//                     ...prevData,
+//                     ...updatedFormData
+//                 }));
+//                 }
+//             };
+
+//             gettingUserDetails();
+//         }
+
+//         if (field && field?.name && field?.table === "department" && selectedFilterDropdown.some(f => f.table === "division")) {
+
+//             var divisionField = selectedFilterDropdown.find((field) => field.table === "division");   // 🔄 replaced newFormConfig
+
+//             if (divisionField && divisionField?.name) {
+//                 const gettingDivisionBasedOnDepartment = async () => {
+//                 try {
+//                     var departmentPayload = {
+//                     "department_id": formData[field.name]
+//                     };
+
+//                     const response = await api.post("cidMaster/getDivisionBasedOnDepartment", departmentPayload);
+//                     const data = response?.data;
+
+//                     if (!data) {
+//                     setSelectedFilterDropdown((prev) =>
+//                         prev.map((configData) =>
+//                         configData?.name === divisionField?.name ? { ...configData, options: [] } : configData
+//                         )
+//                     );
+//                     return;
+//                     }
+
+//                     var updatedOptions = data.map((divisionData) => ({
+//                     name: divisionData["division_name"],
+//                     code: divisionData["division_id"],
+//                     }));
+
+//                     setSelectedFilterDropdown((prev) =>
+//                     prev.map((configData) =>
+//                         configData?.name === divisionField?.name ? { ...configData, options: updatedOptions } : configData
+//                     )
+//                     );
+
+//                     setFormData((prevData) => ({
+//                     ...prevData,
+//                     [divisionField.name]: ""
+//                     }));
+
+//                 } catch (error) {
+//                     console.error("Error fetching division details:", error);
+//                     setSelectedFilterDropdown((prev) =>
+//                     prev.map((configData) =>
+//                         configData?.name === divisionField?.name ? { ...configData, options: [] } : configData
+//                     )
+//                     );
+//                 }
+//                 };
+
+//                 gettingDivisionBasedOnDepartment();
+//             }
+//         }
+
+        
+//         if (field && field?.name && field?.table === "cid_district" && selectedFilterDropdown.some((f) => f.table === "cid_police_station")) {
+//             const policeStationField = selectedFilterDropdown.find((field) => field.table === "cid_police_station");
+
+//             if (policeStationField && policeStationField?.name) {
+//                 const getPoliceStationsBasedOnDistrict = async () => {
+//                 try {
+//                     const districtIdValue = formData[field.name];
+//                     if (!districtIdValue) {
+//                     console.warn("District ID is empty or undefined. Aborting request.");
+//                     return;
+//                     }
+
+//                     const districtPayload = { district_id: districtIdValue };
+
+//                     const response = await api.post("cidMaster/getPoliceStationsBasedOnDistrict", districtPayload);
+//                     const data = response?.data;
+
+//                     if (!Array.isArray(data) || data.length === 0) {
+//                     setSelectedFilterDropdown((prev) =>
+//                         prev.map((configData) =>
+//                         configData?.name === policeStationField?.name ? { ...configData, options: [] } : configData
+//                         )
+//                     );
+//                     return;
+//                     }
+
+//                     const updatedOptions = data.map((psData) => ({
+//                     name: psData["field_name_of_the_police_station"],
+//                     code: psData["id"],
+//                     }));
+
+//                     setSelectedFilterDropdown((prev) =>
+//                     prev.map((configData) =>
+//                         configData?.name === policeStationField?.name ? { ...configData, options: updatedOptions } : configData
+//                     )
+//                     );
+
+//                     setFormData((prevData) => ({
+//                     ...prevData,
+//                     [policeStationField.name]: ""
+//                     }));
+
+//                 } catch (error) {
+//                     console.error("Error while fetching police stations:", error);
+//                     setSelectedFilterDropdown((prev) =>
+//                     prev.map((configData) =>
+//                         configData?.name === policeStationField?.name ? { ...configData, options: [] } : configData
+//                     )
+//                     );
+//                 }
+//                 };
+//                 getPoliceStationsBasedOnDistrict();
+//             }
+//         }
+
+              
+//     }
+//   };
+
+const handleAutocomplete = (field, selectedValue, othersFilter) => {
+    let updatedFormData = {};
+
+    // 🔹 Update formData based on othersFilter
+    if (othersFilter) {
+        updatedFormData = { ...othersFilterData, [field.name]: selectedValue };
+        setOthersFilterData(updatedFormData);
+    } else {
+        updatedFormData = { ...filterValues, [field.name]: selectedValue };
+        setFilterValues(updatedFormData);
     }
 
+    // 🔹 If field has dependency API/table
     if (field?.api && field?.table) {
-      var dependent_field = selectedFilterDropdown.filter((element) => {
+        const currentDropdown = othersFilter ? othersFiltersDropdown : filterDropdownObj;
+
+        let dependent_field = currentDropdown.filter((element) => {
         return (
-          element.dependent_table &&
-          element.dependent_table.length > 0 &&
-          element.dependent_table.includes(field.table)
+            element.dependent_table &&
+            element.dependent_table.length > 0 &&
+            element.dependent_table.includes(field.table)
         );
-      });
+        });
 
-      if (dependent_field && dependent_field[0] && dependent_field[0].api) {
-        var apiPayload = {};
-        if (dependent_field[0].dependent_table.length === 1) {
-          const key = field.table === "users" ? "user_id" : `${field.table}_id`;
-          apiPayload = {
-            [key]: updatedFormData[field.name],
-          };
-        } else {
-          var dependentFields = selectedFilterDropdown.filter((element) => {
-            return dependent_field[0].dependent_table.includes(element.table);
-          });
+        if (dependent_field && dependent_field[0] && dependent_field[0].api) {
+            let apiPayload = {};
 
-          apiPayload = dependentFields.reduce((payload, element) => {
-            if (updatedFormData && updatedFormData[element.name]) {
-              const key =
-                element.table === "users" ? "user_id" : `${element.table}_id`;
-              payload[key] = updatedFormData[element.name];
-            }
-            return payload;
-          }, {});
-        }
-
-        const callApi = async () => {
-          setLoading(true);
-
-          try {
-            var getOptionsValue = await api.post(
-              dependent_field[0].api,
-              apiPayload
-            );
-            setLoading(false);
-
-            var updatedOptions = [];
-
-            if (getOptionsValue && getOptionsValue.data) {
-              updatedOptions = getOptionsValue.data.map((element, i) => {
-                return {
-                  name: element[
-                    dependent_field[0].table === "users"
-                      ? "name"
-                      : dependent_field[0].table + "_name"
-                  ],
-                  code: element[
-                    dependent_field[0].table === "users"
-                      ? "user_id"
-                      : dependent_field[0].table + "_id"
-                  ],
+            if (dependent_field[0].dependent_table.length === 1) {
+                const key = field.table === "users" ? "user_id" : `${field.table}_id`;
+                apiPayload = {
+                [key]: updatedFormData[field.name],
                 };
-              });
+            } else {
+                const dependentFields = currentDropdown.filter((element) =>
+                dependent_field[0].dependent_table.includes(element.table)
+                );
+
+                apiPayload = dependentFields.reduce((payload, element) => {
+                if (updatedFormData && updatedFormData[element.name]) {
+                    const key =
+                    element.table === "users" ? "user_id" : `${element.table}_id`;
+                    payload[key] = updatedFormData[element.name];
+                }
+                return payload;
+                }, {});
             }
 
-            var userUpdateFields = {
-              options: updatedOptions,
+            const callApi = async () => {
+                setLoading(true);
+                try {
+                const getOptionsValue = await api.post(dependent_field[0].api, apiPayload);
+                setLoading(false);
+
+                let updatedOptions = [];
+                if (getOptionsValue && getOptionsValue.data) {
+                    updatedOptions = getOptionsValue.data.map((element) => {
+                    return {
+                        name:
+                        dependent_field[0].table === "users"
+                            ? element["name"]
+                            : element[dependent_field[0].table + "_name"],
+                        code:
+                        dependent_field[0].table === "users"
+                            ? element["user_id"]
+                            : element[dependent_field[0].table + "_id"],
+                    };
+                    });
+                }
+
+                const userUpdateFields = { options: updatedOptions };
+
+                // Clear dependent values
+                dependent_field.forEach((data) => {
+                    delete updatedFormData[data.name];
+                });
+
+                if (othersFilter) {
+                    setOthersFiltersDropdown(
+                    othersFiltersDropdown.map((element) =>
+                        element.id === dependent_field[0].id
+                        ? { ...element, ...userUpdateFields }
+                        : element
+                    )
+                    );
+                    setOthersFilterData(updatedFormData);
+                } else {
+                    setfilterDropdownObj(
+                    filterDropdownObj.map((element) =>
+                        element.id === dependent_field[0].id
+                        ? { ...element, ...userUpdateFields }
+                        : element
+                    )
+                    );
+                    setFilterValues(updatedFormData);
+                }
+                } catch (error) {
+                setLoading(false);
+                if (error?.response?.data) {
+                    toast.error(
+                    error.response?.data?.message || "Need dependent Fields",
+                    {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-error",
+                    }
+                    );
+                }
+                }
             };
 
+            callApi();
+        }
 
-            dependent_field.forEach((data) => {
-                delete updatedFormData[data.name];
-            });
+        // 🔹 Special case: field_io_name → get user details
+        if (field?.name === "field_io_name") {
+            const gettingUserDetails = async () => {
+                if (formData["field_io_name"]) {
+                try {
+                    const response = await api.post("cidMaster/getUserParticularDetails", {
+                    user_id: formData["field_io_name"],
+                    });
 
-            if(othersFilter){
-                setOthersFiltersDropdown(
-                    selectedFilterDropdown.map((element) => element.id === dependent_field[0].id ? { ...element, ...userUpdateFields } : element)
-                );
-                dependent_field.map((data) => {
-                    delete othersFilterData[data.name];
-                });
+                    const data = response?.data;
+                    if (!data) return;
 
-                setOthersFilterData(updatedFormData);
-            }else{
-                setfilterDropdownObj(
-                    selectedFilterDropdown.map((element) => element.id === dependent_field[0].id ? { ...element, ...userUpdateFields } : element )
-                );
-                dependent_field.map((data) => {
-                    delete filterValues[data.name];
-                });
+                    let newUserFormData = {};
 
-                setFilterValues(updatedFormData);
-            }
+                    (othersFilter ? othersFiltersDropdown : filterDropdownObj).forEach((fld) => {
+                    if (fld?.name === "field_io_code/kgid_number" && data?.kgid_id) {
+                        newUserFormData["field_io_code/kgid_number"] = data.kgid_id;
+                    }
+                    if (fld?.name === "field_io_rank_(designation)") {
+                        if (fld?.type === "multidropdown") {
+                        newUserFormData["field_io_rank_(designation)"] = data?.designations || [];
+                        } else {
+                        newUserFormData["field_io_rank_(designation)"] =
+                            data?.designations?.[0] || "";
+                        }
+                    }
+                    });
 
-          } catch (error) {
-            setLoading(false);
-            if (error && error.response && error.response.data) {
-              toast.error(
-                error.response?.data?.message || "Need dependent Fields",
-                {
-                  position: "top-right",
-                  autoClose: 3000,
-                  hideProgressBar: false,
-                  closeOnClick: true,
-                  pauseOnHover: true,
-                  draggable: true,
-                  progress: undefined,
-                  className: "toast-error",
+                    setFormData((prevData) => ({
+                    ...prevData,
+                    ...newUserFormData,
+                    }));
+                } catch (error) {
+                    console.error("Error fetching user details:", error);
                 }
-              );
-              return;
+                } else {
+                let resetUserFormData = {};
+
+                (othersFilter ? othersFiltersDropdown : filterDropdownObj).forEach((fld) => {
+                    if (fld?.name === "field_io_code/kgid_number" && formData?.["field_io_code/kgid_number"]) {
+                    resetUserFormData["field_io_code/kgid_number"] = "";
+                    }
+                    if (fld?.name === "field_io_rank_(designation)" && formData?.["field_io_rank_(designation)"]) {
+                    if (fld?.type === "multidropdown") {
+                        resetUserFormData["field_io_rank_(designation)"] = [];
+                    } else {
+                        resetUserFormData["field_io_rank_(designation)"] = "";
+                    }
+                    }
+                });
+
+                setFormData((prevData) => ({
+                    ...prevData,
+                    ...resetUserFormData,
+                }));
+                }
+            };
+
+            gettingUserDetails();
+        }
+
+        // 🔹 Special case: department → division
+        if (field?.table === "department") {
+            const currentDropdown = othersFilter ? othersFiltersDropdown : filterDropdownObj;
+            const divisionField = currentDropdown.find((fld) => fld.table === "division");
+
+            if (divisionField?.name) {
+                const gettingDivisionBasedOnDepartment = async () => {
+                try {
+                    const departmentPayload = { department_id: formData[field.name] };
+                    const response = await api.post("cidMaster/getDivisionBasedOnDepartment", departmentPayload);
+
+                    const data = response?.data;
+                    const updatedOptions = Array.isArray(data)
+                    ? data.map((d) => ({ name: d["division_name"], code: d["division_id"] }))
+                    : [];
+
+                    const updater = othersFilter ? setOthersFiltersDropdown : setfilterDropdownObj;
+
+                    updater((prev) =>
+                    prev.map((configData) =>
+                        configData?.name === divisionField?.name
+                        ? { ...configData, options: updatedOptions }
+                        : configData
+                    )
+                    );
+
+                    setFormData((prevData) => ({
+                    ...prevData,
+                    [divisionField.name]: "",
+                    }));
+                } catch (error) {
+                    console.error("Error fetching division details:", error);
+                }
+                };
+
+                gettingDivisionBasedOnDepartment();
             }
-          }
-        };
-        callApi();
-      }
+        }
+
+        // 🔹 Special case: cid_district → police_station
+        if (field?.table === "cid_district") {
+
+            console.log("checking cid_district to police station dependency")
+            const currentDropdown = othersFilter ? othersFiltersDropdown : filterDropdownObj;
+            const policeStationField = currentDropdown.find((fld) => fld.table === "cid_police_station");
+            console.log("checking policeStationField",policeStationField)
+            if (policeStationField?.name) {
+                const getPoliceStationsBasedOnDistrict = async () => {
+                    console.log("checking formData[field.name]",formData[field.name])
+                try {
+                    const districtIdValue = formData[field.name];
+                    if (!districtIdValue) return;
+
+                    const districtPayload = { district_id: districtIdValue };
+                    const response = await api.post("cidMaster/getPoliceStationsBasedOnDistrict", districtPayload);
+
+                    const data = response?.data;
+                    const updatedOptions = Array.isArray(data)
+                    ? data.map((ps) => ({
+                        name: ps["field_name_of_the_police_station"],
+                        code: ps["id"],
+                        }))
+                    : [];
+
+                    const updater = othersFilter ? setOthersFiltersDropdown : setfilterDropdownObj;
+
+                    updater((prev) =>
+                    prev.map((configData) =>
+                        configData?.name === policeStationField?.name
+                        ? { ...configData, options: updatedOptions }
+                        : configData
+                    )
+                    );
+
+                    setFormData((prevData) => ({
+                    ...prevData,
+                    [policeStationField.name]: "",
+                    }));
+                } catch (error) {
+                    console.error("Error fetching police stations:", error);
+                }
+                };
+
+                getPoliceStationsBasedOnDistrict();
+            }
+        }
     }
-  };
+};
+
 
   const showCaseApprovalPage = async (caseData, formData,isSave)=>{
     setIsApprovalSaveMode(isSave);
