@@ -300,7 +300,7 @@ const DynamicForm = ({
             let updatedField = { ...field };
 
             if (wantUpdateDateFields.includes(field?.name)) {
-                updatedField.maxValue = values;
+                updatedField.minValue = values;
             }
 
             if (isBefore2015) {
@@ -343,7 +343,7 @@ const DynamicForm = ({
                 if (wantUpdateDateFields.includes(field?.name)) {
                     return {
                         ...field,
-                        maxValue: formData["field_date_of_registration_by_ps/range"]
+                        minValue: formData["field_date_of_registration_by_ps/range"]
                     };
                 }
                 return field;
@@ -884,7 +884,8 @@ const DynamicForm = ({
     useEffect(() => {
 
         if (selectedField?.table && selectedField?.api) {
-
+            console.log("Selected Field:", selectedField);
+            console.log("New Form Config:", newFormConfig);
             var dependent_field = newFormConfig.filter((element) => {
                 return ( element.dependent_table && element.dependent_table.length > 0 && element.dependent_table.includes(selectedField.table));
             });
@@ -892,7 +893,7 @@ const DynamicForm = ({
             if(dependent_field?.[0]?.table === "section" && table_name === "cid_under_investigation"){
                 return;
             }
-
+            console.log("dependent_field:", dependent_field);
             var apiPayload = {};
             var apiUrl = selectedField.api
 
