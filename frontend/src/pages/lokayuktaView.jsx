@@ -1012,6 +1012,10 @@ const LokayuktaView = () => {
                             .filter(item => {
                                 if (module === "ui_case" && item.label === "Petition") return false;
                                 if (module === "pt_case" && item.label === "Court Matters") return false;
+                                // If activeSidebar name is "Witness", only show Notices and Recording of Statement
+                                if (activeSidebar?.name === "Witness") {
+                                    return item.label === "Notices" || item.label === "Recording of Statement";
+                                }
                                 return contentTables.includes(item.table_name);
                             })
                             .map(item => ({
