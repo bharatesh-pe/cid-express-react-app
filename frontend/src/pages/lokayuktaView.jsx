@@ -640,8 +640,12 @@ const LokayuktaView = () => {
         .map(item => item.table);
 
     const menuItems = defaultMenuItems.filter(item => {
+        const activeName = (activeSidebar?.name || "").toLowerCase();
+        if (activeName === "witness") {
+            return item.label === "Notices" || item.label === "Recording of Statement";
+        }
         if (module === "ui_case" && item.label === "Petition") return false;
-        if (module === "pt_case" && item.label === "Court matters") return false;
+        if (item.label === "Court Matters" && module === "pt_case" && activeSidebar?.name.toLowerCase() !== "accused") return false;
         return contentTables.includes(item.table_name);
     });
 
@@ -1010,12 +1014,12 @@ const LokayuktaView = () => {
                             { label: "Recording of Statement", table_name: "cid_ui_case_recording_of_statements", field: "recording_of_statement", width: 240 },
                         ]
                             .filter(item => {
-                                if (module === "ui_case" && item.label === "Petition") return false;
-                                if (module === "pt_case" && item.label === "Court Matters") return false;
-                                // If activeSidebar name is "Witness", only show Notices and Recording of Statement
-                                if (activeSidebar?.name === "Witness") {
+                                const activeName = ((options && options.name) ? options.name : activeSidebar?.name || "").toLowerCase();
+                                if (activeName === "witness") {
                                     return item.label === "Notices" || item.label === "Recording of Statement";
                                 }
+                                if (module === "ui_case" && item.label === "Petition") return false;
+                                if (item.label === "Court Matters" && module === "pt_case" && activeSidebar?.name.toLowerCase() !== "accused") return false;
                                 return contentTables.includes(item.table_name);
                             })
                             .map(item => ({
@@ -1029,7 +1033,8 @@ const LokayuktaView = () => {
                                         size="small"
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            handleOpenSplitScreen(params.row, { label: item.label, table_name: item.table_name }, options?.table);
+                                            const tbl = (options && options.table) ? options.table : (typeof options === 'string' ? options : undefined);
+                                            handleOpenSplitScreen(params.row, { label: item.label, table_name: item.table_name }, tbl);
                                         }}
                                         className="newStyleButton"
                                     >
