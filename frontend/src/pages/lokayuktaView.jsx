@@ -559,8 +559,16 @@ const LokayuktaView = () => {
                     setFormStepperData(viewTemplateResponse.data.sections || []);
                     setInitialFormData(viewTemplateData.data || {});
                     setChildTables(viewTemplateResponse?.["data"]?.["child_tables"] || []);
-                    setReadonlyForm(true);
-                    setEditOnlyForm(editData || false);
+                    // Check if field_ui_case has a value - if it has value, make it readonly, else remove readonly
+                    const hasFieldUiCaseValue = viewTemplateData.data?.field_ui_case && viewTemplateData.data.field_ui_case !== null && viewTemplateData.data.field_ui_case !== "";
+                    
+                    if (hasFieldUiCaseValue) {
+                        setReadonlyForm(true);
+                        setEditOnlyForm(false);
+                    } else {
+                        setReadonlyForm(false);
+                        setEditOnlyForm(editData || false);
+                    }
                     setFormOpen(true);
                     setRowValueId(rowData);
                 } else {
@@ -1357,8 +1365,16 @@ const LokayuktaView = () => {
                 setSelectedTableName(viewTemplateResponse?.["data"]?.table_name);
                 setSelectedTemplateName(viewTemplateResponse?.["data"]?.template_name);
                 
-                setReadonlyForm(false);
-                setEditOnlyForm(false);
+                // Check if field_ui_case has a value - if it has value, make it readonly, else remove readonly
+                const hasFieldUiCaseValue = rowData?.field_ui_case && rowData.field_ui_case !== null && rowData.field_ui_case !== "";
+                
+                if (hasFieldUiCaseValue) {
+                    setReadonlyForm(true);
+                    setEditOnlyForm(false);
+                } else {
+                    setReadonlyForm(false);
+                    setEditOnlyForm(false);
+                }
                 
                 setFormFields(viewTemplateResponse?.["data"]?.["fields"] || []);
                 setInitialFormData({});
