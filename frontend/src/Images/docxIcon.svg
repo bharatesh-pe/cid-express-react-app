@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="15" height="20" viewBox="0 0 15 20" fill="none">
-  <!-- Main body -->
-  <path d="M0 0V20H15V5.5L9.5 0H0Z" fill="#2B579A"/>
-  <!-- Folded corner: small triangle in light blue -->
-  <path d="M15 5.5H9.5V0L15 5.5Z" fill="#A8C4E3"/>
-  <!-- DOCX text -->
-  <text x="1.8" y="14.5" font-size="4.2" font-family="Arial, sans-serif" fill="white" font-weight="bold">DOCX</text>
-</svg>
