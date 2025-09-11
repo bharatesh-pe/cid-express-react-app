@@ -21,7 +21,7 @@ const Home = () => {
         { title: 'BCP Chat', link: '', image: rowdySheet  },
         { title: 'NDPS Analytics', link: 'https://app.powerbi.com/reportEmbed?reportId=f6ae9972-1499-45c9-8264-3850069e9c0d&autoAuth=true&ctid=94dbcc7c-6e32-4329-a59a-3fb79b6fb70e', image: rowdySheet  },
         { title: 'Tapal Tracker', link: '', image: rowdySheet  },
-        { title: 'Crime Analytics', link: 'https://app.powerbi.com/reportEmbed?reportId=94b58ac0-6182-4f66-9988-be926fddef34&autoAuth=true&ctid=94dbcc7c-6e32-4329-a59a-3fb79b6fb70e', image: rowdySheet  },
+        { title: 'Crime Analytics', link: 'https://app.powerbi.com/reportEmbed?reportId=95ee3cd6-a079-412c-b345-193d0b836be3&autoAuth=true&ctid=94dbcc7c-6e32-4329-a59a-3fb79b6fb70e', image: rowdySheet  },
     ];
 
     const fire_and_emergency_department_cards = [
@@ -107,12 +107,12 @@ const Home = () => {
                 </nav>
 
                 <div className="px-6 py-10 max-w-6xl mx-auto">
-                    {renderSection("Karnataka state intelligence department", intelligence_cards)}
+	    { /* {renderSection("Karnataka state intelligence department", intelligence_cards)}
                     {divider()}
-                    
+                    */}
                     {renderSection("Commissioner of police", commissioner_cards)}
-                    {divider()}
-                    
+	    {/*        {divider()}
+	    
                     {renderSection("Fire and Emergency department", fire_and_emergency_department_cards)}
                     {divider()}
                     
@@ -123,7 +123,7 @@ const Home = () => {
                     {divider()}
 
                     {renderSection("CID (Criminal investigation department)", cid_cards)}
-                </div>
+               */} </div>
             </div>
 
         </div>
