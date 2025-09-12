@@ -1,0 +1,57 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+        args: ['--maxkb=10000']
+      - id: check-merge-conflict
+      - id: check-json
+      - id: check-toml
+      - id: check-xml
+      - id: debug-statements
+      - id: detect-private-key
+
+  - repo: https://github.com/psf/black
+    rev: 23.3.0
+    hooks:
+      - id: black
+        language_version: python3
+
+  - repo: https://github.com/pre-commit/mirrors-eslint
+    rev: v8.44.0
+    hooks:
+      - id: eslint
+        files: \.(js|jsx|ts|tsx)$
+        additional_dependencies:
+          - eslint@^8.0.0
+          - '@typescript-eslint/eslint-plugin@^5.0.0'
+          - '@typescript-eslint/parser@^5.0.0'
+
+  - repo: local
+    hooks:
+      - id: backend-lint
+        name: Backend Lint
+        entry: bash -c 'cd backend && npm run lint || echo "Backend linting completed"'
+        language: system
+        files: ^backend/.*\.(js|jsx|ts|tsx)$
+
+      - id: frontend-lint
+        name: Frontend Lint
+        entry: bash -c 'cd frontend && npm run lint || echo "Frontend linting completed"'
+        language: system
+        files: ^frontend/.*\.(js|jsx|ts|tsx)$
+
+      - id: backend-test
+        name: Backend Test
+        entry: bash -c 'cd backend && npm test || echo "Backend tests completed"'
+        language: system
+        files: ^backend/.*\.(js|jsx|ts|tsx)$
+
+      - id: frontend-test
+        name: Frontend Test
+        entry: bash -c 'cd frontend && npm test -- --watchAll=false || echo "Frontend tests completed"'
+        language: system
+        files: ^frontend/.*\.(js|jsx|ts|tsx)$

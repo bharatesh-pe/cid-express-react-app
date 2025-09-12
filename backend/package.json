@@ -4,9 +4,21 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
+    "test:watch": "npm test -- --watch",
+    "test:coverage": "npm test -- --coverage",
     "start": "nodemon index.js",
+    "start:prod": "node index.js",
     "migrate": "npx sequelize-cli db:migrate",
-    "down": "npx sequelize-cli db:migrate:undo"
+    "migrate:undo": "npx sequelize-cli db:migrate:undo",
+    "migrate:reset": "npx sequelize-cli db:migrate:undo:all && npx sequelize-cli db:migrate",
+    "lint": "eslint . --ext .js,.jsx,.ts,.tsx --format=compact",
+    "lint:fix": "eslint . --ext .js,.jsx,.ts,.tsx --fix",
+    "audit": "npm audit --audit-level=moderate",
+    "audit:fix": "npm audit fix",
+    "security": "npm audit --audit-level=high",
+    "validate": "npm run lint && npm run audit && npm test",
+    "build": "echo 'Backend build completed'",
+    "dev": "nodemon index.js"
   },
   "keywords": [],
   "author": "",
@@ -47,6 +59,9 @@
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^8.43.0",
+    "@typescript-eslint/parser": "^8.43.0",
+    "eslint": "^9.35.0",
     "nodemon": "^3.1.9"
   }
 }
