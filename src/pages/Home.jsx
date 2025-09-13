@@ -5,9 +5,19 @@ import cidLogo from '../images/cid.png'
 
 import background from '../images/background.png'
 
-import { FiArrowRight } from 'react-icons/fi';
+import { FiArrowRight, FiLogOut } from 'react-icons/fi';
+import { useNavigate } from 'react-router-dom';
 
 const Home = () => {
+    const navigate = useNavigate();
+
+    const handleLogout = () => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        navigate('/login');
+        window.location.reload();
+    };
+
     const intelligence_cards = [
         { title: 'SIIMS', link: 'https://staging.raguva.in/siims/#/login' },
         { title: 'Snapshot', link: '' },
@@ -97,12 +107,21 @@ const Home = () => {
             <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black/70 z-10" />
 
             <div className="relative z-20 text-white">
-                <nav className="bg-white shadow-sm border-b border-gray-200 hidden">
-                    <div className="max-w-6xl mx-auto px-6 py-4 flex items-center gap-2">
-                        <img src={siimsLogo} className="w-[40px] h-[40px]" alt="logo" />
-                        <h1 className="text-lg font-semibold text-gray-800 uppercase">
-                            Police Application
-                        </h1>
+                <nav className="bg-white shadow-sm border-b border-gray-200">
+                    <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <img src={siimsLogo} className="w-[40px] h-[40px]" alt="logo" />
+                            <h1 className="text-lg font-semibold text-gray-800 uppercase">
+                                Police Application
+                            </h1>
+                        </div>
+                        <button
+                            onClick={handleLogout}
+                            className="flex items-center gap-2 px-4 py-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors"
+                        >
+                            <FiLogOut className="w-4 h-4" />
+                            Logout
+                        </button>
                     </div>
                 </nav>
 
