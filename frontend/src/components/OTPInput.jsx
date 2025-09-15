@@ -12,17 +12,24 @@ const OTPInput = ({ numInputs = 6, value, onChange, onComplete, className = "", 
         }
     }, [value, numInputs]);
 
+    // Call onChange after state update
+    useEffect(() => {
+        const otpValue = otp.join('');
+        onChange?.(otpValue);
+    }, [otp, onChange]);
+
     const handleChange = (index, value) => {
-        if (value && !/^[0-9a-zA-Z]$/.test(value)) return;
+        // Only allow numeric input for OTP
+        if (value && !/^[0-9]$/.test(value)) return;
 
         const newOtp = [...otp];
         newOtp[index] = value;
         setOtp(newOtp);
 
         const otpValue = newOtp.join('');
-        onChange?.(otpValue);
 
-        if (otpValue.length === numInputs && newOtp.every(digit => digit !== '')) {
+        // Only auto-complete when the last digit (6th) is entered
+        if (value && index === numInputs - 1 && otpValue.length === numInputs && newOtp.every(digit => digit !== '')) {
             onComplete?.(otpValue);
         }
 
@@ -41,14 +48,16 @@ const OTPInput = ({ numInputs = 6, value, onChange, onComplete, className = "", 
     const handlePaste = (e) => {
         e.preventDefault();
         const pastedData = e.clipboardData.getData('text').slice(0, numInputs);
-        const newOtp = pastedData.split('');
+        // Only allow numeric characters
+        const numericData = pastedData.replace(/[^0-9]/g, '');
+        const newOtp = numericData.split('');
         const paddedOtp = [...newOtp, ...new Array(numInputs - newOtp.length).fill('')];
         setOtp(paddedOtp);
         
         const otpValue = paddedOtp.join('');
-        onChange?.(otpValue);
         
-        if (otpValue.length === numInputs) {
+        // Only auto-complete if all 6 digits are pasted and none are empty
+        if (otpValue.length === numInputs && paddedOtp.every(digit => digit !== '')) {
             onComplete?.(otpValue);
         }
     };
