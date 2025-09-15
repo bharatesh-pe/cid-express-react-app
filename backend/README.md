@@ -1,266 +1,235 @@
 # Police Application Backend
 
-A Node.js/Express.js backend API for the Police Application with OTP-based authentication and department management.
+A Node.js/Express backend application for the Police Application Portal with JWT authentication, OTP-based login, and Single Sign-On (SSO) capabilities.
 
-## Features
+## 🚀 Features
 
-- 🔐 OTP-based authentication via Karnataka SMS Gateway
-- 👥 User management with department assignments
-- 🏢 Department management system
-- 🛡️ JWT token-based authorization
-- 📱 Rate limiting for security
-- 🔒 Input validation and sanitization
-- 🐬 MySQL with Sequelize ORM
+- **JWT Authentication** - Secure token-based authentication
+- **OTP Login System** - Mobile number-based OTP verification
+- **Direct Login** - Simplified login without OTP requirement
+- **SSO Integration** - Single Sign-On with external applications
+- **User Management** - Complete user CRUD operations
+- **Application Management** - Manage accessible applications
+- **Database Migrations** - Sequelize-based database management
+- **Data Seeding** - Pre-populated data for development
 
-## API Endpoints
+## 📋 Prerequisites
 
-### Authentication
-- `POST /api/auth/send-otp` - Send OTP to mobile number
-- `POST /api/auth/verify-otp` - Verify OTP and login
-- `GET /api/auth/profile` - Get user profile (protected)
-- `POST /api/auth/logout` - Logout user (protected)
+- Node.js (v14 or higher)
+- MySQL Database
+- npm or yarn package manager
 
-### Departments
-- `GET /api/departments` - Get all active departments
-- `GET /api/departments/:id` - Get department by ID
-- `POST /api/departments` - Create new department (admin only)
-- `PUT /api/departments/:id` - Update department (admin only)
-- `DELETE /api/departments/:id` - Delete department (admin only)
+## 🛠️ Installation
 
-## Database Schema
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd police-application/backend
+   ```
 
-### User Model (MySQL)
-```sql
-CREATE TABLE users (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  username VARCHAR(50) UNIQUE NOT NULL,
-  mobile VARCHAR(10) UNIQUE NOT NULL,
-  designation VARCHAR(100) NOT NULL,
-  departments JSON NOT NULL,
-  isActive BOOLEAN DEFAULT true,
-  lastLogin TIMESTAMP NULL,
-  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
-```
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-### Department Model (MySQL)
-```sql
-CREATE TABLE departments (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  title VARCHAR(100) UNIQUE NOT NULL,
-  link TEXT NOT NULL,
-  image VARCHAR(255) NOT NULL,
-  description VARCHAR(500),
-  isActive BOOLEAN DEFAULT true,
-  `order` INT DEFAULT 0,
-  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
-```
+3. **Environment Setup**
+   Create a `.env` file in the backend directory:
+   ```env
+   NODE_ENV=development
+   PORT=5000
+   
+   # Database Configuration
+   DB_HOST=localhost
+   DB_PORT=3306
+   DB_NAME=police_app
+   DB_USERNAME=root
+   DB_PASSWORD=your_password
+   
+   # JWT Configuration
+   JWT_SECRET=your_jwt_secret_key
+   
+   # Frontend URL
+   FRONTEND_URL=http://localhost:3000
+   ```
 
-### OTP Model (MySQL)
-```sql
-CREATE TABLE otps (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  userId INT NOT NULL,
-  otp VARCHAR(6) NOT NULL,
-  expiresAt TIMESTAMP NOT NULL,
-  attempts INT DEFAULT 0,
-  isUsed BOOLEAN DEFAULT false,
-  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
-);
-```
+4. **Database Setup**
+   ```bash
+   # Run migrations
+   npm run db:migrate
+   
+   # Seed the database
+   npm run db:seed
+   ```
 
-## Installation
+## 🚀 Running the Application
 
-1. Install dependencies:
+### Development Mode
 ```bash
-npm install
-```
-
-2. Create `.env` file:
-```bash
-cp .env.example .env
-```
-
-3. Configure environment variables in `.env`:
-```env
-PORT=5000
-NODE_ENV=development
-DB_NAME=police_app
-DB_USER=root
-DB_PASSWORD=password
-DB_HOST=localhost
-DB_PORT=3306
-JWT_SECRET=your_jwt_secret_key_here
-SMS_USERNAME=Mobile_1-BCPSRV
-SMS_PASSWORD=bcpsrv@1234
-SMS_SENDER_ID=BCPSRV
-SMS_DEPT_SECURE_KEY=b30c8bcd-5034-458e-8466-54e2eeebe0a9
-SMS_TEMPLATE_ID=1107175198611559794
-SMS_URL=http://smsmobile1.karnataka.gov.in/index.php/sendmsg
-```
-
-4. Start MySQL (if running locally):
-```bash
-# On Windows
-net start mysql
-
-# On macOS
-brew services start mysql
-
-# On Linux
-sudo systemctl start mysql
-
-# Create database
-mysql -u root -p -e "CREATE DATABASE police_app;"
-```
-
-5. Run database migrations:
-```bash
-npm run db:migrate
-```
-
-6. Seed initial data:
-```bash
-npm run db:seed
-```
-
-7. Start the server:
-```bash
-# Development
 npm run dev
+```
 
-# Production
+### Production Mode
+```bash
 npm start
 ```
 
-## Environment Variables
+The server will start on `http://localhost:5000`
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `PORT` | Server port | No (default: 5000) |
-| `NODE_ENV` | Environment (development/production) | No |
-| `DB_NAME` | MySQL database name | Yes |
-| `DB_USER` | MySQL username | Yes |
-| `DB_PASSWORD` | MySQL password | Yes |
-| `DB_HOST` | MySQL host | No (default: localhost) |
-| `DB_PORT` | MySQL port | No (default: 3306) |
-| `JWT_SECRET` | Secret key for JWT tokens | Yes |
-| `SMS_USERNAME` | Karnataka SMS Gateway username | No |
-| `SMS_PASSWORD` | Karnataka SMS Gateway password | No |
-| `SMS_SENDER_ID` | SMS sender ID | No |
-| `SMS_DEPT_SECURE_KEY` | Department secure key | No |
-| `SMS_TEMPLATE_ID` | SMS template ID | No |
-| `SMS_URL` | SMS Gateway URL | No |
+## 📁 Project Structure
 
-## SMS Configuration
-
-The application uses Karnataka SMS Gateway (same as cop-mob project) for OTP delivery:
-
-1. **Production**: Uses Karnataka SMS Gateway with configured credentials
-2. **Development**: Falls back to console logging if SMS gateway is unavailable
-
-The SMS configuration uses the same credentials as the cop-mob project:
-- Username: `Mobile_1-BCPSRV`
-- Password: `bcpsrv@1234`
-- Sender ID: `BCPSRV`
-- Template ID: `1107175198611559794`
-
-## Rate Limiting
-
-- OTP requests: 3 per 15 minutes per IP
-- OTP verification: 5 per 5 minutes per IP
-- General API: 100 per 15 minutes per IP
-
-## Security Features
-
-- Helmet.js for security headers
-- CORS configuration
-- Input validation with express-validator
-- Rate limiting
-- JWT token expiration (24 hours)
-- OTP expiration (5 minutes)
-- Maximum OTP attempts (3)
-
-## Testing the API
-
-### Send OTP
-```bash
-curl -X POST http://localhost:5000/api/auth/send-otp \
-  -H "Content-Type: application/json" \
-  -d '{"mobile": "9698273271"}'
+```
+backend/
+├── config/
+│   └── database.js          # Database configuration
+├── controllers/
+│   ├── AuthController.js     # Authentication logic
+│   ├── SSOController.js      # SSO token management
+│   ├── ApplicationController.js
+│   └── UserController.js
+├── middleware/
+│   └── auth.js              # Authentication middleware
+├── models/
+│   ├── User.js              # User model
+│   ├── Application.js       # Application model
+│   ├── UserApplication.js    # User-Application relationship
+│   └── OTP.js               # OTP model
+├── routes/
+│   ├── auth.js              # Authentication routes
+│   ├── applications.js      # Application routes
+│   ├── users.js             # User routes
+│   └── sso.js               # SSO routes
+├── seeders/
+│   ├── applications.js      # Application seed data
+│   └── users.js             # User seed data
+├── migrations/
+│   └── ...                  # Database migrations
+├── services/
+│   └── otpService.js        # OTP service
+└── server.js                # Main server file
 ```
 
-### Verify OTP
+## 🔗 API Endpoints
+
+### Authentication
+- `POST /api/auth/login` - Direct login (no OTP)
+- `POST /api/auth/send-otp` - Send OTP to mobile number
+- `POST /api/auth/verify-otp` - Verify OTP and login
+- `GET /api/auth/profile` - Get user profile
+- `POST /api/auth/logout` - Logout user
+
+### Applications
+- `GET /api/applications` - Get all applications
+- `POST /api/applications` - Create new application
+- `PUT /api/applications/:id` - Update application
+- `DELETE /api/applications/:id` - Delete application
+
+### Users
+- `GET /api/users` - Get all users
+- `POST /api/users` - Create new user
+- `PUT /api/users/:id` - Update user
+- `DELETE /api/users/:id` - Delete user
+
+### SSO
+- `POST /api/sso/generate/:applicationCode` - Generate SSO token
+- `POST /api/sso/validate` - Validate SSO token
+
+## 🔐 Authentication Flow
+
+### Direct Login (Police App)
+1. User enters mobile number
+2. System checks if user exists
+3. If exists → Direct login with JWT token
+4. If not exists → Error message
+
+### SSO Integration
+1. User clicks external application
+2. System generates SSO token with user info
+3. External app validates token
+4. User automatically logged in
+
+## 🗄️ Database Schema
+
+### Users Table
+- `id` - Primary key
+- `user_name` - Username (unique)
+- `mobile_number` - Mobile number (unique)
+- `isActive` - Account status
+- `isAdmin` - Admin privileges
+- `lastLogin` - Last login timestamp
+
+### Applications Table
+- `id` - Primary key
+- `code` - Application code (unique)
+- `link` - Application URL
+- `image` - Application icon
+- `description` - Application description
+- `isActive` - Application status
+- `order` - Display order
+
+### User Applications Table
+- `id` - Primary key
+- `userId` - Foreign key to users
+- `applicationCode` - Foreign key to applications
+- `isActive` - Relationship status
+- `assignedAt` - Assignment timestamp
+
+## 🧪 Testing
+
 ```bash
-curl -X POST http://localhost:5000/api/auth/verify-otp \
-  -H "Content-Type: application/json" \
-  -d '{"mobile": "9698273271", "otp": "123456"}'
+# Run tests
+npm test
+
+# Run tests with coverage
+npm run test:coverage
 ```
 
-### Get Departments
+## 📝 Scripts
+
+- `npm start` - Start production server
+- `npm run dev` - Start development server with nodemon
+- `npm run db:migrate` - Run database migrations
+- `npm run db:seed` - Seed database with sample data
+- `npm run db:reset` - Reset database (migrate + seed)
+- `npm test` - Run tests
+
+## 🔧 Configuration
+
+### Environment Variables
+- `NODE_ENV` - Environment (development/production)
+- `PORT` - Server port (default: 5000)
+- `DB_HOST` - Database host
+- `DB_PORT` - Database port
+- `DB_NAME` - Database name
+- `DB_USERNAME` - Database username
+- `DB_PASSWORD` - Database password
+- `JWT_SECRET` - JWT secret key
+- `FRONTEND_URL` - Frontend application URL
+
+## 🚀 Deployment
+
+### Production Build
 ```bash
-curl http://localhost:5000/api/departments
+npm run build
 ```
 
-## Sample Users (from seed data)
-
-| Username | Mobile | Designation | Departments |
-|----------|--------|-------------|-------------|
-| admin | 9698273271 | System Administrator | All departments |
-| police_officer_1 | 9876543211 | Police Inspector | 1,2,3,4,5 |
-| police_officer_2 | 9876543212 | Sub Inspector | 6,7,8,9,10 |
-| fire_officer | 9876543213 | Fire Officer | 11,12 |
-| lokayukta_officer | 9876543214 | Lokayukta Officer | 13 |
-| excise_officer | 9876543215 | Excise Officer | 14 |
-| cid_officer | 9876543216 | CID Officer | 15,16 |
-
-## Database Management
-
-### Migration Commands
+### Docker Deployment
 ```bash
-# Run all pending migrations
-npm run db:migrate
-
-# Undo the last migration
-npm run db:migrate:undo
-
-# Undo all migrations
-npm run db:migrate:undo:all
-
-# Create database
-npm run db:create
-
-# Drop database
-npm run db:drop
+docker build -t police-app-backend .
+docker run -p 5000:5000 police-app-backend
 ```
 
-### Seeder Commands
-```bash
-# Run all seeders
-npm run db:seed
+## 🤝 Contributing
 
-# Undo all seeders
-npm run db:seed:undo
-```
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
 
-## Development
+## 📄 License
 
-- Use `npm run dev` for development with auto-restart
-- Check logs for OTP codes during development
-- Use MySQL Workbench or similar tool to inspect database
-- API documentation available at `/health` endpoint
+This project is licensed under the MIT License.
 
-## Production Deployment
+## 🆘 Support
 
-1. Set `NODE_ENV=production`
-2. Use a production MySQL instance
-3. Configure Karnataka SMS Gateway for SMS delivery
-4. Use a process manager like PM2
-5. Set up proper logging and monitoring
-6. Run migrations: `npm run db:migrate`
-7. Seed initial data: `npm run db:seed`
+For support, email support@policeapp.com or create an issue in the repository.
