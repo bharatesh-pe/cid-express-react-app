@@ -112,6 +112,21 @@ class ApiService {
     });
   }
 
+  // Encrypted token methods
+  async generateEncryptedToken(applicationCode) {
+    return this.request('/sso/generate-encrypted-token', {
+      method: 'POST',
+      body: JSON.stringify({ applicationCode }),
+    });
+  }
+
+  async validateEncryptedToken(token) {
+    return this.request('/sso/validate-encrypted-token', {
+      method: 'POST',
+      body: JSON.stringify({ token }),
+    });
+  }
+
   // Utility methods
   isAuthenticated() {
     const token = localStorage.getItem('police_application_token');

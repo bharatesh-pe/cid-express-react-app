@@ -74,7 +74,7 @@ const Home = ({ setIsAuthenticated }) => {
     };
 
 
-    const handleApplicationClick = (application) => {
+    const handleApplicationClick = async (application) => {
         try {
             // Get user's mobile number from stored user data
             const storedUser = apiService.getStoredUser();
@@ -84,11 +84,20 @@ const Home = ({ setIsAuthenticated }) => {
                 return;
             }
 
-            // Create URL with mobile number parameter
-            const urlWithMobile = `${application.link}?mobile_number=${storedUser.mobile_number}&source=police_app`;
+            // Generate encrypted token for mobile number and source
+            const response = await apiService.generateEncryptedToken(application.code);
             
-            // Open application in new tab with mobile number
-            window.open(urlWithMobile, '_blank', 'noopener,noreferrer');
+            if (response.success && response.token) {
+                // Create URL with encrypted token parameter
+                const urlWithToken = `${application.link}?token=${encodeURIComponent(response.token)}`;
+                
+                // Open application in new tab with encrypted token
+                window.open(urlWithToken, '_blank', 'noopener,noreferrer');
+            } else {
+                console.error('Failed to generate encrypted token:', response.message);
+                // Fallback to regular link
+                window.open(application.link, '_blank', 'noopener,noreferrer');
+            }
         } catch (error) {
             console.error('Error opening application:', error);
             // Fallback to regular link

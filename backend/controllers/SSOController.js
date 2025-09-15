@@ -56,6 +56,99 @@ class SSOController {
     }
   }
 
+  // Generate simple encoded token for mobile number and source
+  async generateEncryptedToken(req, res) {
+    try {
+      const user = req.user; // From auth middleware
+      const { applicationCode } = req.body;
+
+      // Check if user has access to this application
+      const userProfile = await user.getProfile();
+      if (!userProfile.applications.includes(applicationCode)) {
+        return res.status(403).json({
+          success: false,
+          message: 'You do not have access to this application'
+        });
+      }
+
+      // Create data to encode
+      const dataToEncode = {
+        mobile_number: user.mobile_number,
+        source: 'police_app',
+        applicationCode: applicationCode,
+        timestamp: Date.now(),
+        expiry: Date.now() + (10 * 60 * 1000) // 10 minutes from now
+      };
+
+      // Convert to JSON string
+      const jsonString = JSON.stringify(dataToEncode);
+
+      // Simple base64 encoding (universally supported)
+      const encodedToken = Buffer.from(jsonString, 'utf8').toString('base64');
+
+      res.json({
+        success: true,
+        token: encodedToken,
+        applicationCode: applicationCode,
+        expiresIn: '10m' // 10 minutes expiry
+      });
+
+    } catch (error) {
+      console.error('Generate encoded token error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error'
+      });
+    }
+  }
+
+  // Validate encoded token (for external applications to call)
+  async validateEncryptedToken(req, res) {
+    try {
+      const { token } = req.body;
+
+      if (!token) {
+        return res.status(400).json({
+          success: false,
+          message: 'Encoded token is required'
+        });
+      }
+
+      // Simple base64 decoding (universally supported)
+      const decodedString = Buffer.from(token, 'base64').toString('utf8');
+
+      // Parse the decoded JSON
+      const data = JSON.parse(decodedString);
+
+      // Check if token has expired
+      if (Date.now() > data.expiry) {
+        return res.status(401).json({
+          success: false,
+          message: 'Token has expired'
+        });
+      }
+
+      res.json({
+        success: true,
+        valid: true,
+        data: {
+          mobile_number: data.mobile_number,
+          source: data.source,
+          applicationCode: data.applicationCode,
+          timestamp: data.timestamp,
+          expiry: data.expiry
+        }
+      });
+
+    } catch (error) {
+      console.error('Validate encoded token error:', error);
+      res.status(401).json({
+        success: false,
+        message: 'Invalid encoded token'
+      });
+    }
+  }
+
   // Validate SSO token (for external applications to call)
   async validateSSOToken(req, res) {
     try {
