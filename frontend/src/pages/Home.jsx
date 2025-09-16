@@ -87,12 +87,24 @@ const Home = ({ setIsAuthenticated }) => {
             // Generate encrypted token for mobile number and source
             const response = await apiService.generateEncryptedToken(application.code);
             
-            if (response.success && response.token) {
-                // Create URL with encrypted token parameter
-                const urlWithToken = `${application.link}?token=${encodeURIComponent(response.token)}`;
+            if (response.success && response.tokenId) {
+                // Store tokenId securely for the external application
+                // The external application should validate this tokenId via POST request
+                const tokenData = {
+                    tokenId: response.tokenId,
+                    applicationCode: application.code,
+                    expiresAt: response.expiresAt
+                };
                 
-                // Open application in new tab with encrypted token
-                window.open(urlWithToken, '_blank', 'noopener,noreferrer');
+                // Store token data in sessionStorage for external app to retrieve
+                sessionStorage.setItem(`token_${application.code}`, JSON.stringify(tokenData));
+                
+                // Create URL with tokenId parameter (secure - only tokenId, not encrypted data)
+                const urlWithTokenId = `${application.link}?tokenId=${encodeURIComponent(response.tokenId)}`;
+                
+                console.log(urlWithTokenId);
+                // Open application in new tab with tokenId
+                window.open(urlWithTokenId, '_blank', 'noopener,noreferrer');
             } else {
                 console.error('Failed to generate encrypted token:', response.message);
                 // Fallback to regular link

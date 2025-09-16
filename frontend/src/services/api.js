@@ -17,9 +17,12 @@ class ApiService {
     };
 
     // Add auth token if available
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('police_application_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+      console.log('🔐 Auth token found and added to request');
+    } else {
+      console.warn('⚠️ No auth token found in localStorage');
     }
 
     try {
@@ -105,10 +108,10 @@ class ApiService {
     });
   }
 
-  async validateSSOToken(token) {
+  async validateSSOToken(tokenId) {
     return this.request('/sso/validate', {
       method: 'POST',
-      body: JSON.stringify({ token }),
+      body: JSON.stringify({ tokenId }),
     });
   }
 
@@ -120,10 +123,18 @@ class ApiService {
     });
   }
 
-  async validateEncryptedToken(token) {
+  async validateEncryptedToken(tokenId) {
     return this.request('/sso/validate-encrypted-token', {
       method: 'POST',
-      body: JSON.stringify({ token }),
+      body: JSON.stringify({ tokenId }),
+    });
+  }
+
+  // Get token metadata
+  async getTokenMetadata(tokenId) {
+    return this.request('/sso/get-token', {
+      method: 'POST',
+      body: JSON.stringify({ tokenId }),
     });
   }
 
