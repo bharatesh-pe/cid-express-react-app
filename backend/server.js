@@ -20,10 +20,41 @@ connectDB();
 app.use(helmet());
 
 // CORS configuration
-app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-  credentials: true
-}));
+const isDevelopment = process.env.NODE_ENV !== 'production';
+
+if (isDevelopment) {
+  // Development: Allow all localhost origins
+  app.use(cors({
+    origin: function (origin, callback) {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+      
+      // Allow any localhost origin in development
+      if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+        return callback(null, true);
+      }
+      
+      console.log('CORS blocked origin:', origin);
+      callback(new Error('Not allowed by CORS'));
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+  }));
+} else {
+  // Production: Specific allowed origins
+  const allowedOrigins = [
+    process.env.FRONTEND_URL,
+    process.env.VUE_APP_URL
+  ].filter(Boolean);
+
+  app.use(cors({
+    origin: allowedOrigins,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+  }));
+}
 
 // Rate limiting
 const generalLimiter = rateLimit({
