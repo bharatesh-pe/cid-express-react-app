@@ -6,8 +6,13 @@
     "scripts": {
         "dev": "vite --host",
         "build": "vite build",
+        "build:prod": "cross-env NODE_ENV=production vite build",
+        "build:analyze": "vite build --mode analyze",
         "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
-        "preview": "vite preview"
+        "lint:fix": "eslint . --ext js,jsx --fix",
+        "preview": "vite preview",
+        "clean": "rm -rf dist",
+        "serve": "vite preview --port 3000"
     },
     "dependencies": {
         "@gsap/react": "^2.1.1",

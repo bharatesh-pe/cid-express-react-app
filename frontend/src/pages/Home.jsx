@@ -194,13 +194,13 @@ const Home = ({ setIsAuthenticated }) => {
                             {/* Logo and Title */}
                             <div className="flex items-center gap-3">
                                 <div className="flex items-center gap-3">
-                                    <img src={siimsLogo} className="w-10 h-10 object-contain" alt="SIIMS Logo" />
+                                    <img src={rowdySheet} className="w-10 h-10 object-contain" alt="SIIMS Logo" />
                                     <div>
                                         <h1 className="text-xl font-bold text-gray-800 uppercase tracking-wide">
                                             Police Application
                                         </h1>
                                         <p className="text-xs text-gray-500 uppercase tracking-wider">
-                                            SIIMS Portal
+                                            COP Portal
                                         </p>
                                     </div>
                                 </div>
