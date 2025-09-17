@@ -76,6 +76,16 @@ const Home = ({ setIsAuthenticated }) => {
 
     const handleApplicationClick = async (application) => {
         try {
+            // Check if this is an Analytics application
+            const isAnalyticsApp = application.code.toLowerCase().includes('analytics');
+            
+            if (isAnalyticsApp) {
+                // For Analytics applications, open directly without token
+                console.log('Opening Analytics application:', application.link);
+                window.open(application.link, '_blank', 'noopener,noreferrer');
+                return;
+            }
+
             // Get user's mobile number from stored user data
             const storedUser = apiService.getStoredUser();
             if (!storedUser || !storedUser.mobile_number) {
@@ -125,7 +135,8 @@ const Home = ({ setIsAuthenticated }) => {
         >
             <div className="flex items-center gap-3">
                 <img
-                    src={`src${application.image}` || siimsLogo}
+                    // src={`src${application.image}` || siimsLogo}
+                    src={rowdySheet}
                     className="w-[36px] h-[36px] object-contain"
                     alt={application.code}
                 />
@@ -197,11 +208,8 @@ const Home = ({ setIsAuthenticated }) => {
                                     <img src={rowdySheet} className="w-10 h-10 object-contain" alt="SIIMS Logo" />
                                     <div>
                                         <h1 className="text-xl font-bold text-gray-800 uppercase tracking-wide">
-                                            Police Application
+                                            BCP Applications
                                         </h1>
-                                        <p className="text-xs text-gray-500 uppercase tracking-wider">
-                                            COP Portal
-                                        </p>
                                     </div>
                                 </div>
                             </div>
@@ -209,7 +217,7 @@ const Home = ({ setIsAuthenticated }) => {
                             {/* User Info and Actions */}
                             <div className="flex items-center gap-4">
                                 {/* User Info */}
-                                {user && (
+                                {/* {user && (
                                     <div className="hidden sm:flex items-center gap-3 px-4 py-2 bg-gray-50 rounded-lg">
                                         <div className="text-right">
                                             <p className="text-sm font-medium text-gray-800">
@@ -225,7 +233,7 @@ const Home = ({ setIsAuthenticated }) => {
                                             </span>
                                         </div>
                                     </div>
-                                )}
+                                )} */}
 
                                 {/* Logout Button */}
                                 <button
@@ -321,14 +329,26 @@ const Home = ({ setIsAuthenticated }) => {
                     {/* Error State */}
                     {error && !loading && renderErrorState()}
 
-                    {/* Applications */}
-                    {!loading && !error && userApplications.length > 0 && (
+                    {/* Regular Applications */}
+                    {!loading && !error && userApplications.filter(app => !app.code.toLowerCase().includes('analytics')).length > 0 && (
                         <div className="mb-10">
                             <h4 className="text-xl font-bold text-gray-100 mb-4 uppercase">
                                 Your Accessible Applications
                             </h4>
                             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                                {userApplications.map(renderApplicationCard)}
+                                {userApplications.filter(app => !app.code.toLowerCase().includes('analytics')).map(renderApplicationCard)}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Analytics Applications */}
+                    {!loading && !error && userApplications.filter(app => app.code.toLowerCase().includes('analytics')).length > 0 && (
+                        <div className="mb-10">
+                            <h4 className="text-xl font-bold text-gray-100 mb-4 uppercase">
+                                Analytics Applications
+                            </h4>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                                {userApplications.filter(app => app.code.toLowerCase().includes('analytics')).map(renderApplicationCard)}
                             </div>
                         </div>
                     )}
