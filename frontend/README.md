@@ -37,7 +37,7 @@ A modern React.js frontend application for the Police Application Portal with re
 3. **Environment Setup**
    Create a `.env` file in the frontend directory:
    ```env
-   REACT_APP_API_URL=http://localhost:5000/api
+   REACT_APP_API_URL=http://139.59.35.227:5000/api
    REACT_APP_FRONTEND_URL=http://localhost:3000
    ```
 

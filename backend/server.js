@@ -29,12 +29,13 @@ if (isDevelopment) {
       // Allow requests with no origin (like mobile apps or curl requests)
       if (!origin) return callback(null, true);
       
-      // Allow any localhost origin in development
+      // Allow any localhost origin in development (including preview server)
       if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+        console.log('✅ CORS allowing origin:', origin);
         return callback(null, true);
       }
       
-      console.log('CORS blocked origin:', origin);
+      console.log('❌ CORS blocked origin:', origin);
       callback(new Error('Not allowed by CORS'));
     },
     credentials: true,
@@ -55,6 +56,15 @@ if (isDevelopment) {
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
   }));
 }
+
+// Handle preflight OPTIONS requests
+app.options('*', (req, res) => {
+  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.sendStatus(200);
+});
 
 // Rate limiting
 const generalLimiter = rateLimit({
