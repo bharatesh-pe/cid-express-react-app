@@ -24,13 +24,17 @@ const isDevelopment = process.env.NODE_ENV !== 'production';
 
 if (isDevelopment) {
   // Development: Allow all localhost origins
+  const allowedOrigins = ['localhost', '127.0.0.1','139.59.35.227','cop-main.patterneffects.in','mob-beta.patterneffects.in'];
+  
   app.use(cors({
     origin: function (origin, callback) {
       // Allow requests with no origin (like mobile apps or curl requests)
       if (!origin) return callback(null, true);
       
       // Allow any localhost origin in development (including preview server)
-      if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+      const isAllowed = allowedOrigins.some(allowedOrigin => origin.includes(allowedOrigin));
+      
+      if (isAllowed) {
         console.log('✅ CORS allowing origin:', origin);
         return callback(null, true);
       }
