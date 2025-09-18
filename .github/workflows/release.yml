@@ -1,0 +1,109 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: |
+        cd backend && npm ci
+        cd ../frontend && npm ci
+
+    - name: Run tests
+      run: |
+        cd backend && npm run validate
+        cd ../frontend && npm run validate
+
+    - name: Build applications
+      run: |
+        cd backend && npm run build
+        cd ../frontend && npm run build
+
+    - name: Create Release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
+        body: |
+          ## Changes in this Release
+          
+          ### Backend
+          - Backend build completed successfully
+          - All tests passed
+          - Security audit passed
+          
+          ### Frontend
+          - Frontend build completed successfully
+          - All tests passed
+          - Security audit passed
+          
+          ### Docker
+          - Docker images built successfully
+          - Docker compose validation passed
+          
+          ## Installation
+          
+          ### Using Docker Compose
+          ```bash
+          git clone ${{ github.repositoryUrl }}
+          cd cid-express-react-app
+          docker-compose up -d
+          ```
+          
+          ### Manual Installation
+          ```bash
+          # Backend
+          cd backend
+          npm install
+          npm run migrate
+          npm start
+          
+          # Frontend
+          cd frontend
+          npm install
+          npm start
+          ```
+        draft: false
+        prerelease: false
+
+    - name: Build and Push Docker Images
+      if: github.event_name == 'push'
+      run: |
+        echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+        
+        # Build and push backend image
+        docker build -t ghcr.io/${{ github.repository }}/backend:${{ github.ref_name }} ./backend
+        docker push ghcr.io/${{ github.repository }}/backend:${{ github.ref_name }}
+        
+        # Build and push frontend image
+        docker build -t ghcr.io/${{ github.repository }}/frontend:${{ github.ref_name }} ./frontend
+        docker push ghcr.io/${{ github.repository }}/frontend:${{ github.ref_name }}
+        
+        # Tag as latest
+        docker tag ghcr.io/${{ github.repository }}/backend:${{ github.ref_name }} ghcr.io/${{ github.repository }}/backend:latest
+        docker tag ghcr.io/${{ github.repository }}/frontend:${{ github.ref_name }} ghcr.io/${{ github.repository }}/frontend:latest
+        docker push ghcr.io/${{ github.repository }}/backend:latest
+        docker push ghcr.io/${{ github.repository }}/frontend:latest

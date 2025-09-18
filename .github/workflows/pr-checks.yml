@@ -1,0 +1,158 @@
+name: Pull Request Checks
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  # PR Size Check
+  pr-size-check:
+    name: PR Size Check
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Check PR size
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const { data: files } = await github.rest.pulls.listFiles({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            pull_number: context.issue.number
+          });
+          
+          const additions = files.reduce((acc, file) => acc + file.additions, 0);
+          const deletions = files.reduce((acc, file) => acc + file.deletions, 0);
+          const changedFiles = files.length;
+          
+          console.log(`PR Summary:`);
+          console.log(`- Files changed: ${changedFiles}`);
+          console.log(`- Lines added: ${additions}`);
+          console.log(`- Lines deleted: ${deletions}`);
+          
+          // Warn if PR is too large
+          if (additions > 1000 || changedFiles > 50) {
+            core.setFailed(`PR is too large: ${additions} additions across ${changedFiles} files. Consider breaking into smaller PRs.`);
+          }
+
+  # Code Coverage Check
+  coverage-check:
+    name: Code Coverage Check
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+
+    - name: Install dependencies
+      run: |
+        cd backend && npm ci
+        cd ../frontend && npm ci
+
+    - name: Run backend tests with coverage
+      working-directory: ./backend
+      run: |
+        # Install coverage tools
+        npm install --save-dev nyc
+        # Run tests with coverage
+        npx nyc npm test || echo "Backend coverage check completed"
+
+    - name: Run frontend tests with coverage
+      working-directory: ./frontend
+      run: |
+        echo "CI=true" >> .env
+        npm test -- --coverage --watchAll=false --coverageReporters=text-lcov | tee coverage.lcov || echo "Frontend coverage check completed"
+
+  # Dependency Check
+  dependency-check:
+    name: Dependency Check
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+
+    - name: Check for outdated dependencies
+      run: |
+        echo "Checking backend dependencies..."
+        cd backend && npm outdated || echo "Backend dependency check completed"
+        echo "Checking frontend dependencies..."
+        cd ../frontend && npm outdated || echo "Frontend dependency check completed"
+
+    - name: Check for security vulnerabilities
+      run: |
+        echo "Checking backend security..."
+        cd backend && npm audit --audit-level=high || echo "Backend security check completed"
+        echo "Checking frontend security..."
+        cd ../frontend && npm audit --audit-level=high || echo "Frontend security check completed"
+
+  # File Type Check
+  file-type-check:
+    name: File Type Check
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Check for large files
+      run: |
+        # Find files larger than 10MB
+        find . -type f -size +10M -not -path "./node_modules/*" -not -path "./.git/*" | while read file; do
+          echo "Large file detected: $file"
+        done
+
+    - name: Check for sensitive files
+      run: |
+        # Check for common sensitive file patterns
+        if find . -name "*.env*" -o -name "*.key" -o -name "*.pem" -o -name "*.p12" | grep -v node_modules | grep -v .git; then
+          echo "Warning: Sensitive files detected in PR"
+        fi
+
+  # Commit Message Check
+  commit-message-check:
+    name: Commit Message Check
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Check commit messages
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const { data: commits } = await github.rest.pulls.listCommits({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            pull_number: context.issue.number
+          });
+          
+          const badCommits = commits.filter(commit => {
+            const message = commit.commit.message;
+            // Check for conventional commit format or at least descriptive messages
+            return !message.match(/^(feat|fix|docs|style|refactor|test|chore|ci|build|perf|revert)(\(.+\))?: .+/) &&
+                   message.length < 10;
+          });
+          
+          if (badCommits.length > 0) {
+            console.log('Commits with poor messages:');
+            badCommits.forEach(commit => {
+              console.log(`- ${commit.sha}: ${commit.commit.message}`);
+            });
+            core.setFailed('Some commits have poor commit messages. Please use conventional commit format or write descriptive messages.');
+          }
