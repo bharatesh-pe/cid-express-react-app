@@ -20,27 +20,6 @@ const seedDepartments = async () => {
     
     const departments = [
       {
-        title: 'SIIMS',
-        link: 'https://staging.raguva.in/siims/#/login',
-        image: '/images/siims_logo.svg',
-        description: 'State Intelligence Information Management System',
-        order: 1
-      },
-      {
-        title: 'Snapshot',
-        link: '',
-        image: '/images/rowdy_sheet.png',
-        description: 'Snapshot system for quick access',
-        order: 2
-      },
-      {
-        title: 'PMMC',
-        link: 'https://pmmc.raguva.karnataka.gov.in/login',
-        image: '/images/rowdy_sheet.png',
-        description: 'Police Management and Monitoring Center',
-        order: 3
-      },
-      {
         title: 'Rowdy Sheeter',
         link: 'https://rs.patterneffects.in/#/',
         image: '/images/rowdy_sheet.png',
@@ -76,60 +55,11 @@ const seedDepartments = async () => {
         order: 8
       },
       {
-        title: 'Tapal Tracker',
-        link: '',
-        image: '/images/rowdy_sheet.png',
-        description: 'Tapal Tracking System',
-        order: 9
-      },
-      {
         title: 'Crime Analytics',
         link: 'https://app.powerbi.com/reportEmbed?reportId=95ee3cd6-a079-412c-b345-193d0b836be3&autoAuth=true&ctid=94dbcc7c-6e32-4329-a59a-3fb79b6fb70e',
         image: '/images/rowdy_sheet.png',
         description: 'Crime Analytics Dashboard',
         order: 10
-      },
-      {
-        title: 'DMS',
-        link: 'https://fire-emergency.patterneffects.in/estorage/login/?next=/estorage/',
-        image: '/images/fire_emergency.png',
-        description: 'Document Management System',
-        order: 11
-      },
-      {
-        title: 'Inventory Management',
-        link: 'http://139.59.4.148/',
-        image: '/images/fire_emergency.png',
-        description: 'Inventory Management System',
-        order: 12
-      },
-      {
-        title: 'Lokayukta Digitalization',
-        link: 'https://lokayuktabeta.patterneffects.in/login.php',
-        image: '/images/rowdy_sheet.png',
-        description: 'Lokayukta Digitalization (Investigation module)',
-        order: 13
-      },
-      {
-        title: 'Dex-P',
-        link: '',
-        image: '/images/rowdy_sheet.png',
-        description: 'State Excise Department System',
-        order: 14
-      },
-      {
-        title: 'CMS',
-        link: 'http://onlinecms.net/',
-        image: '/images/cid.png',
-        description: 'Case Management System',
-        order: 15
-      },
-      {
-        title: 'CNR',
-        link: 'http://93.127.194.179/',
-        image: '/images/cid.png',
-        description: 'CNR System',
-        order: 16
       }
     ];
 
