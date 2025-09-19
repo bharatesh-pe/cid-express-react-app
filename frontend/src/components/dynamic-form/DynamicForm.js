@@ -2652,6 +2652,11 @@ const DynamicForm = ({
 
                 var readOnlyData = readOnlyTemplate
 
+                // Make field_ui_case readonly if it has a value, remove readonly if it has no value
+                if(field.name === "field_ui_case" && editDataTemplate){
+                    readOnlyData = Boolean(formData[field.name]);
+                }
+
                 if(table_name === "cid_pending_trial" ){
                   if(field.name === "field_ps_crime_number" || field.name === "field_cid_crime_no./enquiry_no" || field.name === "field_name_of_the_police_station" ){
                       readOnlyData = true;
@@ -2659,6 +2664,7 @@ const DynamicForm = ({
 
                 }
 
+                console.log("readOnlyData",readOnlyData)
                 // if(table_name === "cid_under_investigation" || table_name === "cid_pending_trial" || table_name === "cid_enquiries"){
                 //     const roleTitle = JSON.parse(localStorage.getItem("role_title")?.toLowerCase().trim());
 
