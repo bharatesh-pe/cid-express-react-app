@@ -566,8 +566,8 @@ const LokayuktaView = () => {
                         setReadonlyForm(true);
                         setEditOnlyForm(false);
                     } else {
-                        setReadonlyForm(false);
-                        setEditOnlyForm(editData || false);
+                        setReadonlyForm(true);   // Make form readonly by default
+                        setEditOnlyForm(false);  // Will show "Edit" button instead of Save buttons
                     }
                     setFormOpen(true);
                     setRowValueId(rowData);
@@ -1372,8 +1372,8 @@ const LokayuktaView = () => {
                     setReadonlyForm(true);
                     setEditOnlyForm(false);
                 } else {
-                    setReadonlyForm(false);
-                    setEditOnlyForm(false);
+                    setReadonlyForm(true);   // Make form readonly by default
+                    setEditOnlyForm(false);  // Will show "Edit" button instead of Save buttons
                 }
                 
                 setFormFields(viewTemplateResponse?.["data"]?.["fields"] || []);
