@@ -72,9 +72,10 @@ const router = express.Router();
 
     // File filter
     const fileFilter = (req, file, cb) => {
-        const allowedExtensions = ['.jpg', '.png', '.pdf', '.docx', '.doc', '.xls', '.xlsx'];
+        const allowedExtensions = ['.jpg', '.jpeg', '.png', '.pdf', '.docx', '.doc', '.xls', '.xlsx'];
         const allowedMimeTypes = [
             'image/jpeg',
+            'image/jpg', 
             'image/png',
             'application/pdf',
             'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -152,9 +153,10 @@ const router = express.Router();
 //         },
 //     }),
 //     fileFilter: (req, file, cb) => {
-//         const allowedExtensions = ['.jpg', '.png', '.pdf', '.docx', '.doc', '.xls', '.xlsx'];
+//         const allowedExtensions = ['.jpg', '.jpeg', '.png', '.pdf', '.docx', '.doc', '.xls', '.xlsx'];
 //         const allowedMimeTypes = [
 //             'image/jpeg',
+//             'image/jpg',
 //             'image/png',
 //             'application/pdf',
 //             'application/vnd.openxmlformats-officedocument.wordprocessingml.document',//docx
