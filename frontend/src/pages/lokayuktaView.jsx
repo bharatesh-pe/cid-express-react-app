@@ -1365,16 +1365,9 @@ const LokayuktaView = () => {
                 setSelectedTableName(viewTemplateResponse?.["data"]?.table_name);
                 setSelectedTemplateName(viewTemplateResponse?.["data"]?.template_name);
                 
-                // Check if field_ui_case has a value - if it has value, make it readonly, else remove readonly
-                const hasFieldUiCaseValue = rowData?.field_ui_case && rowData.field_ui_case !== null && rowData.field_ui_case !== "";
-                
-                if (hasFieldUiCaseValue) {
-                    setReadonlyForm(true);
-                    setEditOnlyForm(false);
-                } else {
-                    setReadonlyForm(true);   // Make form readonly by default
-                    setEditOnlyForm(false);  // Will show "Edit" button instead of Save buttons
-                }
+                // For add new form, set to allow save buttons (create mode)
+                setReadonlyForm(false);
+                setEditOnlyForm(false);
                 
                 setFormFields(viewTemplateResponse?.["data"]?.["fields"] || []);
                 setInitialFormData({});
