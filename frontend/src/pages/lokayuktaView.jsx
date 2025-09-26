@@ -1222,7 +1222,10 @@ const LokayuktaView = () => {
 
     const handleActionDelete = async (data, options)=>{
 
-        if(!data?.id || !options?.table){
+        // Extract table name from different possible structures
+        const tableName = options?.table || options?.table_name || (typeof options === 'string' ? options : null);
+        
+        if(!data?.id || !tableName){
             toast.error('Invaild Template ID', {
                 position: "top-right",
                 autoClose: 3000,
@@ -1246,7 +1249,7 @@ const LokayuktaView = () => {
         }).then(async (result) => {
             if (result.isConfirmed) {
                 const deleteTemplateData = {
-                    table_name: options?.table,
+                    table_name: tableName,
                     where: { id: data.id },
                     transaction_id: `delete_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
                     ui_case_id : rowData?.id,
@@ -1271,7 +1274,9 @@ const LokayuktaView = () => {
                             className: "toast-success",
                             onOpen: () => {
                                   fetchCounts();
-                                  getTableData(options)
+                                  // Ensure we have the proper table context by using activeSidebar
+                                  const tableContext = activeSidebar || options;
+                                  getTableData(tableContext);
                                 }
                         });
                     } else {
@@ -1333,7 +1338,10 @@ const LokayuktaView = () => {
 
     const showAddNewForm = async ()=>{
         
-        if (!currentTableName && !secondTableName  && (!activeSidebar?.table || activeSidebar?.table === "")) {
+        const tableFromContext = currentTableName || secondTableName || activeSidebar?.table || 
+                                 (sidebarContentArray && sidebarContentArray[0] && sidebarContentArray[0].table);
+        
+        if (!tableFromContext || tableFromContext === "") {
             toast.error("Please Check The Template !", {
                 position: "top-right",
                 autoClose: 3000,
@@ -1348,7 +1356,7 @@ const LokayuktaView = () => {
         }
 
         const viewTableData = {
-            table_name: currentTableName || secondTableName || activeSidebar?.table,
+            table_name: tableFromContext,
         };
 
         setLoading(true);

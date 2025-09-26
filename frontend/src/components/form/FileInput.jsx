@@ -27,6 +27,17 @@ const FileInput = ({ field, formData, errors, onChange, onFocus, isFocused, onHi
     const [loading, setLoading] = useState(false); // State for loading indicator
 
     var supportFormat = field?.selectedSupportFormat?.length > 0 ? field.selectedSupportFormat.map((format) => format.ext) : '';
+    
+    // If selectedSupportFormat is empty or not found, and supportedFormat is available, use it as fallback
+    if (supportFormat.length === 0 && field?.supportedFormat?.length > 0) {
+        supportFormat = field.supportedFormat.map(format => format.ext);
+    }
+    
+    // Default file formats if none configured
+    if (supportFormat.length === 0) {
+        supportFormat = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.jpeg', '.jpg', '.png', '.gif', '.svg'];
+    }
+    
     const handleFileChange = (event) => {
 
         if (event.target.files.length > 0) {
