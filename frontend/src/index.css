@@ -1760,3 +1760,21 @@ div::first-letter {
     line-height: 1.5;
     cursor: default;
     }
+
+    .PowerBiApp {
+        text-align: center;
+    }
+
+    .EmbedContainer {
+        height: 90vh;
+        width: 90%;
+    }
+
+    .PowerBiAppHeader {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        font-size: calc(10px + 2vmin);
+    }
