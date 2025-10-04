@@ -649,8 +649,12 @@ const LokayuktaView = () => {
 
     const menuItems = defaultMenuItems.filter(item => {
         const activeName = (activeSidebar?.name || "").toLowerCase();
-        if (activeName === "witness") {
+        const moduleName = (activeSidebar?.module || "ui_case").toLowerCase();
+        if (activeName === "witness" && moduleName !== "pt_trail_case") {
             return item.label === "Notices" || item.label === "Recording of Statement";
+        }
+        if (activeName === "witness" && moduleName === "pt_trail_case") {
+            return contentTables.includes(item.table_name);
         }
         if (module === "ui_case" && item.label === "Petition") return false;
         if (item.label === "Court Matters" && module === "pt_case" && activeSidebar?.name.toLowerCase() !== "accused") return false;
@@ -1023,8 +1027,12 @@ const LokayuktaView = () => {
                         ]
                             .filter(item => {
                                 const activeName = ((options && options.name) ? options.name : activeSidebar?.name || "").toLowerCase();
-                                if (activeName === "witness") {
+                                const moduleName = ((options && options.module) ? options.module : activeSidebar?. module || "ui_case").toLowerCase();
+                                if (activeName === "witness" && moduleName != "pt_trail_case") {
                                     return item.label === "Notices" || item.label === "Recording of Statement";
+                                }
+                                if (activeName === "witness" && moduleName === "pt_trail_case") {
+                                    return contentTables.includes(item.table_name);
                                 }
                                 if (module === "ui_case" && item.label === "Petition") return false;
                                 if (item.label === "Court Matters" && module === "pt_case" && activeSidebar?.name.toLowerCase() !== "accused") return false;
