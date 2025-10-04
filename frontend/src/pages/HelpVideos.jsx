@@ -77,11 +77,21 @@ export default function VideoListViewer() {
 
             console.log(getAllVideosResponse,"getAllVideosResponse")
 
-            if (getAllVideosResponse && getAllVideosResponse.success) {
+            if (getAllVideosResponse && getAllVideosResponse.data && getAllVideosResponse.data.success || getAllVideosResponse.success) {
+                toast.success("File uploaded successfully!", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-success",
+                });
                 setOpen(false);
                 gettingAllVideos();
             } else {
-                const errorMessage = getAllVideosResponse?.data?.message || "Failed to upload help videos.";
+                const errorMessage = getAllVideosResponse?.data?.message || getAllVideosResponse?.message || "Failed to upload help videos.";
                 toast.error(errorMessage, {
                     position: "top-right",
                     autoClose: 3000,
@@ -96,7 +106,9 @@ export default function VideoListViewer() {
 
         } catch (error) {
             setLoading(false);
-            toast.error(error?.response?.data?.message || "Please Try Again!", {
+            console.error("Upload error:", error);
+            const errorMessage = error?.response?.data?.message || error?.message || "Please Try Again!";
+            toast.error(errorMessage, {
                 position: "top-right",
                 autoClose: 3000,
                 hideProgressBar: false,
