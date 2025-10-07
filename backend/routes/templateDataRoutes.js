@@ -117,7 +117,9 @@ const router = express.Router();
                 const fullPath = path.join(uploadPath, file.originalname);
 
                 if (fs.existsSync(fullPath)) {
-                    return cb(new Error(`File "${file.originalname}" already exists in this module`), null);
+                    // Instead of throwing an error, we'll handle this in the route
+                    req.fileExists = true;
+                    req.existingFileName = file.originalname;
                 }
                 cb(null, file.originalname);
             }
@@ -357,10 +359,26 @@ router.post('/viewMagazineTemplateAllData',
     router.post("/uploadHelpVideo", (req, res) => {
         uploadHelpVideos.any()(req, res, function (err) {
             if (err) {
-                console.error('Error Message', err.message);
-                return res.json({
+                console.error('Multer Error:', err.message);
+                return res.status(400).json({
                     success: false,
                     message: err.message || "Upload failed",
+                });
+            }
+
+            // Check if file already exists (set in multer filename function)
+            if (req.fileExists) {
+                return res.status(400).json({
+                    success: false,
+                    message: `File "${req.existingFileName}" already exists in this module`,
+                });
+            }
+
+            // Check if no files were uploaded
+            if (!req.files || req.files.length === 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: "No files were uploaded",
                 });
             }
 
@@ -377,6 +395,7 @@ router.post('/viewMagazineTemplateAllData',
             });
         });
     });
+
 
 router.post('/getTemplateDataWithDate',
     [validate_token],
