@@ -69,11 +69,8 @@ exports.editUser = async (req, res) => {
         await user.update({ user_name, mobile_number, isActive });
 
         if (Array.isArray(applications)) {
-            // Find only valid application records
+            // Validate codes
             const appRecords = await Application.findAll({ where: { code: applications } });
-            await user.setApplications(appRecords); // Only valid applications will be set
-
-            // If some codes were invalid, return a warning in the response
             const validCodes = appRecords.map(app => app.code);
             const invalidCodes = applications.filter(code => !validCodes.includes(code));
             if (invalidCodes.length > 0) {
@@ -82,6 +79,16 @@ exports.editUser = async (req, res) => {
                     invalidCodes
                 });
             }
+
+            // Remove old user_applications
+            await UserApplication.destroy({ where: { userId: user.id } });
+
+            // Add new user_applications
+            const newUserApps = validCodes.map(code => ({
+                userId: user.id,
+                applicationCode: code
+            }));
+            await UserApplication.bulkCreate(newUserApps);
         }
 
         res.json(user);
