@@ -25,7 +25,7 @@ const isDevelopment = process.env.NODE_ENV !== 'production';
 
 if (isDevelopment) {
   // Development: Allow all localhost origins
-  const allowedOrigins = ['localhost', '127.0.0.1','139.59.35.227','cop-main.patterneffects.in','mob-beta.patterneffects.in'];
+  const allowedOrigins = ['localhost', '127.0.0.1','139.59.35.227','cop-main.patterneffects.in','mob-beta.patterneffects.in','rs.patterneffects.in','muddemal.patterneffects.in','mob.patterneffects.in'];
   
   app.use(cors({
     origin: function (origin, callback) {
