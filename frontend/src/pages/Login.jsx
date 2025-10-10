@@ -86,8 +86,8 @@ const Login = ({ setIsAuthenticated }) => {
                                     />
                                 </div>
                                 <div>
-                                    <h1 className="text-3xl font-bold text-gray-800">Police Application</h1>
-                                    <p className="text-sm text-gray-600">Crime Records Bureau, Bengaluru</p>
+                                    <h1 className="text-3xl font-bold text-gray-800">BCP APPLICATIONS</h1>
+                                    <p className="text-sm text-gray-600">Commissioner Of Police, Bengaluru</p>
                                 </div>
                             </div>
                             <h4 className="text-xl font-bold text-gray-800 mt-6">Login to your account!</h4>
