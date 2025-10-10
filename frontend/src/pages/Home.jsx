@@ -6,7 +6,7 @@ import cidLogo from '../images/cid.png'
 import background from '../images/background.png'
 
 import { FiArrowRight, FiLogOut, FiRefreshCw, FiUsers, FiSettings } from 'react-icons/fi';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import apiService from '../services/api';
 import { isAdmin } from '../utils/auth';
@@ -265,7 +265,7 @@ const Home = ({ setIsAuthenticated }) => {
                     {user && (
                         <div className="mb-8 text-center">
                             <h2 className="text-2xl font-bold text-white mb-2">
-                                Welcome back, {user.user_name}!
+                                Welcome {user.user_name}!
                             </h2>
                             <p className="text-gray-300 text-sm">
                                 You have access to {user.applications ? user.applications.length : 0} application(s)
@@ -274,7 +274,7 @@ const Home = ({ setIsAuthenticated }) => {
                     )}
 
                     {/* Admin Management Section - Temporarily Hidden */}
-                    {/* {!loading && !error && isAdmin() && (
+                    {!loading && !error && isAdmin() && (
                         <div className="mb-10">
                             <h4 className="text-xl font-bold text-gray-100 mb-4 uppercase">
                                 Admin Management
@@ -300,7 +300,7 @@ const Home = ({ setIsAuthenticated }) => {
                                     </div>
                                 </div>
 
-                                <div 
+                                {/* <div 
                                     onClick={() => navigate('/admin/applications')}
                                     className="group cursor-pointer bg-white/10 backdrop-blur-sm rounded-lg border border-white/20 p-6 hover:bg-white/20 transition-all duration-300 hover:scale-105"
                                 >
@@ -318,10 +318,10 @@ const Home = ({ setIsAuthenticated }) => {
                                         </div>
                                         <FiArrowRight className="w-5 h-5 text-gray-400 ml-auto group-hover:text-white group-hover:translate-x-1 transition-all" />
                                     </div>
-                                </div>
+                                </div> */}
                             </div>
                         </div>
-                    )} */}
+                    )}
 
                     {/* Loading State */}
                     {loading && renderLoadingState()}

@@ -1,6 +1,6 @@
-// const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = 'http://localhost:5000/api';
 // const API_BASE_URL = 'http://139.59.35.227:5000/api';
-const API_BASE_URL = 'https://cop-main.patterneffects.in/api';
+// const API_BASE_URL = 'https://cop-main.patterneffects.in/api';
 
 class ApiService {
   constructor() {
@@ -76,7 +76,8 @@ class ApiService {
 
   // Application methods
   async getApplications() {
-    return this.request('/applications');
+    const res = await fetch(`${API_BASE_URL}/applications`);
+    return await res.json();
   }
 
   async getApplication(id) {
@@ -161,6 +162,52 @@ class ApiService {
     localStorage.removeItem('police_application_token');
     localStorage.removeItem('police_application_user');
   }
+
+  getCurrentUser() {
+    const userStr = localStorage.getItem('user');
+    if (!userStr) return null;
+    try {
+      return JSON.parse(userStr);
+    } catch {
+      return null;
+    }
+  }
+
+  // Get all users
+  async getUsers(offset = 0, limit = 10, search = '') {
+    const params = new URLSearchParams({ offset, limit });
+    if (search) params.append('search', search);
+    const res = await this.request(`/users?${params.toString()}`, { method: 'GET' });
+    return res;
+  }
+
+  // Update user
+  async updateUser(id, data) {
+    return this.request(`/users/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // Delete user
+  async deleteUser(id) {
+    return this.request(`/users/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Set user as inactive
+  async setUserInactive(id) {
+    return this.updateUser(id, { isActive: false });
+  }
+
+  async editUser(id, data) {
+    return this.request(`/users/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' }
+    });
+}
 }
 
 export default new ApiService();
