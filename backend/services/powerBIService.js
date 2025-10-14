@@ -14,6 +14,7 @@ class PowerBIService {
         
         this.accessToken = null;
         this.tokenExpiry = null;
+        this.cachedReportId = null;
     }
 
     /**
@@ -21,10 +22,11 @@ class PowerBIService {
      */
     async getAccessToken() {
         try {
-            // Check if we have a valid token already
-            if (this.accessToken && !this.isTokenExpired()) {
-                console.log('Using existing valid access token');
-                return this.accessToken;
+            
+            const currentReportId = reportId || this.config.reportId;
+            if (this.embedToken && this.cachedReportId === currentReportId && !this.isTokenExpired()) {
+                console.log('Using existing valid embed token for report:', currentReportId);
+                return this.embedToken;
             }
 
             console.log('Requesting new Power BI access token...');
@@ -46,6 +48,7 @@ class PowerBIService {
 
             this.accessToken = response.data.access_token;
             this.tokenExpiry = Date.now() + (response.data.expires_in * 1000);
+            this.cachedReportId = currentReportId;
             
             console.log('Power BI access token obtained successfully');
             return this.accessToken;
