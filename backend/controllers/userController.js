@@ -25,6 +25,7 @@ exports.getAllUsers = async (req, res) => {
             where,
             offset,
             limit,
+            distinct: true,
             include: [
                 {
                     model: UserApplication,

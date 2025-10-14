@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Route, Routes, Navigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 
-import { Home, Login, UserManagement, ApplicationManagement } from "./pages";
+import { Home, Login, UserManagement, ApplicationManagement, AnalyticsViewer } from "./pages";
 import AdminRoute from "./components/AdminRoute";
 import apiService from "./services/api";
 
@@ -69,6 +69,10 @@ const App = () => {
                             <ApplicationManagement setIsAuthenticated={setIsAuthenticated} />
                         </AdminRoute>
                     ) : <Navigate to="/" replace />} 
+                />
+                <Route 
+                    path="/analytics-viewer" 
+                    element={<AnalyticsViewer />} 
                 />
             </Routes>
         </Router>

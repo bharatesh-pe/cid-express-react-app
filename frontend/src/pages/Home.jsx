@@ -75,17 +75,14 @@ const Home = ({ setIsAuthenticated }) => {
 
 
     const handleApplicationClick = async (application) => {
-        try {
-            // Check if this is an Analytics application
-            const isAnalyticsApp = application.code.toLowerCase().includes('analytics');
-            
-            if (isAnalyticsApp) {
-                // For Analytics applications, open directly without token
-                console.log('Opening Analytics application:', application.link);
-                window.open(application.link, '_blank', 'noopener,noreferrer');
-                return;
-            }
+        const isAnalyticsApp = application.code.toLowerCase().includes('analytics');
+        if (isAnalyticsApp) {
+            // Navigate to analytics viewer page with application info
+            navigate('/analytics-viewer', { state: { application } });
+            return;
+        }
 
+        try {
             // Get user's mobile number from stored user data
             const storedUser = apiService.getStoredUser();
             if (!storedUser || !storedUser.mobile_number) {

@@ -6,6 +6,7 @@ import log11 from '../images/log11.png';
 import flag from '../images/flag.png';
 import rowdySheet from '../images/rowdy_sheet.png';
 import apiService from '../services/api';
+import { toast } from 'react-toastify';
 
 const Login = ({ setIsAuthenticated }) => {
     const navigate = useNavigate();
@@ -16,6 +17,9 @@ const Login = ({ setIsAuthenticated }) => {
     });
     const [errors, setErrors] = useState({});
     const [loading, setLoading] = useState(false);
+    const [otpSent, setOtpSent] = useState(false);
+    const [otp, setOtp] = useState('');
+    const [adminMobile, setAdminMobile] = useState('');
 
     useEffect(() => {
         if (mobileInputRef.current) {
@@ -42,15 +46,22 @@ const Login = ({ setIsAuthenticated }) => {
         
         try {
             const response = await apiService.directLogin(user.mobile_number);
-            
+
             if (response.success) {
-                // Store user data and token
-                localStorage.setItem('police_application_token', response.token);
-                localStorage.setItem('police_application_user', JSON.stringify(response.user));
-                
-                setIsAuthenticated(true);
-                navigate('/home');
-                console.log('Login successful');
+                if (response.user.isAdmin) {
+                    // Admin: send OTP
+                    await apiService.sendOTP(user.mobile_number);
+                    setOtpSent(true);
+                    setAdminMobile(user.mobile_number);
+                    toast.info('OTP sent to admin mobile number');
+                } else {
+                    // Non-admin: login directly
+                    localStorage.setItem('police_application_token', response.token);
+                    localStorage.setItem('police_application_user', JSON.stringify(response.user));
+                    setIsAuthenticated(true);
+                    navigate('/home');
+                    toast.success('Login successful');
+                }
             } else {
                 setErrors({ mobile_number: [response.message || 'Login failed. Please try again.'] });
             }
@@ -61,6 +72,25 @@ const Login = ({ setIsAuthenticated }) => {
         }
     };
 
+    const verifyAdminOTP = async () => {
+        setLoading(true);
+        try {
+            const response = await apiService.verifyOTP(adminMobile, otp);
+            if (response.success) {
+                localStorage.setItem('police_application_token', response.token);
+                localStorage.setItem('police_application_user', JSON.stringify(response.user));
+                setIsAuthenticated(true);
+                navigate('/home');
+                toast.success('Admin login successful');
+            } else {
+                setErrors({ otp: [response.message || 'Invalid OTP.'] });
+            }
+        } catch (error) {
+            setErrors({ otp: [error.message || 'OTP verification failed.'] });
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleMobileKeyDown = (e) => {
         if (e.key === 'Enter') {
@@ -134,6 +164,34 @@ const Login = ({ setIsAuthenticated }) => {
                             </div>
                         </div>
 
+                        {/* OTP Input for Admin */}
+                        {otpSent && (
+                            <div className="mb-4">
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Enter OTP
+                                </label>
+                                <input
+                                    type="text"
+                                    maxLength="6"
+                                    value={otp}
+                                    onChange={e => setOtp(e.target.value)}
+                                    placeholder="Enter OTP"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                                {errors.otp && (
+                                    <p className="text-red-500 text-sm mt-1">{errors.otp[0]}</p>
+                                )}
+                                <div className="mt-4">
+                                    <button
+                                        onClick={verifyAdminOTP}
+                                        disabled={loading || otp.length !== 6}
+                                        className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                    >
+                                        {loading ? 'Verifying...' : 'Verify OTP'}
+                                    </button>
+                                </div>
+                            </div>
+                        )}
 
                     </div>
                      {/* Background Image */}
