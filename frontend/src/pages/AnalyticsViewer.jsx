@@ -21,7 +21,7 @@ const AnalyticsViewer = () => {
     // Get report ID based on application
     const getReportId = () => {
         if (application && application.code.toLowerCase().includes('ndps')) {
-            // return '93286dd2-d882-4441-a897-18a0a0a76e02';
+            return '93286dd2-d882-4441-a897-18a0a0a76e02';
         }
         // Default report ID for other analytics
         return '95ee3cd6-a079-412c-b345-193d0b836be3';
