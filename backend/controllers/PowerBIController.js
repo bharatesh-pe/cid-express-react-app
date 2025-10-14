@@ -77,14 +77,21 @@ class PowerBIController {
 
             const accessToken = tokenResponse.data.access_token;
             
+            // // Get dataset ID from report details
+            // const reportDetailsUrl = `https://api.powerbi.com/v1.0/myorg/groups/${this.config.workspace_id}/reports/${reportId}`;
+            // const reportDetails = await axios.get(reportDetailsUrl, {
+            //     headers: { Authorization: `Bearer ${accessToken}` }
+            // });
+            // const datasetId = reportDetails.data.datasetId;
+
             // Generate embed token with proper configuration
             const embedUrl = `https://api.powerbi.com/v1.0/myorg/groups/${this.config.workspace_id}/reports/${reportId}/GenerateToken`;
             
             const requestBody = {
                 accessLevel: 'View',
                 allowSaveAs: false,
-                datasetId: reportId, // Use dynamic report ID as dataset ID
                 identities: [], // Empty for service principal auth
+                datasetId: reportId,
                 lifetimeInMinutes: 60 // Token valid for 60 minutes
             };
             
