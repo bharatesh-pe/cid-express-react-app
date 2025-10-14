@@ -25,50 +25,82 @@ app.use(helmet());
 // CORS configuration
 const isDevelopment = process.env.NODE_ENV !== 'production';
 
-if (isDevelopment) {
-  // Development: Allow all localhost origins
-  const allowedOrigins = ['localhost', '127.0.0.1','139.59.35.227','cop-main.patterneffects.in','mob-beta.patterneffects.in','rs.patterneffects.in','muddemal.patterneffects.in','mob.patterneffects.in'];
+// Combined allowed origins for both development and production
+const allowedOrigins = [
+  'localhost',
+  '127.0.0.1',
+  '139.59.35.227',
+  'cop-main.patterneffects.in',
+  'mob-beta.patterneffects.in',
+  'rs.patterneffects.in',
+  'muddemal.patterneffects.in',
+  'mob.patterneffects.in',
+  process.env.FRONTEND_URL,
+  process.env.VUE_APP_URL
+].filter(Boolean);
+
+app.use(cors({
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) {
+      console.log('✅ CORS allowing request with no origin');
+      return callback(null, true);
+    }
+    
+    // Check if origin matches any allowed origin
+    const isAllowed = allowedOrigins.some(allowedOrigin => {
+      // Support both HTTP and HTTPS
+      const httpOrigin = `http://${allowedOrigin}`;
+      const httpsOrigin = `https://${allowedOrigin}`;
+      return origin === httpOrigin || origin === httpsOrigin || origin.includes(allowedOrigin);
+    });
+    
+    if (isAllowed) {
+      console.log('✅ CORS allowing origin:', origin);
+      return callback(null, true);
+    }
+    
+    console.log('❌ CORS blocked origin:', origin);
+    console.log('Allowed origins:', allowedOrigins);
+    callback(new Error(`Not allowed by CORS. Origin: ${origin}`));
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Cache-Control', 'Accept'],
+  optionsSuccessStatus: 200 // Some legacy browsers choke on 204
+}));
+
+// Handle preflight OPTIONS requests specifically for PowerBI routes
+app.options('/api/powerbi/*', (req, res) => {
+  const origin = req.headers.origin;
   
-  app.use(cors({
-    origin: function (origin, callback) {
-      // Allow requests with no origin (like mobile apps or curl requests)
-      if (!origin) return callback(null, true);
-      
-      // Allow any localhost origin in development (including preview server)
-      const isAllowed = allowedOrigins.some(allowedOrigin => origin.includes(allowedOrigin));
-      
-      if (isAllowed) {
-        console.log('✅ CORS allowing origin:', origin);
-        return callback(null, true);
-      }
-      
-      console.log('❌ CORS blocked origin:', origin);
-      callback(new Error('Not allowed by CORS'));
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Cache-Control', 'Accept']
-  }));
-} else {
-  // Production: Specific allowed origins
-  const allowedOrigins = [
-    process.env.FRONTEND_URL,
-    process.env.VUE_APP_URL
-  ].filter(Boolean);
+  // Check if origin is allowed
+  const isAllowed = allowedOrigins.some(allowedOrigin => {
+    if (!origin) return false;
+    const httpOrigin = `http://${allowedOrigin}`;
+    const httpsOrigin = `https://${allowedOrigin}`;
+    return origin === httpOrigin || origin === httpsOrigin || origin.includes(allowedOrigin);
+  });
+  
+  if (isAllowed || !origin) {
+    res.header('Access-Control-Allow-Origin', origin || '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Cache-Control, Accept');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Max-Age', '86400'); // 24 hours
+    console.log('✅ Preflight OPTIONS allowed for PowerBI route from origin:', origin);
+    res.sendStatus(200);
+  } else {
+    console.log('❌ Preflight OPTIONS blocked for PowerBI route from origin:', origin);
+    res.status(403).json({ error: 'CORS preflight request blocked' });
+  }
+});
 
-  app.use(cors({
-    origin: allowedOrigins,
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Cache-Control', 'Accept']
-  }));
-}
-
-// Handle preflight OPTIONS requests
+// General OPTIONS handler for other routes
 app.options('*', (req, res) => {
   res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Cache-Control, Accept');
   res.header('Access-Control-Allow-Credentials', 'true');
   res.sendStatus(200);
 });

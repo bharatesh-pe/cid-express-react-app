@@ -12,6 +12,7 @@ class PowerBIService {
         this.baseUrl = API_BASE_URL;
         this.embedToken = null;
         this.tokenExpiry = null;
+        this.lastReportId = null;
     }
 
     getAuthToken() {
@@ -23,9 +24,12 @@ class PowerBIService {
      */
     async getEmbedToken(reportId = null) {
         try {
-            // Check if we have a valid token already
-            if (this.embedToken && !this.isTokenExpired()) {
-                console.log('Using existing valid embed token');
+            // Use the provided reportId or fall back to default
+            const finalReportId = reportId || this.config.reportId;
+            
+            // Check if we have a valid token already for the same report
+            if (this.embedToken && !this.isTokenExpired() && this.lastReportId === finalReportId) {
+                console.log('Using existing valid embed token for report:', finalReportId);
                 return this.embedToken;
             }
             
@@ -34,7 +38,7 @@ class PowerBIService {
                 throw new Error('User is not authenticated. Please log in.');
             }
 
-            console.log('Requesting new embed token from backend...');
+            console.log('Requesting new embed token from backend for report:', finalReportId);
             
             const response = await fetch(`${this.baseUrl}/powerbi/embed-token`, {
                 method: 'POST',
@@ -45,7 +49,7 @@ class PowerBIService {
                     'Cache-Control': 'no-cache'
                 },
                 body: JSON.stringify({
-                    reportId: reportId || this.config.reportId,
+                    reportId: finalReportId,
                     workspaceId: this.config.workspaceId
                 })
             });
@@ -74,8 +78,9 @@ class PowerBIService {
             // Store the token string directly
             this.embedToken = embedData.embed_token;
             this.tokenExpiry = Date.now() + (embedData.expires_in || 3600) * 1000;
+            this.lastReportId = finalReportId;
             
-            console.log('Embed token obtained successfully');
+            console.log('Embed token obtained successfully for report:', finalReportId);
             console.log('Token length:', this.embedToken.length);
             
             // Return just the token string
@@ -132,6 +137,7 @@ class PowerBIService {
             console.log('Refreshing Power BI report...');
             this.embedToken = null;
             this.tokenExpiry = null;
+            this.lastReportId = null;
             return await this.getEmbedToken();
         } catch (error) {
             console.error('Error refreshing report:', error);
@@ -143,6 +149,7 @@ class PowerBIService {
         this.config = { ...this.config, ...newConfig };
         this.embedToken = null;
         this.tokenExpiry = null;
+        this.lastReportId = null;
     }
 }
 

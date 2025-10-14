@@ -11,6 +11,14 @@ class PowerBIController {
             scope: 'https://analysis.windows.net/powerbi/api/.default',
             verify_ssl: process.env.NODE_ENV === 'production'
         };
+        
+        // Validate required configuration
+        const requiredVars = ['client_id', 'client_secret', 'tenant_id', 'workspace_id', 'report_id'];
+        const missingVars = requiredVars.filter(varName => !this.config[varName]);
+        
+        if (missingVars.length > 0) {
+            console.error('Missing PowerBI environment variables:', missingVars);
+        }
     }
 
     /**
@@ -56,8 +64,32 @@ class PowerBIController {
      */
     getEmbedToken = async (req, res) => {
         try {
+            // Log request details for debugging
+            console.log('PowerBI embed token request received:', {
+                origin: req.headers.origin,
+                userAgent: req.headers['user-agent'],
+                contentType: req.headers['content-type'],
+                method: req.method,
+                body: req.body
+            });
+            
             // Get report ID from request body or use default
-            const reportId = req.body.reportId || this.config.report_id;
+            const reportId = req.body?.reportId || this.config.report_id;
+            
+            // Validate that we have a report ID
+            if (!reportId) {
+                console.error('No report ID provided:', { 
+                    body: req.body, 
+                    config: this.config.report_id 
+                });
+                return res.status(400).json({
+                    success: false,
+                    error: 'Report ID is required',
+                    details: 'No reportId provided in request body and no default report_id configured'
+                });
+            }
+            
+            console.log('Generating embed token for report:', reportId);
             
             // Get access token first
             const tokenUrl = `https://login.microsoftonline.com/${this.config.tenant_id}/oauth2/v2.0/token`;
@@ -91,7 +123,6 @@ class PowerBIController {
                 accessLevel: 'View',
                 allowSaveAs: false,
                 identities: [], // Empty for service principal auth
-                datasetId: reportId,
                 lifetimeInMinutes: 60 // Token valid for 60 minutes
             };
             
