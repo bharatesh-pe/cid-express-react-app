@@ -21,7 +21,7 @@ class PowerBIService {
     /**
      * Get embed token - Returns just the token string, not the response object
      */
-    async getEmbedToken() {
+    async getEmbedToken(reportId = null) {
         try {
             // Check if we have a valid token already
             if (this.embedToken && !this.isTokenExpired()) {
@@ -45,7 +45,7 @@ class PowerBIService {
                     'Cache-Control': 'no-cache'
                 },
                 body: JSON.stringify({
-                    reportId: this.config.reportId,
+                    reportId: reportId || this.config.reportId,
                     workspaceId: this.config.workspaceId
                 })
             });
