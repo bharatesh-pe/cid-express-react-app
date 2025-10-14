@@ -1,0 +1,119 @@
+/* Crime Analytics Page Styles */
+
+.powerbi-embed-container {
+    position: relative;
+    width: 100%;
+    min-height: 600px;
+    background-color: #f8f9fa;
+    border-radius: 0.375rem;
+}
+
+.powerbi-frame-container {
+    width: 100%;
+    height: 600px;
+    position: relative;
+    display: block;
+    visibility: visible;
+    opacity: 1;
+}
+
+.powerbi-iframe {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    border: none !important;
+    display: block !important;
+    background: white !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    z-index: 1 !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+.powerbi-embed-container:fullscreen {
+    background-color: white;
+    padding: 20px;
+}
+
+.powerbi-embed-container:fullscreen .powerbi-iframe {
+    height: calc(100vh - 40px);
+}
+
+.animate-spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@media (max-width: 768px) {
+    .powerbi-embed-container {
+        min-height: 400px;
+    }
+    
+    .powerbi-frame-container {
+        height: 400px;
+    }
+}
+
+/* Loading and Error States */
+.loading-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 600px;
+}
+
+.error-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 600px;
+}
+
+/* Button Styles */
+.btn-outline-primary:hover {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+    color: white;
+}
+
+.btn-outline-secondary:hover {
+    background-color: #6c757d;
+    border-color: #6c757d;
+    color: white;
+}
+
+/* Card Styles */
+.card {
+    border: 1px solid rgba(0, 0, 0, 0.125);
+    border-radius: 0.375rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.card:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    transition: box-shadow 0.15s ease-in-out;
+}
+
+/* Responsive Design */
+@media (max-width: 576px) {
+    .d-flex.gap-2 {
+        flex-direction: column;
+        gap: 0.5rem !important;
+    }
+    
+    .btn-sm {
+        width: 100%;
+    }
+}
