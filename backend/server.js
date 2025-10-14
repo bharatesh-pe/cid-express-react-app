@@ -11,9 +11,11 @@ const authRoutes = require('./routes/auth');
 const applicationRoutes = require('./routes/applications');
 const ssoRoutes = require('./routes/sso');
 const userRoutes = require('./routes/userRoutes');
+//const powerbiRoutes=require('routes/powerbi');
 
+const powerbiRoutes = require('./routes/powerbi');
 const app = express();
-
+app.use('/api/powerbi', powerbiRoutes);
 // Connect to MongoDB
 connectDB();
 
