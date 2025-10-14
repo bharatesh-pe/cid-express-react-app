@@ -26,6 +26,7 @@ class PowerBIService {
         try {
             // Check if we have a valid token already
             const currentReportId = reportId || this.config.reportId;
+            console.log('Current report ID:', currentReportId);
             if (this.embedToken && this.cachedReportId === currentReportId && !this.isTokenExpired()) {
                 console.log('Using existing valid embed token for report:', currentReportId);
                 return this.embedToken;
