@@ -18,9 +18,18 @@ const AnalyticsViewer = () => {
     const embedContainerRef = useRef(null);
     const reportRef = useRef(null);
 
+    // Get report ID based on application
+    const getReportId = () => {
+        if (application && application.code.toLowerCase().includes('ndps')) {
+            return '93286dd2-d882-4441-a897-18a0a0a76e02';
+        }
+        // Default report ID for other analytics
+        return '95ee3cd6-a079-412c-b345-193d0b836be3';
+    };
+
     const config = {
         workspaceId: 'bcb18a0f-e701-4e30-88a6-ddea7062043c',
-        reportId: '95ee3cd6-a079-412c-b345-193d0b836be3',
+        reportId: getReportId(),
         tenantId: '94dbcc7c-6e32-4329-a59a-3fb79b6fb70e',
         pageId: '74173e067628fbf15e6e'
     };
@@ -98,7 +107,7 @@ const AnalyticsViewer = () => {
             
             // Get embed token
             console.log('Fetching embed token...');
-            const tokenString = await powerBIService.getEmbedToken();
+            const tokenString = await powerBIService.getEmbedToken(config.reportId);
             setEmbedToken(tokenString);
             
             if (!tokenString) {

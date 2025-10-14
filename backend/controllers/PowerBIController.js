@@ -56,6 +56,9 @@ class PowerBIController {
      */
     getEmbedToken = async (req, res) => {
         try {
+            // Get report ID from request body or use default
+            const reportId = req.body.reportId || this.config.report_id;
+            
             // Get access token first
             const tokenUrl = `https://login.microsoftonline.com/${this.config.tenant_id}/oauth2/v2.0/token`;
             
@@ -75,12 +78,12 @@ class PowerBIController {
             const accessToken = tokenResponse.data.access_token;
             
             // Generate embed token with proper configuration
-            const embedUrl = `https://api.powerbi.com/v1.0/myorg/groups/${this.config.workspace_id}/reports/${this.config.report_id}/GenerateToken`;
+            const embedUrl = `https://api.powerbi.com/v1.0/myorg/groups/${this.config.workspace_id}/reports/${reportId}/GenerateToken`;
             
             const requestBody = {
                 accessLevel: 'View',
                 allowSaveAs: false,
-                datasetId: this.config.report_id, // Use report ID as dataset ID
+                datasetId: reportId, // Use dynamic report ID as dataset ID
                 identities: [], // Empty for service principal auth
                 lifetimeInMinutes: 60 // Token valid for 60 minutes
             };
