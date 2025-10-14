@@ -38,11 +38,19 @@ const AnalyticsViewer = () => {
         if (application) {
             initializePowerBI();
         }
-        
+
         return () => {
             // Cleanup on unmount
-            if (reportRef.current && window.powerbi) {
-                window.powerbi.reset(embedContainerRef.current);
+            if (
+                embedContainerRef.current &&
+                window.powerbi &&
+                typeof window.powerbi.reset === 'function'
+            ) {
+                try {
+                    window.powerbi.reset(embedContainerRef.current);
+                } catch (err) {
+                    console.warn('Power BI reset error:', err);
+                }
             }
         };
     }, [application]);
@@ -224,7 +232,7 @@ const AnalyticsViewer = () => {
             <header className="fixed top-0 left-0 right-0 z-30 bg-white shadow flex items-center justify-between px-6 h-16">
                 <div className="flex items-center gap-4">
                     <button
-                        onClick={() => navigate('/home')}
+                        onClick={() => navigate(-1)}
                         className="flex items-center gap-2 px-2 py-1 text-gray-600 hover:text-blue-700 hover:bg-gray-100 rounded transition"
                     >
                         <FiArrowLeft className="w-5 h-5" />
