@@ -1,5 +1,5 @@
-import Home from "./Home";
-import Login from "./Login";
-import { UserManagement, ApplicationManagement } from "./admin";
-
-export { Home, Login, UserManagement, ApplicationManagement };
+export { default as Home } from './Home';
+export { default as Login } from './Login';
+export { default as UserManagement } from './admin/UserManagement';
+export { default as ApplicationManagement } from './admin/ApplicationManagement';
+export { default as AnalyticsViewer } from './AnalyticsViewer';
