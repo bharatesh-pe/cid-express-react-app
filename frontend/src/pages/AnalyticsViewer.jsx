@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { FiArrowLeft, FiRefreshCw, FiMaximize2, FiMinimize2 } from 'react-icons/fi';
 import siimsLogo from '../images/siims_logo.svg';
 import powerBIService from '../services/powerBIService';
-import apiService from '../services/api';
+import apiService, { API_BASE_URL } from '../services/api';
 import '../styles/CrimeAnalytics.css';
 
 const AnalyticsViewer = () => {

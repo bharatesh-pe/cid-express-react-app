@@ -11,6 +11,7 @@ const authRoutes = require('./routes/auth');
 const applicationRoutes = require('./routes/applications');
 const ssoRoutes = require('./routes/sso');
 const userRoutes = require('./routes/userRoutes');
+const powerBIroutes = require('./routes/powerbi');
 
 const app = express();
 
@@ -45,7 +46,7 @@ if (isDevelopment) {
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Cache-Control', 'Accept']
   }));
 } else {
   // Production: Specific allowed origins
@@ -58,7 +59,7 @@ if (isDevelopment) {
     origin: allowedOrigins,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Cache-Control', 'Accept']
   }));
 }
 
@@ -66,7 +67,7 @@ if (isDevelopment) {
 app.options('*', (req, res) => {
   res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Cache-Control, Accept');
   res.header('Access-Control-Allow-Credentials', 'true');
   res.sendStatus(200);
 });
@@ -102,6 +103,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/applications', applicationRoutes);
 app.use('/api/sso', ssoRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/powerbi', powerBIroutes);
 
 // 404 handler
 app.use('*', (req, res) => {
