@@ -21,7 +21,7 @@ const AnalyticsViewer = () => {
     // Get report ID based on application
     const getReportId = () => {
         if (application && application.code.toLowerCase().includes('ndps')) {
-            // return '93286dd2-d882-4441-a897-18a0a0a76e02';
+            return '93286dd2-d882-4441-a897-18a0a0a76e02';
         }
         // Default report ID for other analytics
         return '95ee3cd6-a079-412c-b345-193d0b836be3';
@@ -33,6 +33,11 @@ const AnalyticsViewer = () => {
         tenantId: '94dbcc7c-6e32-4329-a59a-3fb79b6fb70e',
         pageId: '74173e067628fbf15e6e'
     };
+    
+    // Validate configuration
+    if (!config.reportId || !config.workspaceId) {
+        console.error('Invalid PowerBI configuration:', config);
+    }
 
     useEffect(() => {
         if (application) {
@@ -106,12 +111,12 @@ const AnalyticsViewer = () => {
             await loadPowerBISDK();
             
             // Get embed token
-            console.log('Fetching embed token...');
+            console.log('Fetching embed token for report:', config.reportId);
             const tokenString = await powerBIService.getEmbedToken(config.reportId);
             setEmbedToken(tokenString);
             
             if (!tokenString) {
-                throw new Error('Failed to get embed token');
+                throw new Error('Failed to get embed token - no token returned from server');
             }
             
             console.log('Got embed token:', tokenString.slice(0, 10) + '...');

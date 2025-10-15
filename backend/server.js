@@ -11,11 +11,10 @@ const authRoutes = require('./routes/auth');
 const applicationRoutes = require('./routes/applications');
 const ssoRoutes = require('./routes/sso');
 const userRoutes = require('./routes/userRoutes');
-//const powerbiRoutes=require('routes/powerbi');
+const powerBIroutes = require('./routes/powerbi');
 
-const powerbiRoutes = require('./routes/powerbi');
 const app = express();
-app.use('/api/powerbi', powerbiRoutes);
+
 // Connect to MongoDB
 connectDB();
 
@@ -26,8 +25,22 @@ app.use(helmet());
 const isDevelopment = process.env.NODE_ENV !== 'production';
 
 if (isDevelopment) {
-  // Development: Allow all localhost origins
   const allowedOrigins = ['localhost', '127.0.0.1','139.59.35.227','cop-main.patterneffects.in','mob-beta.patterneffects.in','rs.patterneffects.in','muddemal.patterneffects.in','mob.patterneffects.in'];
+  // Development: Local checking purpose Allow all localhost origins
+  // const allowedOrigins = [
+  //   'http://localhost:3000',
+  //   'http://localhost:3001', 
+  //   'http://localhost:5173',
+  //   'http://127.0.0.1:3000',
+  //   'http://127.0.0.1:3001',
+  //   'http://127.0.0.1:5173',
+  //   'http://139.59.35.227',
+  //   'http://cop-main.patterneffects.in',
+  //   'http://mob-beta.patterneffects.in',
+  //   'http://rs.patterneffects.in',
+  //   'http://muddemal.patterneffects.in',
+  //   'http://mob.patterneffects.in'
+  // ];
   
   app.use(cors({
     origin: function (origin, callback) {
@@ -36,6 +49,10 @@ if (isDevelopment) {
       
       // Allow any localhost origin in development (including preview server)
       const isAllowed = allowedOrigins.some(allowedOrigin => origin.includes(allowedOrigin));
+      // Check if origin is in allowed list or is a localhost variant -  For local testing purposes
+      // const isAllowed = allowedOrigins.includes(origin) || 
+      //                  origin.startsWith('http://localhost:') || 
+      //                  origin.startsWith('http://127.0.0.1:');
       
       if (isAllowed) {
         console.log('✅ CORS allowing origin:', origin);
@@ -69,6 +86,7 @@ app.options('*', (req, res) => {
   res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  // res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Cache-Control, Accept'); - Local testing purpose
   res.header('Access-Control-Allow-Credentials', 'true');
   res.sendStatus(200);
 });
@@ -104,6 +122,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/applications', applicationRoutes);
 app.use('/api/sso', ssoRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/powerbi', powerBIroutes);
 
 // 404 handler
 app.use('*', (req, res) => {
