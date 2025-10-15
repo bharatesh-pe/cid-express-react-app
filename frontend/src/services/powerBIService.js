@@ -37,7 +37,7 @@ class PowerBIService {
                 throw new Error('User is not authenticated. Please log in.');
             }
 
-            console.log('Requesting new embed token from backend for report:', finalReportId);
+            console.log('Requesting new embed token from backend for report:', currentReportId);
             
             const response = await fetch(`${this.baseUrl}/powerbi/embed-token`, {
                 method: 'POST',
@@ -48,7 +48,7 @@ class PowerBIService {
                     'Cache-Control': 'no-cache'
                 },
                 body: JSON.stringify({
-                    reportId: finalReportId,
+                    reportId: currentReportId,
                     workspaceId: this.config.workspaceId
                 })
             });
@@ -79,7 +79,7 @@ class PowerBIService {
             this.tokenExpiry = Date.now() + (embedData.expires_in || 3600) * 1000;
             this.cachedReportId = currentReportId;
             
-            console.log('Embed token obtained successfully for report:', finalReportId);
+            console.log('Embed token obtained successfully for report:', currentReportId);
             console.log('Token length:', this.embedToken.length);
             
             // Return just the token string

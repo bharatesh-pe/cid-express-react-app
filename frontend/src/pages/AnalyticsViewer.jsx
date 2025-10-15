@@ -245,7 +245,7 @@ const AnalyticsViewer = () => {
                     </button>
                     <img src={siimsLogo} className="w-8 h-8 object-contain" alt="SIIMS Logo" />
                     <span className="text-lg font-bold text-gray-800 tracking-wide">
-                        {application.code} Analytics
+                        {application.code}
                     </span>
                 </div>
             </header>
