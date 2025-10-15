@@ -12,7 +12,7 @@ class PowerBIService {
         this.baseUrl = API_BASE_URL;
         this.embedToken = null;
         this.tokenExpiry = null;
-        this.lastReportId = null;
+        this.cachedReportId = null;
     }
 
     getAuthToken() {
@@ -24,12 +24,11 @@ class PowerBIService {
      */
     async getEmbedToken(reportId = null) {
         try {
-            // Use the provided reportId or fall back to default
-            const finalReportId = reportId || this.config.reportId;
-            
-            // Check if we have a valid token already for the same report
-            if (this.embedToken && !this.isTokenExpired() && this.lastReportId === finalReportId) {
-                console.log('Using existing valid embed token for report:', finalReportId);
+            // Check if we have a valid token already
+            const currentReportId = reportId || this.config.reportId;
+            console.log('Current report ID:', currentReportId);
+            if (this.embedToken && this.cachedReportId === currentReportId && !this.isTokenExpired()) {
+                console.log('Using existing valid embed token for report:', currentReportId);
                 return this.embedToken;
             }
             
@@ -78,7 +77,7 @@ class PowerBIService {
             // Store the token string directly
             this.embedToken = embedData.embed_token;
             this.tokenExpiry = Date.now() + (embedData.expires_in || 3600) * 1000;
-            this.lastReportId = finalReportId;
+            this.cachedReportId = currentReportId;
             
             console.log('Embed token obtained successfully for report:', finalReportId);
             console.log('Token length:', this.embedToken.length);
