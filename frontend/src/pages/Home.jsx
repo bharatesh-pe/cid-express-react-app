@@ -144,7 +144,7 @@ const Home = ({ setIsAuthenticated }) => {
             </div>
             <div className="mt-4 flex justify-end items-center">
                 <span className="text-md text-blue-600 group-hover:underline font-semibold">
-                    View Application
+                    {application.is_analytics === true ? 'View Report' : 'View Application'}
                 </span>
                 <FiArrowRight className="text-blue-600 group-hover:text-blue-800 text-lg transition-transform group-hover:translate-x-1 mt-1" />
             </div>
@@ -328,25 +328,25 @@ const Home = ({ setIsAuthenticated }) => {
                     {error && !loading && renderErrorState()}
 
                     {/* Regular Applications */}
-                    {!loading && !error && userApplications.filter(app => !app.code.toLowerCase().includes('analytics')).length > 0 && (
+                    {!loading && !error && userApplications.filter(app => app.is_analytics !== true && app.isActive === true).length > 0 && (
                         <div className="mb-10">
                             <h4 className="text-xl font-bold text-gray-100 mb-4 uppercase">
                                 Your Accessible Applications
                             </h4>
                             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                                {userApplications.filter(app => !app.code.toLowerCase().includes('analytics')).map(renderApplicationCard)}
+                                {userApplications.filter(app => app.is_analytics !== true && app.isActive === true).map(renderApplicationCard)}
                             </div>
                         </div>
                     )}
 
                     {/* Analytics Applications */}
-                    {!loading && !error && userApplications.filter(app => app.code.toLowerCase().includes('analytics')).length > 0 && (
+                    {!loading && !error && userApplications.filter(app => app.is_analytics === true && app.isActive === true).length > 0 && (
                         <div className="mb-10">
                             <h4 className="text-xl font-bold text-gray-100 mb-4 uppercase">
                                 Analytics Applications
                             </h4>
                             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                                {userApplications.filter(app => app.code.toLowerCase().includes('analytics')).map(renderApplicationCard)}
+                                {userApplications.filter(app => app.is_analytics === true && app.isActive === true).map(renderApplicationCard)}
                             </div>
                         </div>
                     )}
