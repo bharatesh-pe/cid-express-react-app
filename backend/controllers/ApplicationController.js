@@ -19,6 +19,24 @@ class ApplicationController {
     }
   }
 
+  // Get analytics applications only
+  async getAnalyticsApplications(req, res) {
+    try {
+      const applications = await Application.getAnalyticsApplications();
+      
+      res.json({
+        success: true,
+        data: applications.map(app => app.getPublicInfo())
+      });
+    } catch (error) {
+      console.error('Get analytics applications error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error'
+      });
+    }
+  }
+
   // Get application by ID
   async getApplication(req, res) {
     try {
@@ -47,7 +65,7 @@ class ApplicationController {
   // Create new application (admin only)
   async createApplication(req, res) {
     try {
-      const { code, link, image, description, order } = req.body;
+      const { code, link, image, description, order, is_analytics } = req.body;
 
       // Check if application with same code already exists
       const existingApp = await Application.findOne({ where: { code } });
@@ -63,7 +81,8 @@ class ApplicationController {
         link,
         image,
         description,
-        order: order || 0
+        order: order || 0,
+        is_analytics: is_analytics || false
       });
 
       res.status(201).json({
@@ -92,7 +111,7 @@ class ApplicationController {
         });
       }
 
-      const { code, link, image, description, order, isActive } = req.body;
+      const { code, link, image, description, order, isActive, is_analytics } = req.body;
 
       // Check if code is being changed and if it conflicts
       if (code && code !== application.code) {
@@ -113,6 +132,7 @@ class ApplicationController {
       if (description !== undefined) updateData.description = description;
       if (order !== undefined) updateData.order = order;
       if (isActive !== undefined) updateData.isActive = isActive;
+      if (is_analytics !== undefined) updateData.is_analytics = is_analytics;
 
       await application.update(updateData);
 
