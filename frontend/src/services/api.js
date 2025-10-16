@@ -80,6 +80,11 @@ class ApiService {
     return await res.json();
   }
 
+  async getAnalyticsApplications() {
+    const res = await fetch(`${API_BASE_URL}/applications/analytics`);
+    return await res.json();
+  }
+
   async getApplication(id) {
     return this.request(`/applications/${id}`);
   }

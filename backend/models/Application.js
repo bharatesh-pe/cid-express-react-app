@@ -44,6 +44,12 @@ const Application = sequelize.define('Application', {
   order: {
     type: DataTypes.INTEGER,
     defaultValue: 0
+  },
+  is_analytics: {
+    type: DataTypes.BOOLEAN,
+    allowNull: true,
+    defaultValue: null,
+    comment: 'Indicates if the application should be shown in analytics section'
   }
 }, {
   tableName: 'applications',
@@ -57,6 +63,9 @@ const Application = sequelize.define('Application', {
     },
     {
       fields: ['order']
+    },
+    {
+      fields: ['is_analytics']
     }
   ]
 });
@@ -77,6 +86,16 @@ Application.prototype.getPublicInfo = function() {
 Application.getActiveApplications = async function() {
   return this.findAll({ 
     where: { isActive: true },
+    order: [['order', 'ASC']]
+  });
+};
+
+Application.getAnalyticsApplications = async function() {
+  return this.findAll({ 
+    where: { 
+      isActive: true,
+      is_analytics: true 
+    },
     order: [['order', 'ASC']]
   });
 };

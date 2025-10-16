@@ -20,7 +20,8 @@ const ApplicationManagement = () => {
         image: '/images/siims_logo.svg',
         description: '',
         isActive: true,
-        order: 0
+        order: 0,
+        is_analytics: false
     });
 
     useEffect(() => {
@@ -100,7 +101,8 @@ const ApplicationManagement = () => {
             image: application.image,
             description: application.description,
             isActive: application.isActive,
-            order: application.order
+            order: application.order,
+            is_analytics: application.is_analytics || false
         });
         setShowEditModal(true);
     };
@@ -195,6 +197,19 @@ const ApplicationManagement = () => {
                             <option value={true}>Active</option>
                             <option value={false}>Inactive</option>
                         </select>
+                    </div>
+                    
+                    <div className="flex items-center">
+                        <input
+                            type="checkbox"
+                            id="is_analytics"
+                            checked={formData.is_analytics}
+                            onChange={(e) => setFormData({...formData, is_analytics: e.target.checked})}
+                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                        />
+                        <label htmlFor="is_analytics" className="ml-2 block text-sm text-gray-700">
+                            Show in Analytics Section
+                        </label>
                     </div>
                 </div>
                 

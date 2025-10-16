@@ -10,6 +10,11 @@ const router = express.Router();
 // @access  Public
 router.get('/', ApplicationController.getApplications);
 
+// @route   GET /api/applications/analytics
+// @desc    Get analytics applications only
+// @access  Public
+router.get('/analytics', ApplicationController.getAnalyticsApplications);
+
 // @route   GET /api/applications/:id
 // @desc    Get application by ID
 // @access  Public
@@ -40,7 +45,11 @@ router.post('/',
     body('order')
       .optional()
       .isInt({ min: 0 })
-      .withMessage('Order must be a non-negative integer')
+      .withMessage('Order must be a non-negative integer'),
+    body('is_analytics')
+      .optional()
+      .isBoolean()
+      .withMessage('is_analytics must be a boolean value')
   ],
   async (req, res) => {
     try {
@@ -90,7 +99,11 @@ router.put('/:id',
     body('isActive')
       .optional()
       .isBoolean()
-      .withMessage('isActive must be a boolean value')
+      .withMessage('isActive must be a boolean value'),
+    body('is_analytics')
+      .optional()
+      .isBoolean()
+      .withMessage('is_analytics must be a boolean value')
   ],
   async (req, res) => {
     try {

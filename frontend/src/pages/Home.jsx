@@ -75,7 +75,8 @@ const Home = ({ setIsAuthenticated }) => {
 
 
     const handleApplicationClick = async (application) => {
-        const isAnalyticsApp = application.code.toLowerCase().includes('analytics');
+        // Check if this is an analytics application using the is_analytics field
+        const isAnalyticsApp = application.is_analytics === true;
         if (isAnalyticsApp) {
             // Navigate to analytics viewer page with application info
             navigate('/analytics-viewer', { state: { application } });
