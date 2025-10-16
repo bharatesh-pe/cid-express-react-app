@@ -18,6 +18,15 @@ exports.getAllUsers = async (req, res) => {
                     { user_name: { [Op.like]: `%${search}%` } },
                     { mobile_number: { [Op.like]: `%${search}%` } }
                 ]
+                //  [Op.and]: [
+                //     { isActive: true },
+                //     {
+                //         [Op.or]: [
+                //             { user_name: { [Op.like]: `%${search}%` } },
+                //             { mobile_number: { [Op.like]: `%${search}%` } }
+                //         ]
+                //     }
+                // ]
             };
         }
 
@@ -30,7 +39,10 @@ exports.getAllUsers = async (req, res) => {
                 {
                     model: UserApplication,
                     as: 'userApplications',
-                    attributes: ['applicationCode']
+                    attributes: ['applicationCode'],
+                    where: {
+                        isActive: true
+                    }
                 }
             ]
         });
