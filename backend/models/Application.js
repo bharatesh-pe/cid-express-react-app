@@ -78,7 +78,9 @@ Application.prototype.getPublicInfo = function() {
     link: this.link,
     image: this.image,
     description: this.description,
-    order: this.order
+    order: this.order,
+    is_analytics: this.is_analytics,
+    isActive: this.isActive
   };
 };
 
