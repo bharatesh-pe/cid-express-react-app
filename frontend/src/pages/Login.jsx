@@ -51,6 +51,16 @@ const Login = ({ setIsAuthenticated }) => {
         }
     }, [otpSent]);
 
+    // Auto-verify when OTP is complete
+    useEffect(() => {
+        if (otp.length === 6 && otpSent && !loading) {
+            const timer = setTimeout(() => {
+                verifyAdminOTP();
+            }, 300);
+            return () => clearTimeout(timer);
+        }
+    }, [otp, otpSent, loading]);
+
     const isNumber = (e) => {
         const keysAllowed = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
         const keyPressed = e.key;
@@ -166,17 +176,13 @@ const Login = ({ setIsAuthenticated }) => {
         const newOtp = otp.split('');
         newOtp[index] = value;
         const otpString = newOtp.join('');
-        setOtp(otpString);
-
+        
         // Auto-focus next input
         if (value && index < 5 && otpInputRefs.current[index + 1]) {
             otpInputRefs.current[index + 1].focus();
         }
 
-        // Auto-verify when 6 digits are entered
-        if (otpString.length === 6) {
-            setTimeout(() => verifyAdminOTP(), 100);
-        }
+        setOtp(otpString);
     };
 
     const handleOTPKeyDown = (index, e) => {
@@ -192,9 +198,7 @@ const Login = ({ setIsAuthenticated }) => {
             navigator.clipboard.readText().then(text => {
                 const pastedOTP = text.replace(/\D/g, '').slice(0, 6);
                 setOtp(pastedOTP);
-                if (pastedOTP.length === 6) {
-                    setTimeout(() => verifyAdminOTP(), 100);
-                }
+                // Auto-verification will be handled by useEffect
             });
         }
     };
