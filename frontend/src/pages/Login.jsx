@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { FiArrowLeft, FiRefreshCw, FiCheck } from 'react-icons/fi';
 import bg1 from '../images/background.png';
 import bg3 from '../images/bg3.png';
 import log11 from '../images/log11.png';
@@ -20,12 +21,35 @@ const Login = ({ setIsAuthenticated }) => {
     const [otpSent, setOtpSent] = useState(false);
     const [otp, setOtp] = useState('');
     const [adminMobile, setAdminMobile] = useState('');
+    const [otpTimer, setOtpTimer] = useState(0);
+    const [canResend, setCanResend] = useState(false);
+    const otpInputRefs = useRef([]);
 
     useEffect(() => {
         if (mobileInputRef.current) {
             mobileInputRef.current.focus();
         }
     }, []);
+
+    // OTP Timer effect
+    useEffect(() => {
+        let interval = null;
+        if (otpTimer > 0) {
+            interval = setInterval(() => {
+                setOtpTimer(timer => timer - 1);
+            }, 1000);
+        } else if (otpTimer === 0 && otpSent) {
+            setCanResend(true);
+        }
+        return () => clearInterval(interval);
+    }, [otpTimer, otpSent]);
+
+    // Focus first OTP input when OTP is sent
+    useEffect(() => {
+        if (otpSent && otpInputRefs.current[0]) {
+            otpInputRefs.current[0].focus();
+        }
+    }, [otpSent]);
 
     const isNumber = (e) => {
         const keysAllowed = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
@@ -53,6 +77,9 @@ const Login = ({ setIsAuthenticated }) => {
                     await apiService.sendOTP(user.mobile_number);
                     setOtpSent(true);
                     setAdminMobile(user.mobile_number);
+                    setOtpTimer(60); // 60 seconds timer
+                    setCanResend(false);
+                    setOtp(''); // Reset OTP
                     toast.info('OTP sent to admin mobile number');
                 } else {
                     // Non-admin: login directly
@@ -73,7 +100,13 @@ const Login = ({ setIsAuthenticated }) => {
     };
 
     const verifyAdminOTP = async () => {
+        if (otp.length !== 6) {
+            setErrors({ otp: ['Please enter a complete 6-digit OTP'] });
+            return;
+        }
+
         setLoading(true);
+        setErrors({});
         try {
             const response = await apiService.verifyOTP(adminMobile, otp);
             if (response.success) {
@@ -84,17 +117,85 @@ const Login = ({ setIsAuthenticated }) => {
                 toast.success('Admin login successful');
             } else {
                 setErrors({ otp: [response.message || 'Invalid OTP.'] });
+                setOtp(''); // Clear OTP on error
             }
         } catch (error) {
             setErrors({ otp: [error.message || 'OTP verification failed.'] });
+            setOtp(''); // Clear OTP on error
         } finally {
             setLoading(false);
+        }
+    };
+
+    const resendOTP = async () => {
+        setLoading(true);
+        setErrors({});
+        try {
+            await apiService.sendOTP(adminMobile);
+            setOtpTimer(60);
+            setCanResend(false);
+            setOtp('');
+            toast.info('OTP resent successfully');
+        } catch (error) {
+            setErrors({ otp: [error.message || 'Failed to resend OTP'] });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const goBackToMobile = () => {
+        setOtpSent(false);
+        setOtp('');
+        setOtpTimer(0);
+        setCanResend(false);
+        setErrors({});
+        if (mobileInputRef.current) {
+            mobileInputRef.current.focus();
         }
     };
 
     const handleMobileKeyDown = (e) => {
         if (e.key === 'Enter') {
             directLogin();
+        }
+    };
+
+    const handleOTPChange = (index, value) => {
+        if (value.length > 1) return; // Prevent multiple characters
+        
+        const newOtp = otp.split('');
+        newOtp[index] = value;
+        const otpString = newOtp.join('');
+        setOtp(otpString);
+
+        // Auto-focus next input
+        if (value && index < 5 && otpInputRefs.current[index + 1]) {
+            otpInputRefs.current[index + 1].focus();
+        }
+
+        // Auto-verify when 6 digits are entered
+        if (otpString.length === 6) {
+            setTimeout(() => verifyAdminOTP(), 100);
+        }
+    };
+
+    const handleOTPKeyDown = (index, e) => {
+        // Handle backspace
+        if (e.key === 'Backspace') {
+            if (!otp[index] && index > 0 && otpInputRefs.current[index - 1]) {
+                otpInputRefs.current[index - 1].focus();
+            }
+        }
+        // Handle paste
+        else if (e.key === 'v' && (e.ctrlKey || e.metaKey)) {
+            e.preventDefault();
+            navigator.clipboard.readText().then(text => {
+                const pastedOTP = text.replace(/\D/g, '').slice(0, 6);
+                setOtp(pastedOTP);
+                if (pastedOTP.length === 6) {
+                    setTimeout(() => verifyAdminOTP(), 100);
+                }
+            });
         }
     };
 
@@ -164,30 +265,96 @@ const Login = ({ setIsAuthenticated }) => {
                             </div>
                         </div>
 
-                        {/* OTP Input for Admin */}
+                        {/* OTP Verification for Admin */}
                         {otpSent && (
                             <div className="mb-4">
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Enter OTP
-                                </label>
-                                <input
-                                    type="text"
-                                    maxLength="6"
-                                    value={otp}
-                                    onChange={e => setOtp(e.target.value)}
-                                    placeholder="Enter OTP"
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                />
+                                {/* Back Button */}
+                                <button
+                                    onClick={goBackToMobile}
+                                    className="flex items-center gap-2 text-gray-600 hover:text-gray-800 mb-4 transition-colors"
+                                >
+                                    <FiArrowLeft className="w-4 h-4" />
+                                    <span className="text-sm">Change mobile number</span>
+                                </button>
+
+                                {/* OTP Header */}
+                                <div className="text-center mb-6">
+                                    <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <FiCheck className="w-8 h-8 text-blue-600" />
+                                    </div>
+                                    <h3 className="text-lg font-semibold text-gray-800 mb-2">Enter Verification Code</h3>
+                                    <p className="text-gray-600 text-sm">
+                                        We've sent a 6-digit code to<br />
+                                        <span className="font-medium text-gray-800">+91 {adminMobile}</span>
+                                    </p>
+                                </div>
+
+                                {/* OTP Input Boxes */}
+                                <div className="flex justify-center gap-3 mb-6">
+                                    {[0, 1, 2, 3, 4, 5].map((index) => (
+                                        <input
+                                            key={index}
+                                            ref={(el) => (otpInputRefs.current[index] = el)}
+                                            type="text"
+                                            maxLength="1"
+                                            value={otp[index] || ''}
+                                            onChange={(e) => handleOTPChange(index, e.target.value)}
+                                            onKeyDown={(e) => handleOTPKeyDown(index, e)}
+                                            className={`w-12 h-12 text-center text-lg font-bold border-2 rounded-lg focus:outline-none transition-all duration-200 ${
+                                                errors.otp 
+                                                    ? 'border-red-300 bg-red-50' 
+                                                    : 'border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200'
+                                            }`}
+                                            style={{ caretColor: 'transparent' }}
+                                        />
+                                    ))}
+                                </div>
+
+                                {/* Error Message */}
                                 {errors.otp && (
-                                    <p className="text-red-500 text-sm mt-1">{errors.otp[0]}</p>
+                                    <div className="text-center mb-4">
+                                        <p className="text-red-500 text-sm">{errors.otp[0]}</p>
+                                    </div>
                                 )}
+
+                                {/* Timer and Resend */}
+                                <div className="text-center mb-6">
+                                    {otpTimer > 0 ? (
+                                        <p className="text-gray-600 text-sm">
+                                            Resend code in{' '}
+                                            <span className="font-medium text-blue-600">
+                                                {Math.floor(otpTimer / 60)}:{(otpTimer % 60).toString().padStart(2, '0')}
+                                            </span>
+                                        </p>
+                                    ) : (
+                                        <button
+                                            onClick={resendOTP}
+                                            disabled={loading}
+                                            className="text-blue-600 hover:text-blue-800 text-sm font-medium transition-colors disabled:opacity-50"
+                                        >
+                                            Didn't receive code? Resend
+                                        </button>
+                                    )}
+                                </div>
+
+                                {/* Verify Button */}
                                 <div className="mt-4">
                                     <button
                                         onClick={verifyAdminOTP}
                                         disabled={loading || otp.length !== 6}
-                                        className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                        className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-2"
                                     >
-                                        {loading ? 'Verifying...' : 'Verify OTP'}
+                                        {loading ? (
+                                            <>
+                                                <FiRefreshCw className="w-4 h-4 animate-spin" />
+                                                Verifying...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <FiCheck className="w-4 h-4" />
+                                                Verify & Login
+                                            </>
+                                        )}
                                     </button>
                                 </div>
                             </div>
