@@ -23,8 +23,10 @@ app.use(helmet());
 
 // CORS configuration
 const isDevelopment = process.env.NODE_ENV !== 'production';
-
+  app.set('trust proxy',1);// true);
+console.log("here");
 if (isDevelopment) {
+	console.log("in")
   const allowedOrigins = ['localhost', '127.0.0.1','139.59.35.227','cop-main.patterneffects.in','mob-beta.patterneffects.in','rs.patterneffects.in','muddemal.patterneffects.in','mob.patterneffects.in'];
   // Development: Local checking purpose Allow all localhost origins
   // const allowedOrigins = [
@@ -41,7 +43,8 @@ if (isDevelopment) {
   //   'http://muddemal.patterneffects.in',
   //   'http://mob.patterneffects.in'
   // ];
-  
+ //app.set('trust proxy', true)
+	//app.set('trust proxy', true);//loopback');
   app.use(cors({
     origin: function (origin, callback) {
       // Allow requests with no origin (like mobile apps or curl requests)
@@ -67,28 +70,31 @@ if (isDevelopment) {
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Cache-Control', 'Accept']
   }));
 } else {
-  // Production: Specific allowed origins
-  const allowedOrigins = [
+  console.log("else here")
+	// Production: Specific allowed origins
+  /*const allowedOrigins = [
     process.env.FRONTEND_URL,
     process.env.VUE_APP_URL
   ].filter(Boolean);
-
+console.log(allowedOrigins,"allowedOrigins")
   app.use(cors({
     origin: allowedOrigins,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Cache-Control', 'Accept']
   }));
+*/
 }
 
 // Handle preflight OPTIONS requests
 app.options('*', (req, res) => {
-  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+ /* res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
   // res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Cache-Control, Accept'); - Local testing purpose
   res.header('Access-Control-Allow-Credentials', 'true');
   res.sendStatus(200);
+*/
 });
 
 // Rate limiting
@@ -128,7 +134,7 @@ app.use('/api/powerbi', powerBIroutes);
 app.use('*', (req, res) => {
   res.status(404).json({
     success: false,
-    message: 'Route not found'
+    message: 'Route not found.'
   });
 });
 
