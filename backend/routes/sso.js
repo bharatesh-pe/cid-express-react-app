@@ -261,4 +261,41 @@ router.post('/validate-token-id',
   }
 );
 
+// @route   POST /api/sso/sync-user
+// @desc    Sync user from external application (Laravel service)
+// @access  Public
+router.post('/sync-user',
+  [
+    body('data')
+      .notEmpty()
+      .withMessage('Encrypted data is required'),
+    body('source')
+      .optional()
+      .isString()
+      .withMessage('Source must be a string')
+  ],
+  async (req, res) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          success: false,
+          message: 'Validation failed',
+          errors: errors.array(),
+          status: 'error'
+        });
+      }
+
+      await SSOController.syncUser(req, res);
+    } catch (error) {
+      console.error('Sync user route error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+        status: 'error'
+      });
+    }
+  }
+);
+
 module.exports = router;

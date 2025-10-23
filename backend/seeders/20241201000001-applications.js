@@ -46,6 +46,7 @@ module.exports = {
         image: '/images/rowdy_sheet.png',
         description: 'NDPS Analytics Dashboard',
         order: 8,
+        is_analytics: true,
         createdAt: new Date(),
         updatedAt: new Date()
       },
@@ -55,6 +56,7 @@ module.exports = {
         image: '/images/rowdy_sheet.png',
         description: 'Crime Analytics Dashboard',
         order: 10,
+        is_analytics: true,
         createdAt: new Date(),
         updatedAt: new Date()
       }

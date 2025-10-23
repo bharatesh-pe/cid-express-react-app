@@ -2,6 +2,9 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const User = require('../models/User');
 const SSOToken = require('../models/SSOToken');
+const UserApplication = require('../models/UserApplication');
+const Application = require('../models/Application');
+const { Op } = require('sequelize');
 
 class SSOController {
   // Encryption utility methods
@@ -40,6 +43,105 @@ class SSOController {
       return JSON.parse(decrypted);
     } catch (error) {
       throw new Error('Failed to decrypt token');
+    }
+  }
+
+  // Decrypt data using AES-256-CBC (for Laravel service compatibility)
+  decryptLaravelData(encryptedData) {
+    try {
+      const key = process.env.POLICEAPP_ENCRYPTION_KEY || 'POLICEAPP';
+      console.log('🔑 Decryption details:', {
+        key: key,
+        keyLength: key.length,
+        encryptedDataLength: encryptedData.length,
+        encryptedDataType: typeof encryptedData
+      });
+      
+      // Laravel uses urlencode(), so we need to decode it first
+      let decodedData = encryptedData;
+      try {
+        decodedData = decodeURIComponent(encryptedData);
+        console.log('🔓 URL decoded data length:', decodedData.length);
+      } catch (urlError) {
+        console.log('⚠️ URL decode failed, using raw data:', urlError.message);
+        decodedData = encryptedData;
+      }
+      
+      // Match Laravel's encryption method exactly:
+      // Laravel: $iv = substr(hash('sha256', $key), 0, 16); // 16 chars = 8 bytes
+      // Laravel: openssl_encrypt($jsonData, 'AES-256-CBC', $key, 0, $iv);
+      // OpenSSL automatically pads the IV to 16 bytes for AES-256-CBC
+      const ivHex = crypto.createHash('sha256').update(key).digest('hex').substring(0, 16);
+      const iv = Buffer.from(ivHex + '0000000000000000', 'hex').subarray(0, 16); // Pad to 16 bytes
+      const paddedKey = key.padEnd(32, '\0'); // Pad to 32 bytes for AES-256
+      
+      console.log('🔐 Encryption parameters:', {
+        ivHex: ivHex,
+        iv: iv.toString('hex'),
+        ivLength: iv.length,
+        paddedKeyLength: paddedKey.length,
+        decodedDataLength: decodedData.length
+      });
+      
+      const decipher = crypto.createDecipheriv('aes-256-cbc', paddedKey, iv);
+      let decrypted = decipher.update(decodedData, 'base64', 'utf8');
+      decrypted += decipher.final('utf8');
+      
+      console.log('✅ Decryption successful, parsing JSON...');
+      console.log('🔍 Decrypted data length:', decrypted.length);
+      console.log('🔍 Decrypted data preview:', decrypted.substring(0, 100));
+      
+      // Try to parse JSON directly first
+      try {
+        return JSON.parse(decrypted);
+      } catch (parseError) {
+        console.log('⚠️ Direct JSON parse failed, trying to extract JSON from decrypted data...');
+        
+        // Extract JSON from the decrypted data (remove garbage characters at the beginning)
+        // Look for JSON pattern in the decrypted data
+        const jsonPattern = /"[^"]*"[^"]*"[^"]*".*}/;
+        const jsonMatch = decrypted.match(jsonPattern);
+        
+        if (jsonMatch) {
+          let jsonString = jsonMatch[0];
+          // If JSON doesn't start with {, add it
+          if (!jsonString.startsWith('{')) {
+            jsonString = '{' + jsonString;
+          }
+          
+          // Fix missing mobile_number key (Laravel sometimes omits the first key)
+          // Look for a 10-digit number at the beginning of the JSON
+          const mobileMatch = jsonString.match(/^\{?"(\d{10})"/);
+          if (mobileMatch) {
+            jsonString = jsonString.replace(`"${mobileMatch[1]}"`, `"mobile_number":"${mobileMatch[1]}"`);
+          }
+          
+          console.log('🔍 Found JSON in decrypted data:', jsonString);
+          return JSON.parse(jsonString);
+        } else {
+          // Try to find any JSON-like pattern
+          const anyJsonMatch = decrypted.match(/"[^"]*".*}/);
+          if (anyJsonMatch) {
+            let jsonString = anyJsonMatch[0];
+            if (!jsonString.startsWith('{')) {
+              jsonString = '{' + jsonString;
+            }
+            console.log('🔍 Found JSON-like pattern:', jsonString);
+            return JSON.parse(jsonString);
+          } else {
+            console.log('🔍 Full decrypted data for debugging:', decrypted);
+            throw new Error('No valid JSON found in decrypted data');
+          }
+        }
+      }
+    } catch (error) {
+      console.error('❌ Laravel decryption error:', error);
+      console.error('❌ Error details:', {
+        name: error.name,
+        message: error.message,
+        code: error.code
+      });
+      throw new Error('Failed to decrypt Laravel data');
     }
   }
 
@@ -426,7 +528,6 @@ class SSOController {
     try {
       const { tokenId } = req.body;
 
-      console.log('🔍 Validating tokenId:', tokenId);
 
       if (!tokenId) {
         return res.status(400).json({
@@ -436,11 +537,9 @@ class SSOController {
       }
 
       // Find the token in database
-      console.log('📋 Looking for token in database...');
       const tokenRecord = await SSOToken.findValidToken(tokenId);
       
       if (!tokenRecord) {
-        console.log('❌ Token not found or invalid');
         
         return res.status(401).json({
           success: false,
@@ -448,7 +547,6 @@ class SSOController {
         });
       }
 
-      console.log('✅ Token found and valid');
 
       // Decrypt the token data
       const encryptedData = JSON.parse(tokenRecord.encryptedToken);
@@ -473,6 +571,231 @@ class SSOController {
       res.status(500).json({
         success: false,
         message: 'Internal server error'
+      });
+    }
+  }
+
+  // Sync user from external application (Laravel service)
+  async syncUser(req, res) {
+    try {
+      const { data, source } = req.body;
+
+
+
+      if (!data) {
+        return res.status(400).json({
+          success: false,
+          message: 'Encrypted data is required',
+          status: 'error'
+        });
+      }
+
+      // Decrypt the data from Laravel service
+      let userData;
+      try {
+        userData = this.decryptLaravelData(data);
+      } catch (decryptError) {
+        
+        return res.status(400).json({
+          success: false,
+          message: 'Failed to decrypt data',
+          status: 'error',
+          debug: {
+            error: decryptError.message,
+            dataLength: data.length,
+            dataType: typeof data
+          }
+        });
+      }
+
+      const { 
+        mobile_number, 
+        user_name, 
+        email, 
+        isAdmin = false, 
+        isActive = true, 
+        applicationCode = 'MOB',
+        action = 'create',
+        createdAt 
+      } = userData;
+
+      // Validate required fields
+      if (!mobile_number) {
+        return res.status(400).json({
+          success: false,
+          message: 'Mobile number is required',
+          status: 'error'
+        });
+      }
+
+      // Validate mobile number format
+      const mobileRegex = /^[6-9]\d{9}$/;
+      if (!mobileRegex.test(mobile_number)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid mobile number format',
+          status: 'error'
+        });
+      }
+
+      let user;
+      let isNewUser = false;
+
+      // Find existing user by mobile number
+      const existingUser = await User.findOne({
+        where: { mobile_number: mobile_number }
+      });
+
+      if (existingUser) {
+        // Update existing user
+        user = existingUser;
+        
+        if (action === 'inactivate') {
+          await user.update({ isActive: false });
+          
+          return res.json({
+            success: true,
+            message: 'User inactivated successfully',
+            status: 'success',
+            userId: user.id,
+            action: 'inactivated'
+          });
+        }
+
+        // Update user data
+        const updateData = {};
+        if (user_name && user_name !== user.user_name) {
+          updateData.user_name = user_name;
+        }
+        if (isAdmin !== undefined) {
+          updateData.isAdmin = isAdmin;
+        }
+        if (isActive !== undefined) {
+          updateData.isActive = isActive;
+        }
+
+        if (Object.keys(updateData).length > 0) {
+          await user.update(updateData);
+        }
+
+      } else {
+        // Create new user
+        if (!user_name) {
+          return res.status(400).json({
+            success: false,
+            message: 'Username is required for new users',
+            status: 'error'
+          });
+        }
+
+        user = await User.create({
+          user_name: user_name,
+          mobile_number: mobile_number,
+          isActive: isActive,
+          isAdmin: isAdmin
+        });
+        
+        isNewUser = true;
+      }
+
+      // Handle application assignment
+      if (applicationCode) {
+        // Check if application exists
+        const application = await Application.findOne({
+          where: { 
+            code: applicationCode,
+            isActive: true 
+          }
+        });
+
+        if (application) {
+          // Check if user already has this application
+          const existingAssignment = await UserApplication.findOne({
+            where: {
+              userId: user.id,
+              applicationCode: applicationCode
+            }
+          });
+
+          if (!existingAssignment) {
+            // Create new application assignment
+            await UserApplication.create({
+              userId: user.id,
+              applicationCode: applicationCode,
+              isActive: true
+            });
+          } else if (!existingAssignment.isActive) {
+            // Reactivate existing assignment
+            await existingAssignment.update({ isActive: true });
+          }
+        } else {
+          console.log('⚠️ Application not found or inactive:', applicationCode);
+        }
+      }
+
+      // Auto-assign Analytics applications for non-PS users
+      if (user_name && !user_name.toLowerCase().includes('ps')) {
+        
+        // Get all Analytics applications
+        const analyticsApplications = await Application.findAll({
+          where: {
+            is_analytics: true,
+            isActive: true
+          },
+          attributes: ['code']
+        });
+
+        for (const app of analyticsApplications) {
+          // Check if user already has this analytics application
+          const existingAssignment = await UserApplication.findOne({
+            where: {
+              userId: user.id,
+              applicationCode: app.code
+            }
+          });
+
+          if (!existingAssignment) {
+            // Create new analytics application assignment
+            await UserApplication.create({
+              userId: user.id,
+              applicationCode: app.code,
+              isActive: true
+            });
+          } else if (!existingAssignment.isActive) {
+            // Reactivate existing analytics application assignment
+            await existingAssignment.update({ isActive: true });
+          }
+        }
+      } else if (user_name && user_name.toLowerCase().includes('ps')) {
+        console.log('⏭️ Skipping Analytics applications for PS user:', user_name);
+      }
+
+      // Get user profile for response
+      const userProfile = await user.getProfile();
+
+      res.json({
+        success: true,
+        message: isNewUser ? 'User created successfully' : 'User synced successfully',
+        status: 'success',
+        userId: user.id,
+        user: {
+          id: user.id,
+          user_name: user.user_name,
+          mobile_number: user.mobile_number,
+          isActive: user.isActive,
+          isAdmin: user.isAdmin,
+          applications: userProfile.applications
+        },
+        action: isNewUser ? 'created' : 'updated'
+      });
+
+    } catch (error) {
+      console.error('❌ SSO Sync User error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+        status: 'error',
+        error: error.message
       });
     }
   }
