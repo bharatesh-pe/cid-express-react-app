@@ -1193,15 +1193,20 @@ exports.updateTemplateData = async (req, res, next) => {
         validData.sys_status = parsedData.sys_status;
         validData.updated_by = userName;
         validData.updated_by_id = userId;
+        
+        // If field_result_of_judgment is being updated in cid_pending_trial, also update sys_status to disposal
+        if (table_name === "cid_pending_trial" && validData.hasOwnProperty("field_result_of_judgment")) {
+            validData.sys_status = "disposal";
+        }
 
         // Build dynamic schema for Sequelize model
-        let completeSchema = parsedData?.sys_status
+        let completeSchema = parsedData?.sys_status || (table_name === "cid_pending_trial" && validData.hasOwnProperty("field_result_of_judgment"))
             ? [
                 {
                     name: "sys_status",
                     data_type: "TEXT",
                     not_null: false,
-                    default_value: parsedData.sys_status.trim(),
+                    default_value: validData.sys_status ? validData.sys_status.trim() : parsedData?.sys_status?.trim(),
                 },
                 { name: "updated_by", data_type: "TEXT", not_null: false },
                 { name: "updated_by_id", data_type: "INTEGER", not_null: false },
