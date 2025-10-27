@@ -517,7 +517,15 @@ const Layout = ({ children }) => {
         }
 
         if (data && data.success && data["modules"]) {
-          setSidebarMenusObj(data["modules"]);
+          // Remove duplicates based on module_id or ui_name
+          const uniqueModules = data["modules"].filter((module, index, self) => 
+            index === self.findIndex(m => 
+              (m.module_id && m.module_id === module.module_id) || 
+              (m.ui_name && m.ui_name === module.ui_name)
+            )
+          );
+          
+          setSidebarMenusObj(uniqueModules);
         }
 
         if (data && data.success && data.unreadNotificationCount !== null && data.unreadNotificationCount !== undefined) {
@@ -784,7 +792,7 @@ const Layout = ({ children }) => {
                         });
 
                         return (
-                          <>
+                          <React.Fragment key={`main-${element.module_id || element.name || index}`}>
                             {/* main module dropdown */}
 
                             <ListItem
@@ -844,7 +852,7 @@ const Layout = ({ children }) => {
                                 )}
                               </List>
                             </Collapse>
-                          </>
+                          </React.Fragment>
                         );
                       }
 
@@ -852,7 +860,7 @@ const Layout = ({ children }) => {
                       if (!element?.is_main_module && !element?.is_sub_module) {
                         return (
                           <ListItem
-                            key={element.name}
+                            key={`individual-${element.module_id || element.name || index}`}
                             sx={{ cursor: "pointer" }}
                             onClick={() => navigate(element.location)}
                             className={`sidebarMenus ${
