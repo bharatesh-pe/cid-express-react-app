@@ -1188,11 +1188,25 @@ exports.updateTemplateData = async (req, res, next) => {
                     transaction: t,
                 }
             );
+            
+            // For cid_pending_trial table, use field_name_of_holding_io instead of field_io_name
+            if (table_name === "cid_pending_trial") {
+                validData.field_name_of_holding_io = parsedData.field_io_name;
+                // Remove field_io_name from validData as we're using field_name_of_holding_io instead
+                if (validData.hasOwnProperty('field_io_name')) {
+                    delete validData.field_io_name;
+                }
+            }
         }
 
         validData.sys_status = parsedData.sys_status;
         validData.updated_by = userName;
         validData.updated_by_id = userId;
+        
+        // Add reassign_io_remarks to validData if provided
+        if (parsedData.reassign_io_remarks) {
+            validData.reassign_io_remarks = parsedData.reassign_io_remarks;
+        }
         
         // If field_result_of_judgment is being updated in cid_pending_trial, also update sys_status to disposal
         if (table_name === "cid_pending_trial" && validData.hasOwnProperty("field_result_of_judgment")) {
@@ -1234,6 +1248,14 @@ exports.updateTemplateData = async (req, res, next) => {
                 ...completeSchema,
             ];
             validData.pt_case_id = parsedData.pt_case_id;
+        }
+
+        // Add reassign_io_remarks to schema if present in validData but not in schema
+        if (validData.reassign_io_remarks && !completeSchema.find(f => f.name === "reassign_io_remarks")) {
+            completeSchema = [
+                { name: "reassign_io_remarks", data_type: "TEXT", not_null: false },
+                ...completeSchema,
+            ];
         }
 
         // Define Sequelize model dynamically
@@ -4994,12 +5016,20 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
         }
     } else {
         if (allowedUserIds.length > 0) {
-            if (["ui_case", "pt_case"].includes(template_module)) {
+            if (["ui_case"].includes(template_module)) {
             whereClause[Op.or] = [
                 { created_by_id: { [Op.in]: normalizedUserIds } },
                 { field_io_name: { [Op.in]: normalizedUserIds } },
             ];
-            } else if (["eq_case"].includes(template_module)) {
+            }
+            else if (["pt_case"].includes(template_module)) {
+            whereClause[Op.or] = [
+                { created_by_id: { [Op.in]: normalizedUserIds } },
+                // { field_io_name: { [Op.in]: normalizedUserIds } },
+                { field_name_of_holding_io: { [Op.in]: normalizedUserIds } },
+            ];
+            }
+            else if (["eq_case"].includes(template_module)) {
             whereClause[Op.or] = [
                 { created_by_id: { [Op.in]: normalizedUserIds } },
                 { field_name_of_the_io: { [Op.in]: normalizedUserIds } },
