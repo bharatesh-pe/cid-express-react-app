@@ -27,6 +27,7 @@ const {
 	System_Alerts,
 	UiCaseApproval,
   UiMergedCases,
+  PtMergedCases,
   ApprovalFieldLog,
   ApprovalActivityLog,
   CaseHistory,
@@ -1188,20 +1189,39 @@ exports.updateTemplateData = async (req, res, next) => {
                     transaction: t,
                 }
             );
+            
+            // For cid_pending_trial table, use field_name_of_holding_io instead of field_io_name
+            if (table_name === "cid_pending_trial") {
+                validData.field_name_of_holding_io = parsedData.field_io_name;
+                // Remove field_io_name from validData as we're using field_name_of_holding_io instead
+                if (validData.hasOwnProperty('field_io_name')) {
+                    delete validData.field_io_name;
+                }
+            }
         }
 
         validData.sys_status = parsedData.sys_status;
         validData.updated_by = userName;
         validData.updated_by_id = userId;
+        
+        // Add reassign_io_remarks to validData if provided
+        if (parsedData.reassign_io_remarks) {
+            validData.reassign_io_remarks = parsedData.reassign_io_remarks;
+        }
+        
+        // If field_result_of_judgment is being updated in cid_pending_trial, also update sys_status to disposal
+        if (table_name === "cid_pending_trial" && validData.hasOwnProperty("field_result_of_judgment")) {
+            validData.sys_status = "disposal";
+        }
 
         // Build dynamic schema for Sequelize model
-        let completeSchema = parsedData?.sys_status
+        let completeSchema = parsedData?.sys_status || (table_name === "cid_pending_trial" && validData.hasOwnProperty("field_result_of_judgment"))
             ? [
                 {
                     name: "sys_status",
                     data_type: "TEXT",
                     not_null: false,
-                    default_value: parsedData.sys_status.trim(),
+                    default_value: validData.sys_status ? validData.sys_status.trim() : parsedData?.sys_status?.trim(),
                 },
                 { name: "updated_by", data_type: "TEXT", not_null: false },
                 { name: "updated_by_id", data_type: "INTEGER", not_null: false },
@@ -1229,6 +1249,14 @@ exports.updateTemplateData = async (req, res, next) => {
                 ...completeSchema,
             ];
             validData.pt_case_id = parsedData.pt_case_id;
+        }
+
+        // Add reassign_io_remarks to schema if present in validData but not in schema
+        if (validData.reassign_io_remarks && !completeSchema.find(f => f.name === "reassign_io_remarks")) {
+            completeSchema = [
+                { name: "reassign_io_remarks", data_type: "TEXT", not_null: false },
+                ...completeSchema,
+            ];
         }
 
         // Define Sequelize model dynamically
@@ -4989,12 +5017,20 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
         }
     } else {
         if (allowedUserIds.length > 0) {
-            if (["ui_case", "pt_case"].includes(template_module)) {
+            if (["ui_case"].includes(template_module)) {
             whereClause[Op.or] = [
                 { created_by_id: { [Op.in]: normalizedUserIds } },
                 { field_io_name: { [Op.in]: normalizedUserIds } },
             ];
-            } else if (["eq_case"].includes(template_module)) {
+            }
+            else if (["pt_case"].includes(template_module)) {
+            whereClause[Op.or] = [
+                { created_by_id: { [Op.in]: normalizedUserIds } },
+                // { field_io_name: { [Op.in]: normalizedUserIds } },
+                { field_name_of_holding_io: { [Op.in]: normalizedUserIds } },
+            ];
+            }
+            else if (["eq_case"].includes(template_module)) {
             whereClause[Op.or] = [
                 { created_by_id: { [Op.in]: normalizedUserIds } },
                 { field_name_of_the_io: { [Op.in]: normalizedUserIds } },
@@ -10452,15 +10488,20 @@ exports.checkAccusedDataStatus = async (req, res) => {
 exports.insertMergeData = async (req, res) => {
   const { table_name, data } = req.body;
 
-  if (table_name !== 'ui_merged_cases' || !Array.isArray(data)) {
+  if ((table_name !== 'ui_merged_cases' && table_name !== 'pt_merged_cases') || !Array.isArray(data)) {
     return res.status(400).json({ success: false, message: "Invalid payload." });
   }
 
   try {
-
-    await UiMergedCases.bulkCreate(data, {
-      ignoreDuplicates: true,
-    });
+    if (table_name === 'ui_merged_cases') {
+      await UiMergedCases.bulkCreate(data, {
+        ignoreDuplicates: true,
+      });
+    } else if (table_name === 'pt_merged_cases') {
+      await PtMergedCases.bulkCreate(data, {
+        ignoreDuplicates: true,
+      });
+    }
 
     return res.status(200).json({
       success: true,
@@ -10545,7 +10586,10 @@ exports.getMergeParentData = async (req, res) =>
             }
         }
 
-        const parentCases = await UiMergedCases.findAll({
+        // Determine which merged cases table to use based on template_module
+        const mergedCasesModel = template_module === "pt_case" ? PtMergedCases : UiMergedCases;
+        
+        const parentCases = await mergedCasesModel.findAll({
             where: { merged_status: 'parent' },
             attributes: ['case_id'],
             raw: true,
@@ -10553,7 +10597,7 @@ exports.getMergeParentData = async (req, res) =>
 
         const parentCaseIds = parentCases.map(item => item.case_id);
 
-        const childCounts = await UiMergedCases.findAll({
+        const childCounts = await mergedCasesModel.findAll({
             where: {
                 merged_status: 'child',
                 parent_case_id: { [Sequelize.Op.in]: parentCaseIds }
@@ -11404,7 +11448,10 @@ exports.getMergeChildData = async (req, res) =>
             }
         }
 
-        const childCases = await UiMergedCases.findAll({
+        // Determine which merged cases table to use based on template_module
+        const mergedCasesModel = template_module === "pt_case" ? PtMergedCases : UiMergedCases;
+        
+        const childCases = await mergedCasesModel.findAll({
             where: { merged_status: 'child', parent_case_id: case_id }, // corrected here
             attributes: ['case_id'],
             raw: true,
@@ -12143,6 +12190,9 @@ exports.deMergeCaseData = async (req, res) => {
     const { user_id } = req.user;
     const userId = user_id;
     let recordIds = Array.isArray(case_id) ? case_id : [case_id];
+    
+    console.log("deMergeCaseData - Request body:", { template_module, case_id, transaction_id });
+    console.log("deMergeCaseData - recordIds:", recordIds);
 
     const dirPath = path.join(__dirname, `../data/user_unique/${transaction_id}`);
     if (fs.existsSync(dirPath))
@@ -12153,7 +12203,10 @@ exports.deMergeCaseData = async (req, res) => {
     const t = await dbConfig.sequelize.transaction();
 
     try {
-        const mergedCaseDetails = await UiMergedCases.findAll({
+        // Determine which merged cases table to use based on template_module
+        const mergedCasesModel = template_module === "pt_case" ? PtMergedCases : UiMergedCases;
+        
+        const mergedCaseDetails = await mergedCasesModel.findAll({
             where: { case_id: { [Op.in]: recordIds } },
             attributes: ['case_id', 'merged_status'],
             raw: true,
@@ -12172,7 +12225,7 @@ exports.deMergeCaseData = async (req, res) => {
 
         if (parentIds.length > 0) {
 
-            const childCaseDetails = await UiMergedCases.findAll({
+            const childCaseDetails = await mergedCasesModel.findAll({
                 where: {
                     parent_case_id: { [Op.in]: parentIds },
                     merged_status: 'child',
@@ -12190,7 +12243,7 @@ exports.deMergeCaseData = async (req, res) => {
                 }
             }
 
-            await UiMergedCases.destroy({
+            await mergedCasesModel.destroy({
                 where: { parent_case_id: { [Op.in]: parentIds } },
                 transaction: t
             });
@@ -12252,20 +12305,32 @@ exports.deMergeCaseData = async (req, res) => {
             //     });
             // }
 
-            await UiMergedCases.destroy({
+            await mergedCasesModel.destroy({
                 where: { case_id: { [Op.in]: childIds} , merged_status: 'child'  },
                 transaction: t
             });
         }
 
-        const invalidIds = recordIds.filter(val => isNaN(parseInt(val)));
+        // Convert recordIds to integers for database queries
+        const validRecordIds = recordIds
+            .map(id => {
+                const parsed = parseInt(id);
+                return isNaN(parsed) ? null : parsed;
+            })
+            .filter(id => id !== null);
         
-        if (invalidIds.length > 0)
+        console.log("deMergeCaseData - validRecordIds:", validRecordIds);
+        
+        if (validRecordIds.length !== recordIds.length)
             return userSendResponse(res, 400, false, "Invalid ID format(s).");
+        
+        recordIds = validRecordIds;
 
-        const tableData = await Template.findOne({ where: { table_name: "cid_under_investigation" } });
+        // Determine which main table to use based on template_module
+        const mainTableName = template_module === "pt_case" ? "cid_pending_trial" : "cid_under_investigation";
+        const tableData = await Template.findOne({ where: { table_name: mainTableName } });
         if (!tableData)
-            return userSendResponse(res, 400, false, `Table Under Investigation does not exist.`);
+            return userSendResponse(res, 400, false, `Table ${mainTableName} does not exist.`);
 
         const schema = typeof tableData.fields === "string"
             ? JSON.parse(tableData.fields)
@@ -12273,7 +12338,7 @@ exports.deMergeCaseData = async (req, res) => {
 
         const completeSchema = [
             { name: "id", data_type: "INTEGER", not_null: true, primaryKey: true, autoIncrement: true },
-            { name: "sys_status", data_type: "TEXT", not_null: false, default_value: 'ui_case' },
+            { name: "sys_status", data_type: "TEXT", not_null: false, default_value: template_module === "pt_case" ? "pt_case" : 'ui_case' },
             { name: "created_by", data_type: "TEXT", not_null: false },
             { name: "updated_by", data_type: "TEXT", not_null: false },
             { name: "created_by_id", data_type: "INTEGER", not_null: false },
@@ -12284,7 +12349,7 @@ exports.deMergeCaseData = async (req, res) => {
             ...schema,
         ];
 
-        const table_name = "cid_under_investigation";
+        const table_name = mainTableName;
         let Model = modelCache[table_name];
 
         if (!Model) {
@@ -12317,17 +12382,27 @@ exports.deMergeCaseData = async (req, res) => {
         const records = await Model.findAll({ where: { id: { [Op.in]: recordIds } } });
 
         if (records.length !== recordIds.length)
-            return userSendResponse(res, 404, false, "Some records were not found in table Under Investigation.");
+            return userSendResponse(res, 404, false, `Some records were not found in table ${mainTableName}.`);
 
+        const defaultSysStatus = template_module === "pt_case" ? "pt_case" : 'ui_case';
+        
+        // Update sys_status only if it's not already set to the default status
         const [updatedCount] = await Model.update(
-            { sys_status: 'ui_case' },
-            { where: { id: { [Op.in]: recordIds } } }
+            { sys_status: defaultSysStatus },
+            { 
+                where: { id: { [Op.in]: recordIds }, sys_status: { [Op.ne]: defaultSysStatus } },
+                transaction: t 
+            }
         );
 
-        if (updatedCount === 0)
-            return userSendResponse(res, 400, false, "No changes detected or update failed.");
+        console.log("deMergeCaseData - updatedCount:", updatedCount);
+        
+        if (updatedCount === 0) {
+            console.log("No records updated - may already be demerged");
+        }
 
         await t.commit();
+        console.log("deMergeCaseData - Transaction committed successfully");
         return userSendResponse(res, 200, true, "Merge data updated and de-merged successfully.");
    } catch (err) {
         console.error("deMergeCaseData error:", err);

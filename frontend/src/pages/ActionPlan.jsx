@@ -3160,16 +3160,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                                                         {field.label}
                                                     </Typography>
                                                     <Tooltip title="Save">
-                                                        <SaveIcon
-                                                            onClick={() => onActionPlanUpdate("cid_under_investigation", filterAoValues)}
-                                                            sx={{
-                                                                color: '#1570EF',
-                                                                p: '0 1px',
-                                                                fontSize: '25px',
-                                                                cursor: 'pointer',
-                                                                mb: '2px'
-                                                            }}
-                                                        />
+                                                        <Button variant="contained" color="primary" size="small" onClick={() => onActionPlanUpdate("cid_under_investigation", filterAoValues)}>Save</Button>
                                                     </Tooltip>
                                                 </Box>
                                                 <TextField

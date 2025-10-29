@@ -654,6 +654,73 @@ const NormalViewForm = ({
                 tempErrors[field.name] = `${field.label} must be less than ${field.maxLength} characters long`;   
             }
         });
+
+        // Conditional validation: If "Is PC Act Applicable" is "Yes", then "PC Act Permission Date" is required
+        const pcActApplicableField = newFormConfig.find(field => 
+            field.label && field.label.toLowerCase().includes("is pc act applicable")
+        );
+        const pcActPermissionDateField = newFormConfig.find(field => 
+            field.label && field.label.toLowerCase().includes("pc act permission date")
+        );
+        
+        if (pcActApplicableField && pcActPermissionDateField) {
+            const pcActApplicableValue = formData?.[pcActApplicableField.name];
+            
+            if (pcActApplicableValue && (pcActApplicableValue === "Yes" || pcActApplicableValue.toLowerCase() === "yes")) {
+                const pcActPermissionDateValue = formData?.[pcActPermissionDateField.name];
+                
+                if (!pcActPermissionDateValue || pcActPermissionDateValue === "") {
+                    tempErrors[pcActPermissionDateField.name] = "PC Act Permission Date is required";
+                }
+            }
+        }
+
+        // Conditional validation: If "KPID Applicable" or "BUDS Applicable" is "Yes", then related fields are required
+        const kpidApplicableField = newFormConfig.find(field => 
+            field.label && field.label.toLowerCase().includes("kpid applicable")
+        );
+        const budsApplicableField = newFormConfig.find(field => 
+            field.label && field.label.toLowerCase().includes("buds applicable")
+        );
+        const competentAuthorityProposalDateField = newFormConfig.find(field => 
+            field.label && field.label.toLowerCase().includes("competent authority proposal date")
+        );
+        const competentAuthorityNotificationNoField = newFormConfig.find(field => 
+            field.label && field.label.toLowerCase().includes("competent authority appointment notification no")
+        );
+        const nameOfCompetentAuthorityField = newFormConfig.find(field => 
+            field.label && field.label.toLowerCase().includes("name of competent authority")
+        );
+        
+        if (kpidApplicableField && budsApplicableField) {
+            const kpidValue = formData?.[kpidApplicableField.name];
+            const budsValue = formData?.[budsApplicableField.name];
+            const isKpidOrBudsYes = (kpidValue && (kpidValue === "Yes" || kpidValue.toLowerCase() === "yes")) || 
+                                   (budsValue && (budsValue === "Yes" || budsValue.toLowerCase() === "yes"));
+            
+            if (isKpidOrBudsYes) {
+                if (competentAuthorityProposalDateField) {
+                    const proposalDateValue = formData?.[competentAuthorityProposalDateField.name];
+                    if (!proposalDateValue || proposalDateValue === "") {
+                        tempErrors[competentAuthorityProposalDateField.name] = "Competent Authority Proposal Date is required";
+                    }
+                }
+                
+                if (competentAuthorityNotificationNoField) {
+                    const notificationNoValue = formData?.[competentAuthorityNotificationNoField.name];
+                    if (!notificationNoValue || notificationNoValue === "") {
+                        tempErrors[competentAuthorityNotificationNoField.name] = "Competent Authority Appointment Notification No is required";
+                    }
+                }
+                
+                if (nameOfCompetentAuthorityField) {
+                    const nameValue = formData?.[nameOfCompetentAuthorityField.name];
+                    if (!nameValue || nameValue === "") {
+                        tempErrors[nameOfCompetentAuthorityField.name] = "Name of Competent Authority is required";
+                    }
+                }
+            }
+        }
         setErrors(tempErrors);
         return Object.keys(tempErrors).length === 0;
     };
@@ -3682,6 +3749,57 @@ const handleTableDataChange = (field, data) => {
                         if (!isNaN(regDate.getTime()) && regDate.getFullYear() < 2015) {
                             field.required = false;
                         }
+                    }
+                }
+
+                // Conditional required: If "Is PC Act Applicable" is "Yes", then "PC Act Permission Date" is required
+                const pcActApplicableField = newFormConfig.find(f => 
+                    f.label && f.label.toLowerCase().includes("is pc act applicable")
+                );
+                const pcActPermissionDateField = newFormConfig.find(f => 
+                    f.label && f.label.toLowerCase().includes("pc act permission date")
+                );
+                
+                if (pcActApplicableField && pcActPermissionDateField && field.name === pcActPermissionDateField.name) {
+                    const pcActApplicableValue = formData?.[pcActApplicableField.name];
+                    if (pcActApplicableValue && (pcActApplicableValue === "Yes" || pcActApplicableValue.toLowerCase() === "yes")) {
+                        field.required = true;
+                    } else {
+                        // If not "Yes", remove the required flag
+                        field.required = false;
+                    }
+                }
+
+                // Conditional required: If "KPID Applicable" or "BUDS Applicable" is "Yes", then make related fields required
+                const kpidApplicableField = newFormConfig.find(f => 
+                    f.label && f.label.toLowerCase().includes("kpid applicable")
+                );
+                const budsApplicableField = newFormConfig.find(f => 
+                    f.label && f.label.toLowerCase().includes("buds applicable")
+                );
+                const competentAuthorityProposalDateField = newFormConfig.find(f => 
+                    f.label && f.label.toLowerCase().includes("competent authority proposal date")
+                );
+                const competentAuthorityNotificationNoField = newFormConfig.find(f => 
+                    f.label && f.label.toLowerCase().includes("competent authority appointment notification no")
+                );
+                const nameOfCompetentAuthorityField = newFormConfig.find(f => 
+                    f.label && f.label.toLowerCase().includes("name of competent authority")
+                );
+                
+                if (kpidApplicableField && budsApplicableField) {
+                    const kpidValue = formData?.[kpidApplicableField.name];
+                    const budsValue = formData?.[budsApplicableField.name];
+                    const isKpidOrBudsYes = (kpidValue && (kpidValue === "Yes" || kpidValue.toLowerCase() === "yes")) || 
+                                           (budsValue && (budsValue === "Yes" || budsValue.toLowerCase() === "yes"));
+                    
+                    // Check if current field is one of the three fields that should be conditionally required
+                    if (competentAuthorityProposalDateField && field.name === competentAuthorityProposalDateField.name) {
+                        field.required = isKpidOrBudsYes;
+                    } else if (competentAuthorityNotificationNoField && field.name === competentAuthorityNotificationNoField.name) {
+                        field.required = isKpidOrBudsYes;
+                    } else if (nameOfCompetentAuthorityField && field.name === nameOfCompetentAuthorityField.name) {
+                        field.required = isKpidOrBudsYes;
                     }
                 }
 
