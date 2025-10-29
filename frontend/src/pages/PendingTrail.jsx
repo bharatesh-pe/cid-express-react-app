@@ -73,7 +73,7 @@ import FileInput from "../components/form/FileInput";
 import DateTimeField from "../components/form/DateTime";
 import TimeField from "../components/form/Time";
 
-const UnderInvestigation = () => {
+const PendingTrail = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -173,6 +173,17 @@ const UnderInvestigation = () => {
   const [selectedMergeRowData, setSelectedMergeRowData] = useState([]);
   const [selectedParentId, setSelectedParentId] = useState(null);
   const [reassignIoRemark, setReassignIoRemark] = useState("");
+  const [showMergeModal, setShowMergeModal] = useState(false);
+  const [childMergedDialogOpen, setChildMergedDialogOpen] = useState(false);
+  const [childMergedData, setChildMergedData] = useState([]);
+  const [childMergedColumns, setChildMergedColumns] = useState([]);
+  const [childMergedPagination, setChildMergedPagination] = useState(1);
+  const [childMergedTotalPages, setChildMergedTotalPages] = useState(0);
+  const [childMergedTotalRecords, setChildMergedTotalRecords] = useState(0);
+  const [childMergedCaseTitle, setChildMergedCaseTitle] = useState("");
+  const [childMergedCaseCID, setChildMergedCaseCID] = useState("");
+  const [isChildMergedLoading, setIsChildMergedLoading] = useState(false);
+  const [mergeDialogData, setMergeDialogData] = useState([]);
 
   // for approve states
 
@@ -1281,7 +1292,11 @@ const UnderInvestigation = () => {
     };
 
   useEffect(() => {
-    loadTableData(paginationCount);
+    if (sysStatus === "merge_cases") {
+      loadMergedCasesData(paginationCount);
+    } else {
+      loadTableData(paginationCount);
+    }
   }, [
     paginationCount,
     tableSortKey,
@@ -1301,8 +1316,10 @@ const UnderInvestigation = () => {
     );
     if (isSelected) {
       setSelectedRowIds((prevIds) => [...prevIds, row.id]);
+      setSelectedMergeRowData((prevData) => [...prevData, row]);
     } else {
       setSelectedRowIds((prevIds) => prevIds.filter((id) => id !== row.id));
+      setSelectedMergeRowData((prevData) => prevData.filter((r) => r.id !== row.id));
     }
   };
   useEffect(() => {
@@ -1357,7 +1374,7 @@ const UnderInvestigation = () => {
                     const excludedKeys = [
                         "created_at", "updated_at", "id", "deleted_at", "attachments",
                         "Starred", "ReadStatus", "linked_profile_info",
-                        "ui_case_id", "pt_case_id", "sys_status", "task_unread_count", "field_cc_no./sc_no", "field_io_name",
+                        "ui_case_id", "pt_case_id", "sys_status", "task_unread_count", "field_cc_no./sc_no", "field_io_name", "field_name_of_holding_io",
                         "field_name_of_the_police_station", "field_division", "field_case/enquiry_keyword"
                     ];
     
@@ -1371,20 +1388,20 @@ const UnderInvestigation = () => {
                     const renderCellFunc = (key, count) => (params) => tableCellRender(key, params, params.value, count, meta.table_name);
     
                     const updatedHeader = [
-                        // {
-                        //     field: "select",
-                        //     headerName: <Tooltip title="Select All"><SelectAllIcon sx={{ color: "", fill: "#1f1dac" }} /></Tooltip>,
-                        //     width: 50,
-                        //     resizable: false,
-                        //     renderCell: (params) => (
-                        //         <Box display="flex" justifyContent="center" alignItems="center" width="100%">                                
-                        //             <Checkbox
-                        //                 checked={params.row.isSelected || false}
-                        //                 onChange={(event) => handleCheckboxChangeField(event, params.row)}
-                        //             />
-                        //         </Box>
-                        //     ),
-                        // },
+                          {
+                              field: "select",
+                              headerName: <Tooltip title="Select All"><SelectAllIcon sx={{ color: "", fill: "#1f1dac" }} /></Tooltip>,
+                              width: 50,
+                              resizable: false,
+                              renderCell: (params) => (
+                                  <Box display="flex" justifyContent="center" alignItems="center" width="100%">                                
+                                      <Checkbox
+                                          checked={params.row.isSelected || false}
+                                          onChange={(event) => handleCheckboxChangeField(event, params.row)}
+                                      />
+                                  </Box>
+                              ),
+                          },
                           {
                               field: "approval",
                               headerName: "Approval",
@@ -1425,15 +1442,15 @@ const UnderInvestigation = () => {
                             renderCell: renderCellFunc("field_cc_no./sc_no", 0),
                         },
                             {
-                                field: "field_io_name",
-                                headerName: "Assign To IO",
-                                width: 150,
+                                field: "field_name_of_holding_io",
+                                headerName: "Name Of The Holding IO",
+                                width: 180,
                                 resizable: true,
                                 cellClassName: 'justify-content-start',
                                 renderHeader: (params) => (
-                                    tableHeaderRender(params, "field_io_name")
+                                    tableHeaderRender(params, "field_name_of_holding_io")
                                 ),
-                                renderCell: renderCellFunc("field_io_name"),
+                                renderCell: renderCellFunc("field_name_of_holding_io"),
                             },
                             {
                                 field: "field_name_of_the_police_station",
@@ -3754,6 +3771,632 @@ const UnderInvestigation = () => {
 
   const handlePrevPage = () => {
     setPaginationCount((prev) => prev - 1);
+  };
+
+  const loadMergedCasesData = async (page) => {
+    const getTemplatePayload = {
+        page,
+        limit: 10,
+        sort_by: tableSortKey,
+        order: tableSortOption,
+        search: searchValue || "",
+        table_name,
+        is_starred: starFlag,
+        is_read: readFlag,
+        template_module: "pt_case",
+        sys_status: sysStatus,
+        from_date: fromDateValue,
+        to_date: toDateValue,
+        filter: filterValues,
+    };
+
+    setLoading(true);
+
+    try {
+        const getTemplateResponse = await api.post( "/templateData/getMergeParentData", getTemplatePayload);
+
+        setLoading(false);
+
+        if (getTemplateResponse?.success && getTemplateResponse?.message !== "No merged case found") {
+          const { data, meta } = getTemplateResponse.data;
+
+            const totalPages = meta?.totalPages;
+            const totalItems = meta?.totalItems;
+
+            if (totalPages !== null && totalPages !== undefined) {
+                setTotalPage(totalPages);
+            }
+
+            if (totalItems !== null && totalItems !== undefined) {
+                setTotalRecord(totalItems);
+            }
+
+            const excludedKeys = [
+                "created_at", "updated_at", "deleted_at", "attachments", "task_unread_count", "id",
+                "ui_case_id", "pt_case_id", "sys_status", "field_cc_no./sc_no", "field_io_name", "field_name_of_holding_io",
+                "field_name_of_the_police_station", "field_division", "field_case/enquiry_keyword", "field_date_of_taking_over_by_cid", "field_extension_date",
+                "field_extension_remark","field_extension_updated_by","childCount"
+      ];
+
+            const generateReadableHeader = (key) =>
+                key
+                    .replace(/^field_/, "")
+                    .replace(/_/g, " ")
+                    .toLowerCase()
+                    .replace(/^\w|\s\w/g, (c) => c.toUpperCase());
+
+            const renderCellFunc = (key) => (params) => tableCellRender(key, params, params.value);
+
+            const filteredData = data.filter(
+              (item, index, self) => index === self.findIndex((t) => t.id === item.id)
+            );
+
+            const processedData = filteredData.map((row, index) => ({
+                ...row,
+                sl_no: (page - 1) * 10 + index + 1,
+                isSelected: false,
+            }));
+
+            setTableData(processedData);
+
+            // Get remaining fields after excluding
+            const remainingFields = Object.keys(processedData[0] || {})
+                .filter(key => !excludedKeys.includes(key));
+
+            // Build columns with specific widths for important fields
+            const updatedHeader = [
+                {
+                    field: "select",
+                    headerName: <Tooltip title="Select All"><SelectAllIcon sx={{ color: "", fill: "#1f1dac" }} /></Tooltip>,
+                    width: 50,
+                    resizable: false,
+                    renderCell: (params) => (
+                        <Box display="flex" justifyContent="center" alignItems="center" width="100%">
+                            <Checkbox
+                                checked={params.row.isSelected || false}
+                                onChange={(event) => handleCheckboxDemerge(event, params.row)}
+                            />
+                        </Box>
+                    ),
+                },
+                {
+                    field: "field_cc_no./sc_no",
+                    headerName: "CC No./SC No",
+                    width: 180,
+                    resizable: true,
+                    cellClassName: 'justify-content-start',
+                    renderHeader: (params) => (
+                        tableHeaderRender(params, "field_cc_no./sc_no")
+                    ),
+                    renderCell: renderCellFunc("field_cc_no./sc_no"),
+                },
+                {
+                    field: "field_name_of_holding_io",
+                    headerName: "Assign To IO",
+                    width: 150,
+                    resizable: true,
+                    cellClassName: 'justify-content-start',
+                    renderHeader: (params) => (
+                        tableHeaderRender(params, "field_name_of_holding_io")
+                    ),
+                    renderCell: renderCellFunc("field_name_of_holding_io"),
+                },
+                {
+                    field: "child_case",
+                    headerName: "Child Case",
+                    width: 100,
+                    resizable: true,
+                    renderCell: (params) => {
+                        const childCount = params.row.childCount || 0;
+                        const caseId = params.row.id;
+
+                        const handleClick = async () => {
+                            loadChildMergedCasesData("1", caseId);
+                        };
+                        
+                        const statusColor = "#3b82f6";
+                        const borderColor = "#2563eb";
+                
+                        return (
+                            <Chip
+                                label={childCount}
+                                size="small"
+                                onClick={handleClick} 
+                                sx={{
+                                    fontFamily: "Roboto",
+                                    fontWeight: 500,
+                                    color: "white",
+                                    borderColor: borderColor,
+                                    borderRadius: "4px",
+                                    backgroundColor: statusColor,
+                                    borderStyle: "solid",
+                                    borderWidth: "1px",
+                                    cursor: "pointer",
+                                    "&:hover": {
+                                        backgroundColor: "#2563eb",
+                                    },
+                                }}
+                            />
+                        );
+                    }
+                },
+                {
+                    field: "field_name_of_the_police_station",
+                    headerName: "Police Station",
+                    width: 200,
+                    resizable: true,
+                    cellClassName: 'justify-content-start',
+                    renderHeader: (params) => (
+                        tableHeaderRender(params, "field_name_of_the_police_station")
+                    ),
+                    renderCell: renderCellFunc("field_name_of_the_police_station"),
+                },
+                {
+                    field: "field_division",
+                    headerName: "Divisions",
+                    width: 200,
+                    resizable: true,
+                    cellClassName: 'justify-content-start',
+                    renderHeader: (params) => (
+                        tableHeaderRender(params, "field_division")
+                    ),
+                    renderCell: renderCellFunc("field_division"),
+                },
+                {
+                    field: "field_case/enquiry_keyword",
+                    headerName: "Keyword",
+                    width: 200,
+                    resizable: true,
+                    cellClassName: 'justify-content-start',
+                    renderHeader: (params) => (
+                        tableHeaderRender(params, "field_case/enquiry_keyword")
+                    ),
+                    renderCell: renderCellFunc("field_case/enquiry_keyword"),
+                },
+                {
+                    field: "field_date_of_taking_over_by_cid",
+                    headerName: "CID Take over date",
+                    width: 200,
+                    resizable: true,
+                    cellClassName: 'justify-content-start',
+                    renderHeader: (params) => (
+                        tableHeaderRender(params, "field_date_of_taking_over_by_cid")
+                    ),
+                    renderCell: renderCellFunc("field_date_of_taking_over_by_cid"),
+                },
+                ...remainingFields
+                    .map((key) => ({
+                        field: key,
+                        headerName: generateReadableHeader(key),
+                        width: generateReadableHeader(key).length < 15 ? 100 : 180,
+                        resizable: true,
+                        renderHeader: (params) => (
+                            tableHeaderRender(params, key)
+                        ),
+                        renderCell: renderCellFunc(key),
+                    })),
+            ];
+
+            setviewTemplateTableData(updatedHeader);
+        } else {
+            setTotalPage(0);
+            setTotalRecord(0);
+            setTableData([]);
+        }
+    } catch (error) {
+        setLoading(false);
+        console.error("Error loading merged cases data:", error);
+    }
+  };
+
+  const loadChildMergedCasesData = async (page, caseId) => {
+    setIsChildMergedLoading(true); 
+    setLoading(true);
+
+    const payload = {
+      page,
+      limit: 10,
+      sort_by: tableSortKey,
+      order: tableSortOption,
+      search: searchValue || "",
+      table_name,
+      is_starred: starFlag,
+      is_read: readFlag,
+      template_module: "pt_case",
+      sys_status: sysStatus,
+      from_date: fromDateValue,
+      to_date: toDateValue,
+      filter: filterValues,
+      case_id: String(caseId),
+    };
+
+    try {
+      const response = await api.post("/templateData/getMergeChildData", payload);
+
+      if (response?.success) {
+        const { data, meta } = response.data;
+
+        const processedData = data.map((row) => ({
+          ...row,
+          isSelected: false,
+        }));
+
+        const excludedKeys = [
+          "created_at", "updated_at", "deleted_at", "attachments", "task_unread_count", "id",
+          "ui_case_id", "pt_case_id", "sys_status", "field_cc_no./sc_no", "field_io_name", "field_io_name_id",
+          "field_name_of_the_police_station", "field_division", "field_case/enquiry_keyword", "field_date_of_taking_over_by_cid", "field_extension_date",
+          "field_extension_remark","field_extension_updated_by","childCount"
+        ];
+
+        const generateReadableHeader = (key) =>
+          key
+            .replace(/^field_/, "")
+            .replace(/_/g, " ")
+            .toLowerCase()
+            .replace(/^\w|\s\w/g, (c) => c.toUpperCase());
+
+        const renderCellFunc = (key) => (params) =>
+          tableCellRender(key, params, params.value, 0, meta.table_name);
+
+        const updatedHeader = [
+          {
+            field: "select_child",
+            headerName: (
+              <Tooltip title="Select All">
+                <SelectAllIcon sx={{ fill: "#1f1dac" }} />
+              </Tooltip>
+            ),
+            width: 50,
+            resizable: false,
+            renderCell: (params) => (
+              <Box display="flex" justifyContent="center" alignItems="center" width="100%">
+                <Checkbox
+                  checked={params.row.isSelected || false}
+                  onChange={(event) => {
+                    handleCheckboxDemerge(event, params.row);
+                  }}
+                />
+              </Box>
+            ),
+          },
+          {
+              field: "approval_child",
+              headerName: "Approval",
+              width: 50,
+              resizable: true,
+              cellClassName: 'justify-content-start',
+              renderHeader: (params) => (
+                  <Tooltip title="Approval"><VerifiedIcon sx={{ color: "", fill: "#1f1dac" }} /></Tooltip>
+              ),                            
+              renderCell: (params) => (
+                  <Button
+                      variant="contained"
+                      color="transparent"
+                      size="small"
+                      sx={{
+                          padding: 0,
+                          fontSize: '0.75rem',
+                          textTransform: 'none',
+                          boxShadow: 'none',
+                          '&:hover':{
+                              boxShadow: 'none',
+                          }
+                      }}
+                  >
+                      <Tooltip title="Approval"><VerifiedUserIcon color="success" onClick={() => {
+                        handleActionShow(params?.row, true);
+                      }}
+                      sx={{fontSize:'26px'}} /></Tooltip>
+                  </Button>
+              )
+          },
+          {
+              field: "field_cc_no./sc_no",
+              headerName: "CC No./SC No",
+              width: 130,
+              resizable: true,
+              cellClassName: 'justify-content-start',
+              renderHeader: (params) => (
+                  tableHeaderRender(params, "field_cc_no./sc_no")
+              ),
+              renderCell: renderCellFunc("field_cc_no./sc_no"),
+          },
+          {
+            field: "field_io_name",
+            headerName: "Assign To IO",
+            width: 150,
+            resizable: true,
+            cellClassName: 'justify-content-start',
+            renderHeader: (params) => (
+                tableHeaderRender(params, "field_io_name")
+            ),
+            renderCell: renderCellFunc("field_io_name"),
+          },
+          {
+              field: "field_name_of_the_police_station",
+              headerName: "Police Station",
+              width: 200,
+              resizable: true,
+              cellClassName: 'justify-content-start',
+              renderHeader: (params) => (
+                  tableHeaderRender(params, "field_name_of_the_police_station")
+              ),
+              renderCell: renderCellFunc("field_name_of_the_police_station"),
+          },
+          {
+              field: "field_division",
+              headerName: "Divisions",
+              width: 200,
+              resizable: true,
+              cellClassName: 'justify-content-start',
+              renderHeader: (params) => (
+                  tableHeaderRender(params, "field_division")
+              ),
+              renderCell: renderCellFunc("field_division"),
+          },
+          {
+              field: "field_case/enquiry_keyword",
+              headerName: "Keyword",
+              width: 200,
+              resizable: true,
+              cellClassName: 'justify-content-start',
+              renderHeader: (params) => (
+                  tableHeaderRender(params, "field_case/enquiry_keyword")
+              ),
+              renderCell: renderCellFunc("field_case/enquiry_keyword"),
+          },
+          {
+              field: "field_date_of_taking_over_by_cid",
+              headerName: "CID Take over date",
+              width: 200,
+              resizable: true,
+              cellClassName: 'justify-content-start',
+              renderHeader: (params) => (
+                  tableHeaderRender(params, "field_date_of_taking_over_by_cid")
+              ),
+              renderCell: renderCellFunc("field_date_of_taking_over_by_cid"),
+          },
+          ...Object.keys(data[0] || {})
+            .filter((key) => !excludedKeys.includes(key))
+            .map((key) => ({
+              field: key,
+              headerName: generateReadableHeader(key),
+              width: generateReadableHeader(key).length < 15 ? 120 : 180,
+              resizable: true,
+              renderHeader: (params) => tableHeaderRender(params, key),
+              renderCell: renderCellFunc(key),
+            })),
+        ];
+
+        setChildMergedData(processedData || []);
+        setChildMergedColumns(updatedHeader);
+        setChildMergedPagination(page);
+        setChildMergedTotalPages(meta?.totalPages || 0);
+        setChildMergedTotalRecords(meta?.totalItems || 0);
+        setChildMergedDialogOpen(true);
+        setChildMergedCaseCID(data?.[0]?.["field_cc_no./sc_no"] || "");
+        setChildMergedCaseTitle(selectedOtherTemplate?.name || "");
+      } else {
+        toast.error(response?.message || "Failed to load child merged cases.");
+      }
+    } catch (err) {
+      console.error("Error loading child merged cases:", err);
+      toast.error(err?.message || "Something went wrong.");
+    } finally {
+      setIsChildMergedLoading(false);
+      setLoading(false);
+    }
+  };
+
+  const handleConfirmMerge = async () => {
+    if (!selectedParentId || selectedParentId.length === 0) {
+      Swal.fire({
+        title: 'Error',
+        text: "Select a parent case before merging!",
+        icon: 'warning',
+        confirmButtonText: 'OK',
+      });
+      return;
+    }
+  
+    setLoading(true);
+    setShowMergeModal(false);
+  
+    try {
+      const allCaseIdsToMerge = selectedMergeRowData
+        .filter(row => row?.id !== undefined)
+        .map(row => row.id);
+  
+      const payloadSysStatus = {
+        table_name: table_name,
+        data: {
+          id: allCaseIdsToMerge,
+          sys_status: "merge_cases",
+          default_status: "pt_case",
+        },
+      };
+  
+      const sysStatusResponse = await api.post("/templateData/caseSysStatusUpdation", payloadSysStatus);
+  
+      if (!sysStatusResponse?.success) {
+        throw new Error(sysStatusResponse.message || "Failed to update case status.");
+      }
+  
+      const mergeDataPayload = allCaseIdsToMerge.map(caseId => ({
+        case_id: caseId,
+        parent_case_id: selectedParentId.id,
+        merged_status: caseId === selectedParentId.id ? "parent" : "child",
+      }));
+  
+      const mergeResponse = await api.post("/templateData/insertMergeData", {
+        table_name: "pt_merged_cases",
+        data: mergeDataPayload,
+      });
+  
+      if (!mergeResponse?.success) {
+        throw new Error(mergeResponse.message || "Failed to insert merge data.");
+      }
+    
+      toast.success("Merged Successfully",
+        {
+            position: "top-right",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            className: "toast-success",
+        }
+      );
+      setSelectedRowIds([]);
+      setSelectedMergeRowData([]);
+      setSelectedParentId(null);
+  
+      await loadTableData();
+    } catch (err) {
+      console.error(err);
+      toast.error("Something went wrong during merge" || err,
+        {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "toast-error",
+        }
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDemerge = async () => {
+    // Use childMergedData if dialog is open, otherwise use tableData
+    const dataSource = childMergedDialogOpen ? childMergedData : tableData;
+    const selectedCasesForDemerge = dataSource.filter(row => row.isSelected);
+
+    if (selectedCasesForDemerge.length === 0) {
+      Swal.fire({
+        title: 'Error',
+        text: "Select cases to demerge!",
+        icon: 'warning',
+        confirmButtonText: 'OK',
+      });
+      return;
+    }
+  
+    const confirmation = await Swal.fire({
+      title: 'Are you sure?',
+      text: "Are you sure you want to demerge the selected cases?",
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, Demerge',
+      cancelButtonText: 'Cancel',
+    });
+
+    if (!confirmation.isConfirmed) return;
+    
+    setChildMergedDialogOpen(false);
+
+    setLoading(true);
+    const randomDateId = `txn_${new Date().toISOString().replace(/[-:.TZ]/g, '')}_${Math.random().toString(36).substring(2, 8)}`;
+
+    try {
+      const caseIds = selectedCasesForDemerge.map(caseData => String(caseData.id));
+      
+      const demergePayload = {
+        template_module: "pt_case",
+        transaction_id: randomDateId,
+        case_id: caseIds,
+      };
+      
+      console.log("Demerge Payload:", demergePayload);
+      
+      const demergeResponse = await api.post("/templateData/deMergeCaseData", demergePayload);
+      
+      console.log("Demerge Response:", demergeResponse);
+  
+      if (!demergeResponse?.success) {
+        throw new Error(demergeResponse.message || "Failed to demerge selected cases.");
+      }
+  
+      toast.success("Demerged Successfully",
+        {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "toast-success",
+        }
+      );
+  
+      setSelectedRowIds([]);
+      setSelectedRowData([]);
+      setSelectedMergeRowData([]);
+      await loadMergedCasesData("1");
+      setChildMergedDialogOpen(false);
+    } catch (err) {
+      console.error("Demerge Error:", err);
+      const errorMessage = err?.response?.data?.message || err?.message || "Something went wrong during demerge";
+      toast.error(errorMessage,
+        {
+          position: "top-right",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "toast-error",
+        }
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCheckboxDemerge = (event, row) => {
+    const isSelected = event.target.checked;
+
+    // Update tableData (for main table)
+    setTableData((prevData) =>
+      prevData.map((data) =>
+        data.id === row.id ? { ...data, isSelected } : data
+      )
+    );
+
+    // Update childMergedData (for child merged cases dialog)
+    setChildMergedData((prevData) =>
+      prevData.map((data) =>
+        data.id === row.id ? { ...data, isSelected } : data
+      )
+    );
+
+    setSelectedRowIds((prevIds) => {
+      if (isSelected) {
+        return [...prevIds, row.id];
+      } else {
+        return prevIds.filter((id) => id !== row.id);
+      }
+    });
+
+    setSelectedMergeRowData((prevData) => {
+      if (isSelected) {
+        return [...prevData, row];
+      } else {
+        return prevData.filter((r) => r.id !== row.id);
+      }
+    });
+  };
+
+  const handleChildMergePagination = (page) => {
+    setChildMergedPagination(page);
   };
 
   const showIndivitualAttachment = async (attachmentName) => {
@@ -7077,73 +7720,58 @@ const UnderInvestigation = () => {
             </Box>
           </Box>
           <Box sx={{ display: "flex", alignItems: "start", gap: "12px" }}>
-            {isCheckboxSelected && (
+            {isCheckboxSelected && sysStatus !== 'merge_cases' && (
+              <Button
+                variant="contained"
+                className="blueButton"
+                startIcon={
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 20 18"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M1 18V12H3V16H7V18H1ZM13 18V16H17V12H19V18H13ZM5.175 12.825L3.75 11.425L5.175 10H0V8H5.175L3.75 6.575L5.175 5.175L9 9L5.175 12.825ZM14.825 12.825L11 9L14.825 5.175L16.25 6.575L14.825 8H20V10H14.825L16.25 11.425L14.825 12.825ZM1 6V0H7V2H3V6H1ZM17 6V2H13V0H19V6H17Z"
+                      fill="#ffffff"
+                    />
+                  </svg>
+                }
+                onClick={() => {
+                  setShowMergeModal(true);
+                  setMergeDialogData(selectedMergeRowData); 
+                }}
+                >
+                Merge
+              </Button>
+            )}
+            
+            {isCheckboxSelected && sysStatus === 'merge_cases' && (
               <>
-                <Button
+                <Button 
                   variant="contained"
+                  style={{ backgroundColor: '#DC2626', color: '#ffffff' }}
                   startIcon={
                     <svg
                       width="18"
                       height="18"
-                      viewBox="0 0 20 18"
+                      viewBox="0 0 24 24"
                       fill="none"
                       xmlns="http://www.w3.org/2000/svg"
                     >
                       <path
-                        d="M1 18V12H3V16H7V18H1ZM13 18V16H17V12H19V18H13ZM5.175 12.825L3.75 11.425L5.175 10H0V8H5.175L3.75 6.575L5.175 5.175L9 9L5.175 12.825ZM14.825 12.825L11 9L14.825 5.175L16.25 6.575L14.825 8H20V10H14.825L16.25 11.425L14.825 12.825ZM1 6V0H7V2H3V6H1ZM17 6V2H13V0H19V6H17Z"
-                        fill="black"
+                        d="M9.172 14.828a4 4 0 1 1 0-5.656M14.828 9.172a4 4 0 1 1 0 5.656M4 20l5.5-5.5M20 4l-5.5 5.5"
+                        stroke="#ffffff"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
                       />
                     </svg>
                   }
-                  sx={{
-                    background: "#32D583",
-                    color: "#101828",
-                    textTransform: "none",
-                    height: "38px",
-                  }}
+                  onClick={handleDemerge}
                 >
-                  Merge
-                </Button>
-                <Button
-                  variant="contained"
-                  startIcon={
-                    <svg
-                      fill="#000000"
-                      width="22"
-                      height="22"
-                      viewBox="0 0 20 18"
-                      xmlns="http://www.w3.org/2000/svg"
-                      class="cf-icon-svg"
-                    >
-                      <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
-                      <g
-                        id="SVGRepo_tracerCarrier"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      ></g>
-                      <g id="SVGRepo_iconCarrier">
-                        <path d="M5.857 3.882v3.341a1.03 1.03 0 0 1-2.058 0v-.97a5.401 5.401 0 0 0-1.032 2.27 1.03 1.03 0 1 1-2.02-.395A7.462 7.462 0 0 1 2.235 4.91h-.748a1.03 1.03 0 1 1 0-2.058h3.34a1.03 1.03 0 0 1 1.03 1.03zm-3.25 9.237a1.028 1.028 0 0 1-1.358-.523 7.497 7.497 0 0 1-.37-1.036 1.03 1.03 0 1 1 1.983-.55 5.474 5.474 0 0 0 .269.751 1.029 1.029 0 0 1-.524 1.358zm2.905 2.439a1.028 1.028 0 0 1-1.42.322 7.522 7.522 0 0 1-.885-.652 1.03 1.03 0 0 1 1.34-1.563 5.435 5.435 0 0 0 .643.473 1.03 1.03 0 0 1 .322 1.42zm3.68.438a1.03 1.03 0 0 1-1.014 1.044h-.106a7.488 7.488 0 0 1-.811-.044 1.03 1.03 0 0 1 .224-2.046 5.41 5.41 0 0 0 .664.031h.014a1.03 1.03 0 0 1 1.03 1.015zm.034-12.847a1.03 1.03 0 0 1-1.029 1.01h-.033a1.03 1.03 0 0 1 .017-2.06h.017l.019.001a1.03 1.03 0 0 1 1.009 1.05zm3.236 11.25a1.029 1.029 0 0 1-.3 1.425 7.477 7.477 0 0 1-.797.453 1.03 1.03 0 1 1-.905-1.849 5.479 5.479 0 0 0 .578-.328 1.03 1.03 0 0 1 1.424.3zM10.475 3.504a1.029 1.029 0 0 1 1.41-.359l.018.011a1.03 1.03 0 1 1-1.06 1.764l-.01-.006a1.029 1.029 0 0 1-.358-1.41zm4.26 9.445a7.5 7.5 0 0 1-.315.56 1.03 1.03 0 1 1-1.749-1.086 5.01 5.01 0 0 0 .228-.405 1.03 1.03 0 1 1 1.836.93zm-1.959-6.052a1.03 1.03 0 0 1 1.79-1.016l.008.013a1.03 1.03 0 1 1-1.79 1.017zm2.764 2.487a9.327 9.327 0 0 1 0 .366 1.03 1.03 0 0 1-1.029 1.005h-.025A1.03 1.03 0 0 1 13.482 9.7a4.625 4.625 0 0 0 0-.266 1.03 1.03 0 0 1 1.003-1.055h.026a1.03 1.03 0 0 1 1.029 1.004z"></path>
-                      </g>
-                    </svg>
-                  }
-                  sx={{
-                    background: "#32D583",
-                    color: "#101828",
-                    textTransform: "none",
-                    height: "38px",
-                  }}
-                  onClick={() =>
-                    showTransferToOtherDivision(
-                      {
-                        table: "cid_under_investigation",
-                        field: "field_division",
-                        name: "Massive Division",
-                      },
-                      { id: selectedRowIds }
-                    )
-                  }
-                >
-                  Mass Change Of Division
+                  De-Merge
                 </Button>
               </>
             )}
@@ -7264,6 +7892,18 @@ const UnderInvestigation = () => {
             >
               Disposal
             </Box>
+            <Box
+              onClick={() => {
+                setSysSattus("merge_cases");
+                setPaginationCount(1);
+              }}
+              id="filterMergedCases"
+              className={`filterTabs ${
+                sysStatus === "merge_cases" ? "Active" : ""
+              }`}
+            >
+              Merged Cases
+            </Box>
           </Box>
           <Box
               sx={{
@@ -7349,7 +7989,7 @@ const UnderInvestigation = () => {
                 paginationCount={paginationCount} 
                 handlePagination={handlePagination} 
                 getRowClassName={(params) => {
-                  return !params.row["field_io_name"]
+                  return !params.row["field_name_of_holding_io"]
                       ? "row-red-background"
                       : "";
               }}
@@ -9222,8 +9862,159 @@ const UnderInvestigation = () => {
                     </DialogContent>
                 </Dialog>
             }
+
+      <Dialog
+        open={showMergeModal}
+        onClose={() => setShowMergeModal(false)}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title">Select Parent Case</DialogTitle>
+        <DialogContent sx={{ width: "500px" }}>
+          <FormControl fullWidth>
+            <Autocomplete
+              id="parent-case-autocomplete"
+              options={
+                Array.isArray(selectedMergeRowData)
+                  ? selectedMergeRowData
+                      .filter(row => row?.id !== undefined)
+                      .filter((value, index, self) => 
+                        index === self.findIndex((t) => t.id === value.id)
+                      )
+                  : []
+              }
+              
+              getOptionLabel={(option) => {
+                return (
+                  option?.["field_cc_no./sc_no"] ||
+                  `Case ${option?.id}`
+                );
+              }}
+              value={
+                selectedParentId
+                  ? selectedMergeRowData.find((r) => r.id === selectedParentId.id)
+                  : null
+              }
+              onChange={(event, newValue) => {
+                setSelectedParentId(newValue);
+              }}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Parent Case"
+                  className="selectHideHistory"
+                />
+              )}
+              isOptionEqualToValue={(option, value) => {
+                return option?.id === value?.id;
+              }}
+            />
+          </FormControl>
+        </DialogContent>
+        <DialogActions sx={{ padding: "12px 24px" }}>
+          <Button onClick={() => setShowMergeModal(false)}>Cancel</Button>
+          <Button 
+            onClick={handleConfirmMerge}
+            className="fillPrimaryBtn"
+            disabled={!selectedParentId}
+          >
+            Confirm Merge
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={childMergedDialogOpen}
+        onClose={() => {
+          setIsChildMergedLoading(true);
+          setChildMergedDialogOpen(false);
+          setTimeout(() => setIsChildMergedLoading(false), 300);
+        }}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+        fullScreen
+        fullWidth
+        sx={{ marginLeft: '260px' }}
+        >
+        <DialogTitle>
+          <Box display="flex" alignItems="center" justifyContent="space-between">
+            <Box
+              sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }}
+              onClick={() => {
+                setIsChildMergedLoading(true);
+                setChildMergedDialogOpen(false);
+                setTimeout(() => setIsChildMergedLoading(false), 300);
+                loadMergedCasesData('1');
+              }}
+            >
+              <WestIcon sx={{ color: 'black' }}/>
+              <Typography sx={{ fontSize: '15px', fontWeight: 600, color: 'black' }}>
+                Child Merged Cases
+              </Typography>
+              {childMergedCaseCID && (
+                <Chip
+                  label={childMergedCaseCID}
+                  color="primary"
+                  variant="outlined"
+                  size="small"
+                  sx={{ fontSize: '12px', fontWeight: 500, marginTop: '2px' }}
+                />
+              )}
+              <Box className="totalRecordCaseStyle" sx={{ fontSize: '12px' }}>
+                {childMergedTotalRecords} Records
+              </Box>
+            </Box>
+
+            {selectedRowIds.length > 0 && (
+            <Box>
+              <Button 
+                variant="contained"
+                style={{ backgroundColor: '#DC2626', color: '#ffffff' }}
+                startIcon={
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M9.172 14.828a4 4 0 1 1 0-5.656M14.828 9.172a4 4 0 1 1 0 5.656M4 20l5.5-5.5M20 4l-5.5 5.5"
+                      stroke="#ffffff"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                }
+                onClick={() => {
+                  handleDemerge();
+                }}
+              >
+                De-Merge
+              </Button>
+            </Box>
+              )}
+          </Box>
+        </DialogTitle>
+
+        <DialogContent sx={{ overflowY: 'auto', maxHeight: 'calc(100vh - 64px)' }}>
+          {childMergedData.length > 0 ? (
+            <TableView
+              rows={childMergedData}
+              columns={childMergedColumns}
+              totalPage={childMergedTotalPages}
+              totalRecord={childMergedTotalRecords}
+              paginationCount={childMergedPagination}
+              handlePagination={handleChildMergePagination}
+            />
+          ) : (
+            <Typography>No child merged cases found.</Typography>
+          )}
+        </DialogContent>
+      </Dialog>
     </Box>
   );
 };
 
-export default UnderInvestigation;
+export default PendingTrail;
