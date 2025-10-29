@@ -3199,18 +3199,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
                                         {field.label}
                                     </label>
                                     <Tooltip title="Save">
-                                        <SaveIcon
-                                        onClick={() => onPR_FieldsUpdate("cid_under_investigation", filterAoValues)}
-                                        sx={{
-                                            color: '#1570EF',
-                                            padding: '0 1px',
-                                            fontSize: '25px',
-                                            verticalAlign: 'middle',
-                                            cursor: 'pointer',
-                                            pointerEvents: 'auto',
-                                            marginBottom: '2px',
-                                        }}
-                                        />
+                                        <Button variant="contained" color="primary" size="small" onClick={() => onPR_FieldsUpdate("cid_under_investigation", filterAoValues)}>Save</Button>
                                     </Tooltip>
                                     </div>
                                     <TextField
