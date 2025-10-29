@@ -3630,7 +3630,7 @@ const fetchCounts = async () => {
                                             statusClass = "submissionCompleted";
                                         } else if (step === nextStep) {
                                             nextStageStep = true;
-                                            statusLabel = "Pending";
+                                            statusLabel = "Send for Approval";
                                             statusClass = "submissionPending";
                                         }
 
@@ -3815,7 +3815,7 @@ const fetchCounts = async () => {
                                             statusClass = "submissionCompleted";
                                         } else if (step === nextStep) {
                                             nextStageStep = true;
-                                            statusLabel = "Pending";
+                                            statusLabel = "Send for Approval";
                                             statusClass = "submissionPending";
                                         }
 
