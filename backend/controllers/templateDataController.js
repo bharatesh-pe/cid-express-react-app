@@ -188,12 +188,12 @@ exports.insertTemplateData = async (req, res, next) => {
       validData.pt_case_id = parsedData.pt_case_id;
     }
 
-    if (parsedData.reassign_io_remarks && parsedData.reassign_io_remarks != "") {
+    if (parsedData.disposal_remarks && parsedData.disposal_remarks != "") {
       completeSchema = [
-        { name: "reassign_io_remarks", data_type: "TEXT", not_null: false },
+        { name: "disposal_remarks", data_type: "TEXT", not_null: false },
         ...completeSchema,
       ];
-      validData.reassign_io_remarks = parsedData.reassign_io_remarks;
+      validData.disposal_remarks = parsedData.disposal_remarks;
     }
 
     console.log("validData", validData);
@@ -523,13 +523,7 @@ exports.insertTwoTemplateData = async (req, res, next) => {
       validData.pt_case_id = parsedData.pt_case_id;
     }
 
-    if (parsedData.reassign_io_remarks && parsedData.reassign_io_remarks != "") {
-      completeSchema = [
-        { name: "reassign_io_remarks", data_type: "TEXT", not_null: false },
-        ...completeSchema,
-      ];
-      validData.reassign_io_remarks = parsedData.reassign_io_remarks;
-    }
+    
 
     // Define dynamic model
     const modelAttributes = {};
@@ -645,7 +639,6 @@ exports.insertTwoTemplateData = async (req, res, next) => {
         });
         secondValidData.reassign_io_remarks = secondParsedData.reassign_io_remarks;
       }
-
       const secondModelAttributes = {};
       for (const field of secondCompleteSchema) {
         const { name, data_type, not_null, default_value } = field;
@@ -1228,9 +1221,9 @@ exports.updateTemplateData = async (req, res, next) => {
         validData.updated_by = userName;
         validData.updated_by_id = userId;
         
-        // Add reassign_io_remarks to validData if provided
-        if (parsedData.reassign_io_remarks) {
-            validData.reassign_io_remarks = parsedData.reassign_io_remarks;
+        // Add disposal_remarks to validData if provided
+        if (parsedData.disposal_remarks) {
+            validData.disposal_remarks = parsedData.disposal_remarks;
         }
         
         // If field_result_of_judgment is being updated in cid_pending_trial, also update sys_status to disposal
@@ -1275,13 +1268,7 @@ exports.updateTemplateData = async (req, res, next) => {
             validData.pt_case_id = parsedData.pt_case_id;
         }
 
-        // Add reassign_io_remarks to schema if present in validData but not in schema
-        if (validData.reassign_io_remarks && !completeSchema.find(f => f.name === "reassign_io_remarks")) {
-            completeSchema = [
-                { name: "reassign_io_remarks", data_type: "TEXT", not_null: false },
-                ...completeSchema,
-            ];
-        }
+        
 
         // Define Sequelize model dynamically
         const modelAttributes = {};
@@ -7470,7 +7457,6 @@ exports.caseSysStatusUpdation = async (req, res) => {
         { name: "updated_by_id", data_type: "INTEGER", not_null: false },
         { name: "ui_case_id", data_type: "INTEGER", not_null: false },
         { name: "pt_case_id", data_type: "INTEGER", not_null: false },
-        { name: "reassign_io_remarks", data_type: "TEXT", not_null: false },
         // { name: "publickey", data_type: "TEXT", not_null: false },
         ...schema,
       ];
@@ -9164,7 +9150,6 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
                                 // Parse schema and build model
                                 const PFschema = typeof PFtableData.fields === "string" ? JSON.parse(PFtableData.fields) : PFtableData.fields;
                                 PFschema.push({ name: "sys_status", data_type: "TEXT", not_null: false });
-                                PFschema.push({ name: "reassign_io_remarks", data_type: "TEXT", not_null: false });
                                 
                                 const PFmodelAttributes = {
                                     id: {
@@ -9223,7 +9208,6 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
                                  PRschema.push({ name: "sys_status", data_type: "TEXT", not_null: false });
                                  PRschema.push({ name: "ui_case_id", data_type: "INTEGER", not_null: false });
                                  PRschema.push({ name: "pt_case_id", data_type: "INTEGER", not_null: false });
-                                 PRschema.push({ name: "reassign_io_remarks", data_type: "TEXT", not_null: false });
                                  
                                  const PRmodelAttributes = {
                                      id: {
@@ -9623,12 +9607,12 @@ exports.updateDataWithApprovalToTemplates = async (req, res, next) => {
                 validData.pt_case_id = parsedData.pt_case_id;
             }
 
-            if (parsedData?.reassign_io_remarks && parsedData.reassign_io_remarks != "") {
+            if (parsedData?.disposal_remarks && parsedData.disposal_remarks != "") {
                 completeSchema = [
-                    { name: "reassign_io_remarks", data_type: "TEXT", not_null: false },
+                    { name: "disposal_remarks", data_type: "TEXT", not_null: false },
                     ...completeSchema,
                 ];
-                validData.reassign_io_remarks = parsedData.reassign_io_remarks;
+                validData.disposal_remarks = parsedData.disposal_remarks;
             }
 
             // Define Sequelize model dynamically
@@ -12383,7 +12367,6 @@ exports.deMergeCaseData = async (req, res) => {
             { name: "updated_by_id", data_type: "INTEGER", not_null: false },
             { name: "ui_case_id", data_type: "INTEGER", not_null: false },
             { name: "pt_case_id", data_type: "INTEGER", not_null: false },
-            { name: "reassign_io_remarks", data_type: "TEXT", not_null: false },
             // { name: "publickey", data_type: "TEXT", not_null: false },
             ...schema,
         ];
