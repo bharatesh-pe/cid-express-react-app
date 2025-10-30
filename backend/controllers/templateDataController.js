@@ -188,6 +188,14 @@ exports.insertTemplateData = async (req, res, next) => {
       validData.pt_case_id = parsedData.pt_case_id;
     }
 
+    if (parsedData.reassign_io_remarks && parsedData.reassign_io_remarks != "") {
+      completeSchema = [
+        { name: "reassign_io_remarks", data_type: "TEXT", not_null: false },
+        ...completeSchema,
+      ];
+      validData.reassign_io_remarks = parsedData.reassign_io_remarks;
+    }
+
     console.log("validData", validData);
 
     // Define dynamic model
@@ -515,6 +523,14 @@ exports.insertTwoTemplateData = async (req, res, next) => {
       validData.pt_case_id = parsedData.pt_case_id;
     }
 
+    if (parsedData.reassign_io_remarks && parsedData.reassign_io_remarks != "") {
+      completeSchema = [
+        { name: "reassign_io_remarks", data_type: "TEXT", not_null: false },
+        ...completeSchema,
+      ];
+      validData.reassign_io_remarks = parsedData.reassign_io_remarks;
+    }
+
     // Define dynamic model
     const modelAttributes = {};
     for (const field of completeSchema) {
@@ -620,6 +636,14 @@ exports.insertTwoTemplateData = async (req, res, next) => {
           not_null: false,
         });
         secondValidData.pt_case_id = secondParsedData.pt_case_id;
+      }
+      if (secondParsedData.reassign_io_remarks && secondParsedData.reassign_io_remarks != "") {
+        secondCompleteSchema.unshift({
+          name: "reassign_io_remarks",
+          data_type: "TEXT",
+          not_null: false,
+        });
+        secondValidData.reassign_io_remarks = secondParsedData.reassign_io_remarks;
       }
 
       const secondModelAttributes = {};
@@ -7446,6 +7470,7 @@ exports.caseSysStatusUpdation = async (req, res) => {
         { name: "updated_by_id", data_type: "INTEGER", not_null: false },
         { name: "ui_case_id", data_type: "INTEGER", not_null: false },
         { name: "pt_case_id", data_type: "INTEGER", not_null: false },
+        { name: "reassign_io_remarks", data_type: "TEXT", not_null: false },
         // { name: "publickey", data_type: "TEXT", not_null: false },
         ...schema,
       ];
@@ -7552,6 +7577,7 @@ exports.caseSysStatusUpdation = async (req, res) => {
             { name: "updated_by", data_type: "TEXT", not_null: false },
             { name: "created_by_id", data_type: "INTEGER", not_null: false },
             { name: "updated_by_id", data_type: "INTEGER", not_null: false },
+            { name: "reassign_io_remarks", data_type: "TEXT", not_null: false },
             // { name: "publickey", data_type: "TEXT", not_null: false },
             ...invSchema,
           ];
@@ -9068,6 +9094,7 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
 						{ name: "updated_by_id", data_type: "INTEGER", not_null: false },
 						{ name: "ui_case_id", data_type: "INTEGER", not_null: false },
 						{ name: "pt_case_id", data_type: "INTEGER", not_null: false },
+						{ name: "reassign_io_remarks", data_type: "TEXT", not_null: false },
                         // { name: "publickey", data_type: "TEXT", not_null: false },
 						...otherSchema
 					];
@@ -9137,6 +9164,7 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
                                 // Parse schema and build model
                                 const PFschema = typeof PFtableData.fields === "string" ? JSON.parse(PFtableData.fields) : PFtableData.fields;
                                 PFschema.push({ name: "sys_status", data_type: "TEXT", not_null: false });
+                                PFschema.push({ name: "reassign_io_remarks", data_type: "TEXT", not_null: false });
                                 
                                 const PFmodelAttributes = {
                                     id: {
@@ -9195,6 +9223,7 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
                                  PRschema.push({ name: "sys_status", data_type: "TEXT", not_null: false });
                                  PRschema.push({ name: "ui_case_id", data_type: "INTEGER", not_null: false });
                                  PRschema.push({ name: "pt_case_id", data_type: "INTEGER", not_null: false });
+                                 PRschema.push({ name: "reassign_io_remarks", data_type: "TEXT", not_null: false });
                                  
                                  const PRmodelAttributes = {
                                      id: {
@@ -9594,6 +9623,14 @@ exports.updateDataWithApprovalToTemplates = async (req, res, next) => {
                 validData.pt_case_id = parsedData.pt_case_id;
             }
 
+            if (parsedData?.reassign_io_remarks && parsedData.reassign_io_remarks != "") {
+                completeSchema = [
+                    { name: "reassign_io_remarks", data_type: "TEXT", not_null: false },
+                    ...completeSchema,
+                ];
+                validData.reassign_io_remarks = parsedData.reassign_io_remarks;
+            }
+
             // Define Sequelize model dynamically
             const modelAttributes = {};
             for (const field of completeSchema) {
@@ -9926,6 +9963,7 @@ exports.updateDataWithApprovalToTemplates = async (req, res, next) => {
 						{ name: "updated_by_id", data_type: "INTEGER", not_null: false },
 						{ name: "ui_case_id", data_type: "INTEGER", not_null: false },
 						{ name: "pt_case_id", data_type: "INTEGER", not_null: false },
+						{ name: "reassign_io_remarks", data_type: "TEXT", not_null: false },
                         // { name: "publickey", data_type: "TEXT", not_null: false },
 						...otherSchema
 					];
@@ -12345,6 +12383,7 @@ exports.deMergeCaseData = async (req, res) => {
             { name: "updated_by_id", data_type: "INTEGER", not_null: false },
             { name: "ui_case_id", data_type: "INTEGER", not_null: false },
             { name: "pt_case_id", data_type: "INTEGER", not_null: false },
+            { name: "reassign_io_remarks", data_type: "TEXT", not_null: false },
             // { name: "publickey", data_type: "TEXT", not_null: false },
             ...schema,
         ];
