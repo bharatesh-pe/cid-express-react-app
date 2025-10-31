@@ -173,6 +173,7 @@ const PendingTrail = () => {
   const [selectedMergeRowData, setSelectedMergeRowData] = useState([]);
   const [selectedParentId, setSelectedParentId] = useState(null);
   const [reassignIoRemark, setReassignIoRemark] = useState("");
+  const [disposalRemark, setDisposalRemark] = useState("");
   const [showMergeModal, setShowMergeModal] = useState(false);
   const [childMergedDialogOpen, setChildMergedDialogOpen] = useState(false);
   const [childMergedData, setChildMergedData] = useState([]);
@@ -683,7 +684,6 @@ const PendingTrail = () => {
             }
         }
     };
-
      const otherTemplateTrailUpdate = async (data) => {
       
         if (!data.id || !data.options?.table) {
@@ -1940,7 +1940,6 @@ const PendingTrail = () => {
     );
     setTableSortKey(key);
   };
-
     const handleActionShow = (rowData)=>{
       
           if(!rowData){
@@ -2492,7 +2491,6 @@ const PendingTrail = () => {
       }
     }
   };
-
     const otherTemplateSaveFunc = async (data) => {
 
         if (!selectedOtherTemplate.table || selectedOtherTemplate.table === "") {
@@ -2778,6 +2776,7 @@ const PendingTrail = () => {
                 var combinedData = {
                     id: selectedRow.id,
                     [selectKey.name]: selectedOtherFields.code,
+                    ...(disposalRemark ? { disposal_remarks: disposalRemark } : {}),
                 };
 
                 onUpdateTemplateData(combinedData);
@@ -2789,6 +2788,7 @@ const PendingTrail = () => {
                 setShowOtherTransferModal(false);
                 setSelectedOtherFields(null);
                 setselectedOtherTemplate(null);
+                setDisposalRemark("");
                 } else {
                 const errorMessage = chnageSysStatus.message
                     ? chnageSysStatus.message
@@ -3261,7 +3261,6 @@ const PendingTrail = () => {
       }
     });
   };
-
   const onSaveTemplateData = async (data, saveNew) => {
     if (!table_name || table_name === "") {
       toast.warning("Please Check The Template", {
@@ -3617,7 +3616,7 @@ const PendingTrail = () => {
     });
 
     // Include additional meta fields that might not be in template schema
-    const metaFields = ['reassign_io_remarks'];
+    const metaFields = ['disposal_remarks'];
     metaFields.forEach(fieldName => {
       if (data[fieldName]) {
         normalData[fieldName] = data[fieldName];
@@ -3718,25 +3717,10 @@ const PendingTrail = () => {
       return;
     }
 
-    if (!reassignIoRemark || reassignIoRemark.trim() === "") {
-      toast.error("Please enter a remark!", {
-        position: "top-right",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        className: "toast-error",
-      });
-      return;
-    }
-
     var combinedData = {
       id: selectedRowIds.join(","),
       [selectKey.name]: selectedOtherFields.code,
       field_io_name: selectedUser?.user_id,
-      reassign_io_remarks: reassignIoRemark,
     };
   
     onUpdateTemplateData(combinedData);
@@ -3988,7 +3972,6 @@ const PendingTrail = () => {
         console.error("Error loading merged cases data:", error);
     }
   };
-
   const loadChildMergedCasesData = async (page, caseId) => {
     setIsChildMergedLoading(true); 
     setLoading(true);
@@ -4783,7 +4766,6 @@ const PendingTrail = () => {
       console.error("Error fetching uploaded files:", error);
     }
   };
-
   const [hasPdfEntry, setHasPdfEntry] = useState(false);
 
   const checkPdfEntryStatus = async (caseId) => {
@@ -5573,7 +5555,6 @@ const PendingTrail = () => {
         }
       }
     };
-
   const showTransferToOtherDivision = async (options, selectedRow, selectedFieldValue, approved) => {
 
     if(options.is_approval && !approved){
@@ -6005,8 +5986,16 @@ const PendingTrail = () => {
 
     return;
 };
-
     const handleSaveDivisionChange = async () => {
+      console.log('[Move to Disposal Submit]', {
+        selectedOtherTemplate,
+        selectKey,
+        selectedRow,
+        selectedRowData,
+        selectedOtherFields,
+        disposalRemark,
+        fieldActionAddFlag: fieldActionAddFlag.current,
+      });
 
       if (!selectedOtherFields || !selectedOtherFields.code) {
             toast.error("Please Select Data !", {
@@ -6023,7 +6012,23 @@ const PendingTrail = () => {
             return;
         }
 
-        if ((selectedOtherTemplate?.["field"] === "field_nature_of_disposal" || selectedOtherTemplate?.["field"] === "field_prosecution_sanction" || selectedOtherTemplate?.["field"] === "field_17a_pc_act") && selectedOtherFields?.["name"]) {
+        if (((selectedOtherTemplate?.["field"] === "field_nature_of_disposal" || selectedOtherTemplate?.["field"] === "field_result_of_judgment") || (selectKey?.title && selectKey.title.toLowerCase().includes("disposal"))) && selectedOtherFields?.["name"] && selectedOtherFields?.["name"] !== 'A') {
+            if (!disposalRemark || disposalRemark.trim() === '') {
+                toast.error("Please enter disposal remarks!", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+                return;
+            }
+        }
+
+        if (((selectedOtherTemplate?.["field"] === "field_nature_of_disposal" || selectedOtherTemplate?.["field"] === "field_result_of_judgment") || (selectKey?.title && selectKey.title.toLowerCase().includes("disposal")) || selectedOtherTemplate?.["field"] === "field_prosecution_sanction" || selectedOtherTemplate?.["field"] === "field_17a_pc_act") && selectedOtherFields?.["name"]) {
             checkDisposalValues();
             return;
         }
@@ -6575,11 +6580,8 @@ const PendingTrail = () => {
             }
         }
     }
-
-
-
     const checkDisposalValues = async () => {
-        if (selectedOtherTemplate?.["field"] === "field_nature_of_disposal" && selectedOtherFields?.["name"]) {
+        if ((selectedOtherTemplate?.["field"] === "field_nature_of_disposal" || selectedOtherTemplate?.["field"] === "field_result_of_judgment") && selectedOtherFields?.["name"]) {
             if (selectedOtherFields && selectedOtherFields["name"] === "A") {
                 showPtCaseTemplate();
                 setDisposalUpdate(true);
@@ -6672,6 +6674,10 @@ const PendingTrail = () => {
                                     });
                                 }
                             }
+                            return;
+                        } else {
+                            // Non-approval path: directly update status to disposal and then update record
+                            updateSysStatusDisposal();
                             return;
                         }
                     } else {
@@ -6813,7 +6819,7 @@ const PendingTrail = () => {
             data: {
                 id: selectedRowData.id,
                 sys_status: "disposal",
-                default_status: "ui_case",
+                default_status: table_name === "cid_pending_trial" ? "pt_case" : "ui_case",
             }
         };
 
@@ -6840,6 +6846,7 @@ const PendingTrail = () => {
                 var combinedData = {
                     id: selectedRowData.id,
                     [selectKey.name]: selectedOtherFields.code,
+                    ...(disposalRemark ? { disposal_remarks: disposalRemark } : {}),
                 };
 
                 onUpdateTemplateData(combinedData);
@@ -6853,6 +6860,7 @@ const PendingTrail = () => {
                 setShowOtherTransferModal(false);
                 setSelectedOtherFields(null);
                 setselectedOtherTemplate(null);
+                setDisposalRemark("");
 
                 setApprovalsData([]);
                 setApprovalItem([]);
@@ -7341,8 +7349,6 @@ const PendingTrail = () => {
             }
         }
   }
-
-  
     const caseApprovalOnChange = (name, value)=>{
         setApprovalFormData((prev)=>{
             return{
@@ -7679,7 +7685,6 @@ const PendingTrail = () => {
             }));
             setForceTableLoad((prev) => !prev);
         }
-
   return (
     <Box p={2} inert={loading ? true : false}>
       <>
@@ -8227,7 +8232,6 @@ const PendingTrail = () => {
           <CircularProgress size={100} />
         </div>
       )}
-
     {/* other templates ui */}
     {otherTemplateModalOpen && (
         <Dialog
@@ -8831,6 +8835,20 @@ const PendingTrail = () => {
                 )}
               />
             </FormControl>
+        {((selectedOtherTemplate?.["field"] === "field_nature_of_disposal" || selectedOtherTemplate?.["field"] === "field_result_of_judgment") || (selectKey?.title && selectKey.title.toLowerCase().includes("disposal"))) && (
+          <div style={{ marginTop: 16 }}>
+            <h4 className="form-field-heading">Disposal Remarks {selectedOtherFields?.name !== 'A' ? '*' : ''}</h4>
+            <TextField
+              fullWidth
+              multiline
+              rows={3}
+              value={disposalRemark}
+              onChange={(e) => setDisposalRemark(e.target.value)}
+              placeholder="Enter remarks for disposal"
+              disabled={fieldActionAddFlag.current === false}
+            />
+          </div>
+        )}
           </DialogContentText>
         </DialogContent>
         <DialogActions sx={{ padding: "12px 24px" }}>
@@ -9002,19 +9020,7 @@ const PendingTrail = () => {
             </FormControl>
           </div>
           
-          <div style={{ marginTop: 24 }}>
-            <h4 className="form-field-heading">Remark *</h4>
-            <TextField
-              fullWidth
-              multiline
-              rows={4}
-              value={reassignIoRemark}
-              onChange={(e) => setReassignIoRemark(e.target.value)}
-              placeholder="Enter remark for reassigning IO"
-              required
-              disabled={fieldActionAddFlag.current === false}
-            />
-          </div>
+          {/* Remarks removed for Reassign IO */}
                 <div style={{ marginTop: 24, maxWidth: '100vw'  }}>
                 <h4 className="form-field-heading">Selected IO handling Case Details</h4>
                 <div style={{  }}>
@@ -9030,7 +9036,7 @@ const PendingTrail = () => {
                     row.field_cc_no ||
                     row.sc_no ||
                     "",
-                    "field_crime_number_of_ps" : row["field_crime_number_of_ps"] || "",
+                    "field_ps_crime_number" : row["field_ps_crime_number"] || "",
                     "field_case/enquiry_keyword" : row["field_case/enquiry_keyword"] || "-",
                     
                   }))}
@@ -9048,10 +9054,10 @@ const PendingTrail = () => {
                     renderCell: (params) => params.row["field_cc_no./sc_no"],
                     },
                     {
-                    field: "field_crime_number_of_ps",
+                    field: "field_ps_crime_number",
                     headerName: "Crime Number of PS",
                     flex: 1,
-                    renderCell: (params) => params.row["field_crime_number_of_ps"],
+                    renderCell: (params) => params.row["field_ps_crime_number"],
                     },{
                     field: "field_case/enquiry_keyword",
                     headerName: "Case/Enquiry Keyword",
@@ -9632,7 +9638,6 @@ const PendingTrail = () => {
             </DialogActions>
         </Dialog>
     }
-
     {newApprovalPage &&
         <Dialog
             open={newApprovalPage}
